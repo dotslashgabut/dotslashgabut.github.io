@@ -1,2 +1,2 @@
 # testcode
-just test customized code from ChatGPT
+Just test, customized code from ChatGPT.
