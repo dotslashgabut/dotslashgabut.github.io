@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Get Hexadecimal Color Code by inputting Pixel Coordinates | with hash (#FFFFFF)</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+		color: #333;
+      }
+      h1 {
+        font-size: 24px;
+        margin-top: 40px;
+      }
+      input[type="text"] {
+        font-size: 16px;
+        padding: 10px;
+        border-radius: 5px;
+        border: none;
+        box-shadow: 1px 1px 5px #999;
+        margin-bottom: 20px;
+      }
+      input[type="button"] {
+        background-color: #4CAF50;
+        color: #fff;
+        font-size: 16px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      input[type="button"]:hover {
+        background-color: #3e8e41;
+      }
+      table {
+        border-collapse: collapse;
+        margin: auto;
+      }
+      th, td {
+        padding: 10px;
+        text-align: center;
+        border: 1px solid #ddd;
+      }
+      th {
+        background-color: #f2f2f2;
+        font-size: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Pixel Coordinates to RGB Color Code</h1>
+    <p>style-1 (#FFFFFF)</p>
+    <table>
+      <tr>
+        <th>Image URL</th>
+        <td><input type="text" id="image-url" /></td>
+      </tr>
+      <tr>
+        <th>Pixel Coordinates</th>
+        <td><input type="text" id="pixel-coordinates" /></td>
+      </tr>
+      <tr>
+        <td colspan="2"><input type="button" value="Get Color Code" onclick="getColorCode()" /></td>
+      </tr>
+      <tr>
+        <th>Hexadecimal Color Code</th>
+        <td id="color-code"></td>
+      </tr>
+    </table>
+    <p>Input pixel coordinates (x:y) sparated by comma, like this > 12:0,511:48</p>
+    <script>
+      function getColorCode() {
+        var imageUrl = document.getElementById("image-url").value;
+        var pixelCoordinates = document.getElementById("pixel-coordinates").value;
+        var canvas = document.createElement("canvas");
+        var img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = function() {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          var context = canvas.getContext("2d");
+          context.drawImage(img, 0, 0);
+          var coordinates = pixelCoordinates.split(",");
+          var colorCodes = [];
+          for (var i = 0; i < coordinates.length; i++) {
+            var x = parseInt(coordinates[i].split(":")[0]);
+            var y = parseInt(coordinates[i].split(":")[1]);
+            var pixel = context.getImageData(x, y, 1, 1);
+            var colorCode = "#" + ("000000" + rgbToHex(pixel.data[0], pixel.data[1], pixel.data[2])).slice(-6);
+            colorCodes.push(colorCode);
+          }
+          document.getElementById("color-code").innerHTML = colorCodes.join(", ");
+        };
+        img.src = imageUrl;
+      }
+      
+      function rgbToHex(r, g, b) {
+        return ((r << 16) | (g << 8) | b).toString(16);
+      }
+    </script>
+  </body>
+</html>
