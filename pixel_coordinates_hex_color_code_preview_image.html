@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Hexadecimal Color Code Extractor</title>
+		<style>
+			* {
+			  box-sizing: border-box;
+			}
+		  
+			body {
+			  font-family: Arial, sans-serif;
+			  color: #333;
+			  margin: 0;
+			  padding: 0;
+			}
+		  
+			h1 {
+			  text-align: center;
+			  font-size: 2rem;
+			  margin: 1rem 0;
+			}
+		  
+			.container {
+			  max-width: 800px;
+			  margin: 0 auto;
+			  padding: 2rem;
+			  border: 1px solid #ccc;
+			  border-radius: 0.5rem;
+			  box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.2);
+			}
+		  
+			.input-section {
+			  display: flex;
+			  flex-wrap: wrap;
+			  align-items: center;
+			  margin-bottom: 1rem;
+			}
+		  
+			.input-section label {
+			  flex-basis: 150px;
+			  flex-grow: 1;
+			  margin-right: 1rem;
+			  font-size: 1.2rem;
+			}
+		  
+			.input-section input {
+			  flex-grow: 3;
+			  padding: 0.5rem;
+			  border-radius: 0.3rem;
+			  border: 1px solid #ccc;
+			  font-size: 1.2rem;
+			}
+		  
+			.input-section button {
+			  flex-basis: 100px;
+			  flex-grow: 1;
+			  padding: 0.5rem;
+			  border-radius: 0.3rem;
+			  border: 1px solid #ccc;
+			  background-color: #4CAF50;
+			  color: #FFFFFF;
+			  cursor: pointer;
+			  font-size: 1.2rem;
+			}
+		  
+			.input-section button:hover {
+			  background-color: #3e8e41;
+			}
+		  
+			.preview-section {
+			  display: flex;
+			  flex-wrap: wrap;
+			  align-items: center;
+			  margin-bottom: 2rem;
+			}
+		  
+			.preview-section label {
+			  flex-basis: 150px;
+			  flex-grow: 1;
+			  margin-right: 1rem;
+			  font-size: 1.2rem;
+			}
+		  
+			.preview-section #image-preview {
+			  flex-grow: 3;
+			}
+		  
+			.preview-section img {
+			  max-width: 100%;
+			  height: auto;
+			}
+		  
+			.output-section {
+			  display: flex;
+			  flex-wrap: wrap;
+			  align-items: center;
+			}
+		  
+			.output-section label {
+			  flex-basis: 150px;
+			  flex-grow: 1;
+			  margin-right: 1rem;
+			  font-size: 1.2rem;
+			}
+		  
+			.output-section textarea {
+			  flex-grow: 3;
+			  padding: 0.5rem;
+			  border-radius: 0.3rem;
+			  border: 1px solid #ccc;
+			  font-family: monospace;
+			  resize: none;
+			  font-size: 1.2rem;
+			}
+		  
+			.output-section textarea:hover {
+			  cursor: default;
+			}
+		  
+			@media (max-width: 768px) {
+			  .input-section label,
+			  .preview-section label,
+			  .output-section label {
+				flex-basis: 100%;
+				margin-bottom: 0.5rem;
+			  }
+		  
+			  .input-section input,
+			  .input-section button,
+			  .preview-section #image-preview,
+			  .output-section textarea {
+				flex-basis: 100%;
+				margin-bottom: 1rem;
+			  }
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Hexadecimal Color Code Extractor</h1>
+		<div class="container">
+			<div class="input-section">
+				<label for="image-url">Image URL:</label>
+				<input type="text" id="image-url" placeholder="Enter Image URL">
+				<button id="preview-btn">Preview</button>
+			</div>
+			<div class="preview-section">
+				<label for="image-preview">Image Preview:</label>
+				<div id="image-preview"></div>
+			</div>
+			<div class="input-section">
+				<label for="pixel-coordinates">Pixel Coordinates:</label>
+				<input type="text" id="pixel-coordinates" placeholder="Enter Pixel Coordinates">
+				<button id="color-code-btn">Generate</button>
+				<p>(Multiple coordinates should be separated by commas)</p>
+			</div>
+			<div class="output-section">
+				<label for="color-codes">Hexadecimal Color Code:</label>
+				<textarea id="color-codes" placeholder="Color code will be displayed here..." readonly></textarea>
+			</div>
+		</div>
+		<script>
+			const imageUrlInput = document.getElementById("image-url");
+			const previewBtn = document.getElementById("preview-btn");
+			const pixelCoordinatesInput = document.getElementById("pixel-coordinates");
+			const colorCodeBtn = document.getElementById("color-code-btn");
+			const imagePreview = document.getElementById("image-preview");
+			const colorCodesTextarea = document.getElementById("color-codes");
+
+			previewBtn.addEventListener("click", () => {
+				const imageUrl = imageUrlInput.value;
+				imagePreview.innerHTML = `<img src="${imageUrl}" alt="Image Preview">`;
+			});
+
+			colorCodeBtn.addEventListener("click", () => {
+				const imageUrl = imageUrlInput.value;
+				const pixelCoordinates = pixelCoordinatesInput.value;
+				const image = new Image();
+				image.crossOrigin = "Anonymous";
+				image.src = imageUrl;
+				image.onload = function() {
+					const canvas = document.createElement("canvas");
+					canvas.width = image.naturalWidth;
+					canvas.height = image.naturalHeight;
+					const context = canvas.getContext("2d");
+					context.drawImage(image, 0, 0);
+					const coordinatesArray = pixelCoordinates.split(",");
+					let colorCodes = "";
+					for (let i = 0; i < coordinatesArray.length; i++) {
+						const coordinatePair = coordinatesArray[i].split(":");
+						const x = parseInt(coordinatePair[0]);
+						const y = parseInt(coordinatePair[1]);
+						const pixelData = context.getImageData(x, y, 1, 1).data;
+						const colorCode = "#" + ((1 << 24) + (pixelData[0] << 16) + (pixelData[1] << 8) + pixelData[2]).toString(16).slice(1);
+						colorCodes += colorCode + ", ";
+					}
+					colorCodesTextarea.value = colorCodes.slice(0, -2);
+				}
+			});
+		</script>
+	</body>
+</html>
+
