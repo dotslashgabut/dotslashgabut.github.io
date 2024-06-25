@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Code Extractor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #imagePreview {
+            max-width: 100%;
+            margin-top: 10px;
+        }
+        #colorCodes, #asciiText {
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Color Code Extractor</h1>
+        <input type="file" id="imageInput" accept="image/*">
+        <img id="imagePreview" alt="Image preview">
+        <input type="text" id="coordinates" placeholder="Enter pixel coordinates (e.g., 23:4,989:9,10:5)">
+        <button onclick="getColorCodes()">Get Color Codes</button>
+        <div id="colorCodes"></div>
+        <div id="asciiText"></div>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const coordinatesInput = document.getElementById('coordinates');
+        const colorCodesDiv = document.getElementById('colorCodes');
+        const asciiTextDiv = document.getElementById('asciiText');
+
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                imagePreview.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
+        });
+
+        function getColorCodes() {
+            const img = new Image();
+            img.src = imagePreview.src;
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, img.width, img.height);
+
+                const coordinates = coordinatesInput.value.split(',').map(coord => coord.split(':').map(Number));
+                const colorCodes = coordinates.map(([x, y]) => {
+                    const pixel = ctx.getImageData(x, y, 1, 1).data;
+                    return `${pixel[0].toString(16).padStart(2, '0')}${pixel[1].toString(16).padStart(2, '0')}${pixel[2].toString(16).padStart(2, '0')}`;
+                });
+
+                colorCodesDiv.textContent = colorCodes.join(', ');
+                
+                // Convert hex to ASCII
+                const hexString = colorCodes.join('');
+                const asciiText = hexToAscii(hexString);
+                asciiTextDiv.textContent = asciiText;
+            }
+        }
+
+        function hexToAscii(hex) {
+            let ascii = '';
+            for (let i = 0; i < hex.length; i += 2) {
+                const hexValue = hex.substr(i, 2);
+                const decimalValue = parseInt(hexValue, 16);
+                ascii += String.fromCharCode(decimalValue);
+            }
+            return ascii;
+        }
+    </script>
+</body>
+</html>
