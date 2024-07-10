@@ -4,66 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Color Code Extractor</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f0f0f0;
-        }
-        .container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #333;
-        }
-        input, button {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #2980b9;
-        }
-        #imagePreview {
-            max-width: 100%;
-            margin-top: 10px;
-        }
-        #colorCodes, #asciiText {
-            background-color: #f9f9f9;
-            padding: 10px;
-            border-radius: 4px;
-            margin-top: 10px;
-        }
-    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <div class="container">
-        <h1>Color Code Extractor</h1>
-        <input type="file" id="imageInput" accept="image/*">
-        <img id="imagePreview" alt="Image preview">
-        <input type="text" id="coordinates" placeholder="Enter pixel coordinates (e.g., 23:4,989:9,10:5)">
-        <button onclick="getColorCodes()">Get Color Codes</button>
-        <div id="colorCodes"></div>
-        <div id="asciiText"></div>
+<body class="bg-gray-100 font-sans">
+    <div class="max-w-3xl mx-auto p-6">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h1 class="text-2xl font-bold text-gray-800 mb-4">Color Code Extractor</h1>
+            
+            <div class="mb-4">
+                <h2 class="text-lg font-semibold mb-2">Option 1: Upload Image File</h2>
+                <input type="file" id="imageInput" accept="image/*" class="w-full p-2 border border-gray-300 rounded">
+            </div>
+
+            <div class="mb-4">
+                <h2 class="text-lg font-semibold mb-2">Option 2: Provide Image URL</h2>
+                <input type="text" id="imageUrl" placeholder="Enter image URL" class="w-full p-2 border border-gray-300 rounded">
+                <button onclick="loadImageFromUrl()" class="mt-2 w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300">Load Image from URL</button>
+            </div>
+
+            <img id="imagePreview" alt="Image preview" class="max-w-full mb-4">
+            <input type="text" id="coordinates" placeholder="Enter pixel coordinates (e.g., 23:4,989:9,10:5)" class="w-full p-2 mb-4 border border-gray-300 rounded">
+            <button onclick="getColorCodes()" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300">Get Color Codes</button>
+            <div id="colorCodes" class="bg-gray-100 p-2 rounded mt-4 break-all"></div>
+            <div id="asciiText" class="bg-gray-100 p-2 rounded mt-4"></div>
+        </div>
     </div>
 
     <script>
         const imageInput = document.getElementById('imageInput');
+        const imageUrl = document.getElementById('imageUrl');
         const imagePreview = document.getElementById('imagePreview');
         const coordinatesInput = document.getElementById('coordinates');
         const colorCodesDiv = document.getElementById('colorCodes');
@@ -78,8 +47,28 @@
             reader.readAsDataURL(file);
         });
 
+        function loadImageFromUrl() {
+            const url = imageUrl.value.trim();
+            if (url) {
+                // Create a new image object
+                const img = new Image();
+                img.crossOrigin = "Anonymous";  // This allows loading images from other domains
+                img.onload = function() {
+                    // Once the image is loaded, set it as the source of the preview
+                    imagePreview.src = img.src;
+                };
+                img.onerror = function() {
+                    alert("Error loading image. Make sure the URL is correct and the image is accessible.");
+                };
+                img.src = url;
+            } else {
+                alert("Please enter a valid URL");
+            }
+        }
+
         function getColorCodes() {
             const img = new Image();
+            img.crossOrigin = "Anonymous";  // This allows loading images from other domains
             img.src = imagePreview.src;
             img.onload = function() {
                 const canvas = document.createElement('canvas');
@@ -94,12 +83,15 @@
                     return `${pixel[0].toString(16).padStart(2, '0')}${pixel[1].toString(16).padStart(2, '0')}${pixel[2].toString(16).padStart(2, '0')}`;
                 });
 
-                colorCodesDiv.textContent = colorCodes.join(', ');
+                colorCodesDiv.textContent = colorCodes.join(',');  // Joined with comma, no spaces
                 
                 // Convert hex to ASCII
-                const hexString = colorCodes.join('');
+                const hexString = colorCodes.join('');  // No change here, we still want no separator for ASCII conversion
                 const asciiText = hexToAscii(hexString);
                 asciiTextDiv.textContent = asciiText;
+            }
+            img.onerror = function() {
+                alert("Error loading image. Make sure the URL is correct and the image is accessible.");
             }
         }
 
