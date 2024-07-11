@@ -19,7 +19,7 @@
             <div class="mb-4 flex space-x-4">
                 <div class="w-1/2">
                     <h2 class="text-lg font-semibold mb-2">Separate By</h2>
-                    <input type="number" id="separateBy" class="w-full p-2 border border-gray-300 rounded" value="6">
+                    <input type="number" id="separateBy" min="1" class="w-full p-2 border border-gray-300 rounded" value="6">
                 </div>
                 <div class="w-1/2">
                     <h2 class="text-lg font-semibold mb-2">Custom Characters</h2>
@@ -44,6 +44,11 @@
             
             if (!/^[0-9A-Fa-f]+$/.test(hexInput)) {
                 alert("Please enter a valid hexadecimal string.");
+                return;
+            }
+            
+            if (!/^[1-9]+$/.test(separateBy)) {
+                alert("Please enter a valid positive number.");
                 return;
             }
 
