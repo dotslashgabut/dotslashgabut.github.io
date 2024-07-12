@@ -1,142 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DotSlashGabut >> test code</title>
-  <style>
-    /* CSS for layout and styles */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    body {
-      font-family: sans-serif;
-      font-size: 16px;
-      line-height: 1.5;
-      color: #333;
-      background-color: #fff;
-    }
-    .container {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    .row {
-      display: flex;
-      flex-wrap: wrap;
-      margin: -10px;
-    }
-    .col {
-      flex: 1;
-      margin: 10px;
-    }
-    .square {
-      position: relative;
-      width: 100%;
-      padding-top: 100%;
-      background-color: #ddd;
-      overflow: hidden;
-    }
-    .square img {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.3s ease;
-    }
-    .square:hover img {
-      transform: scale(1.1);
-    }
-    .title {
-      text-align: center;
-      font-size: 2rem;
-      font-weight: bold;
-      margin-top: 2rem;
-	  margin-bottom: 20px;
-    }
-    h2.title {
-      text-align: center;
-      font-size: 16px;
-      margin-top: 10px;
-	  margin-bottom: 20px;
-    }
-    a:link {
-	  text-decoration: none;
-	  color: #4CAF50;
-    }
-    a:visited {
-	  text-decoration: none;
-	  color: #4CAF50;
-    }
-    a:hover {
-	  text-decoration: none;
-	  color: #4CAF50;
-    }
-    a:active {
-	  text-decoration: none;
-	  color: #4CAF50;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DotSlashGabut >> test code</title>
+    <style>
+        :root {
+            --primary-color: #333;
+            --secondary-color: #666;
+            --background-color: #eee;
+            --text-color: #333;
+            --card-background: #ffffff;
+            --hover-color: #e0e0e0;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 1.6rem;
+            margin-bottom: 10px;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: -10px;
+        }
+
+        .col {
+            flex: 0 0 auto;
+            padding: 10px;
+            width: 300px;
+            max-width: 100%;
+        }
+
+        article {
+            background-color: var(--card-background);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background-color var(--transition-speed);
+        }
+
+        article:hover {
+            background-color: var(--hover-color);
+        }
+
+        .square {
+            aspect-ratio: 1 / 1;
+            overflow: hidden;
+        }
+
+        .square img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform var(--transition-speed);
+        }
+
+        article:hover .square img {
+            transform: scale(1.05);
+        }
+
+        h2 {
+            padding: 12px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color var(--transition-speed);
+        }
+
+        a:hover {
+            color: var(--secondary-color);
+        }
+
+        @media (max-width: 768px) {
+            .col {
+                width: calc(50% - 20px);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .col {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1 class="title">./gabut >> test code</h1>
-    <div class="row">
-      <div class="col">
-        <div class="square">
-          <a href="png-pixel-replacer-with-ascii-text-input.html" target="_blank">
-          <img src="png-pixel-replacer-with-ascii-text-input.jpg" alt="PNG Pixel Replacer with ASCII Text Input">
-          </a>
-        </div>
-        <h2 class="title"><a href="png-pixel-replacer-with-ascii-text-input.html" target="_blank">PNG Pixel Replacer with ASCII Text Input</a></h2>
-      </div>
-      <div class="col">
-        <div class="square">
-          <a href="color-code-extractor.html" target="_blank">
-          <img src="color-code-extractor.jpg" alt="Color Code Extractor">
-          </a>
-        </div>
-        <h2 class="title"><a href="color-code-extractor.html" target="_blank">Color Code Extractor</a></h2>
-      </div>
-      <div class="col">
-        <div class="square">
-          <a href="Hexadecimal-Separator.html" target="_blank">
-          <img src="Hexadecimal-Separator.jpg" alt="Hexadecimal Separator">
-          </a>
-        </div>
-        <h2 class="title"><a href="Hexadecimal-Separator.html" target="_blank">Hexadecimal Separator</a></h2>
-      </div>
+    <div class="container">
+        <header>
+            <h1>DotSlashGabut >> test code</h1>
+        </header>
+
+        <main>
+            <div class="row">
+                <div class="col">
+                    <article>
+                        <div class="square">
+                            <a href="png-pixel-replacer-with-ascii-text-input.html" target="_blank">
+                                <img src="png-pixel-replacer-with-ascii-text-input.jpg" alt="PNG Pixel Replacer with ASCII Text Input">
+                            </a>
+                        </div>
+                        <h2><a href="png-pixel-replacer-with-ascii-text-input.html" target="_blank">PNG Pixel Replacer</a></h2>
+                    </article>
+                </div>
+                <div class="col">
+                    <article>
+                        <div class="square">
+                            <a href="color-code-extractor.html" target="_blank">
+                                <img src="color-code-extractor.jpg" alt="Color Code Extractor">
+                            </a>
+                        </div>
+                        <h2><a href="color-code-extractor.html" target="_blank">Color Code Extractor</a></h2>
+                    </article>
+                </div>
+                <div class="col">
+                    <article>
+                        <div class="square">
+                            <a href="Hexadecimal-Separator.html" target="_blank">
+                                <img src="Hexadecimal-Separator.jpg" alt="Hexadecimal Separator">
+                            </a>
+                        </div>
+                        <h2><a href="Hexadecimal-Separator.html" target="_blank">Hexadecimal Separator</a></h2>
+                    </article>
+                </div>
+                <div class="col">
+                    <article>
+                        <div class="square">
+                            <a href="color_code_pixel_style1.html" target="_blank">
+                                <img src="pixel_color_code_style1.jpg" alt="Get Hexadecimal Color Code by inputting Pixel Coordinates | with hash">
+                            </a>
+                        </div>
+                        <h2><a href="color_code_pixel_style1.html" target="_blank">Pixel Coordinates to RGB Color Code style-1 (#FFFFFF)</a></h2>
+                    </article>
+                </div>
+                <div class="col">
+                    <article>
+                        <div class="square">
+                            <a href="color_code_pixel_style2.html" target="_blank">
+                                <img src="pixel_color_code_style2.jpg" alt="Get Hexadecimal Color Code by inputting Pixel Coordinates | without hash">
+                            </a>
+                        </div>
+                        <h2><a href="color_code_pixel_style2.html" target="_blank">Pixel Coordinates to RGB Color Code style-2 (FFFFFF)</a></h2>
+                    </article>
+                </div>
+                <div class="col">
+                    <article>
+                        <div class="square">
+                            <a href="pixel_coordinates_hex_color_code_preview_image.html" target="_blank">
+                                <img src="https://via.placeholder.com/500x500?text=Preview" alt="Pixel coordinate to hex with preview">
+                            </a>
+                        </div>
+                        <h2><a href="pixel_coordinates_hex_color_code_preview_image.html" target="_blank">Pixel Coordinates to RGB Color Code with Image Preview</a></h2>
+                    </article>
+                </div>
+            </div>
+        </main>
     </div>
-    <div class="row">
-      <div class="col">
-        <div class="square">
-          <a href="color_code_pixel_style1.html" target="_blank">
-			  <img src="pixel_color_code_style1.jpg" alt="Get Hexadecimal Color Code by inputting Pixel Coordinates | with hash">
-          </a>
-        </div>
-        <h2 class="title"><a href="color_code_pixel_style1.html" target="_blank">Pixel Coordinates to RGB Color Code<br>style-1 (#FFFFFF)</a></h2>
-      </div>
-      <div class="col">
-        <div class="square">
-          <a href="color_code_pixel_style2.html" target="_blank">
-			  <img src="pixel_color_code_style2.jpg" alt="Get Hexadecimal Color Code by inputting Pixel Coordinates | without hash">
-          </a>
-        </div>
-        <h2 class="title"><a href="color_code_pixel_style2.html" target="_blank">Pixel Coordinates to RGB Color Code<br>style-2 (FFFFFF)</a></h2>
-      </div>
-      <div class="col">
-        <div class="square">
-          <a href="pixel_coordinates_hex_color_code_preview_image.html" target="_blank">
-          <img src="https://via.placeholder.com/500x500?text=Preview" alt="pixel coordinate to hex with preview">
-          </a>
-        </div>
-        <h2 class="title"><a href="pixel_coordinates_hex_color_code_preview_image.html" target="_blank">Pixel Coordinates to RGB Color Code<br>with Image Preview</a></h2>
-      </div>
-    </div>
-  </div>
 </body>
 </html>
