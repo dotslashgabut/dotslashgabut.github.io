@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Coordinates to Color Codes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto px-4 py-8 max-w-2xl">
+        <h1 class="text-3xl font-bold text-center mb-8">Pixel Coordinates to Color Codes</h1>
+        
+        <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="imageUrl">
+                    Image URL
+                </label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="imageUrl" type="text" placeholder="Enter image URL">
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="pixelCoords">
+                    Pixel Coordinates
+                </label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="pixelCoords" type="text" placeholder="e.g. 12:0,511:48">
+            </div>
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="colorCode">
+                    Hexadecimal Color Code
+                </label>
+                <div id="colorCode" class="bg-gray-200 font-mono p-2 rounded"></div>
+            </div>
+            <div class="flex items-center justify-between">
+                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full" type="button" onclick="processColorCodes()">
+                    Get Color Codes
+                </button>
+            </div>
+        </div>
+
+        <div id="result" class="mt-4 text-center font-bold"></div>
+    </div>
+
+    <script>
+        async function processColorCodes() {
+            var imageUrl = document.getElementById('imageUrl').value;
+            var pixelCoords = document.getElementById('pixelCoords').value;
+            var colorCodeElement = document.getElementById('colorCode');
+            var resultElement = document.getElementById('result');
+
+            // Load the image
+            var img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.src = imageUrl;
+
+            img.onload = function() {
+                // Create a canvas element
+                var canvas = document.createElement('canvas');
+                var ctx = canvas.getContext('2d');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+
+                // Process the coordinates
+                var coords = pixelCoords.split(',');
+                var colorCodes = coords.map(coord => {
+                    var [x, y] = coord.split(':').map(Number);
+                    var pixel = ctx.getImageData(x, y, 1, 1).data;
+                    return '#' + ((1 << 24) + (pixel[0] << 16) + (pixel[1] << 8) + pixel[2]).toString(16).slice(1);
+                });
+
+                // Display the color codes in one line
+                colorCodeElement.innerHTML = colorCodes.join(' ');
+                resultElement.textContent = `Processed ${colorCodes.length} color code(s) for the given coordinates.`;
+            };
+
+            img.onerror = function() {
+                resultElement.textContent = 'Failed to load the image.';
+            };
+        }
+    </script>
+</body>
+</html>
