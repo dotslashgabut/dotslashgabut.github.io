@@ -41,18 +41,21 @@
                 <button id="convertAscii" class="mt-2 w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300">Convert ASCII to Hex</button>
             </div>
 
+            <div id="infoMessage" class="hidden bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
+            </div>
+
             <div class="mb-4">
                 <label for="hexColors" class="block text-sm font-medium text-gray-700 mb-2">Hexadecimal Color Codes:</label>
-                <input type="text" id="hexColors" placeholder="e.g. 0000ff,005677,565656" class="w-full p-2 font-mono border border-gray-300 rounded">
+                <input type="text" id="hexColors" placeholder="e.g. 0000ff,005677,565656" class="w-full font-mono p-2 border border-gray-300 rounded">
                 <button id="generateColors" class="mt-2 w-full bg-purple-500 text-white p-2 rounded hover:bg-purple-600 transition duration-300">Generate Colors</button>
             </div>
+
+            <button id="convertImage" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300 mb-4">Convert Image</button>
 
             <div id="warningMessage" class="hidden bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
                 <p class="font-bold">Warning</p>
                 <p>Duplicate pixel coordinates detected. The embedded file/text may be corrupted.</p>
             </div>
-
-            <button id="convertImage" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300 mb-4">Convert Image</button>
 
             <canvas id="outputCanvas" class="w-full border border-gray-300 rounded"></canvas>
             <a id="downloadLink" download="processed_image.png" class="hidden mt-4 w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300 inline-block text-center">Download Processed Image</a>
@@ -75,6 +78,7 @@
         const ctx = canvas.getContext('2d');
         const downloadLink = document.getElementById('downloadLink');
         const warningMessage = document.getElementById('warningMessage');
+        const infoMessage = document.getElementById('infoMessage');
 
         let image = null;
 
@@ -160,7 +164,13 @@
             });
             hexColors.value = hexCodes.join(',');
           const colorCount = hexCodes.length;
-          convertAsciiBtn.textContent = `Converted to ${colorCount} Color Codes. Try again.`; // Update button text
+          
+            if (hexCodes.length > 0) {
+                infoMessage.classList.remove('hidden');
+            } else {
+                infoMessage.classList.add('hidden');
+            }
+            infoMessage.textContent = `Converted to ${colorCount} Color Codes.`;
         });
 
         function checkDuplicateCoordinates(coordArray) {
