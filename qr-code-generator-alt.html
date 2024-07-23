@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-svg@1.1.0/lib/qrcode.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white p-4 sm:p-8 rounded-lg shadow-md w-full max-w-md">
+        <h1 class="text-xl sm:text-2xl font-bold mb-4 text-center">QR Code Generator</h1>
+        <div class="mb-4">
+            <label for="qrType" class="block text-sm font-medium text-gray-700 mb-2">QR Type:</label>
+            <select id="qrType" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                <option value="text">Text</option>
+                <option value="url">URL</option>
+                <option value="email">Email</option>
+                <option value="phone">Phone</option>
+                <option value="contact">Contact Information</option>
+                <option value="wifi">Wi-Fi Network</option>
+            </select>
+        </div>
+        <div id="inputContainer" class="mb-4">
+            <!-- Input fields will be dynamically inserted here -->
+        </div>
+        <button id="generateBtn" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Generate QR Code</button>
+        <div id="qrcode" class="mt-4 flex justify-center"></div>
+        <div id="downloadContainer" class="mt-4 hidden">
+            <button id="downloadSvgBtn" class="w-full mb-2 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">Download QR Code (SVG)</button>
+            <button id="downloadPngBtn" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Download QR Code (PNG)</button>
+        </div>
+    </div>
+    <canvas id="qrCanvas" style="display:none;"></canvas>
+
+    <script>
+        const qrType = document.getElementById('qrType');
+        const inputContainer = document.getElementById('inputContainer');
+        const generateBtn = document.getElementById('generateBtn');
+        const qrcodeContainer = document.getElementById('qrcode');
+        const downloadContainer = document.getElementById('downloadContainer');
+        const downloadSvgBtn = document.getElementById('downloadSvgBtn');
+        const downloadPngBtn = document.getElementById('downloadPngBtn');
+        const qrCanvas = document.getElementById('qrCanvas');
+
+        let qrCodeSvg = null;
+
+        qrType.addEventListener('change', updateInputField);
+        generateBtn.addEventListener('click', generateQRCode);
+        downloadSvgBtn.addEventListener('click', () => downloadQRCode('svg'));
+        downloadPngBtn.addEventListener('click', () => downloadQRCode('png'));
+
+        function updateInputField() {
+            const type = qrType.value;
+            let html = '';
+
+            switch (type) {
+                case 'text':
+                    html = `
+                        <label for="qrInput" class="block text-sm font-medium text-gray-700 mb-2">Enter text:</label>
+                        <input type="text" id="qrInput" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter text for QR code">
+                    `;
+                    break;
+                case 'url':
+                    html = `
+                        <label for="qrInput" class="block text-sm font-medium text-gray-700 mb-2">Enter URL:</label>
+                        <input type="url" id="qrInput" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="https://example.com">
+                    `;
+                    break;
+                case 'email':
+                    html = `
+                        <label for="qrInput" class="block text-sm font-medium text-gray-700 mb-2">Enter email address:</label>
+                        <input type="email" id="qrInput" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="example@example.com">
+                    `;
+                    break;
+                case 'phone':
+                    html = `
+                        <label for="qrInput" class="block text-sm font-medium text-gray-700 mb-2">Enter phone number:</label>
+                        <input type="tel" id="qrInput" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="+1234567890">
+                    `;
+                    break;
+                case 'contact':
+                    html = `
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Name:</label>
+                        <input type="text" id="name" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 mb-2" placeholder="John Doe">
+                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Phone:</label>
+                        <input type="tel" id="phone" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 mb-2" placeholder="+1234567890">
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email:</label>
+                        <input type="email" id="email" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 mb-2" placeholder="john@example.com">
+                        <label for="address" class="block text-sm font-medium text-gray-700 mb-2">Address:</label>
+                        <input type="text" id="address" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="123 Main St, City, Country">
+                    `;
+                    break;
+                case 'wifi':
+                    html = `
+                        <label for="ssid" class="block text-sm font-medium text-gray-700 mb-2">Network Name (SSID):</label>
+                        <input type="text" id="ssid" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 mb-2" placeholder="MyWiFiNetwork">
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password:</label>
+                        <input type="password" id="password" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 mb-2" placeholder="WiFi Password">
+                        <label for="encryption" class="block text-sm font-medium text-gray-700 mb-2">Encryption Type:</label>
+                        <select id="encryption" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="WPA">WPA/WPA2</option>
+                            <option value="WEP">WEP</option>
+                            <option value="nopass">None</option>
+                        </select>
+                    `;
+                    break;
+            }
+
+            inputContainer.innerHTML = html;
+        }
+
+        function generateQRCode() {
+            const type = qrType.value;
+            let qrData = '';
+
+            switch (type) {
+                case 'text':
+                    qrData = document.getElementById('qrInput').value;
+                    break;
+                case 'url':
+                    const url = document.getElementById('qrInput').value;
+                    qrData = url.startsWith('http') ? url : `https://${url}`;
+                    break;
+                case 'email':
+                    qrData = `mailto:${document.getElementById('qrInput').value}`;
+                    break;
+                case 'phone':
+                    qrData = `tel:${document.getElementById('qrInput').value}`;
+                    break;
+                case 'contact':
+                    const name = document.getElementById('name').value;
+                    const phone = document.getElementById('phone').value;
+                    const email = document.getElementById('email').value;
+                    const address = document.getElementById('address').value;
+                    qrData = `BEGIN:VCARD
+VERSION:3.0
+FN:${name}
+TEL:${phone}
+EMAIL:${email}
+ADR:;;${address}
+END:VCARD`;
+                    break;
+                case 'wifi':
+                    const ssid = document.getElementById('ssid').value;
+                    const password = document.getElementById('password').value;
+                    const encryption = document.getElementById('encryption').value;
+                    qrData = `WIFI:S:${ssid};T:${encryption};P:${password};;`;
+                    break;
+            }
+
+            const qrSize = Math.min(200, window.innerWidth - 32);
+
+            qrCodeSvg = new QRCode({
+                content: qrData,
+                width: qrSize,
+                height: qrSize,
+                color: "#000000",
+                background: "#ffffff",
+                ecl: "M"
+            }).svg();
+
+            qrcodeContainer.innerHTML = qrCodeSvg;
+            downloadContainer.classList.remove('hidden');
+        }
+
+        function downloadQRCode(format) {
+            if (qrCodeSvg) {
+                if (format === 'svg') {
+                    const blob = new Blob([qrCodeSvg], { type: 'image/svg+xml' });
+                    downloadFile(blob, 'qrcode.svg');
+                } else if (format === 'png') {
+                    const img = new Image();
+                    img.onload = function() {
+                        qrCanvas.width = img.width;
+                        qrCanvas.height = img.height;
+                        const ctx = qrCanvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        qrCanvas.toBlob((blob) => {
+                            downloadFile(blob, 'qrcode.png');
+                        });
+                    };
+                    img.src = 'data:image/svg+xml;base64,' + btoa(qrCodeSvg);
+                }
+            }
+        }
+
+        function downloadFile(blob, fileName) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Initialize the input field
+        updateInputField();
+
+        // Adjust QR code size on window resize
+        window.addEventListener('resize', () => {
+            if (qrCodeSvg) {
+                generateQRCode();
+            }
+        });
+    </script>
+</body>
+</html>
