@@ -11,8 +11,9 @@ Just testing, the generated codes from LLMs.
 - Color Palette Generator
 - Pixel Coordinates to Color Codes
 - Random List Picker
-- QR Code Generator
 - Custom Password Generator
+- QR Code Generator
+- QR Code Generator and Reader
 - Vibrant Vizualization Audio Player
 - Pixel Coordinates to RGB Color Code style-1 (#FFFFFF)
 - Pixel Coordinates to RGB Color Code style-2 (FFFFFF)
