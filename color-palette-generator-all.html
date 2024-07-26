@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Palette Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
+    <style>
+        .rotated-text {
+            transform: rotate(-90deg);
+            white-space: nowrap;
+            display: inline-block;
+            transform-origin: left top;
+            position: absolute;
+            left: 50%;
+            top: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
+        <h1 class="text-3xl font-bold mb-6 text-center">Color Palette Generator</h1>
+        
+        <div class="mb-4">
+            <label for="file-input" class="block mb-2 font-semibold">Choose an image file:</label>
+            <input type="file" id="file-input" accept="image/*" class="w-full p-2 border rounded">
+        </div>
+        
+        <div class="mb-4">
+            <label for="url-input" class="block mb-2 font-semibold">Or enter an image URL:</label>
+            <input type="url" id="url-input" class="w-full p-2 border rounded" placeholder="https://example.com/image.jpg">
+        </div>
+        
+        <div class="mb-4">
+            <label for="color-count" class="block mb-2 font-semibold">Number of colors:</label>
+            <input type="number" id="color-count" min="2" max="20" value="5" class="w-full p-2 border rounded">
+        </div>
+        
+        <div class="mb-4">
+            <label class="block mb-2 font-semibold">Layout:</label>
+            <div class="flex space-x-4">
+                <label class="inline-flex items-center">
+                    <input type="radio" name="layout" value="bottom" checked class="form-radio">
+                    <span class="ml-2">Bottom</span>
+                </label>
+                <label class="inline-flex items-center">
+                    <input type="radio" name="layout" value="left" class="form-radio">
+                    <span class="ml-2">Left</span>
+                </label>
+                <label class="inline-flex items-center">
+                    <input type="radio" name="layout" value="right" class="form-radio">
+                    <span class="ml-2">Right</span>
+                </label>
+            </div>
+        </div>
+        
+        <button id="generate-btn" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition duration-300">Generate Color Palette</button>
+        
+        <div id="preview" class="mt-6 hidden">
+            <h2 class="text-2xl font-semibold mb-4">Preview:</h2>
+            <img id="preview-image" class="max-w-full h-auto mb-4 rounded" alt="Preview">
+        </div>
+        
+        <div id="palette" class="mt-6 hidden">
+            <h2 class="text-2xl font-semibold mb-4">Color Palette:</h2>
+            <div id="color-palette" class="flex flex-wrap gap-4"></div>
+        </div>
+        
+        <div id="result" class="mt-6 hidden">
+            <h2 class="text-2xl font-semibold mb-4">Result:</h2>
+            <canvas id="result-canvas" class="w-full h-auto mb-4 rounded"></canvas>
+            <button id="download-btn" class="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600 transition duration-300">Download Result</button>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const urlInput = document.getElementById('url-input');
+        const colorCount = document.getElementById('color-count');
+        const generateBtn = document.getElementById('generate-btn');
+        const previewDiv = document.getElementById('preview');
+        const previewImage = document.getElementById('preview-image');
+        const paletteDiv = document.getElementById('palette');
+        const colorPaletteDiv = document.getElementById('color-palette');
+        const resultDiv = document.getElementById('result');
+        const resultCanvas = document.getElementById('result-canvas');
+        const downloadBtn = document.getElementById('download-btn');
+        const layoutRadios = document.getElementsByName('layout');
+
+        const colorThief = new ColorThief();
+
+        generateBtn.addEventListener('click', generatePalette);
+        downloadBtn.addEventListener('click', downloadResult);
+
+        function generatePalette() {
+            const file = fileInput.files[0];
+            const url = urlInput.value;
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => processImage(e.target.result);
+                reader.readAsDataURL(file);
+            } else if (url) {
+                const img = new Image();
+                img.onload = () => processImage(url);
+                img.onerror = () => alert('Please input correct image URL.');
+                img.crossOrigin = 'Anonymous';
+                img.src = url;
+            } else {
+                alert('Please choose a file or enter an image URL.');
+            }
+        }
+
+        function processImage(src) {
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.onload = () => {
+                previewImage.src = src;
+                previewDiv.classList.remove('hidden');
+                
+                const count = parseInt(colorCount.value);
+                const palette = colorThief.getPalette(img, count);
+                displayPalette(palette);
+                createResultImage(img, palette);
+            };
+            img.src = src;
+        }
+
+        function displayPalette(palette) {
+            colorPaletteDiv.innerHTML = '';
+            palette.forEach(color => {
+                const [r, g, b] = color;
+                const div = document.createElement('div');
+                div.className = 'w-20 h-20 rounded';
+                div.style.backgroundColor = `rgb(${r},${g},${b})`;
+                div.title = `RGB(${r},${g},${b})`;
+                colorPaletteDiv.appendChild(div);
+            });
+            paletteDiv.classList.remove('hidden');
+        }
+
+        function createResultImage(img, palette) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+
+            // Fill the background with a neutral color (e.g., light gray)
+            ctx.fillStyle = '#f0f0f0';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const layout = getSelectedLayout();
+            const paletteWidth = canvas.width / 4; // 1/4 of the canvas width for left/right layouts
+            const paletteHeight = canvas.height / 4; // 1/4 of the canvas height for bottom layout
+
+            let imageX, imageY, imageWidth, imageHeight;
+
+            if (layout === 'left') {
+                imageX = paletteWidth;
+                imageY = 0;
+                imageWidth = canvas.width - paletteWidth;
+                imageHeight = canvas.height;
+            } else if (layout === 'right') {
+                imageX = 0;
+                imageY = 0;
+                imageWidth = canvas.width - paletteWidth;
+                imageHeight = canvas.height;
+            } else { // bottom
+                imageX = 0;
+                imageY = 0;
+                imageWidth = canvas.width;
+                imageHeight = canvas.height - paletteHeight;
+            }
+
+            // Calculate dimensions to fit the image without stretching
+            const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
+            const x = (canvas.width / 2) - (img.width / 2) * scale;
+            const y = (canvas.height / 2) - (img.height / 2) * scale;
+
+            // Draw the image to fill the canvas without stretching
+            ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+
+            // Draw color palette
+            const colorHeight = (layout === 'bottom') ? paletteHeight : canvas.height / palette.length;
+            const colorWidth = (layout === 'bottom') ? canvas.width / palette.length : paletteWidth;
+            
+            // Add a semi-transparent overlay to make the palette more visible
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            if (layout === 'left') {
+                ctx.fillRect(0, 0, paletteWidth, canvas.height);
+            } else if (layout === 'right') {
+                ctx.fillRect(canvas.width - paletteWidth, 0, paletteWidth, canvas.height);
+            } else { // bottom
+                ctx.fillRect(0, canvas.height - paletteHeight, canvas.width, paletteHeight);
+            }
+
+            palette.forEach((color, index) => {
+                const [r, g, b] = color;
+                ctx.fillStyle = `rgb(${r},${g},${b})`;
+                if (layout === 'left') {
+                    ctx.fillRect(0, index * colorHeight, colorWidth, colorHeight);
+                } else if (layout === 'right') {
+                    ctx.fillRect(canvas.width - colorWidth, index * colorHeight, colorWidth, colorHeight);
+                } else { // bottom
+                    ctx.fillRect(index * colorWidth, canvas.height - colorHeight, colorWidth, colorHeight);
+                }
+                
+                // Add color text
+                ctx.save();
+                if (layout === 'left') {
+                    ctx.translate(colorWidth / 2, index * colorHeight + colorHeight / 2);
+                } else if (layout === 'right') {
+                    ctx.translate(canvas.width - colorWidth / 2, index * colorHeight + colorHeight / 2);
+                } else { // bottom
+                    ctx.translate(index * colorWidth + colorWidth / 2, canvas.height - colorHeight / 2);
+                    ctx.rotate(-Math.PI / 2);
+                }
+                ctx.fillStyle = 'white';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                const hexColor = rgbToHex(r, g, b);
+                ctx.fillText(`RGB(${r},${g},${b}) - ${hexColor}`, 0, 0);
+                ctx.restore();
+            });
+
+            resultCanvas.width = canvas.width;
+            resultCanvas.height = canvas.height;
+            resultCanvas.getContext('2d').drawImage(canvas, 0, 0);
+            resultDiv.classList.remove('hidden');
+        }
+
+        function rgbToHex(r, g, b) {
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
+
+        function downloadResult() {
+            const link = document.createElement('a');
+            link.download = 'color-palette-result.png';
+            link.href = resultCanvas.toDataURL();
+            link.click();
+        }
+
+        function getSelectedLayout() {
+            for (const radio of layoutRadios) {
+                if (radio.checked) {
+                    return radio.value;
+                }
+            }
+            return 'bottom'; // Default layout
+        }
+    </script>
+</body>
+</html>
