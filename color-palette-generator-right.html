@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Palette Generator - Right</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
+        <h1 class="text-3xl font-bold mb-6 text-center">Color Palette Generator - Right</h1>
+        
+        <div class="mb-4">
+            <label for="file-input" class="block mb-2 font-semibold">Choose an image file:</label>
+            <input type="file" id="file-input" accept="image/*" class="w-full p-2 border rounded">
+        </div>
+        
+        <div class="mb-4">
+            <label for="url-input" class="block mb-2 font-semibold">Or enter an image URL:</label>
+            <input type="url" id="url-input" class="w-full p-2 border rounded" placeholder="https://raw.githubusercontent.com/dotslashgabut/images/main/a-cat-original.png">
+        </div>
+        
+        <div class="mb-4">
+            <label for="color-count" class="block mb-2 font-semibold">Number of colors:</label>
+            <input type="number" id="color-count" min="2" max="20" value="5" class="w-full p-2 border rounded">
+        </div>
+        
+        <button id="generate-btn" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition duration-300">Generate Color Palette</button>
+        
+        <div id="preview" class="mt-6 hidden">
+            <h2 class="text-2xl font-semibold mb-4">Preview:</h2>
+            <img id="preview-image" class="max-w-full h-auto mb-4 rounded" alt="Preview">
+        </div>
+        
+        <div id="palette" class="mt-6 hidden">
+            <h2 class="text-2xl font-semibold mb-4">Color Palette:</h2>
+            <div id="color-palette" class="flex flex-wrap gap-4"></div>
+        </div>
+        
+        <div id="result" class="mt-6 hidden">
+            <h2 class="text-2xl font-semibold mb-4">Result:</h2>
+            <canvas id="result-canvas" class="w-full h-auto mb-4 rounded"></canvas>
+            <button id="download-btn" class="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600 transition duration-300">Download Result</button>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const urlInput = document.getElementById('url-input');
+        const colorCount = document.getElementById('color-count');
+        const generateBtn = document.getElementById('generate-btn');
+        const previewDiv = document.getElementById('preview');
+        const previewImage = document.getElementById('preview-image');
+        const paletteDiv = document.getElementById('palette');
+        const colorPaletteDiv = document.getElementById('color-palette');
+        const resultDiv = document.getElementById('result');
+        const resultCanvas = document.getElementById('result-canvas');
+        const downloadBtn = document.getElementById('download-btn');
+
+        const colorThief = new ColorThief();
+
+        generateBtn.addEventListener('click', generatePalette);
+        downloadBtn.addEventListener('click', downloadResult);
+
+        function generatePalette() {
+            const file = fileInput.files[0];
+            const url = urlInput.value;
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => processImage(e.target.result);
+                reader.readAsDataURL(file);
+            } else if (url) {
+                const img = new Image();
+                img.onload = () => processImage(url);
+                img.onerror = () => alert('Please input correct image URL.');
+                img.src = url;
+            } else {
+                alert('Please choose a file or enter an image URL.');
+            }
+        }
+
+        function processImage(src) {
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.onload = () => {
+                previewImage.src = src;
+                previewDiv.classList.remove('hidden');
+                
+                const count = parseInt(colorCount.value);
+                const palette = colorThief.getPalette(img, count);
+                displayPalette(palette);
+                createResultImage(img, palette);
+            };
+            img.src = src;
+        }
+
+        function displayPalette(palette) {
+            colorPaletteDiv.innerHTML = '';
+            palette.forEach(color => {
+                const [r, g, b] = color;
+                const div = document.createElement('div');
+                div.className = 'w-20 h-20 rounded';
+                div.style.backgroundColor = `rgb(${r},${g},${b})`;
+                div.title = `RGB(${r},${g},${b})`;
+                colorPaletteDiv.appendChild(div);
+            });
+            paletteDiv.classList.remove('hidden');
+        }
+
+        function createResultImage(img, palette) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+
+            // Fill the background with a neutral color (e.g., light gray)
+            ctx.fillStyle = '#f0f0f0';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Calculate dimensions to fit the image without stretching
+            const paletteWidth = canvas.width / 4; // 1/4 of the canvas width for the palette
+            const imageWidth = canvas.width - paletteWidth;
+            const scale = Math.min(imageWidth / img.width, canvas.height / img.height);
+            const x = (imageWidth - img.width * scale) / 2;
+            const y = (canvas.height - img.height * scale) / 2;
+
+            // Draw the image to fill the canvas without stretching
+            ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+
+            // Draw color palette on the right side
+            const colorHeight = canvas.height / palette.length;
+            
+            // Add a semi-transparent overlay to make the palette more visible
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(imageWidth, 0, paletteWidth, canvas.height);
+
+            palette.forEach((color, index) => {
+                const [r, g, b] = color;
+                ctx.fillStyle = `rgb(${r},${g},${b})`;
+                ctx.fillRect(imageWidth, index * colorHeight, paletteWidth, colorHeight);
+                
+                // Add color text
+                ctx.fillStyle = 'white';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                const hexColor = rgbToHex(r, g, b);
+                ctx.fillText(`RGB(${r},${g},${b}) - ${hexColor}`, imageWidth + 20, index * colorHeight + colorHeight / 2);
+            });
+
+            resultCanvas.width = canvas.width;
+            resultCanvas.height = canvas.height;
+            resultCanvas.getContext('2d').drawImage(canvas, 0, 0);
+            resultDiv.classList.remove('hidden');
+        }
+
+        function rgbToHex(r, g, b) {
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
+
+        function downloadResult() {
+            const link = document.createElement('a');
+            link.download = 'color-palette-result.png';
+            link.href = resultCanvas.toDataURL();
+            link.click();
+        }
+    </script>
+</body>
+</html>
