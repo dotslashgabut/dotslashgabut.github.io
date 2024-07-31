@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Universal Separator</title>
+  <script src="script/tailwindcss.js"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+  <div class="max-w-3xl mx-auto p-6">
+    <div class="bg-white p-6 rounded-lg shadow-md">
+      <h1 class="text-2xl font-bold text-gray-800 mb-4">Universal Separator</h1>
+
+      <div class="mb-4">
+        <h2 class="text-lg font-semibold mb-2">Input</h2>
+        <input type="text" id="userInput" class="w-full p-2 border border-gray-300 rounded" placeholder="Enter any text, numbers, or symbols">
+      </div>
+
+      <div class="mb-4 flex space-x-4">
+        <div class="w-1/2">
+          <h2 class="text-lg font-semibold mb-2">Separate By</h2>
+          <input type="number" id="separateBy" min="1" class="w-full p-2 border border-gray-300 rounded" value="3">
+        </div>
+        <div class="w-1/2">
+          <h2 class="text-lg font-semibold mb-2">Custom Separator</h2>
+          <input type="text" id="customSeparator" class="w-full p-2 border border-gray-300 rounded" value=",">
+        </div>
+      </div>
+
+      <button onclick="separateInput()" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300">Separate Input</button>
+
+      <div class="mt-4">
+        <h2 id="resultTitle" class="text-lg font-semibold mb-2">Result</h2>
+        <div id="result" class="bg-gray-100 p-2 rounded mt-4 break-all border border-gray-300 font-mono min-h-[100px]"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function separateInput() {
+      const userInput = document.getElementById('userInput').value;
+      const separateBy = parseInt(document.getElementById('separateBy').value);
+      const customSeparator = document.getElementById('customSeparator').value;
+
+      if (userInput.length === 0) {
+        alert("Please enter some input.");
+        return;
+      }
+
+      if (separateBy < 1) {
+        alert("Please enter a valid positive number for 'Separate By'.");
+        return;
+      }
+
+      let result = '';
+      let chunkCount = Math.ceil(userInput.length / separateBy);
+
+      for (let i = 0; i < userInput.length; i += separateBy) {
+        let chunk = userInput.slice(i, i + separateBy);
+        result += chunk;
+        if (i + separateBy < userInput.length) {
+          result += customSeparator;
+        }
+      }
+
+      document.getElementById('resultTitle').textContent = `Result (${chunkCount} items)`;
+      document.getElementById('result').textContent = result;
+    }
+  </script>
+</body>
+</html>
