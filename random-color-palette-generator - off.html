@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Color Palette Generator</title>
+    <script src="script/tailwindcss.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="p-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-6 text-center">Random Color Palette Generator</h1>
+                
+                <div id="palette" class="flex flex-wrap justify-center mb-6 gap-3"></div>
+                
+                <div id="colorCodes" class="text-sm text-gray-600 font-mono mb-6 text-center break-all"></div>
+                
+                <div class="space-y-6">
+                    <div class="flex items-center justify-center space-x-4">
+                        <label for="colorCount" class="font-medium text-gray-700">Colors:</label>
+                        <input type="number" id="colorCount" min="2" max="100" value="5" class="border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-1 sm:text-sm w-20">
+                    </div>
+                    
+                    <div class="flex flex-wrap justify-center gap-4">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" id="lightPalette" class="form-checkbox text-indigo-600">
+                            <span class="ml-2 text-gray-700">Light</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" id="darkPalette" class="form-checkbox text-indigo-600">
+                            <span class="ml-2 text-gray-700">Dark</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" id="harmonizePalette" class="form-checkbox text-indigo-600">
+                            <span class="ml-2 text-gray-700">Harmonize</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" id="monotonePalette" class="form-checkbox text-indigo-600">
+                            <span class="ml-2 text-gray-700">Monotone</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" id="gradientPalette" class="form-checkbox text-indigo-600">
+                            <span class="ml-2 text-gray-700">Gradient</span>
+                        </label>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button onclick="generatePalette()" class="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Generate New Palette
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function generateRandomColor(isLight, isDark) {
+            let r, g, b;
+            if (isLight) {
+                r = Math.floor(Math.random() * 56) + 200;
+                g = Math.floor(Math.random() * 56) + 200;
+                b = Math.floor(Math.random() * 56) + 200;
+            } else if (isDark) {
+                r = Math.floor(Math.random() * 86) + 40;
+                g = Math.floor(Math.random() * 86) + 40;
+                b = Math.floor(Math.random() * 86) + 40;
+            } else {
+                r = Math.floor(Math.random() * 256);
+                g = Math.floor(Math.random() * 256);
+                b = Math.floor(Math.random() * 256);
+            }
+            return [r, g, b];
+        }
+
+        function harmonizeColors(baseColor, count) {
+            const [r, g, b] = baseColor;
+            const hsl = rgbToHsl(r, g, b);
+            const harmonizedColors = [];
+
+            for (let i = 0; i < count; i++) {
+                const newHue = (hsl[0] + (i * (360 / count))) % 360;
+                const [hr, hg, hb] = hslToRgb(newHue, hsl[1], hsl[2]);
+                harmonizedColors.push([hr, hg, hb]);
+            }
+
+            return harmonizedColors;
+        }
+
+        function generateMonotoneColors(baseColor, count) {
+            const [r, g, b] = baseColor;
+            const hsl = rgbToHsl(r, g, b);
+            const monotoneColors = [];
+
+            for (let i = 0; i < count; i++) {
+                const newLightness = Math.max(0, Math.min(100, hsl[2] - 50 + (i * (100 / (count - 1)))));
+                const [mr, mg, mb] = hslToRgb(hsl[0], hsl[1], newLightness);
+                monotoneColors.push([mr, mg, mb]);
+            }
+
+            return monotoneColors;
+        }
+
+        function generateGradientColors(startColor, endColor, count) {
+            const gradientColors = [];
+
+            for (let i = 0; i < count; i++) {
+                const ratio = i / (count - 1);
+                const r = Math.round(startColor[0] * (1 - ratio) + endColor[0] * ratio);
+                const g = Math.round(startColor[1] * (1 - ratio) + endColor[1] * ratio);
+                const b = Math.round(startColor[2] * (1 - ratio) + endColor[2] * ratio);
+                gradientColors.push([r, g, b]);
+            }
+
+            return gradientColors;
+        }
+
+        function rgbToHsl(r, g, b) {
+            r /= 255, g /= 255, b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+
+            if (max === min) {
+                h = s = 0;
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+
+            return [h * 360, s * 100, l * 100];
+        }
+
+        function hslToRgb(h, s, l) {
+            h /= 360, s /= 100, l /= 100;
+            let r, g, b;
+
+            if (s === 0) {
+                r = g = b = l;
+            } else {
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1/6) return p + (q - p) * 6 * t;
+                    if (t < 1/2) return q;
+                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                };
+
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1/3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1/3);
+            }
+
+            return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+        }
+
+        function rgbToHex(r, g, b) {
+            return '#' + [r, g, b].map(x => {
+                const hex = x.toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            }).join('');
+        }
+
+        function generatePalette() {
+            const paletteDiv = document.getElementById('palette');
+            const colorCodesDiv = document.getElementById('colorCodes');
+            const colorCount = Math.max(2, Math.min(100, document.getElementById('colorCount').value));
+            const isLight = document.getElementById('lightPalette').checked;
+            const isDark = document.getElementById('darkPalette').checked;
+            const isHarmonized = document.getElementById('harmonizePalette').checked;
+            const isMonotone = document.getElementById('monotonePalette').checked;
+            const isGradient = document.getElementById('gradientPalette').checked;
+            
+            paletteDiv.innerHTML = '';
+            colorCodesDiv.innerHTML = '';
+            
+            let colors = [];
+            let hexCodes = [];
+
+            const baseColor = generateRandomColor(isLight, isDark);
+
+            if (isGradient) {
+                const startColor = generateRandomColor(isLight, isDark);
+                const endColor = generateRandomColor(isLight, isDark);
+                colors = generateGradientColors(startColor, endColor, colorCount);
+            } else if (isMonotone) {
+                colors = generateMonotoneColors(baseColor, colorCount);
+            } else if (isHarmonized) {
+                colors = harmonizeColors(baseColor, colorCount);
+            } else {
+                for (let i = 0; i < colorCount; i++) {
+                    let color;
+                    do {
+                        color = generateRandomColor(isLight, isDark);
+                    } while (color.every(c => c === 255) && Math.random() < 0.8);
+                    colors.push(color);
+                }
+            }
+
+            colors.forEach(color => {
+                const colorBox = document.createElement('div');
+                colorBox.className = 'w-20 h-20 sm:w-24 sm:h-24 rounded-lg shadow-md flex flex-col justify-end overflow-hidden';
+                const hexCode = rgbToHex(color[0], color[1], color[2]);
+                hexCodes.push(hexCode);
+                colorBox.style.backgroundColor = hexCode;
+                
+                const hexText = document.createElement('div');
+                hexText.className = 'text-xs p-1 bg-white bg-opacity-75 text-center';
+                hexText.textContent = hexCode;
+                colorBox.appendChild(hexText);
+                
+                paletteDiv.appendChild(colorBox);
+            });
+
+            colorCodesDiv.textContent = hexCodes.join(' ');
+        }
+
+        // Initial palette generation
+        generatePalette();
+    </script>
+</body>
+</html>
