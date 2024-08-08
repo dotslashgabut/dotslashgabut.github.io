@@ -6,20 +6,20 @@
     <title>Random Color Palette Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-2 sm:px-6 lg:px-8">
+<body class="bg-gray-100 min-h-screen py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-2xl mx-auto">
         <div class="bg-white rounded-xl shadow-md overflow-hidden">
-            <div class="p-7">
+            <div class="p-8">
                 <h1 class="text-3xl font-bold text-gray-900 mb-6 text-center">Random Color Palette Generator</h1>
                 
                 <div id="palette" class="flex flex-wrap justify-center mb-6 gap-3"></div>
                 
-                <div id="colorCodes" class="text-sm text-gray-600 font-mono mb-6 text-center break-all"></div>
+                <div id="colorCodes" class="text-sm text-gray-600 font-mono mb-6 text-center break-words"></div>
                 
                 <div class="space-y-6">
                     <div class="flex items-center justify-center space-x-4">
                         <label for="colorCount" class="font-medium text-gray-700">Colors:</label>
-                        <input type="number" id="colorCount" min="2" max="100" value="5" class="border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-1 sm:text-sm w-20">
+                        <input type="number" id="colorCount" min="2" max="100" value="5" class="border-gray-300 rounded-md shadow-sm p-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm w-16">
                     </div>
                     
                     <div class="flex flex-wrap justify-center gap-4">
@@ -45,9 +45,12 @@
                         </label>
                     </div>
                     
-                    <div class="text-center">
+                    <div class="text-center flex justify-center space-x-4">
                         <button onclick="generatePalette()" class="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                            Generate New Palette
+                            Generate
+                        </button>
+                        <button onclick="downloadPalette()" class="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                            Download
                         </button>
                     </div>
                 </div>
@@ -56,6 +59,8 @@
     </div>
 
     <script>
+        let currentColors = [];
+
         function generateRandomColor(isLight, isDark) {
             let r, g, b;
             if (isLight) {
@@ -206,6 +211,8 @@
                 }
             }
 
+            currentColors = colors;
+
             colors.forEach(color => {
                 const colorBox = document.createElement('div');
                 colorBox.className = 'w-20 h-20 sm:w-24 sm:h-24 rounded-lg shadow-md flex flex-col justify-end overflow-hidden';
@@ -214,7 +221,7 @@
                 colorBox.style.backgroundColor = hexCode;
                 
                 const hexText = document.createElement('div');
-                hexText.className = 'text-xs p-1 bg-white bg-opacity-75 text-center';
+                hexText.className = 'text-[10px] sm:text-xs p-1 bg-white bg-opacity-75 text-center';
                 hexText.textContent = hexCode;
                 colorBox.appendChild(hexText);
                 
@@ -222,6 +229,32 @@
             });
 
             colorCodesDiv.textContent = hexCodes.join(' ');
+        }
+
+        function downloadPalette() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1000;
+            canvas.height = 1000;
+            const ctx = canvas.getContext('2d');
+
+            const colorCount = currentColors.length;
+            const tileSize = Math.ceil(Math.sqrt(colorCount));
+            const cellSize = Math.floor(1000 / tileSize);
+
+            for (let i = 0; i < colorCount; i++) {
+                const x = (i % tileSize) * cellSize;
+                const y = Math.floor(i / tileSize) * cellSize;
+                const [r, g, b] = currentColors[i];
+
+                ctx.fillStyle = `rgb(${r},${g},${b})`;
+                ctx.fillRect(x, y, cellSize, cellSize);
+            }
+
+            const dataUrl = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = 'color_palette.png';
+            link.click();
         }
 
         // Initial palette generation
