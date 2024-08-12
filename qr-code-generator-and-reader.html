@@ -45,6 +45,10 @@
                 <h2 class="text-2xl font-semibold text-gray-700 mb-4">Read QR Code</h2>
                 <div class="space-y-4">
                     <input type="file" id="fileInput" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                    <div>
+                        <label for="imageUrl" class="block text-sm font-medium text-gray-700">Or enter image URL:</label>
+                        <input type="text" id="imageUrl" placeholder="https://example.com/qrcode.png" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
                     <button onclick="decodeQR()" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Decode QR Code</button>
                 </div>
                 <div id="result" class="mt-4 font-mono p-4 break-all bg-gray-100 rounded-md"></div>
@@ -171,31 +175,65 @@
 
         function decodeQR() {
             const fileInput = document.getElementById('fileInput');
-            const file = fileInput.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        const context = canvas.getContext('2d');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        context.drawImage(img, 0, 0, img.width, img.height);
-                        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                        const code = jsQR(imageData.data, imageData.width, imageData.height);
-                        if (code) {
-                            document.getElementById('result').innerText = 'Decoded QR Code: ' + code.data;
-                        } else {
-                            document.getElementById('result').innerText = 'No QR code found in the image.';
-                        }
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
+            const imageUrl = document.getElementById('imageUrl').value;
+            
+            if (fileInput.files.length > 0) {
+                decodeFromFile(fileInput.files[0]);
+            } else if (imageUrl) {
+                decodeFromUrl(imageUrl);
             } else {
-                alert('Please select an image file');
+                alert('Please select an image file or enter an image URL');
             }
+        }
+
+        function decodeFromFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                decodeImage(e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function decodeFromUrl(url) {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, img.width, img.height);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                if (code) {
+                    document.getElementById('result').innerText = 'Decoded QR Code: ' + code.data;
+                } else {
+                    document.getElementById('result').innerText = 'No QR code found in the image.';
+                }
+            };
+            img.onerror = function() {
+                document.getElementById('result').innerText = 'Error loading image from URL.';
+            };
+            img.src = url;
+        }
+
+        function decodeImage(src) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                context.drawImage(img, 0, 0, img.width, img.height);
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                if (code) {
+                    document.getElementById('result').innerText = 'Decoded QR Code: ' + code.data;
+                } else {
+                    document.getElementById('result').innerText = 'No QR code found in the image.';
+                }
+            };
+            img.src = src;
         }
 
         let videoStream;
