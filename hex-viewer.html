@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hex Viewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="max-w-[720px] mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8 text-center text-gray-800">Hex Viewer</h1>
+        
+        <div class="bg-white shadow-md rounded-lg p-6 mb-8">
+            <div class="mb-4">
+                <div class="flex border-b">
+                    <button onclick="showTab('file')" id="fileTab" class="px-4 py-2 text-sm font-medium text-center focus:outline-none">Local File</button>
+                    <button onclick="showTab('url')" id="urlTab" class="px-4 py-2 text-sm font-medium text-center focus:outline-none">URL</button>
+                    <button onclick="showTab('text')" id="textTab" class="px-4 py-2 text-sm font-medium text-center focus:outline-none">Manual Input</button>
+                </div>
+            </div>
+            
+            <div id="fileInput" class="tab-content">
+                <input type="file" accept="*/*" class="w-full p-2 border border-gray-300 rounded">
+            </div>
+            
+            <div id="urlInput" class="tab-content hidden">
+                <div class="flex">
+                    <input type="url" placeholder="Enter file URL" class="flex-grow p-2 border border-gray-300 rounded-l">
+                    <button onclick="loadFromUrl()" class="bg-blue-500 text-white px-4 py-2 rounded-r hover:bg-blue-600 transition duration-200">Load</button>
+                </div>
+            </div>
+            
+            <div id="textInput" class="tab-content hidden">
+                <textarea rows="4" class="w-full p-2 border border-gray-300 rounded mb-2" placeholder="Enter text here"></textarea>
+                <button onclick="loadFromText()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-200">Convert to Hex</button>
+            </div>
+        </div>
+        
+        <div class="bg-white shadow-md rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">Hex Output:</h2>
+            <pre id="hexOutput" class="font-mono text-sm bg-gray-100 p-4 rounded overflow-x-auto"></pre>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            const tabs = ['file', 'url', 'text'];
+            tabs.forEach(tab => {
+                const content = document.getElementById(tab + 'Input');
+                const tabButton = document.getElementById(tab + 'Tab');
+                if (tab === tabName) {
+                    content.classList.remove('hidden');
+                    tabButton.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+                } else {
+                    content.classList.add('hidden');
+                    tabButton.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+                }
+            });
+        }
+
+        function toHex(buffer) {
+            return Array.from(new Uint8Array(buffer))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join(' ');
+        }
+
+        function formatHexOutput(hexString) {
+            const bytes = hexString.split(' ');
+            let output = '';
+            for (let i = 0; i < bytes.length; i += 16) {
+                const chunk = bytes.slice(i, i + 16);
+                const address = i.toString(16).padStart(8, '0');
+                const hex = chunk.join(' ').padEnd(48, ' ');
+                const ascii = chunk.map(byte => {
+                    const charCode = parseInt(byte, 16);
+                    return (charCode >= 32 && charCode <= 126) ? String.fromCharCode(charCode) : '.';
+                }).join('');
+                output += `${address}  ${hex}  |${ascii}|\n`;
+            }
+            return output;
+        }
+
+        function displayHexData(buffer) {
+            const hexString = toHex(buffer);
+            const formattedHex = formatHexOutput(hexString);
+            document.getElementById('hexOutput').textContent = formattedHex;
+        }
+
+        document.querySelector('#fileInput input[type="file"]').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    displayHexData(e.target.result);
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        });
+
+        function loadFromUrl() {
+            const url = document.querySelector('#urlInput input[type="url"]').value;
+            if (url) {
+                fetch(url)
+                    .then(response => response.arrayBuffer())
+                    .then(buffer => {
+                        displayHexData(buffer);
+                    })
+                    .catch(error => {
+                        console.error('Error loading file:', error);
+                        alert('Error loading file. Please check the URL and try again.');
+                    });
+            }
+        }
+
+        function loadFromText() {
+            const text = document.querySelector('#textInput textarea').value;
+            if (text) {
+                const encoder = new TextEncoder();
+                const buffer = encoder.encode(text);
+                displayHexData(buffer);
+            }
+        }
+
+        // Initialize the first tab
+        showTab('file');
+    </script>
+</body>
+</html>
