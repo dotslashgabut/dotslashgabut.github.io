@@ -52,6 +52,11 @@
             text-align: right;
             font-family: monospace;
         }
+        .color-box.selected {
+            outline: 2.5px solid #0f75fd;
+            outline-offset: 3px;
+            z-index: 10;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col items-center py-4 px-4">
@@ -278,7 +283,7 @@
                 colorBox.className = 'color-box rounded';
                 colorBox.style.backgroundColor = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
                 colorBox.dataset.index = index;
-                
+            
                 const colorBoxContent = document.createElement('div');
                 colorBoxContent.className = 'color-box-content';
 
@@ -286,7 +291,7 @@
                 const hexText = document.createElement('div');
                 hexText.className = 'text-xs sm:text-sm text-center bg-black bg-opacity-50 text-white py-1 w-full';
                 hexText.textContent = hexCode;
-                
+            
                 colorBoxContent.appendChild(hexText);
                 colorBox.appendChild(colorBoxContent);
                 palette.appendChild(colorBox);
@@ -295,6 +300,7 @@
 
                 colorBox.addEventListener('click', () => {
                     activateHSLSliders(color, index);
+                    highlightSelectedColor(index);
                 });
             });
 
@@ -307,12 +313,23 @@
             });
         }
 
+        function highlightSelectedColor(index) {
+            const colorBoxes = palette.querySelectorAll('.color-box');
+            colorBoxes.forEach((box, i) => {
+                if (i === index) {
+                    box.classList.add('selected');
+                } else {
+                    box.classList.remove('selected');
+                }
+            });
+        }
+
         function activateHSLSliders(color, index) {
             const hslSliders = document.getElementById('hslSliders');
             hslSliders.classList.add('active');
 
             const [h, s, l] = rgbToHsl(color[0], color[1], color[2]);
-            
+        
             const hueSlider = document.getElementById('hueSlider');
             const saturationSlider = document.getElementById('saturationSlider');
             const luminanceSlider = document.getElementById('luminanceSlider');
