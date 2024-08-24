@@ -112,9 +112,15 @@
                         <input type="text" id="imageUrl" placeholder="Enter image URL" class="border rounded px-2 py-1 w-full">
                     </div>
 
-                    <div class="text-center flex flex-wrap justify-center gap-4">
+                    <div class="text-center flex flex-wrap justify-center gap-4 items-center">
                         <button id="generateBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Generate</button>
-                        <button id="downloadBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">Download</button>
+                        <div class="flex items-center">
+                            <button id="downloadBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">Download</button>
+                            <label class="ml-2 flex items-center">
+                                <input type="checkbox" id="includeHexCodes" class="form-checkbox h-5 w-5 text-blue-600" checked>
+                                <span class="ml-2 text-gray-700">Include hex codes</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -415,6 +421,7 @@
         function downloadPalette() {
             const colors = Array.from(palette.children).map(child => child.style.backgroundColor);
             const colorCount = colors.length;
+            const includeHexCodes = document.getElementById('includeHexCodes').checked;
             
             // Calculate grid dimensions
             const gridSize = Math.ceil(Math.sqrt(colorCount));
@@ -438,13 +445,15 @@
                 ctx.fillStyle = color;
                 ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
                 
-                // Add color hex code to each cell
-                const hex = rgbToHex(...color.match(/\d+/g).map(Number));
-                ctx.fillStyle = getContrastColor(color);
-                ctx.font = `${cellSize / 10}px Arial`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(hex, (col + 0.5) * cellSize, (row + 0.5) * cellSize);
+                // Add color hex code to each cell if checkbox is checked
+                if (includeHexCodes) {
+                    const hex = rgbToHex(...color.match(/\d+/g).map(Number));
+                    ctx.fillStyle = getContrastColor(color);
+                    ctx.font = `${cellSize / 10}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(hex, (col + 0.5) * cellSize, (row + 0.5) * cellSize);
+                }
             });
 
             const link = document.createElement('a');
