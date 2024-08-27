@@ -283,7 +283,7 @@
                 colorBox.className = 'color-box rounded';
                 colorBox.style.backgroundColor = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
                 colorBox.dataset.index = index;
-            
+
                 const colorBoxContent = document.createElement('div');
                 colorBoxContent.className = 'color-box-content';
 
@@ -291,7 +291,7 @@
                 const hexText = document.createElement('div');
                 hexText.className = 'text-xs sm:text-sm text-center bg-black bg-opacity-50 text-white py-1 w-full';
                 hexText.textContent = hexCode;
-            
+
                 colorBoxContent.appendChild(hexText);
                 colorBox.appendChild(colorBoxContent);
                 palette.appendChild(colorBox);
@@ -328,8 +328,6 @@
             const hslSliders = document.getElementById('hslSliders');
             hslSliders.classList.add('active');
 
-            const [h, s, l] = rgbToHsl(color[0], color[1], color[2]);
-        
             const hueSlider = document.getElementById('hueSlider');
             const saturationSlider = document.getElementById('saturationSlider');
             const luminanceSlider = document.getElementById('luminanceSlider');
@@ -337,6 +335,11 @@
             const hueValue = document.getElementById('hueValue');
             const saturationValue = document.getElementById('saturationValue');
             const luminanceValue = document.getElementById('luminanceValue');
+
+            // Get the current color from the color box, not the initial color passed to the function
+            const currentColor = window.getComputedStyle(palette.children[index]).backgroundColor;
+            const [r, g, b] = currentColor.match(/\d+/g).map(Number);
+            const [h, s, l] = rgbToHsl(r, g, b);
 
             hueSlider.value = Math.round(h);
             saturationSlider.value = Math.round(s);
@@ -439,7 +442,7 @@
             const colors = Array.from(palette.children).map(child => child.style.backgroundColor);
             const colorCount = colors.length;
             const includeHexCodes = document.getElementById('includeHexCodes').checked;
-            
+
             // Calculate grid dimensions
             const gridSize = Math.ceil(Math.sqrt(colorCount));
             const canvasSize = 1000; // Fixed canvas size
@@ -447,7 +450,7 @@
 
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            
+
             canvas.width = canvasSize;
             canvas.height = canvasSize;
 
@@ -458,10 +461,10 @@
             colors.forEach((color, index) => {
                 const row = Math.floor(index / gridSize);
                 const col = index % gridSize;
-                
+
                 ctx.fillStyle = color;
                 ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
-                
+
                 // Add color hex code to each cell if checkbox is checked
                 if (includeHexCodes) {
                     const hex = rgbToHex(...color.match(/\d+/g).map(Number));
@@ -498,3 +501,5 @@
     </script>
 </body>
 </html>
+
+                
