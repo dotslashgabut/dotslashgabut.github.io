@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Pixelated Image Effect with Custom Colors</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .container {
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+            padding: 20px;
+        }
+        canvas {
+            max-width: 100%;
+            border: 1px solid #444;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        .control-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .slider-container, .color-container {
+            flex: 1 1 300px;
+            margin: 10px;
+            background-color: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        .slider-container > div, .color-container > div {
+            margin-bottom: 15px;
+        }
+        .button-container {
+            margin-top: 20px;
+        }
+        button {
+            margin: 0 10px 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #3a3a3a;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #4a4a4a;
+        }
+        #imageUpload {
+            display: none;
+        }
+        input[type="range"] {
+            width: 100%;
+            background: #3a3a3a;
+            -webkit-appearance: none;
+            height: 5px;
+            border-radius: 5px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #ffffff;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 50%;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+            .slider-container, .color-container {
+                flex-basis: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Retro Pixelated Image Effect</h1>
+        <input type="file" id="imageUpload" accept="image/*">
+        <button id="uploadBtn">Upload Image</button>
+        <br><br>
+        <canvas id="canvas"></canvas>
+        <div class="control-container">
+            <div class="slider-container">
+                <div>
+                    <label for="thresholdSlider">Threshold: </label>
+                    <input type="range" id="thresholdSlider" min="0" max="255" value="128">
+                    <span id="thresholdValue">128</span>
+                </div>
+                <div>
+                    <label for="pixelSizeSlider">Pixel Size: </label>
+                    <input type="range" id="pixelSizeSlider" min="1" max="20" value="8">
+                    <span id="pixelSizeValue">8</span>
+                </div>
+                <div>
+                    <label for="gridThicknessSlider">Grid Thickness: </label>
+                    <input type="range" id="gridThicknessSlider" min="0" max="5" value="1" step="0.1">
+                    <span id="gridThicknessValue">1</span>
+                </div>
+            </div>
+            <div class="color-container">
+                <div>
+                    <label for="gridColor">Grid Color: </label>
+                    <input type="color" id="gridColor" value="#000000">
+                </div>
+                <div>
+                    <label for="backgroundColor">Background Color: </label>
+                    <input type="color" id="backgroundColor" value="#00FF00">
+                </div>
+                <div>
+                    <label for="foregroundColor">Foreground Color: </label>
+                    <input type="color" id="foregroundColor" value="#000000">
+                </div>
+            </div>
+        </div>
+        <div class="button-container">
+            <button id="reloadBtn">Reload Original</button>
+            <button id="downloadBtn">Download Image</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const imageUpload = document.getElementById('imageUpload');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const thresholdSlider = document.getElementById('thresholdSlider');
+        const thresholdValue = document.getElementById('thresholdValue');
+        const pixelSizeSlider = document.getElementById('pixelSizeSlider');
+        const pixelSizeValue = document.getElementById('pixelSizeValue');
+        const gridThicknessSlider = document.getElementById('gridThicknessSlider');
+        const gridThicknessValue = document.getElementById('gridThicknessValue');
+        const gridColorPicker = document.getElementById('gridColor');
+        const backgroundColorPicker = document.getElementById('backgroundColor');
+        const foregroundColorPicker = document.getElementById('foregroundColor');
+        const reloadBtn = document.getElementById('reloadBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        let originalImageData;
+        let originalWidth, originalHeight;
+        let originalImage;
+
+        function applyEffect() {
+            const threshold = parseInt(thresholdSlider.value);
+            const pixelSize = parseInt(pixelSizeSlider.value);
+            const gridThickness = parseFloat(gridThicknessSlider.value);
+            const gridColor = gridColorPicker.value;
+            const backgroundColor = backgroundColorPicker.value;
+            const foregroundColor = foregroundColorPicker.value;
+
+            thresholdValue.textContent = threshold;
+            pixelSizeValue.textContent = pixelSize;
+            gridThicknessValue.textContent = gridThickness.toFixed(1);
+
+            canvas.width = Math.floor(originalWidth / pixelSize) * pixelSize;
+            canvas.height = Math.floor(originalHeight / pixelSize) * pixelSize;
+
+            ctx.fillStyle = backgroundColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let y = 0; y < canvas.height; y += pixelSize) {
+                for (let x = 0; x < canvas.width; x += pixelSize) {
+                    let totalBrightness = 0;
+                    let pixelCount = 0;
+
+                    for (let py = 0; py < pixelSize; py++) {
+                        for (let px = 0; px < pixelSize; px++) {
+                            const sourceX = Math.floor(x * originalWidth / canvas.width) + px;
+                            const sourceY = Math.floor(y * originalHeight / canvas.height) + py;
+                            if (sourceX < originalWidth && sourceY < originalHeight) {
+                                const i = (sourceY * originalWidth + sourceX) * 4;
+                                const brightness = (originalImageData[i] + originalImageData[i + 1] + originalImageData[i + 2]) / 3;
+                                totalBrightness += brightness;
+                                pixelCount++;
+                            }
+                        }
+                    }
+
+                    const averageBrightness = totalBrightness / pixelCount;
+
+                    if (averageBrightness < threshold) {
+                        ctx.fillStyle = foregroundColor;
+                        ctx.fillRect(x, y, pixelSize, pixelSize);
+                    }
+
+                    if (gridThickness > 0) {
+                        ctx.strokeStyle = gridColor;
+                        ctx.lineWidth = gridThickness;
+                        ctx.strokeRect(x, y, pixelSize, pixelSize);
+                    }
+                }
+            }
+        }
+
+        function loadImage(src) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = src;
+            });
+        }
+
+        async function handleImageUpload(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = async function(event) {
+                originalImage = await loadImage(event.target.result);
+                originalWidth = originalImage.width;
+                originalHeight = originalImage.height;
+                canvas.width = originalWidth;
+                canvas.height = originalHeight;
+                ctx.drawImage(originalImage, 0, 0);
+                originalImageData = ctx.getImageData(0, 0, originalWidth, originalHeight).data;
+                applyEffect();
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        function reloadOriginal() {
+            if (originalImage) {
+                canvas.width = originalWidth;
+                canvas.height = originalHeight;
+                ctx.drawImage(originalImage, 0, 0);
+                thresholdSlider.value = 128;
+                pixelSizeSlider.value = 8;
+                gridThicknessSlider.value = 1;
+                thresholdValue.textContent = 128;
+                pixelSizeValue.textContent = 8;
+                gridThicknessValue.textContent = '1.0';
+                gridColorPicker.value = '#000000';
+                backgroundColorPicker.value = '#00FF00';
+                foregroundColorPicker.value = '#000000';
+                applyEffect();
+            }
+        }
+
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = 'pixelated_image.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        imageUpload.addEventListener('change', handleImageUpload);
+        uploadBtn.addEventListener('click', () => imageUpload.click());
+        thresholdSlider.addEventListener('input', applyEffect);
+        pixelSizeSlider.addEventListener('input', applyEffect);
+        gridThicknessSlider.addEventListener('input', applyEffect);
+        gridColorPicker.addEventListener('input', applyEffect);
+        backgroundColorPicker.addEventListener('input', applyEffect);
+        foregroundColorPicker.addEventListener('input', applyEffect);
+        reloadBtn.addEventListener('click', reloadOriginal);
+        downloadBtn.addEventListener('click', downloadImage);
+    </script>
+</body>
+</html>
