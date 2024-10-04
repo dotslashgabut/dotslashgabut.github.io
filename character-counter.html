@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Character Counter</title>
-    <script src="script/tailwindcss.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
     <div class="bg-white rounded-lg shadow-md p-8 w-full max-w-3xl">
@@ -31,11 +31,15 @@
         </button>
         
         <div id="result" class="mt-6 text-center text-xl font-semibold text-gray-800">
-            Result: 0
+            Result: 0 | Total Characters: 0
         </div>
     </div>
 
     <script>
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+        }
+
         function countCharacter() {
             const text = document.getElementById('text').value;
             const char = document.getElementById('char').value;
@@ -49,12 +53,14 @@
             let count = 0;
             
             if (caseSensitive) {
-                count = (text.match(new RegExp(char, 'g')) || []).length;
+                count = (text.match(new RegExp(escapeRegExp(char), 'g')) || []).length;
             } else {
-                count = (text.toLowerCase().match(new RegExp(char.toLowerCase(), 'g')) || []).length;
+                count = (text.toLowerCase().match(new RegExp(escapeRegExp(char.toLowerCase()), 'g')) || []).length;
             }
             
-            document.getElementById('result').textContent = `Result: ${count}`;
+            const totalCharacters = text.length;
+            
+            document.getElementById('result').textContent = `Result: ${count} | Total Characters: ${totalCharacters}`;
         }
     </script>
 </body>
