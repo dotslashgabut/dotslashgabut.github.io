@@ -31,11 +31,15 @@
         </button>
         
         <div id="result" class="mt-6 text-center text-xl font-semibold text-gray-800">
-            Result: 0
+            Result: 0 | Total Characters: 0
         </div>
     </div>
 
     <script>
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+        }
+
         function countCharacter() {
             const text = document.getElementById('text').value;
             const char = document.getElementById('char').value;
@@ -49,12 +53,14 @@
             let count = 0;
             
             if (caseSensitive) {
-                count = (text.match(new RegExp(char, 'g')) || []).length;
+                count = (text.match(new RegExp(escapeRegExp(char), 'g')) || []).length;
             } else {
-                count = (text.toLowerCase().match(new RegExp(char.toLowerCase(), 'g')) || []).length;
+                count = (text.toLowerCase().match(new RegExp(escapeRegExp(char.toLowerCase()), 'g')) || []).length;
             }
             
-            document.getElementById('result').textContent = `Result: ${count}`;
+            const totalCharacters = text.length;
+            
+            document.getElementById('result').textContent = `Result: ${count} | Total Characters: ${totalCharacters}`;
         }
     </script>
 </body>
