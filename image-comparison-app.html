@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Comparison App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: top;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1024px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            font-size: 24px;
+        }
+        .image-upload {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .image-upload input {
+            width: calc(50% - 10px);
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+        }
+        .comparison-container {
+            position: relative;
+            width: 100%;
+            max-width: 1024px;
+            margin: 0 auto;
+            overflow: hidden;
+            background-color: #333;
+        }
+        .image-container {
+            position: relative;
+            width: 100%;
+            cursor: move;
+        }
+        .image-container.panning {
+            cursor: none;
+        }
+        .image-before, .image-after {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-repeat: no-repeat;
+            background-position: left center;
+        }
+        .image-after {
+            width: 50%;
+            overflow: hidden;
+            transition: width 0.08s ease;
+        }
+        .slider {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 40px;
+            transform: translateX(-50%);
+            cursor: ew-resize;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: left 0.08s ease;
+        }
+        .slider::before {
+            content: "";
+            position: absolute;
+            width: 0.1px;
+            height: 100%;
+            background-color: #fff;
+        }
+        .slider::after {
+            color: #fff;
+            font-size: 12px;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .zoom-controls, .aspect-controls {
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button.active {
+            background-color: #666;
+        }
+        @media (max-width: 600px) {
+            .image-upload input {
+                width: 100%;
+            }
+            button {
+                padding: 8px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Image Comparison App</h1>
+        <div class="image-upload">
+            <input type="file" id="beforeImageFile" accept="image/*">
+            <input type="file" id="afterImageFile" accept="image/*">
+            <input type="text" id="beforeImageUrl" placeholder="Enter 'Before' image URL">
+            <input type="text" id="afterImageUrl" placeholder="Enter 'After' image URL">
+        </div>
+        <div class="controls">
+            <div class="zoom-controls">
+                <button id="zoomIn">Zoom In</button>
+                <button id="zoomOut">Zoom Out</button>
+                <button id="resetZoom">Reset Zoom</button>
+            </div>
+            <div class="aspect-controls">
+                <button id="beforeAspect" class="active">Before Aspect</button>
+                <button id="afterAspect">After Aspect</button>
+                <button id="fitBoth">Fit Both</button>
+            </div>
+        </div>
+        <div class="comparison-container">
+            <div class="image-container">
+                <div class="image-before"></div>
+                <div class="image-after"></div>
+            </div>
+            <div class="slider"></div>
+        </div>
+    </div>
+
+    <script>
+        const beforeImageUrl = document.getElementById('beforeImageUrl');
+        const afterImageUrl = document.getElementById('afterImageUrl');
+        const beforeImageFile = document.getElementById('beforeImageFile');
+        const afterImageFile = document.getElementById('afterImageFile');
+        const slider = document.querySelector('.slider');
+        const beforeImage = document.querySelector('.image-before');
+        const afterImage = document.querySelector('.image-after');
+        const container = document.querySelector('.comparison-container');
+        const imageContainer = document.querySelector('.image-container');
+        const zoomInBtn = document.getElementById('zoomIn');
+        const zoomOutBtn = document.getElementById('zoomOut');
+        const resetZoomBtn = document.getElementById('resetZoom');
+        const beforeAspectBtn = document.getElementById('beforeAspect');
+        const afterAspectBtn = document.getElementById('afterAspect');
+        const fitBothBtn = document.getElementById('fitBoth');
+
+        let isDragging = false;
+        let isPanning = false;
+        let zoom = 1;
+        let beforeWidth, beforeHeight, afterWidth, afterHeight;
+        let panStartX, panStartY;
+        let currentPanX = 0;
+        let currentPanY = 0;
+        let aspectRatioMode = 'before';
+        let sliderPosition = 50; // Store slider position as percentage
+
+        function setImages() {
+            if (beforeImageUrl.value) {
+                loadImage(beforeImageUrl.value, beforeImage, 'before');
+            }
+            if (afterImageUrl.value) {
+                loadImage(afterImageUrl.value, afterImage, 'after');
+            }
+        }
+
+        function loadImage(src, imgElement, type) {
+            const img = new Image();
+            img.onload = function() {
+                imgElement.style.backgroundImage = `url(${src})`;
+                if (type === 'before') {
+                    beforeWidth = img.width;
+                    beforeHeight = img.height;
+                } else {
+                    afterWidth = img.width;
+                    afterHeight = img.height;
+                }
+                adjustImageContainer();
+            };
+            img.src = src;
+        }
+
+        function handleFileSelect(event, imgElement, type) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    loadImage(e.target.result, imgElement, type);
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function adjustImageContainer() {
+            if (!beforeWidth || !afterWidth) return;
+
+            let targetWidth, targetHeight;
+
+            switch (aspectRatioMode) {
+                case 'before':
+                    targetWidth = beforeWidth;
+                    targetHeight = beforeHeight;
+                    break;
+                case 'after':
+                    targetWidth = afterWidth;
+                    targetHeight = afterHeight;
+                    break;
+                case 'both':
+                    targetWidth = Math.max(beforeWidth, afterWidth);
+                    targetHeight = Math.max(beforeHeight, afterHeight);
+                    break;
+            }
+
+            const aspectRatio = targetWidth / targetHeight;
+            imageContainer.style.paddingBottom = `${100 / aspectRatio}%`;
+
+            const containerWidth = container.offsetWidth;
+            const containerHeight = containerWidth / aspectRatio;
+            
+            const beforeScale = Math.min(
+                containerWidth / beforeWidth,
+                containerHeight / beforeHeight
+            ) * zoom;
+            
+            const afterScale = Math.min(
+                containerWidth / afterWidth,
+                containerHeight / afterHeight
+            ) * zoom;
+
+            beforeImage.style.backgroundSize = `${beforeWidth * beforeScale}px ${beforeHeight * beforeScale}px`;
+            afterImage.style.backgroundSize = `${afterWidth * afterScale}px ${afterHeight * afterScale}px`;
+            
+            updateSliderPosition();
+        }
+
+        function updateSliderPosition() {
+            slider.style.left = `${sliderPosition}%`;
+            afterImage.style.width = `${sliderPosition}%`;
+        }
+
+        function moveSlider(e) {
+            const rect = container.getBoundingClientRect();
+            const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+            sliderPosition = (x / rect.width) * 100;
+            updateSliderPosition();
+        }
+
+        function updateZoom() {
+            adjustImageContainer();
+            updatePan();
+            updateSliderPosition();
+        }
+
+        function updatePan() {
+            const beforePos = `${currentPanX}px ${currentPanY}px`;
+            const afterPos = `${currentPanX}px ${currentPanY}px`;
+            beforeImage.style.backgroundPosition = beforePos;
+            afterImage.style.backgroundPosition = afterPos;
+        }
+
+        function handleWheel(e) {
+            e.preventDefault();
+            
+            const zoomFactor = 1.1;
+            const delta = e.deltaY > 0 ? 1 / zoomFactor : zoomFactor;
+            
+            const rect = container.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            const imageX = mouseX - currentPanX;
+            const imageY = mouseY - currentPanY;
+            
+            zoom *= delta;
+            zoom = Math.min(Math.max(zoom, 0.1), 10);
+            
+            currentPanX = mouseX - imageX * delta;
+            currentPanY = mouseY - imageY * delta;
+            
+            updateZoom();
+        }
+
+        function setAspectRatio(mode) {
+            aspectRatioMode = mode;
+            beforeAspectBtn.classList.toggle('active', mode === 'before');
+            afterAspectBtn.classList.toggle('active', mode === 'after');
+            fitBothBtn.classList.toggle('active', mode === 'both');
+            adjustImageContainer();
+        }
+
+        beforeImageUrl.addEventListener('change', setImages);
+        afterImageUrl.addEventListener('change', setImages);
+        beforeImageFile.addEventListener('change', (e) => handleFileSelect(e, beforeImage, 'before'));
+        afterImageFile.addEventListener('change', (e) => handleFileSelect(e, afterImage, 'after'));
+        
+        beforeAspectBtn.addEventListener('click', () => setAspectRatio('before'));
+        afterAspectBtn.addEventListener('click', () => setAspectRatio('after'));
+        fitBothBtn.addEventListener('click', () => setAspectRatio('both'));
+
+        container.addEventListener('wheel', handleWheel, { passive: false });
+
+        container.addEventListener('mousedown', (e) => {
+            if (e.target === slider) {
+                isDragging = true;
+            } else {
+                isPanning = true;
+                panStartX = e.clientX;
+                panStartY = e.clientY;
+                imageContainer.classList.add('panning');
+            }
+        });
+
+        container.addEventListener('touchstart', (e) => {
+            if (e.target === slider) {
+                isDragging = true;
+            } else {
+                const touch = e.touches[0];
+                isPanning = true;
+                panStartX = touch.clientX;
+                panStartY = touch.clientY;
+                imageContainer.classList.add('panning');
+            }
+        });
+
+        let rafId;
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                if (rafId) cancelAnimationFrame(rafId);
+                rafId = requestAnimationFrame(() => moveSlider(e));
+            } else if (isPanning) {
+                const deltaX = e.clientX - panStartX;
+                const deltaY = e.clientY - panStartY;
+                currentPanX += deltaX;
+                currentPanY += deltaY;
+                updatePan();
+                panStartX = e.clientX;
+                panStartY = e.clientY;
+            }
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (isDragging) {
+                if (rafId) cancelAnimationFrame(rafId);
+                rafId = requestAnimationFrame(() => moveSlider(e.touches[0]));
+            } else if (isPanning) {
+                const deltaX = e.touches[0].clientX - panStartX;
+                const deltaY = e.touches[0].clientY - panStartY;
+                currentPanX += deltaX;
+                currentPanY += deltaY;
+                updatePan();
+                panStartX = e.touches[0].clientX;
+                panStartY = e.touches[0].clientY;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            isPanning = false;
+            imageContainer.classList.remove('panning');
+            if (rafId) cancelAnimationFrame(rafId);
+        });
+
+        document.addEventListener('touchend', () => {
+            isDragging = false;
+            isPanning = false;
+            imageContainer.classList.remove('panning');
+            if (rafId) cancelAnimationFrame(rafId);
+        });
+
+        slider.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            isDragging = true;
+        });
+
+        slider.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+            isDragging = true;
+        });
+
+        zoomInBtn.addEventListener('click', () => {
+            zoom *= 1.2;
+            updateZoom();
+        });
+
+        zoomOutBtn.addEventListener('click', () => {
+            zoom /= 1.2;
+            updateZoom();
+        });
+
+        resetZoomBtn.addEventListener('click', () => {
+            zoom = 1;
+            currentPanX = 0;
+            currentPanY = 0;
+            updateZoom();
+        });
+
+        window.addEventListener('resize', () => {
+            adjustImageContainer();
+        });
+    </script>
+</body>
+</html>
