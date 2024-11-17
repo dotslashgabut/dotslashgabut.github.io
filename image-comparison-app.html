@@ -130,10 +130,10 @@
     <div class="container">
         <h1>Image Comparison App</h1>
         <div class="image-upload">
-            <input type="file" id="beforeImageFile" accept="image/*">
             <input type="file" id="afterImageFile" accept="image/*">
-            <input type="text" id="beforeImageUrl" placeholder="Enter 'Before' image URL">
-            <input type="text" id="afterImageUrl" placeholder="Enter 'After' image URL">
+            <input type="file" id="beforeImageFile" accept="image/*">
+            <input type="text" id="afterImageUrl" placeholder="Enter first image URL">
+            <input type="text" id="beforeImageUrl" placeholder="Enter second image URL">
         </div>
         <div class="controls">
             <div class="zoom-controls">
@@ -181,7 +181,7 @@
         let currentPanX = 0;
         let currentPanY = 0;
         let aspectRatioMode = 'before';
-        let sliderPosition = 50; // Store slider position as percentage
+        let sliderPosition = 50;
 
         function setImages() {
             if (beforeImageUrl.value) {
