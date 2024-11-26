@@ -53,7 +53,7 @@
             cursor: move;
         }
         .image-container.panning {
-            cursor: none;
+            cursor: move;
         }
         .image-before, .image-after {
             position: absolute;
@@ -85,7 +85,7 @@
         .slider::before {
             content: "";
             position: absolute;
-            width: 0.1px;
+            width: 1px;
             height: 100%;
             background-color: #fff;
         }
@@ -172,9 +172,8 @@
         const beforeAspectBtn = document.getElementById('beforeAspect');
         const afterAspectBtn = document.getElementById('afterAspect');
         const fitBothBtn = document.getElementById('fitBoth');
-
-        let isDragging = false;
-        let isPanning = false;
+        const longPressThreshold = 10;
+        
         let zoom = 1;
         let beforeWidth, beforeHeight, afterWidth, afterHeight;
         let panStartX, panStartY;
@@ -182,7 +181,11 @@
         let currentPanY = 0;
         let aspectRatioMode = 'before';
         let sliderPosition = 50;
-
+        let isDraggingSlider = false;
+        let isPanningImage = false;
+        let panningTimeout;
+        let isOnSlider = false;
+        
         function setImages() {
             if (beforeImageUrl.value) {
                 loadImage(beforeImageUrl.value, beforeImage, 'before');
@@ -191,7 +194,7 @@
                 loadImage(afterImageUrl.value, afterImage, 'after');
             }
         }
-
+        
         function loadImage(src, imgElement, type) {
             const img = new Image();
             img.onload = function() {
@@ -207,7 +210,7 @@
             };
             img.src = src;
         }
-
+        
         function handleFileSelect(event, imgElement, type) {
             const file = event.target.files[0];
             if (file) {
@@ -218,12 +221,12 @@
                 reader.readAsDataURL(file);
             }
         }
-
+        
         function adjustImageContainer() {
             if (!beforeWidth || !afterWidth) return;
-
+        
             let targetWidth, targetHeight;
-
+        
             switch (aspectRatioMode) {
                 case 'before':
                     targetWidth = beforeWidth;
@@ -238,10 +241,10 @@
                     targetHeight = Math.max(beforeHeight, afterHeight);
                     break;
             }
-
+        
             const aspectRatio = targetWidth / targetHeight;
             imageContainer.style.paddingBottom = `${100 / aspectRatio}%`;
-
+        
             const containerWidth = container.offsetWidth;
             const containerHeight = containerWidth / aspectRatio;
             
@@ -254,38 +257,38 @@
                 containerWidth / afterWidth,
                 containerHeight / afterHeight
             ) * zoom;
-
+        
             beforeImage.style.backgroundSize = `${beforeWidth * beforeScale}px ${beforeHeight * beforeScale}px`;
             afterImage.style.backgroundSize = `${afterWidth * afterScale}px ${afterHeight * afterScale}px`;
             
             updateSliderPosition();
         }
-
+        
         function updateSliderPosition() {
             slider.style.left = `${sliderPosition}%`;
             afterImage.style.width = `${sliderPosition}%`;
         }
-
+        
         function moveSlider(e) {
             const rect = container.getBoundingClientRect();
             const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
             sliderPosition = (x / rect.width) * 100;
             updateSliderPosition();
         }
-
+        
         function updateZoom() {
             adjustImageContainer();
             updatePan();
             updateSliderPosition();
         }
-
+        
         function updatePan() {
             const beforePos = `${currentPanX}px ${currentPanY}px`;
             const afterPos = `${currentPanX}px ${currentPanY}px`;
             beforeImage.style.backgroundPosition = beforePos;
             afterImage.style.backgroundPosition = afterPos;
         }
-
+        
         function handleWheel(e) {
             e.preventDefault();
             
@@ -307,7 +310,7 @@
             
             updateZoom();
         }
-
+        
         function setAspectRatio(mode) {
             aspectRatioMode = mode;
             beforeAspectBtn.classList.toggle('active', mode === 'before');
@@ -315,48 +318,60 @@
             fitBothBtn.classList.toggle('active', mode === 'both');
             adjustImageContainer();
         }
-
-        beforeImageUrl.addEventListener('change', setImages);
-        afterImageUrl.addEventListener('change', setImages);
+        
+        function isOverSlider(e) {
+          const rect = slider.getBoundingClientRect();
+          return (
+            e.clientX >= rect.left &&
+            e.clientX <= rect.right &&
+            e.clientY >= rect.top &&
+            e.clientY <= rect.bottom
+          );
+        }
+        
+        beforeImageUrl.addEventListener('input', setImages);
+        afterImageUrl.addEventListener('input', setImages);
         beforeImageFile.addEventListener('change', (e) => handleFileSelect(e, beforeImage, 'before'));
         afterImageFile.addEventListener('change', (e) => handleFileSelect(e, afterImage, 'after'));
-        
+                
         beforeAspectBtn.addEventListener('click', () => setAspectRatio('before'));
         afterAspectBtn.addEventListener('click', () => setAspectRatio('after'));
         fitBothBtn.addEventListener('click', () => setAspectRatio('both'));
-
+        
         container.addEventListener('wheel', handleWheel, { passive: false });
-
-        container.addEventListener('mousedown', (e) => {
-            if (e.target === slider) {
-                isDragging = true;
-            } else {
-                isPanning = true;
-                panStartX = e.clientX;
-                panStartY = e.clientY;
-                imageContainer.classList.add('panning');
-            }
-        });
-
-        container.addEventListener('touchstart', (e) => {
-            if (e.target === slider) {
-                isDragging = true;
-            } else {
-                const touch = e.touches[0];
-                isPanning = true;
-                panStartX = touch.clientX;
-                panStartY = touch.clientY;
-                imageContainer.classList.add('panning');
-            }
-        });
-
+        
         let rafId;
-
+        
+        container.addEventListener('mousedown', (e) => {
+            isOnSlider = isOverSlider(e);
+            if (isOnSlider) {
+                panningTimeout = setTimeout(() => {
+                    isPanningImage = true;
+                    panStartX = e.clientX;
+                    panStartY = e.clientY;
+                    imageContainer.classList.add('panning');
+                }, longPressThreshold);
+            }
+        });
+                
+        container.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            isOnSlider = isOverSlider(touch);
+            if (isOnSlider) {
+                panningTimeout = setTimeout(() => {
+                    isPanningImage = true;
+                    panStartX = touch.clientX;
+                    panStartY = touch.clientY;
+                    imageContainer.classList.add('panning');
+                }, longPressThreshold);
+            }
+        });
+                
         document.addEventListener('mousemove', (e) => {
-            if (isDragging) {
+            if (isOnSlider && isDraggingSlider) {
                 if (rafId) cancelAnimationFrame(rafId);
                 rafId = requestAnimationFrame(() => moveSlider(e));
-            } else if (isPanning) {
+            } else if (isPanningImage) {
                 const deltaX = e.clientX - panStartX;
                 const deltaY = e.clientY - panStartY;
                 currentPanX += deltaX;
@@ -364,14 +379,17 @@
                 updatePan();
                 panStartX = e.clientX;
                 panStartY = e.clientY;
+            } else {
+                moveSlider(e);
             }
         });
-
+                
         document.addEventListener('touchmove', (e) => {
-            if (isDragging) {
+            e.preventDefault();
+            if (isOnSlider && isDraggingSlider) {
                 if (rafId) cancelAnimationFrame(rafId);
                 rafId = requestAnimationFrame(() => moveSlider(e.touches[0]));
-            } else if (isPanning) {
+            } else if (isPanningImage) {
                 const deltaX = e.touches[0].clientX - panStartX;
                 const deltaY = e.touches[0].clientY - panStartY;
                 currentPanX += deltaX;
@@ -379,50 +397,50 @@
                 updatePan();
                 panStartX = e.touches[0].clientX;
                 panStartY = e.touches[0].clientY;
+            } else {
+                moveSlider(e.touches[0]);
+            }
+        }, { passive: false });
+                
+        document.addEventListener('mouseup', () => {
+            isDraggingSlider = false;
+            isPanningImage = false;
+            imageContainer.classList.remove('panning');
+            if (rafId) cancelAnimationFrame(rafId);
+            clearTimeout(panningTimeout);
+        });
+                
+        document.addEventListener('touchend', () => {
+            isDraggingSlider = false;
+            isPanningImage = false;
+            imageContainer.classList.remove('panning');
+            if (rafId) cancelAnimationFrame(rafId);
+            clearTimeout(panningTimeout);
+        });
+                
+        container.addEventListener('click', (e) => {
+            if (!isPanningImage && e.target !== slider) {
+                moveSlider(e);
             }
         });
-
-        document.addEventListener('mouseup', () => {
-            isDragging = false;
-            isPanning = false;
-            imageContainer.classList.remove('panning');
-            if (rafId) cancelAnimationFrame(rafId);
-        });
-
-        document.addEventListener('touchend', () => {
-            isDragging = false;
-            isPanning = false;
-            imageContainer.classList.remove('panning');
-            if (rafId) cancelAnimationFrame(rafId);
-        });
-
-        slider.addEventListener('mousedown', (e) => {
-            e.stopPropagation();
-            isDragging = true;
-        });
-
-        slider.addEventListener('touchstart', (e) => {
-            e.stopPropagation();
-            isDragging = true;
-        });
-
+        
         zoomInBtn.addEventListener('click', () => {
             zoom *= 1.2;
             updateZoom();
         });
-
+        
         zoomOutBtn.addEventListener('click', () => {
             zoom /= 1.2;
             updateZoom();
         });
-
+        
         resetZoomBtn.addEventListener('click', () => {
             zoom = 1;
             currentPanX = 0;
             currentPanY = 0;
             updateZoom();
         });
-
+        
         window.addEventListener('resize', () => {
             adjustImageContainer();
         });
