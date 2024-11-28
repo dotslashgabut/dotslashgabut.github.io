@@ -25,19 +25,19 @@
             font-size: 24px;
         }
         .image-upload {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
             margin-bottom: 20px;
         }
         .image-upload input {
-            width: calc(50% - 10px);
             padding: 10px;
-            margin-bottom: 10px;
             background-color: #333;
             color: #fff;
-            border: none;
+            border: 1px solid #444;
             border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
         }
         .comparison-container {
             position: relative;
@@ -46,14 +46,14 @@
             margin: 0 auto;
             overflow: hidden;
             background-color: #333;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         .image-container {
             position: relative;
             width: 100%;
             cursor: move;
-        }
-        .image-container.panning {
-            cursor: move;
+            background: repeating-conic-gradient(#222 0% 25%, #333 0% 50%) 50% / 20px 20px;
         }
         .image-before, .image-after {
             position: absolute;
@@ -67,7 +67,7 @@
         .image-after {
             width: 50%;
             overflow: hidden;
-            transition: width 0.08s ease;
+            transition: width 0.1s ease-out;
         }
         .slider {
             position: absolute;
@@ -80,7 +80,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            transition: left 0.08s ease;
+            transition: left 0.1s ease-out;
         }
         .slider::before {
             content: "";
@@ -88,11 +88,14 @@
             width: 1px;
             height: 100%;
             background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
         }
         .slider::after {
+            content: "";
             color: #fff;
-            font-size: 12px;
-            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+            font-size: 24px;
+            position: absolute;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
         }
         .controls {
             display: flex;
@@ -107,21 +110,31 @@
         }
         button {
             padding: 10px 20px;
-            background-color: #333;
+            background-color: #444;
             color: #fff;
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        button:hover {
+            background-color: #555;
         }
         button.active {
             background-color: #666;
         }
         @media (max-width: 600px) {
-            .image-upload input {
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            .zoom-controls, .aspect-controls {
                 width: 100%;
+                justify-content: center;
             }
             button {
                 padding: 8px 16px;
+                font-size: 14px;
             }
         }
     </style>
@@ -132,19 +145,21 @@
         <div class="image-upload">
             <input type="file" id="afterImageFile" accept="image/*">
             <input type="file" id="beforeImageFile" accept="image/*">
+        </div>
+        <div class="image-upload">
             <input type="text" id="afterImageUrl" placeholder="Enter first image URL">
             <input type="text" id="beforeImageUrl" placeholder="Enter second image URL">
         </div>
         <div class="controls">
             <div class="zoom-controls">
-                <button id="zoomIn">Zoom In</button>
-                <button id="zoomOut">Zoom Out</button>
-                <button id="resetZoom">Reset Zoom</button>
+                <button id="zoomIn" title="Zoom In">+</button>
+                <button id="zoomOut" title="Zoom Out">-</button>
+                <button id="resetZoom" title="Reset View">Reset</button>
             </div>
             <div class="aspect-controls">
-                <button id="beforeAspect" class="active">Before Aspect</button>
-                <button id="afterAspect">After Aspect</button>
-                <button id="fitBoth">Fit Both</button>
+                <button id="afterAspect" class="active" title="Use First Image Aspect">First</button>
+                <button id="beforeAspect" title="Use Second Image Aspect">Second</button>
+                <button id="fitBoth" title="Fit Both Images">Fit All</button>
             </div>
         </div>
         <div class="comparison-container">
@@ -172,7 +187,6 @@
         const beforeAspectBtn = document.getElementById('beforeAspect');
         const afterAspectBtn = document.getElementById('afterAspect');
         const fitBothBtn = document.getElementById('fitBoth');
-        const longPressThreshold = 10;
         
         let zoom = 1;
         let beforeWidth, beforeHeight, afterWidth, afterHeight;
@@ -181,9 +195,7 @@
         let currentPanY = 0;
         let aspectRatioMode = 'before';
         let sliderPosition = 50;
-        let isDraggingSlider = false;
-        let isPanningImage = false;
-        let panningTimeout;
+        let isDragging = false;
         let isOnSlider = false;
         
         function setImages() {
@@ -303,7 +315,7 @@
             const imageY = mouseY - currentPanY;
             
             zoom *= delta;
-            zoom = Math.min(Math.max(zoom, 0.1), 10);
+            zoom = Math.min(Math.max(zoom, 0.1), 50);
             
             currentPanX = mouseX - imageX * delta;
             currentPanY = mouseY - imageY * delta;
@@ -344,34 +356,32 @@
         
         container.addEventListener('mousedown', (e) => {
             isOnSlider = isOverSlider(e);
-            if (isOnSlider) {
-                panningTimeout = setTimeout(() => {
-                    isPanningImage = true;
-                    panStartX = e.clientX;
-                    panStartY = e.clientY;
-                    imageContainer.classList.add('panning');
-                }, longPressThreshold);
+            isDragging = true;
+            if (!isOnSlider) {
+                panStartX = e.clientX;
+                panStartY = e.clientY;
+                imageContainer.classList.add('panning');
             }
         });
                 
         container.addEventListener('touchstart', (e) => {
             const touch = e.touches[0];
             isOnSlider = isOverSlider(touch);
-            if (isOnSlider) {
-                panningTimeout = setTimeout(() => {
-                    isPanningImage = true;
-                    panStartX = touch.clientX;
-                    panStartY = touch.clientY;
-                    imageContainer.classList.add('panning');
-                }, longPressThreshold);
+            isDragging = true;
+            if (!isOnSlider) {
+                panStartX = touch.clientX;
+                panStartY = touch.clientY;
+                imageContainer.classList.add('panning');
             }
         });
                 
         document.addEventListener('mousemove', (e) => {
-            if (isOnSlider && isDraggingSlider) {
+            if (!isDragging) return;
+            
+            if (isOnSlider) {
                 if (rafId) cancelAnimationFrame(rafId);
                 rafId = requestAnimationFrame(() => moveSlider(e));
-            } else if (isPanningImage) {
+            } else {
                 const deltaX = e.clientX - panStartX;
                 const deltaY = e.clientY - panStartY;
                 currentPanX += deltaX;
@@ -379,17 +389,17 @@
                 updatePan();
                 panStartX = e.clientX;
                 panStartY = e.clientY;
-            } else {
-                moveSlider(e);
             }
         });
                 
         document.addEventListener('touchmove', (e) => {
             e.preventDefault();
-            if (isOnSlider && isDraggingSlider) {
+            if (!isDragging) return;
+
+            if (isOnSlider) {
                 if (rafId) cancelAnimationFrame(rafId);
                 rafId = requestAnimationFrame(() => moveSlider(e.touches[0]));
-            } else if (isPanningImage) {
+            } else {
                 const deltaX = e.touches[0].clientX - panStartX;
                 const deltaY = e.touches[0].clientY - panStartY;
                 currentPanX += deltaX;
@@ -397,29 +407,23 @@
                 updatePan();
                 panStartX = e.touches[0].clientX;
                 panStartY = e.touches[0].clientY;
-            } else {
-                moveSlider(e.touches[0]);
             }
         }, { passive: false });
                 
         document.addEventListener('mouseup', () => {
-            isDraggingSlider = false;
-            isPanningImage = false;
+            isDragging = false;
             imageContainer.classList.remove('panning');
             if (rafId) cancelAnimationFrame(rafId);
-            clearTimeout(panningTimeout);
         });
                 
         document.addEventListener('touchend', () => {
-            isDraggingSlider = false;
-            isPanningImage = false;
+            isDragging = false;
             imageContainer.classList.remove('panning');
             if (rafId) cancelAnimationFrame(rafId);
-            clearTimeout(panningTimeout);
         });
                 
         container.addEventListener('click', (e) => {
-            if (!isPanningImage && e.target !== slider) {
+            if (!isDragging && e.target !== slider) {
                 moveSlider(e);
             }
         });
