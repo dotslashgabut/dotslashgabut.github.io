@@ -25,19 +25,19 @@
             font-size: 24px;
         }
         .image-upload {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
             margin-bottom: 20px;
         }
         .image-upload input {
+            width: calc(50% - 10px);
             padding: 10px;
+            margin-bottom: 10px;
             background-color: #333;
             color: #fff;
-            border: 1px solid #444;
+            border: none;
             border-radius: 4px;
-            width: 100%;
-            box-sizing: border-box;
         }
         .comparison-container {
             position: relative;
@@ -46,14 +46,14 @@
             margin: 0 auto;
             overflow: hidden;
             background-color: #333;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         .image-container {
             position: relative;
             width: 100%;
             cursor: move;
-            background: repeating-conic-gradient(#222 0% 25%, #333 0% 50%) 50% / 20px 20px;
+        }
+        .image-container.panning {
+            cursor: move;
         }
         .image-before, .image-after {
             position: absolute;
@@ -67,7 +67,7 @@
         .image-after {
             width: 50%;
             overflow: hidden;
-            transition: width 0.1s ease-out;
+            transition: width 0.08s ease;
         }
         .slider {
             position: absolute;
@@ -80,7 +80,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            transition: left 0.1s ease-out;
+            transition: left 0.08s ease;
         }
         .slider::before {
             content: "";
@@ -88,14 +88,11 @@
             width: 1px;
             height: 100%;
             background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
         }
         .slider::after {
-            content: "";
             color: #fff;
-            font-size: 24px;
-            position: absolute;
-            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            font-size: 12px;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
         }
         .controls {
             display: flex;
@@ -110,31 +107,21 @@
         }
         button {
             padding: 10px 20px;
-            background-color: #444;
+            background-color: #333;
             color: #fff;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            transition: background-color 0.2s ease;
-        }
-        button:hover {
-            background-color: #555;
         }
         button.active {
             background-color: #666;
         }
         @media (max-width: 600px) {
-            .controls {
-                flex-direction: column;
-                align-items: center;
-            }
-            .zoom-controls, .aspect-controls {
+            .image-upload input {
                 width: 100%;
-                justify-content: center;
             }
             button {
                 padding: 8px 16px;
-                font-size: 14px;
             }
         }
     </style>
@@ -145,21 +132,19 @@
         <div class="image-upload">
             <input type="file" id="afterImageFile" accept="image/*">
             <input type="file" id="beforeImageFile" accept="image/*">
-        </div>
-        <div class="image-upload">
             <input type="text" id="afterImageUrl" placeholder="Enter first image URL">
             <input type="text" id="beforeImageUrl" placeholder="Enter second image URL">
         </div>
         <div class="controls">
             <div class="zoom-controls">
-                <button id="zoomIn" title="Zoom In">+</button>
-                <button id="zoomOut" title="Zoom Out">-</button>
-                <button id="resetZoom" title="Reset View">Reset</button>
+                <button id="zoomIn">Zoom In</button>
+                <button id="zoomOut">Zoom Out</button>
+                <button id="resetZoom">Reset Zoom</button>
             </div>
             <div class="aspect-controls">
-                <button id="afterAspect" class="active" title="Use First Image Aspect">First</button>
-                <button id="beforeAspect" title="Use Second Image Aspect">Second</button>
-                <button id="fitBoth" title="Fit Both Images">Fit All</button>
+                <button id="beforeAspect" class="active">Before Aspect</button>
+                <button id="afterAspect">After Aspect</button>
+                <button id="fitBoth">Fit Both</button>
             </div>
         </div>
         <div class="comparison-container">
@@ -187,7 +172,7 @@
         const beforeAspectBtn = document.getElementById('beforeAspect');
         const afterAspectBtn = document.getElementById('afterAspect');
         const fitBothBtn = document.getElementById('fitBoth');
-        const longPressThreshold = 5;
+        const longPressThreshold = 10;
         
         let zoom = 1;
         let beforeWidth, beforeHeight, afterWidth, afterHeight;
