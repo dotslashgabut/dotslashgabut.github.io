@@ -315,7 +315,7 @@
             const imageY = mouseY - currentPanY;
             
             zoom *= delta;
-            zoom = Math.min(Math.max(zoom, 0.1), 50);
+            zoom = Math.min(Math.max(zoom, 0.01), 100);
             
             currentPanX = mouseX - imageX * delta;
             currentPanY = mouseY - imageY * delta;
