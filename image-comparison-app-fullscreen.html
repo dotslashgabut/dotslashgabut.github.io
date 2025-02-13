@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Comparison App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a; /* Dark background */
+            color: #ffffff; /* Light text color */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: #1a1a1a;
+            z-index: -1; /* Place behind other elements */
+            opacity: 0.5; /* Make it subtle */
+        }
+        .controls {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: transparent;
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .controls input,
+        .controls button {
+            padding: 5px;
+            background-color: #333;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 4px;
+            cursor: pointer;
+            min-width: 30px;
+            max-width: 200px;
+            transition: background-color 0.2s ease;
+        }
+        .controls input:hover,
+        .controls button:hover {
+            background-color: #555;
+        }
+        .controls button.active {
+            background-color: #666;
+        }
+        .comparison-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh; /* Full viewport height */
+            overflow: hidden;
+            z-index: 0; /* Ensure it stays behind the controls */
+        }
+        .image-before, .image-after {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-repeat: no-repeat;
+            background-position: center center; /* Center the images */
+            background-size: auto 100%; /* Fit to height */
+            display: none; /* Hide images initially */
+        }
+        .image-after {
+            width: 50%;
+            overflow: hidden;
+            transition: width 0.1s ease-out;
+        }
+        .slider {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 40px;
+            transform: translateX(-50%);
+            cursor: ew-resize;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: left 0.1s ease-out;
+            pointer-events: none;
+        }
+        .slider::before {
+            content: "";
+            position: absolute;
+            width: 1px;
+            height: 100%;
+            background-color: #fff;
+        }
+        .slider::after {
+            content: "";
+            color: #fff;
+            font-size: 24px;
+            position: absolute;
+        }
+        @media (max-width: 600px) {
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            .controls input,
+            .controls button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Image Comparison App</h1>
+        <div class="controls">
+            <input type="file" id="afterImageFile" accept="image/*">
+            <input type="file" id="beforeImageFile" accept="image/*">
+            <input type="text" id="afterImageUrl" placeholder="Enter first image URL">
+            <input type="text" id="beforeImageUrl" placeholder="Enter second image URL">
+            <button id="zoomIn" title="Zoom In">+</button>
+            <button id="zoomOut" title="Zoom Out">-</button>
+            <button id="resetZoom" title="Reset View">Reset</button>
+            <button id="afterAspect" class="active" title="Use First Image Aspect">First</button>
+            <button id="beforeAspect" title="Use Second Image Aspect">Second</button>
+            <button id="fitBoth" title="Fit Both Images">Fit All</button>
+        </div>
+        <div class="comparison-container">
+            <div class="image-before"></div>
+            <div class="image-after"></div>
+            <div class="slider" draggable="false"></div>
+        </div>
+    </div>
+
+    <script>
+        const beforeImageUrl = document.getElementById('beforeImageUrl');
+        const afterImageUrl = document.getElementById('afterImageUrl');
+        const beforeImageFile = document.getElementById('beforeImageFile');
+        const afterImageFile = document.getElementById('afterImageFile');
+        const slider = document.querySelector('.slider');
+        const beforeImage = document.querySelector('.image-before');
+        const afterImage = document.querySelector('.image-after');
+        const container = document.querySelector('.comparison-container');
+        const zoomInBtn = document.getElementById('zoomIn');
+        const zoomOutBtn = document.getElementById('zoomOut');
+        const resetZoomBtn = document.getElementById('resetZoom');
+        const beforeAspectBtn = document.getElementById('beforeAspect');
+        const afterAspectBtn = document.getElementById('afterAspect');
+        const fitBothBtn = document.getElementById('fitBoth');
+        
+        let zoom = 1;
+        let beforeWidth, beforeHeight, afterWidth, afterHeight;
+        let panStartX, panStartY;
+        let currentPanX = 0;
+        let currentPanY = 0;
+        let aspectRatioMode = 'before';
+        let sliderPosition = 50;
+        let isDraggingSlider = false;
+        let isPanningImage = false;
+        let isOnSlider = false;
+        let beforeImageLoaded = false;
+        let afterImageLoaded = false;
+
+        function setImages() {
+            if (beforeImageUrl.value) {
+                loadImage(beforeImageUrl.value, beforeImage, 'before');
+            }
+            if (afterImageUrl.value) {
+                loadImage(afterImageUrl.value, afterImage, 'after');
+            }
+        }
+        
+        function loadImage(src, imgElement, type) {
+            const img = new Image();
+            img.onload = function() {
+                imgElement.style.backgroundImage = `url(${src})`;
+                if (type === 'before') {
+                    beforeWidth = img.width;
+                    beforeHeight = img.height;
+                    beforeImageLoaded = true;
+                } else {
+                    afterWidth = img.width;
+                    afterHeight = img.height;
+                    afterImageLoaded = true;
+                }
+
+                // Check if both images are loaded
+                if (beforeImageLoaded && afterImageLoaded) {
+                    resetImagePosition(beforeImage, 'before');
+                    resetImagePosition(afterImage, 'after');
+                    beforeImage.style.display = 'block'; // Show before image
+                    afterImage.style.display = 'block'; // Show after image
+                    adjustImageContainer();
+                }
+            };
+            img.src = src;
+        }
+        
+        function resetImagePosition(imgElement, type) {
+            const viewportHeight = window.innerHeight;
+            const aspectRatio = (type === 'before' ? beforeWidth / beforeHeight : afterWidth / afterHeight);
+            const scale = viewportHeight / (type === 'before' ? beforeHeight : afterHeight);
+            
+            imgElement.style.backgroundSize = `${beforeWidth * scale}px ${beforeHeight * scale}px`;
+            imgElement.style.backgroundPosition = 'center center';
+            currentPanX = 0;
+            currentPanY = 0;
+            zoom = 0.5;
+        }
+        
+        function handleFileSelect(event, imgElement, type) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    loadImage(e.target.result, imgElement, type);
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        function adjustImageContainer() {
+            if (!beforeWidth || !afterWidth) return;
+        
+            let targetWidth, targetHeight;
+        
+            switch (aspectRatioMode) {
+                case 'before':
+                    targetWidth = beforeWidth;
+                    targetHeight = beforeHeight;
+                    break;
+                case 'after':
+                    targetWidth = afterWidth;
+                    targetHeight = afterHeight;
+                    break;
+                case 'both':
+                    targetWidth = Math.max(beforeWidth, afterWidth);
+                    targetHeight = Math.max(beforeHeight, afterHeight);
+                    break;
+            }
+        
+            const aspectRatio = targetWidth / targetHeight;
+            const containerWidth = container.offsetWidth;
+            const containerHeight = containerWidth / aspectRatio;
+            
+            const beforeScale = Math.min(
+                containerWidth / beforeWidth,
+                containerHeight / beforeHeight
+            ) * zoom;
+            
+            const afterScale = Math.min(
+                containerWidth / afterWidth,
+                containerHeight / afterHeight
+            ) * zoom;
+        
+            beforeImage.style.backgroundSize = `${beforeWidth * beforeScale}px ${beforeHeight * beforeScale}px`;
+            afterImage.style.backgroundSize = `${afterWidth * afterScale}px ${afterHeight * afterScale}px`;
+            
+            updateSliderPosition();
+        }
+        
+        function updateSliderPosition() {
+            slider.style.left = `${sliderPosition}%`;
+            afterImage.style.width = `${sliderPosition}%`;
+        }
+        
+        function moveSlider(e) {
+            const rect = container.getBoundingClientRect();
+            const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+            sliderPosition = (x / rect.width) * 100;
+            updateSliderPosition();
+        }
+        
+        function updateZoom() {
+            adjustImageContainer();
+            updatePan();
+            updateSliderPosition();
+        }
+        
+        function updatePan() {
+            const beforePos = `${currentPanX}px ${currentPanY}px`;
+            const afterPos = `${currentPanX}px ${currentPanY}px`;
+            beforeImage.style.backgroundPosition = beforePos;
+            afterImage.style.backgroundPosition = afterPos;
+        }
+        
+        function handleWheel(e) {
+            e.preventDefault();
+            
+            const zoomFactor = 1.1;
+            const delta = e.deltaY > 0 ? 1 / zoomFactor : zoomFactor;
+            
+            const rect = container.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            const imageX = mouseX - currentPanX;
+            const imageY = mouseY - currentPanY;
+            
+            zoom *= delta;
+            zoom = Math.min(Math.max(zoom, 0.01), 100);
+            
+            currentPanX = mouseX - imageX * delta;
+            currentPanY = mouseY - imageY * delta;
+            
+            updateZoom();
+        }
+        
+        function setAspectRatio(mode) {
+            aspectRatioMode = mode;
+            beforeAspectBtn.classList.toggle('active', mode === 'before');
+            afterAspectBtn.classList.toggle('active', mode === 'after');
+            fitBothBtn.classList.toggle('active', mode === 'both');
+            adjustImageContainer();
+        }
+        
+        function isOverSlider(e) {
+          const rect = slider.getBoundingClientRect();
+          return (
+            e.clientX >= rect.left &&
+            e.clientX <= rect.right &&
+            e.clientY >= rect.top &&
+            e.clientY <= rect.bottom
+          );
+        }
+        
+        beforeImageUrl.addEventListener('input', setImages);
+        afterImageUrl.addEventListener('input', setImages);
+        beforeImageFile.addEventListener('change', (e) => handleFileSelect(e, beforeImage, 'before'));
+        afterImageFile.addEventListener('change', (e) => handleFileSelect(e, afterImage, 'after'));
+                
+        beforeAspectBtn.addEventListener('click', () => setAspectRatio('before'));
+        afterAspectBtn.addEventListener('click', () => setAspectRatio('after'));
+        fitBothBtn.addEventListener('click', () => setAspectRatio('both'));
+        
+        container.addEventListener('wheel', handleWheel, { passive: false });
+        
+        let rafId;
+        
+        container.addEventListener('mousedown', (e) => {
+            isOnSlider = isOverSlider(e);
+            if (isOnSlider) {
+                isPanningImage = true;
+                panStartX = e.clientX;
+                panStartY = e.clientY;
+            }
+        });
+                
+        container.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            isOnSlider = isOverSlider(touch);
+            if (isOnSlider) {
+                isPanningImage = true;
+                panStartX = touch.clientX;
+                panStartY = touch.clientY;
+            }
+        });
+                
+        document.addEventListener('mousemove', (e) => {
+            if (isOnSlider && isDraggingSlider) {
+                if (rafId) cancelAnimationFrame(rafId);
+                rafId = requestAnimationFrame(() => moveSlider(e));
+            } else if (isPanningImage) {
+                const deltaX = e.clientX - panStartX;
+                const deltaY = e.clientY - panStartY;
+                currentPanX += deltaX;
+                currentPanY += deltaY;
+                updatePan();
+                panStartX = e.clientX;
+                panStartY = e.clientY;
+            } else {
+                moveSlider(e);
+            }
+        });
+                
+        document.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (isOnSlider && isDraggingSlider) {
+                if (rafId) cancelAnimationFrame(rafId);
+                rafId = requestAnimationFrame(() => moveSlider(e.touches[0]));
+            } else if (isPanningImage) {
+                const deltaX = e.touches[0].clientX - panStartX;
+                const deltaY = e.touches[0].clientY - panStartY;
+                currentPanX += deltaX;
+                currentPanY += deltaY;
+                updatePan();
+                panStartX = e.touches[0].clientX;
+                panStartY = e.touches[0].clientY;
+            } else {
+                moveSlider(e.touches[0]);
+            }
+        }, { passive: false });
+                
+        document.addEventListener('mouseup', () => {
+            isDraggingSlider = false;
+            isPanningImage = false;
+            if (rafId) cancelAnimationFrame(rafId);
+        });
+                
+        document.addEventListener('touchend', () => {
+            isDraggingSlider = false;
+            isPanningImage = false;
+            if (rafId) cancelAnimationFrame(rafId);
+        });
+                
+        container.addEventListener('click', (e) => {
+            if (!isPanningImage && e.target !== slider) {
+                moveSlider(e);
+            }
+        });
+        
+        zoomInBtn.addEventListener('click', () => {
+            zoom *= 1.2;
+            updateZoom();
+        });
+        
+        zoomOutBtn.addEventListener('click', () => {
+            zoom /= 1.2;
+            updateZoom();
+        });
+        
+        resetZoomBtn.addEventListener('click', () => {
+            zoom = 1;
+            currentPanX = 0;
+            currentPanY = 0;
+            updateZoom();
+        });
+        
+        window.addEventListener('resize', () => {
+            adjustImageContainer();
+        });
+    </script>
+</body>
+</html>
