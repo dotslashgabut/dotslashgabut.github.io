@@ -95,9 +95,12 @@
         .controls button.active {
             background-color: #666;
         }
-        .controls input#resetZoom,
-        .controls button#resetZoom {
+        .controls button.reset {
             background-color: #cc0000;
+        }
+        .controls input.reset:hover,
+        .controls button.reset:hover {
+            background-color: #ff0000;
         }
         .comparison-container {
             position: fixed;
@@ -205,7 +208,7 @@
             </div>
             <div class="button-group">
                 <div class="zoom-buttons">
-                    <button id="resetZoom" title="Reset View">Reset</button>
+                    <button id="resetZoom" class="reset" title="Reset View">Reset</button>
                     <button id="zoomIn" title="Zoom In">+</button>
                     <button id="zoomOut" title="Zoom Out">-</button>
                 </div>
