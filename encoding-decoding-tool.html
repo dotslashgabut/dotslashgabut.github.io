@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encoding/Decoding Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            display: flex;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+        }
+        
+        .sidebar {
+            width: 250px;
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar h1 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .menu-item {
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .menu-item:hover, .menu-item.active {
+            background-color: #34495e;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .converter-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            flex: 1;
+        }
+        
+        h2 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        
+        .input-group, .output-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        select, textarea, button {
+            width: 100%;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-size: 1rem;
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        select {
+            background-color: white;
+        }
+        
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .output-area {
+            min-height: 100px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                padding: 10px;
+            }
+            
+            .content {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h1>Encoding Tool</h1>
+        <div class="menu-item active" data-method="ascii-to-others">ASCII to Others</div>
+        <div class="menu-item" data-method="hex-to-others">Hex to Others</div>
+        <div class="menu-item" data-method="base32-to-others">Base32 to Others</div>
+        <div class="menu-item" data-method="base64-to-others">Base64 to Others</div>
+        <div class="menu-item" data-method="url-to-others">URL to Others</div>
+    </div>
+    
+    <div class="content">
+        <div class="converter-container">
+            <h2 id="converter-title">ASCII to Other Formats</h2>
+            
+            <div class="input-group">
+                <label for="input-text">Input:</label>
+                <textarea id="input-text" placeholder="Enter text..."></textarea>
+            </div>
+            
+            <button id="convert-btn">Convert</button>
+            
+            <div class="output-group">
+                <label>Output:</label>
+                <div id="ascii-output" class="output-section" style="display: none;">
+                    <label>ASCII:</label>
+                    <div class="output-area" id="ascii-output-text"></div>
+                </div>
+                <div id="hex-output" class="output-section">
+                    <label>Hex:</label>
+                    <div class="output-area" id="hex-output-text"></div>
+                </div>
+                <div id="base32-output" class="output-section">
+                    <label>Base32:</label>
+                    <div class="output-area" id="base32-output-text"></div>
+                </div>
+                <div id="base64-output" class="output-section">
+                    <label>Base64:</label>
+                    <div class="output-area" id="base64-output-text"></div>
+                </div>
+                <div id="url-output" class="output-section">
+                    <label>URL Encoded:</label>
+                    <div class="output-area" id="url-output-text"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Helper functions for encoding/decoding
+        const asciiToHex = (str) => {
+            let result = '';
+            for (let i = 0; i < str.length; i++) {
+                const hex = str.charCodeAt(i).toString(16);
+                result += (hex.length === 1 ? '0' + hex : hex);
+            }
+            return result.toUpperCase();
+        };
+
+        const hexToAscii = (hex) => {
+            // Remove any spaces or non-hex characters
+            hex = hex.replace(/[^0-9A-Fa-f]/g, '');
+            
+            let result = '';
+            for (let i = 0; i < hex.length; i += 2) {
+                const charCode = parseInt(hex.substr(i, 2), 16);
+                result += String.fromCharCode(charCode);
+            }
+            return result;
+        };
+
+        // Base32 encoding/decoding
+        const base32Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+        
+        const asciiToBase32 = (str) => {
+            let bits = '';
+            for (let i = 0; i < str.length; i++) {
+                const charCode = str.charCodeAt(i);
+                bits += charCode.toString(2).padStart(8, '0');
+            }
+            
+            // Pad to multiple of 5
+            const padding = bits.length % 5 ? 5 - (bits.length % 5) : 0;
+            bits = bits.padEnd(bits.length + padding, '0');
+            
+            let result = '';
+            for (let i = 0; i < bits.length; i += 5) {
+                const chunk = bits.substr(i, 5);
+                const index = parseInt(chunk, 2);
+                result += base32Chars[index];
+            }
+            
+            // Add padding characters
+            const padCount = str.length % 5;
+            if (padCount > 0) {
+                const padChars = [0, 6, 4, 3, 1][padCount];
+                result = result.padEnd(result.length + padChars, '=');
+            }
+            
+            return result;
+        };
+        
+        const base32ToAscii = (base32) => {
+            // Remove padding and non-base32 characters
+            base32 = base32.replace(/[^A-Z2-7]/g, '');
+            
+            let bits = '';
+            for (let i = 0; i < base32.length; i++) {
+                const char = base32.charAt(i);
+                const index = base32Chars.indexOf(char);
+                if (index !== -1) {
+                    bits += index.toString(2).padStart(5, '0');
+                }
+            }
+            
+            let result = '';
+            for (let i = 0; i < bits.length; i += 8) {
+                const chunk = bits.substr(i, 8);
+                if (chunk.length === 8) {
+                    const charCode = parseInt(chunk, 2);
+                    result += String.fromCharCode(charCode);
+                }
+            }
+            
+            return result;
+        };
+
+        // Base64 encoding/decoding
+        const asciiToBase64 = (str) => {
+            return btoa(str);
+        };
+        
+        const base64ToAscii = (base64) => {
+            try {
+                return atob(base64);
+            } catch (e) {
+                return "Invalid Base64 input";
+            }
+        };
+
+        // URL encoding/decoding
+        const asciiToUrl = (str) => {
+            return encodeURIComponent(str);
+        };
+        
+        const urlToAscii = (url) => {
+            try {
+                return decodeURIComponent(url);
+            } catch (e) {
+                return "Invalid URL encoded input";
+            }
+        };
+
+        // UI Logic
+        const menuItems = document.querySelectorAll('.menu-item');
+        const convertBtn = document.getElementById('convert-btn');
+        const converterTitle = document.getElementById('converter-title');
+        const inputText = document.getElementById('input-text');
+        const asciiOutput = document.getElementById('ascii-output');
+        const hexOutput = document.getElementById('hex-output');
+        const base32Output = document.getElementById('base32-output');
+        const base64Output = document.getElementById('base64-output');
+        const urlOutput = document.getElementById('url-output');
+        
+        let currentMethod = 'ascii-to-others';
+
+        // Set active menu item
+        menuItems.forEach(item => {
+            item.addEventListener('click', () => {
+                menuItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                currentMethod = item.dataset.method;
+                
+                // Update UI based on selected method
+                switch (currentMethod) {
+                    case 'ascii-to-others':
+                        converterTitle.textContent = 'ASCII to Other Formats';
+                        asciiOutput.style.display = 'none';
+                        hexOutput.style.display = 'block';
+                        base32Output.style.display = 'block';
+                        base64Output.style.display = 'block';
+                        urlOutput.style.display = 'block';
+                        break;
+                    case 'hex-to-others':
+                        converterTitle.textContent = 'Hex to Other Formats';
+                        asciiOutput.style.display = 'block';
+                        hexOutput.style.display = 'none';
+                        base32Output.style.display = 'block';
+                        base64Output.style.display = 'block';
+                        urlOutput.style.display = 'block';
+                        break;
+                    case 'base32-to-others':
+                        converterTitle.textContent = 'Base32 to Other Formats';
+                        asciiOutput.style.display = 'block';
+                        hexOutput.style.display = 'block';
+                        base32Output.style.display = 'none';
+                        base64Output.style.display = 'block';
+                        urlOutput.style.display = 'block';
+                        break;
+                    case 'base64-to-others':
+                        converterTitle.textContent = 'Base64 to Other Formats';
+                        asciiOutput.style.display = 'block';
+                        hexOutput.style.display = 'block';
+                        base32Output.style.display = 'block';
+                        base64Output.style.display = 'none';
+                        urlOutput.style.display = 'block';
+                        break;
+                    case 'url-to-others':
+                        converterTitle.textContent = 'URL Encoded to Other Formats';
+                        asciiOutput.style.display = 'block';
+                        hexOutput.style.display = 'block';
+                        base32Output.style.display = 'block';
+                        base64Output.style.display = 'block';
+                        urlOutput.style.display = 'none';
+                        break;
+                }
+                
+                // Clear input and outputs
+                inputText.value = '';
+                clearOutputs();
+            });
+        });
+
+        // Convert button click
+        convertBtn.addEventListener('click', () => {
+            const input = inputText.value;
+            if (!input) return;
+            
+            let ascii, hex, base32, base64, url;
+            
+            switch (currentMethod) {
+                case 'ascii-to-others':
+                    ascii = input;
+                    hex = asciiToHex(ascii);
+                    base32 = asciiToBase32(ascii);
+                    base64 = asciiToBase64(ascii);
+                    url = asciiToUrl(ascii);
+                    break;
+                case 'hex-to-others':
+                    hex = input;
+                    try {
+                        ascii = hexToAscii(hex);
+                        base32 = asciiToBase32(ascii);
+                        base64 = asciiToBase64(ascii);
+                        url = asciiToUrl(ascii);
+                    } catch (e) {
+                        ascii = "Invalid hex input";
+                        base32 = "";
+                        base64 = "";
+                        url = "";
+                    }
+                    break;
+                case 'base32-to-others':
+                    base32 = input;
+                    try {
+                        ascii = base32ToAscii(base32);
+                        hex = asciiToHex(ascii);
+                        base64 = asciiToBase64(ascii);
+                        url = asciiToUrl(ascii);
+                    } catch (e) {
+                        ascii = "Invalid base32 input";
+                        hex = "";
+                        base64 = "";
+                        url = "";
+                    }
+                    break;
+                case 'base64-to-others':
+                    base64 = input;
+                    try {
+                        ascii = base64ToAscii(base64);
+                        hex = asciiToHex(ascii);
+                        base32 = asciiToBase32(ascii);
+                        url = asciiToUrl(ascii);
+                    } catch (e) {
+                        ascii = "Invalid base64 input";
+                        hex = "";
+                        base32 = "";
+                        url = "";
+                    }
+                    break;
+                case 'url-to-others':
+                    url = input;
+                    try {
+                        ascii = urlToAscii(url);
+                        hex = asciiToHex(ascii);
+                        base32 = asciiToBase32(ascii);
+                        base64 = asciiToBase64(ascii);
+                    } catch (e) {
+                        ascii = "Invalid URL encoded input";
+                        hex = "";
+                        base32 = "";
+                        base64 = "";
+                    }
+                    break;
+            }
+            
+            // Update outputs
+            document.getElementById('ascii-output-text').textContent = ascii;
+            document.getElementById('hex-output-text').textContent = hex;
+            document.getElementById('base32-output-text').textContent = base32;
+            document.getElementById('base64-output-text').textContent = base64;
+            document.getElementById('url-output-text').textContent = url;
+        });
+
+        // Clear output areas
+        function clearOutputs() {
+            document.getElementById('ascii-output-text').textContent = '';
+            document.getElementById('hex-output-text').textContent = '';
+            document.getElementById('base32-output-text').textContent = '';
+            document.getElementById('base64-output-text').textContent = '';
+            document.getElementById('url-output-text').textContent = '';
+        }
+    </script>
+</body>
+</html>
