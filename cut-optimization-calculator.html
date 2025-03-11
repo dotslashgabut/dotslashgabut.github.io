@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cut Optimization Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .input-section {
+            margin-bottom: 25px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            flex: 1 1 100%;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .input-group input {
+            flex: 1 1 calc(33% - 10px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        .removeItem {
+            background: #ff4444;
+            margin-left: auto;
+            display: block;
+        }
+
+        #results {
+            margin-top: 30px;
+        }
+
+        .layout {
+            position: relative;
+            background: #eee;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+        }
+
+        .item-box {
+            position: absolute;
+            background: #4CAF50;
+            border: 1px solid #333;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cut Optimization Calculator</h1>
+        
+        <div class="input-section">
+            <h2>Source Material Dimensions</h2>
+            <div class="input-group">
+                <input type="number" id="sourceWidth" placeholder="Width" min="1" required>
+                <input type="number" id="sourceHeight" placeholder="Height" min="1" required>
+            </div>
+        </div>
+
+        <div class="input-section">
+            <h2>Items to Cut</h2>
+            <div id="itemsContainer">
+                <div class="item">
+                    <div class="input-group">
+                        <input type="number" class="itemWidth" placeholder="Item Width" min="1" required>
+                        <input type="number" class="itemHeight" placeholder="Item Height" min="1" required>
+                        <input type="number" class="itemQuantity" placeholder="Quantity" min="1" required>
+                        <button class="removeItem">Remove</button>
+                    </div>
+                </div>
+            </div>
+            <button id="addItem">Add Item</button>
+        </div>
+
+        <button id="calculate">Calculate Optimal Layout</button>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        document.getElementById('addItem').addEventListener('click', function(e) {
+            e.preventDefault();
+            const newItem = document.createElement('div');
+            newItem.className = 'item';
+            newItem.innerHTML = `
+                <div class="input-group">
+                    <input type="number" class="itemWidth" placeholder="Item Width" min="1" required>
+                    <input type="number" class="itemHeight" placeholder="Item Height" min="1" required>
+                    <input type="number" class="itemQuantity" placeholder="Quantity" min="1" required>
+                    <button class="removeItem">Remove</button>
+                </div>
+            `;
+            document.getElementById('itemsContainer').appendChild(newItem);
+        });
+
+        document.getElementById('itemsContainer').addEventListener('click', function(e) {
+            if (e.target.classList.contains('removeItem')) {
+                e.target.closest('.item').remove();
+            }
+        });
+
+        document.getElementById('calculate').addEventListener('click', function() {
+            const sourceWidth = +document.getElementById('sourceWidth').value;
+            const sourceHeight = +document.getElementById('sourceHeight').value;
+            const items = [];
+            
+            document.querySelectorAll('#itemsContainer .item').forEach(item => {
+                const width = +item.querySelector('.itemWidth').value;
+                const height = +item.querySelector('.itemHeight').value;
+                const quantity = +item.querySelector('.itemQuantity').value;
+                
+                if (width > 0 && height > 0 && quantity > 0) {
+                    for (let i = 0; i < quantity; i++) {
+                        items.push({ width, height });
+                    }
+                }
+            });
+
+            if (items.length === 0) {
+                alert('Please add valid items');
+                return;
+            }
+
+            // Sort items by area descending
+            items.sort((a, b) => (b.width * b.height) - (a.width * a.height));
+
+            const placedItems = [];
+            let availableSpaces = [{ x: 0, y: 0, width: sourceWidth, height: sourceHeight }];
+
+            itemsLoop:
+            for (const item of items) {
+                for (let i = 0; i < availableSpaces.length; i++) {
+                    const space = availableSpaces[i];
+                    
+                    // Try original orientation
+                    if (item.width <= space.width && item.height <= space.height) {
+                        placeItem(space, item, false);
+                        continue itemsLoop;
+                    }
+                    // Try rotated orientation
+                    else if (item.height <= space.width && item.width <= space.height) {
+                        placeItem(space, item, true);
+                        continue itemsLoop;
+                    }
+                }
+                
+                // If no space found
+                alert(`Cannot fit all items! Item ${item.width}x${item.height} doesn't fit.`);
+                return;
+            }
+
+            function placeItem(space, item, rotated) {
+                const placed = {
+                    x: space.x,
+                    y: space.y,
+                    width: rotated ? item.height : item.width,
+                    height: rotated ? item.width : item.height,
+                    originalWidth: item.width,
+                    originalHeight: item.height,
+                    rotated: rotated
+                };
+                
+                placedItems.push(placed);
+                availableSpaces.splice(availableSpaces.indexOf(space), 1);
+                
+                // Split remaining space
+                const rightSpace = {
+                    x: space.x + placed.width,
+                    y: space.y,
+                    width: space.width - placed.width,
+                    height: placed.height
+                };
+                
+                const bottomSpace = {
+                    x: space.x,
+                    y: space.y + placed.height,
+                    width: space.width,
+                    height: space.height - placed.height
+                };
+                
+                if (rightSpace.width > 0 && rightSpace.height > 0) {
+                    availableSpaces.push(rightSpace);
+                }
+                if (bottomSpace.width > 0 && bottomSpace.height > 0) {
+                    availableSpaces.push(bottomSpace);
+                }
+            }
+
+            // Calculate results
+            const totalArea = sourceWidth * sourceHeight;
+            const usedArea = placedItems.reduce((sum, i) => sum + i.width * i.height, 0);
+            const waste = ((totalArea - usedArea) / totalArea) * 100;
+
+            // Generate visualization
+            const scale = Math.min(800 / sourceWidth, 600 / sourceHeight);
+            const displayItems = placedItems.map(item => `
+                <div class="item-box" 
+                     style="left:${item.x * scale}px; 
+                            top:${item.y * scale}px; 
+                            width:${item.width * scale}px; 
+                            height:${item.height * scale}px">
+                    ${item.originalWidth}x${item.originalHeight}${item.rotated ? ' (Rotated)' : ''}
+                </div>
+            `).join('');
+
+            // Update results
+            document.getElementById('results').innerHTML = `
+                <h2>Optimization Results</h2>
+                <p>Total Items: ${placedItems.length}</p>
+                <p>Material Used: ${((usedArea / totalArea) * 100).toFixed(2)}%</p>
+                <p>Waste: ${waste.toFixed(2)}%</p>
+                <div class="layout" style="width: ${sourceWidth * scale}px; height: ${sourceHeight * scale}px">
+                    ${displayItems}
+                </div>
+            `;
+        });
+    </script>
+</body>
+</html>
