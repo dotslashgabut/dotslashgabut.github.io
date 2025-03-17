@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paper Cut Optimizer</title>
+    <style>
+        :root {
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --accent: #3a86ff;
+            --accent-hover: #2a65cc;
+            --error: #ff5252;
+            --success: #4caf50;
+            --warning: #ff9800;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1, h2, h3 {
+            margin-bottom: 15px;
+            color: var(--text-primary);
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        @media (min-width: 768px) {
+            .container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        .card {
+            background-color: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            background-color: #2d2d2d;
+            color: var(--text-primary);
+            font-size: 16px;
+        }
+        
+        input:focus, select:focus {
+            outline: 2px solid var(--accent);
+            border-color: var(--accent);
+        }
+        
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background-color: var(--accent-hover);
+        }
+        
+        .tab-container {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        
+        .tab {
+            padding: 10px 15px;
+            background-color: #2d2d2d;
+            border: none;
+            border-radius: 5px 5px 0 0;
+            cursor: pointer;
+            flex: 1;
+            text-align: center;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        
+        .tab.active {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border-bottom: 3px solid var(--accent);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .preview-container {
+            width: 100%;
+            overflow: auto;
+            position: relative;
+            min-height: 400px;
+        }
+        
+        #preview {
+            background-color: #2d2d2d;
+            padding: 10px;
+            border-radius: 5px;
+            min-height: 300px;
+            position: relative;
+        }
+        
+        .cut-piece {
+            position: absolute;
+            background-color: var(--accent);
+            border: 1px solid #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            overflow: hidden;
+        }
+        
+        .source-sheet {
+            border: 2px dashed var(--text-secondary);
+            position: relative;
+        }
+        
+        .alert {
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-weight: 500;
+            display: none;
+        }
+        
+        .alert.error {
+            background-color: rgba(255, 82, 82, 0.1);
+            color: var(--error);
+            border: 1px solid var(--error);
+        }
+        
+        .alert.warning {
+            background-color: rgba(255, 152, 0, 0.1);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+        }
+        
+        .alert.success {
+            background-color: rgba(76, 175, 80, 0.1);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+        
+        .result-stats {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #2d2d2d;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .stat-value {
+            font-weight: 600;
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <h1>Paper Cut Optimizer</h1>
+    
+    <div class="container">
+        <div>
+            <div class="card">
+                <h2>Source Paper Dimensions</h2>
+                <div class="form-group">
+                    <label for="sheet-width">Width (mm)</label>
+                    <input type="number" id="sheet-width" min="1" value="1000">
+                </div>
+                <div class="form-group">
+                    <label for="sheet-height">Height (mm)</label>
+                    <input type="number" id="sheet-height" min="1" value="800">
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="tab-container">
+                    <button class="tab active" onclick="switchTab('divide')">Divide by Numbers</button>
+                    <button class="tab" onclick="switchTab('custom')">Custom Cut Sizes</button>
+                </div>
+                
+                <div id="divide-tab" class="tab-content active">
+                    <div class="form-group">
+                        <label for="divide-width">Number of columns</label>
+                        <input type="number" id="divide-width" min="1" value="3">
+                    </div>
+                    <div class="form-group">
+                        <label for="divide-height">Number of rows</label>
+                        <input type="number" id="divide-height" min="1" value="2">
+                    </div>
+                    <button onclick="calculateDivide()">Calculate Cuts</button>
+                </div>
+                
+                <div id="custom-tab" class="tab-content">
+                    <div class="form-group">
+                        <label for="cut-width">Cut Width (mm)</label>
+                        <input type="number" id="cut-width" min="1" value="300">
+                    </div>
+                    <div class="form-group">
+                        <label for="cut-height">Cut Height (mm)</label>
+                        <input type="number" id="cut-height" min="1" value="250">
+                    </div>
+                    <div class="form-group">
+                        <label for="cut-quantity">Quantity Needed</label>
+                        <input type="number" id="cut-quantity" min="1" value="6">
+                    </div>
+                    <button onclick="calculateCustom()">Calculate Cuts</button>
+                </div>
+                
+                <div id="error-alert" class="alert error"></div>
+                <div id="warning-alert" class="alert warning"></div>
+                <div id="success-alert" class="alert success"></div>
+            </div>
+        </div>
+        
+        <div>
+            <div class="card">
+                <h2>Cut Preview</h2>
+                <div class="preview-container">
+                    <div id="preview"></div>
+                </div>
+                
+                <div id="result-stats" class="result-stats" style="display: none;">
+                    <h3>Results</h3>
+                    <div class="stat-item">
+                        <span>Total cuts:</span>
+                        <span id="total-cuts" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Material used:</span>
+                        <span id="material-used" class="stat-value">0%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Waste:</span>
+                        <span id="material-waste" class="stat-value">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Switch between tabs
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            clearAlerts();
+        }
+        
+        // Show alert message
+        function showAlert(type, message) {
+            clearAlerts();
+            const alert = document.getElementById(`${type}-alert`);
+            alert.textContent = message;
+            alert.style.display = 'block';
+        }
+        
+        // Clear all alerts
+        function clearAlerts() {
+            document.querySelectorAll('.alert').forEach(alert => {
+                alert.style.display = 'none';
+                alert.textContent = '';
+            });
+        }
+        
+        // Calculate cuts by dividing the sheet
+        function calculateDivide() {
+            clearAlerts();
+            
+            const sheetWidth = parseFloat(document.getElementById('sheet-width').value);
+            const sheetHeight = parseFloat(document.getElementById('sheet-height').value);
+            const columns = parseInt(document.getElementById('divide-width').value);
+            const rows = parseInt(document.getElementById('divide-height').value);
+            
+            if (!sheetWidth || !sheetHeight || !columns || !rows) {
+                showAlert('error', 'Please fill in all fields with valid numbers.');
+                return;
+            }
+            
+            if (columns < 1 || rows < 1) {
+                showAlert('error', 'Columns and rows must be at least 1.');
+                return;
+            }
+            
+            const cutWidth = sheetWidth / columns;
+            const cutHeight = sheetHeight / rows;
+            
+            const cuts = [];
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < columns; col++) {
+                    cuts.push({
+                        x: col * cutWidth,
+                        y: row * cutHeight,
+                        width: cutWidth,
+                        height: cutHeight
+                    });
+                }
+            }
+            
+            renderPreview(sheetWidth, sheetHeight, cuts);
+            updateStats(sheetWidth * sheetHeight, cuts);
+            showAlert('success', `Sheet divided into ${columns}×${rows} pieces (${cutWidth.toFixed(1)}mm × ${cutHeight.toFixed(1)}mm each).`);
+        }
+        
+        // Calculate custom cut sizes
+        function calculateCustom() {
+            clearAlerts();
+            
+            const sheetWidth = parseFloat(document.getElementById('sheet-width').value);
+            const sheetHeight = parseFloat(document.getElementById('sheet-height').value);
+            const cutWidth = parseFloat(document.getElementById('cut-width').value);
+            const cutHeight = parseFloat(document.getElementById('cut-height').value);
+            const quantity = parseInt(document.getElementById('cut-quantity').value);
+            
+            if (!sheetWidth || !sheetHeight || !cutWidth || !cutHeight || !quantity) {
+                showAlert('error', 'Please fill in all fields with valid numbers.');
+                return;
+            }
+            
+            if (cutWidth > sheetWidth || cutHeight > sheetHeight) {
+                showAlert('error', 'Cut size cannot be larger than the source sheet.');
+                return;
+            }
+            
+            // Calculate how many cuts can fit
+            const colsPerSheet = Math.floor(sheetWidth / cutWidth);
+            const rowsPerSheet = Math.floor(sheetHeight / cutHeight);
+            const maxPieces = colsPerSheet * rowsPerSheet;
+            
+            if (maxPieces === 0) {
+                showAlert('error', 'Cut size is too large to fit on the sheet.');
+                return;
+            }
+            
+            if (maxPieces < quantity) {
+                showAlert('warning', `Only ${maxPieces} pieces can fit on one sheet. You need multiple sheets for ${quantity} pieces.`);
+            }
+            
+            // Determine actual pieces to cut (limited by quantity needed)
+            const actualPieces = Math.min(maxPieces, quantity);
+            
+            // Create cut positions
+            const cuts = [];
+            for (let i = 0; i < actualPieces; i++) {
+                const col = i % colsPerSheet;
+                const row = Math.floor(i / colsPerSheet);
+                cuts.push({
+                    x: col * cutWidth,
+                    y: row * cutHeight,
+                    width: cutWidth,
+                    height: cutHeight
+                });
+            }
+            
+            renderPreview(sheetWidth, sheetHeight, cuts);
+            updateStats(sheetWidth * sheetHeight, cuts);
+            showAlert('success', `Optimized layout for ${actualPieces} pieces (${cutWidth}mm × ${cutHeight}mm each).`);
+        }
+        
+        // Render preview of cuts
+        function renderPreview(sheetWidth, sheetHeight, cuts) {
+            const preview = document.getElementById('preview');
+            preview.innerHTML = '';
+            
+            // Determine scale factor for preview
+            const maxPreviewWidth = preview.offsetWidth - 40;
+            const scale = Math.min(1, maxPreviewWidth / sheetWidth);
+            
+            // Create source sheet
+            const sourceSheet = document.createElement('div');
+            sourceSheet.className = 'source-sheet';
+            sourceSheet.style.width = (sheetWidth * scale) + 'px';
+            sourceSheet.style.height = (sheetHeight * scale) + 'px';
+            preview.appendChild(sourceSheet);
+            
+            // Add cut pieces
+            cuts.forEach((cut, index) => {
+                const piece = document.createElement('div');
+                piece.className = 'cut-piece';
+                piece.style.left = (cut.x * scale) + 'px';
+                piece.style.top = (cut.y * scale) + 'px';
+                
+        // Render preview of cuts (continued)
+        piece.style.width = (cut.width * scale) + 'px';
+        piece.style.height = (cut.height * scale) + 'px';
+        piece.textContent = `${Math.round(cut.width)}×${Math.round(cut.height)}`;
+        sourceSheet.appendChild(piece);
+        });
+        
+        // Show the statistics
+        document.getElementById('result-stats').style.display = 'block';
+        }
+        
+        // Update statistics
+        function updateStats(totalArea, cuts) {
+            // Calculate used area
+            let usedArea = 0;
+            cuts.forEach(cut => {
+                usedArea += cut.width * cut.height;
+            });
+            
+            // Calculate percentages
+            const usedPercentage = (usedArea / totalArea) * 100;
+            const wastePercentage = 100 - usedPercentage;
+            
+            // Update the stats display
+            document.getElementById('total-cuts').textContent = cuts.length;
+            document.getElementById('material-used').textContent = usedPercentage.toFixed(1) + '%';
+            document.getElementById('material-waste').textContent = wastePercentage.toFixed(1) + '%';
+        }
+        
+        // Initialize the application
+        function initApp() {
+            // Set default values
+            const defaultWidth = window.innerWidth <= 768 ? 500 : 1000; // Smaller default for mobile
+            document.getElementById('sheet-width').value = defaultWidth;
+            document.getElementById('sheet-height').value = Math.round(defaultWidth * 0.8);
+            
+            // Set up preview size
+            adjustPreviewSize();
+            
+            // Calculate initial view
+            calculateDivide();
+            
+            // Add resize listener
+            window.addEventListener('resize', adjustPreviewSize);
+        }
+        
+        // Adjust preview size based on window size
+        function adjustPreviewSize() {
+            const preview = document.getElementById('preview');
+            if (window.innerWidth <= 768) {
+                preview.style.minHeight = '250px';
+            } else {
+                preview.style.minHeight = '300px';
+            }
+        }
+        
+        // Add event listeners for input validation
+        function addInputValidation() {
+            const numberInputs = document.querySelectorAll('input[type="number"]');
+            numberInputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    if (this.value < 1) {
+                        this.value = 1;
+                    }
+                });
+            });
+        }
+        
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            initApp();
+            addInputValidation();
+        });
+        
+        // Advanced optimization option - gets the best possible layout for custom cuts
+        function optimizeCuts() {
+            const sheetWidth = parseFloat(document.getElementById('sheet-width').value);
+            const sheetHeight = parseFloat(document.getElementById('sheet-height').value);
+            const cutWidth = parseFloat(document.getElementById('cut-width').value);
+            const cutHeight = parseFloat(document.getElementById('cut-height').value);
+            const quantity = parseInt(document.getElementById('cut-quantity').value);
+            
+            // Try horizontal and vertical orientations
+            const horizontalLayout = getLayoutCount(sheetWidth, sheetHeight, cutWidth, cutHeight);
+            const verticalLayout = getLayoutCount(sheetWidth, sheetHeight, cutHeight, cutWidth);
+            
+            // Use the better orientation
+            let bestLayout;
+            let rotated = false;
+            
+            if (verticalLayout.total > horizontalLayout.total) {
+                bestLayout = verticalLayout;
+                rotated = true;
+            } else {
+                bestLayout = horizontalLayout;
+            }
+            
+            // Create cut positions
+            const cuts = [];
+            const actualPieces = Math.min(bestLayout.total, quantity);
+            
+            for (let i = 0; i < actualPieces; i++) {
+                const col = i % bestLayout.cols;
+                const row = Math.floor(i / bestLayout.cols);
+                
+                if (rotated) {
+                    cuts.push({
+                        x: col * cutHeight,
+                        y: row * cutWidth,
+                        width: cutHeight,
+                        height: cutWidth,
+                        rotated: true
+                    });
+                } else {
+                    cuts.push({
+                        x: col * cutWidth,
+                        y: row * cutHeight,
+                        width: cutWidth,
+                        height: cutHeight,
+                        rotated: false
+                    });
+                }
+            }
+            
+            renderPreview(sheetWidth, sheetHeight, cuts);
+            updateStats(sheetWidth * sheetHeight, cuts);
+            
+            if (rotated) {
+                showAlert('success', `Optimized layout: ${actualPieces} pieces (rotated to fit better).`);
+            } else {
+                showAlert('success', `Optimized layout: ${actualPieces} pieces.`);
+            }
+        }
+        
+        // Helper function to calculate layout
+        function getLayoutCount(sheetWidth, sheetHeight, itemWidth, itemHeight) {
+            const cols = Math.floor(sheetWidth / itemWidth);
+            const rows = Math.floor(sheetHeight / itemHeight);
+            return {
+                cols: cols,
+                rows: rows,
+                total: cols * rows
+            };
+        }
+        
+        // Add waste reduction optimization
+        function optimizeWithMinimumWaste() {
+            const sheetWidth = parseFloat(document.getElementById('sheet-width').value);
+            const sheetHeight = parseFloat(document.getElementById('sheet-height').value);
+            const cutWidth = parseFloat(document.getElementById('cut-width').value);
+            const cutHeight = parseFloat(document.getElementById('cut-height').value);
+            const quantity = parseInt(document.getElementById('cut-quantity').value);
+            
+            // Try different arrangements to find best fit
+            let bestWaste = Infinity;
+            let bestArrangement = null;
+            
+            // Try standard arrangement
+            const standardLayout = getBestFit(sheetWidth, sheetHeight, cutWidth, cutHeight, quantity);
+            if (standardLayout.waste < bestWaste) {
+                bestWaste = standardLayout.waste;
+                bestArrangement = standardLayout;
+            }
+            
+            // Try rotated arrangement
+            const rotatedLayout = getBestFit(sheetWidth, sheetHeight, cutHeight, cutWidth, quantity);
+            if (rotatedLayout.waste < bestWaste) {
+                bestWaste = rotatedLayout.waste;
+                bestArrangement = rotatedLayout;
+            }
+            
+            if (bestArrangement) {
+                renderPreview(sheetWidth, sheetHeight, bestArrangement.cuts);
+                updateStats(sheetWidth * sheetHeight, bestArrangement.cuts);
+                showAlert('success', `Optimized for minimum waste: ${bestArrangement.cuts.length} pieces, ${bestWaste.toFixed(1)}% waste.`);
+            }
+        }
+        
+        // Helper for waste optimization
+        function getBestFit(sheetWidth, sheetHeight, cutWidth, cutHeight, quantity) {
+            const cols = Math.floor(sheetWidth / cutWidth);
+            const rows = Math.floor(sheetHeight / cutHeight);
+            const maxPieces = Math.min(cols * rows, quantity);
+            
+            const cuts = [];
+            for (let i = 0; i < maxPieces; i++) {
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                cuts.push({
+                    x: col * cutWidth,
+                    y: row * cutHeight,
+                    width: cutWidth,
+                    height: cutHeight
+                });
+            }
+            
+            const totalArea = sheetWidth * sheetHeight;
+            const usedArea = cuts.reduce((sum, cut) => sum + (cut.width * cut.height), 0);
+            const wastePercentage = 100 - ((usedArea / totalArea) * 100);
+            
+            return {
+                cuts: cuts,
+                waste: wastePercentage
+            };
+        }
+        
+        // Add this button to the custom-tab div
+        // <button onclick="optimizeCuts()">Optimize Layout</button>
+        
+        // Add event listener for quick refresh
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('change', () => {
+                if (document.getElementById('divide-tab').classList.contains('active')) {
+                    calculateDivide();
+                } else {
+                    calculateCustom();
+                }
+            });
+        });
+</script>
+</body>
+</html>
