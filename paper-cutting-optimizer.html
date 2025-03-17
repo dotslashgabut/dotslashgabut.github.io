@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paper Cutting Optimizer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .input-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+        .preview-panel {
+            flex: 2;
+            min-width: 500px;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 0;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #ccc;
+            border-radius: 4px 4px 0 0;
+        }
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 10px 16px;
+            transition: 0.3s;
+            font-size: 16px;
+            margin: 0;
+        }
+        .tab button:hover {
+            background-color: #bbb;
+        }
+        .tab button.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .tabcontent {
+            display: none;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            background-color: white;
+        }
+        .active-tab {
+            display: block;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        #preview-canvas {
+            border: 1px solid #ddd;
+            background-color: white;
+        }
+        .result-stats {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .cut-piece {
+            margin-bottom: 10px;
+            padding: 5px;
+            background-color: #f0f8ff;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+        }
+        .cut-piece button {
+            margin-left: 10px;
+            padding: 2px 8px;
+            font-size: 14px;
+        }
+        #custom-cuts {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Paper Cutting Optimizer</h1>
+    
+    <div class="container">
+        <div class="panel input-panel">
+            <h2>Source Paper Size</h2>
+            <div class="input-group">
+                <label for="source-width">Width (mm):</label>
+                <input type="number" id="source-width" value="1000" min="1">
+                
+                <label for="source-height">Height (mm):</label>
+                <input type="number" id="source-height" value="700" min="1">
+            </div>
+            
+            <div class="tab">
+                <button class="tablinks active" onclick="openTab(event, 'divide-by-number')">Divide by Numbers</button>
+                <button class="tablinks" onclick="openTab(event, 'custom-dimensions')">Custom Dimensions</button>
+            </div>
+            
+            <div id="divide-by-number" class="tabcontent active-tab">
+                <h3>Divide Paper Evenly</h3>
+                <div class="input-group">
+                    <label for="num-width">Number of pieces across width:</label>
+                    <input type="number" id="num-width" value="2" min="1">
+                    
+                    <label for="num-height">Number of pieces across height:</label>
+                    <input type="number" id="num-height" value="2" min="1">
+                    
+                    <label for="padding">Padding between pieces (mm):</label>
+                    <input type="number" id="padding" value="5" min="0">
+                </div>
+                
+                <button onclick="calculateDivision()">Calculate</button>
+            </div>
+            
+            <div id="custom-dimensions" class="tabcontent">
+                <h3>Custom Cut Dimensions</h3>
+                <div class="input-group">
+                    <label for="cut-width">Cut Width (mm):</label>
+                    <input type="number" id="cut-width" value="200" min="1">
+                    
+                    <label for="cut-height">Cut Height (mm):</label>
+                    <input type="number" id="cut-height" value="150" min="1">
+                    
+                    <label for="cut-quantity">Quantity:</label>
+                    <input type="number" id="cut-quantity" value="1" min="1">
+                    
+                    <button onclick="addCutPiece()">Add Cut Piece</button>
+                </div>
+                
+                <h4>Cut Pieces:</h4>
+                <div id="custom-cuts"></div>
+                
+                <button onclick="calculateCustomCuts()">Optimize Cuts</button>
+            </div>
+        </div>
+        
+        <div class="panel preview-panel">
+            <h2>Preview</h2>
+            <canvas id="preview-canvas" width="800" height="600"></canvas>
+            
+            <div class="result-stats" id="result-stats">
+                Results will appear here after calculation.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let cutPieces = [];
+        let canvas = document.getElementById('preview-canvas');
+        let ctx = canvas.getContext('2d');
+        let scaleFactor = 1;
+
+        // Tab functionality
+        function openTab(evt, tabName) {
+            let tabcontent = document.getElementsByClassName("tabcontent");
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].classList.remove("active-tab");
+            }
+            
+            let tablinks = document.getElementsByClassName("tablinks");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].classList.remove("active");
+            }
+            
+            document.getElementById(tabName).classList.add("active-tab");
+            evt.currentTarget.classList.add("active");
+        }
+
+        // Calculate division by numbers
+        function calculateDivision() {
+            const sourceWidth = parseFloat(document.getElementById('source-width').value);
+            const sourceHeight = parseFloat(document.getElementById('source-height').value);
+            const numWidth = parseInt(document.getElementById('num-width').value);
+            const numHeight = parseInt(document.getElementById('num-height').value);
+            const padding = parseFloat(document.getElementById('padding').value);
+            
+            if (isNaN(sourceWidth) || isNaN(sourceHeight) || isNaN(numWidth) || isNaN(numHeight) || isNaN(padding)) {
+                alert("Please enter valid numbers.");
+                return;
+            }
+            
+            const pieceWidth = (sourceWidth - (padding * (numWidth - 1))) / numWidth;
+            const pieceHeight = (sourceHeight - (padding * (numHeight - 1))) / numHeight;
+            
+            if (pieceWidth <= 0 || pieceHeight <= 0) {
+                alert("The padding is too large for the specified number of pieces.");
+                return;
+            }
+            
+            // Generate layout
+            let layout = [];
+            for (let y = 0; y < numHeight; y++) {
+                for (let x = 0; x < numWidth; x++) {
+                    layout.push({
+                        x: x * (pieceWidth + padding),
+                        y: y * (pieceHeight + padding),
+                        width: pieceWidth,
+                        height: pieceHeight
+                    });
+                }
+            }
+            
+            // Display results
+            document.getElementById('result-stats').innerHTML = `
+                <h3>Results:</h3>
+                <p>Source Paper: ${sourceWidth} × ${sourceHeight} mm</p>
+                <p>Cut Pieces: ${numWidth} × ${numHeight} = ${numWidth * numHeight} pieces</p>
+                <p>Each Piece: ${pieceWidth.toFixed(2)} × ${pieceHeight.toFixed(2)} mm</p>
+                <p>Padding: ${padding} mm</p>
+            `;
+            
+            // Draw preview
+            drawPreview(sourceWidth, sourceHeight, layout);
+        }
+
+        // Add custom cut piece
+        function addCutPiece() {
+            const width = parseFloat(document.getElementById('cut-width').value);
+            const height = parseFloat(document.getElementById('cut-height').value);
+            const quantity = parseInt(document.getElementById('cut-quantity').value);
+            
+            if (isNaN(width) || isNaN(height) || isNaN(quantity) || width <= 0 || height <= 0 || quantity <= 0) {
+                alert("Please enter valid dimensions and quantity.");
+                return;
+            }
+            
+            for (let i = 0; i < quantity; i++) {
+                cutPieces.push({width, height});
+            }
+            
+            updateCutPiecesList();
+        }
+
+        // Update the list of cut pieces
+        function updateCutPiecesList() {
+            const container = document.getElementById('custom-cuts');
+            container.innerHTML = '';
+            
+            if (cutPieces.length === 0) {
+                container.innerHTML = '<p>No cut pieces added yet.</p>';
+                return;
+            }
+            
+            // Group identical pieces
+            let groupedPieces = {};
+            cutPieces.forEach(piece => {
+                const key = `${piece.width}x${piece.height}`;
+                if (!groupedPieces[key]) {
+                    groupedPieces[key] = {
+                        width: piece.width,
+                        height: piece.height,
+                        count: 0
+                    };
+                }
+                groupedPieces[key].count++;
+            });
+            
+            // Create elements for each group
+            Object.values(groupedPieces).forEach((group, index) => {
+                const pieceElement = document.createElement('div');
+                pieceElement.className = 'cut-piece';
+                pieceElement.innerHTML = `
+                    ${group.width} × ${group.height} mm (${group.count} pieces)
+                    <button onclick="removeCutPiece(${index})">Remove</button>
+                `;
+                container.appendChild(pieceElement);
+            });
+        }
+
+        // Remove a cut piece
+        function removeCutPiece(index) {
+            const keys = Object.keys(cutPieces.reduce((acc, piece) => {
+                const key = `${piece.width}x${piece.height}`;
+                if (!acc[key]) acc[key] = true;
+                return acc;
+            }, {}));
+            
+            const key = keys[index];
+            const [width, height] = key.split('x').map(Number);
+            
+            // Remove one piece of this type
+            for (let i = 0; i < cutPieces.length; i++) {
+                if (cutPieces[i].width === width && cutPieces[i].height === height) {
+                    cutPieces.splice(i, 1);
+                    break;
+                }
+            }
+            
+            updateCutPiecesList();
+        }
+
+        // Calculate custom cuts
+        function calculateCustomCuts() {
+            if (cutPieces.length === 0) {
+                alert("Please add at least one cut piece.");
+                return;
+            }
+            
+            const sourceWidth = parseFloat(document.getElementById('source-width').value);
+            const sourceHeight = parseFloat(document.getElementById('source-height').value);
+            
+            if (isNaN(sourceWidth) || isNaN(sourceHeight)) {
+                alert("Please enter valid source paper dimensions.");
+                return;
+            }
+            
+            // Simple bin packing algorithm (First-Fit Decreasing)
+            const layout = optimizeCuts(sourceWidth, sourceHeight, [...cutPieces]);
+            
+            // Count placed pieces
+            const placedPieces = layout.length;
+            const totalPieces = cutPieces.length;
+            
+            // Calculate waste
+            let usedArea = 0;
+            layout.forEach(piece => {
+                usedArea += piece.width * piece.height;
+            });
+            const totalArea = sourceWidth * sourceHeight;
+            const wastePercentage = ((totalArea - usedArea) / totalArea * 100).toFixed(2);
+            
+            // Display results
+            document.getElementById('result-stats').innerHTML = `
+                <h3>Results:</h3>
+                <p>Source Paper: ${sourceWidth} × ${sourceHeight} mm</p>
+                <p>Total Pieces: ${totalPieces}</p>
+                <p>Placed Pieces: ${placedPieces}</p>
+                <p>Unplaced Pieces: ${totalPieces - placedPieces}</p>
+                <p>Waste Area: ${wastePercentage}%</p>
+            `;
+            
+            // Draw preview
+            drawPreview(sourceWidth, sourceHeight, layout);
+        }
+
+        // Optimize cuts with a simple bin packing algorithm
+        function optimizeCuts(binWidth, binHeight, pieces) {
+            // Sort pieces by area (largest first)
+            pieces.sort((a, b) => (b.width * b.height) - (a.width * a.height));
+            
+            // Initialize empty bin
+            const bin = {
+                width: binWidth,
+                height: binHeight,
+                spaces: [{x: 0, y: 0, width: binWidth, height: binHeight}]
+            };
+            
+            const layout = [];
+            
+            // Try to place each piece
+            pieces.forEach(piece => {
+                // Try to place the piece in its original orientation
+                let placed = tryPlacePiece(bin, piece.width, piece.height, layout);
+                
+                // If not placed, try rotating the piece
+                if (!placed) {
+                    placed = tryPlacePiece(bin, piece.height, piece.width, layout);
+                    if (placed) {
+                        // Note: the piece was rotated
+                        layout[layout.length - 1].rotated = true;
+                    }
+                }
+            });
+            
+            return layout;
+        }
+
+// Try to place a piece in the bin
+function tryPlacePiece(bin, pieceWidth, pieceHeight, layout) {
+    // Find the best space to place the piece (using "best-fit" strategy)
+    let bestSpaceIndex = -1;
+    let bestScore = Infinity;
+    
+    for (let i = 0; i < bin.spaces.length; i++) {
+        const space = bin.spaces[i];
+        
+        // Check if piece fits in this space
+        if (pieceWidth <= space.width && pieceHeight <= space.height) {
+            // Calculate score (lower is better) - using the smaller leftover dimension as score
+            const score = Math.min(
+                space.width - pieceWidth,
+                space.height - pieceHeight
+            );
+            
+            if (score < bestScore) {
+                bestScore = score;
+                bestSpaceIndex = i;
+            }
+        }
+    }
+    
+    // If no suitable space found
+    if (bestSpaceIndex === -1) {
+        return false;
+    }
+    
+    // Place the piece in the best space
+    const space = bin.spaces[bestSpaceIndex];
+    
+    // Add piece to layout
+    layout.push({
+        x: space.x,
+        y: space.y,
+        width: pieceWidth,
+        height: pieceHeight
+    });
+    
+    // Split the remaining space into two new spaces
+    // Remove the used space
+    bin.spaces.splice(bestSpaceIndex, 1);
+    
+    // Add new spaces (right and bottom of the placed piece)
+    if (space.width - pieceWidth > 0) {
+        bin.spaces.push({
+            x: space.x + pieceWidth,
+            y: space.y,
+            width: space.width - pieceWidth,
+            height: pieceHeight
+        });
+    }
+    
+    if (space.height - pieceHeight > 0) {
+        bin.spaces.push({
+            x: space.x,
+            y: space.y + pieceHeight,
+            width: space.width,
+            height: space.height - pieceHeight
+        });
+    }
+    
+    // Merge overlapping spaces to reduce fragmentation
+    mergeSpaces(bin);
+    
+    return true;
+}
+
+// Merge overlapping spaces
+function mergeSpaces(bin) {
+    // Sort spaces by y coordinate then x coordinate
+    bin.spaces.sort((a, b) => {
+        if (a.y !== b.y) return a.y - b.y;
+        return a.x - b.x;
+    });
+    
+    // Merge spaces if they share an edge and have the same width/height
+    for (let i = 0; i < bin.spaces.length; i++) {
+        for (let j = i + 1; j < bin.spaces.length; j++) {
+            const space1 = bin.spaces[i];
+            const space2 = bin.spaces[j];
+            
+            // Check if spaces can be merged horizontally
+            if (space1.y === space2.y && space1.height === space2.height &&
+                space1.x + space1.width === space2.x) {
+                space1.width += space2.width;
+                bin.spaces.splice(j, 1);
+                j--;
+                continue;
+            }
+            
+            // Check if spaces can be merged vertically
+            if (space1.x === space2.x && space1.width === space2.width &&
+                space1.y + space1.height === space2.y) {
+                space1.height += space2.height;
+                bin.spaces.splice(j, 1);
+                j--;
+            }
+        }
+    }
+}
+
+// Draw preview
+function drawPreview(sourceWidth, sourceHeight, layout) {
+    const canvas = document.getElementById('preview-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Calculate scale factor to fit the paper on canvas
+    const scaleX = (canvas.width - 40) / sourceWidth;
+    const scaleY = (canvas.height - 40) / sourceHeight;
+    scaleFactor = Math.min(scaleX, scaleY);
+    
+    // Draw paper outline
+    const paperWidth = sourceWidth * scaleFactor;
+    const paperHeight = sourceHeight * scaleFactor;
+    const offsetX = (canvas.width - paperWidth) / 2;
+    const offsetY = (canvas.height - paperHeight) / 2;
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(offsetX, offsetY, paperWidth, paperHeight);
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(offsetX, offsetY, paperWidth, paperHeight);
+    
+    // Draw pieces
+    const colors = [
+        '#3498db', '#2ecc71', '#e74c3c', '#f39c12', 
+        '#9b59b6', '#1abc9c', '#d35400', '#34495e'
+    ];
+    
+    layout.forEach((piece, index) => {
+        const x = offsetX + piece.x * scaleFactor;
+        const y = offsetY + piece.y * scaleFactor;
+        const width = piece.width * scaleFactor;
+        const height = piece.height * scaleFactor;
+        
+        // Fill with color
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.fillRect(x, y, width, height);
+        
+        // Draw border
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x, y, width, height);
+        
+        // Add dimensions text
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        const displayWidth = piece.rotated ? piece.height : piece.width;
+        const displayHeight = piece.rotated ? piece.width : piece.height;
+        
+        if (width > 40 && height > 20) {
+            ctx.fillText(
+                `${displayWidth.toFixed(0)} × ${displayHeight.toFixed(0)}`,
+                x + width / 2,
+                y + height / 2
+            );
+        }
+    });
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    // Set canvas dimensions based on container
+    const previewPanel = document.querySelector('.preview-panel');
+    const canvas = document.getElementById('preview-canvas');
+    canvas.width = previewPanel.clientWidth - 40;
+    
+    // Initial empty preview
+    const sourceWidth = parseFloat(document.getElementById('source-width').value);
+    const sourceHeight = parseFloat(document.getElementById('source-height').value);
+    drawPreview(sourceWidth, sourceHeight, []);
+    
+    // Resize canvas when window resizes
+    window.addEventListener('resize', function() {
+        canvas.width = previewPanel.clientWidth - 40;
+        
+        // Redraw current preview
+        const sourceWidth = parseFloat(document.getElementById('source-width').value);
+        const sourceHeight = parseFloat(document.getElementById('source-height').value);
+        
+        // Get current tab
+        const activeTab = document.querySelector('.tabcontent.active-tab');
+        if (activeTab.id === 'divide-by-number') {
+            calculateDivision();
+        } else {
+            calculateCustomCuts();
+        }
+    });
+});
+</script>
+</body>
+</html>
