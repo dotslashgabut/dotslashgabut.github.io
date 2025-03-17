@@ -15,6 +15,7 @@ Just testing, the generated codes from LLMs.
 - [Universal Separator](https://dotslashgabut.github.io/universal-separator.html)
 - [Color Code Extractor](https://dotslashgabut.github.io/color-code-extractor.html)
 - [Hexadecimal Code Extractor](https://dotslashgabut.github.io/color-code-extractor-hex.html)
+- [Encoder/Decoder Tool](https://dotslashgabut.github.io/encoder-decoder-tool-alt.html)
 - [Encoding Decoding Tool](https://dotslashgabut.github.io/encoding-decoding-tool.html)
 - [Hex Viewer](https://dotslashgabut.github.io/hex-viewer.html)
 - [Pixel Coordinates to Color Codes](https://dotslashgabut.github.io/pixel-coordinates-to-color-codes.html)

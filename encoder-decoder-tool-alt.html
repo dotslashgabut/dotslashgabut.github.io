@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encoder/Decoder Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+        }
+
+        .sidebar {
+            width: 220px;
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 0 10px;
+        }
+
+        .menu-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .menu-item:hover {
+            background-color: #34495e;
+        }
+
+        .menu-item.active {
+            background-color: #3498db;
+            font-weight: 600;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            color: #2c3e50;
+        }
+
+        .converter-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .input-section, .output-section {
+            width: 100%;
+        }
+
+        .input-section h3, .output-section h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            resize: vertical;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .format-select {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+            background-color: white;
+            flex-grow: 1;
+            max-width: 200px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .output-container {
+            background-color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            min-height: 150px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            border: 1px solid #ddd;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+
+        .copy-btn {
+            background-color: #27ae60;
+            margin-top: 10px;
+        }
+
+        .copy-btn:hover {
+            background-color: #219653;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                padding: 10px 0;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Encoder/Decoder</h2>
+        <div class="menu-item active" data-section="text-conversion">Text Conversion</div>
+        <div class="menu-item" data-section="ascii">ASCII</div>
+        <div class="menu-item" data-section="hex">Hexadecimal</div>
+        <div class="menu-item" data-section="binary">Binary</div>
+        <div class="menu-item" data-section="base32">Base32</div>
+        <div class="menu-item" data-section="base64">Base64</div>
+        <div class="menu-item" data-section="url">URL</div>
+    </div>
+
+    <div class="main-content">
+        <h1 id="section-title">Text Conversion</h1>
+        
+        <div class="converter-container">
+            <div class="input-section">
+                <h3>Input</h3>
+                <textarea id="input-text" placeholder="Enter your text here..."></textarea>
+            </div>
+            
+            <div class="controls">
+                <select id="input-format" class="format-select">
+                    <option value="text">Plain Text</option>
+                    <option value="ascii">ASCII</option>
+                    <option value="hex">Hexadecimal</option>
+                    <option value="binary">Binary</option>
+                    <option value="base32">Base32</option>
+                    <option value="base64">Base64</option>
+                    <option value="url">URL Encoded</option>
+                </select>
+                
+                <select id="output-format" class="format-select">
+                    <option value="text">Plain Text</option>
+                    <option value="ascii">ASCII</option>
+                    <option value="hex">Hexadecimal</option>
+                    <option value="binary">Binary</option>
+                    <option value="base32">Base32</option>
+                    <option value="base64">Base64</option>
+                    <option value="url">URL Encoded</option>
+                </select>
+                
+                <button id="convert-btn">Convert</button>
+            </div>
+            
+            <div class="output-section">
+                <h3>Output</h3>
+                <div id="output-container" class="output-container"></div>
+                <div id="error-message" class="error-message"></div>
+                <button id="copy-btn" class="copy-btn">Copy to Clipboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Helper functions for encoding and decoding
+        const converters = {
+            // Text to various formats
+            textToAscii: function(text) {
+                return Array.from(text).map(char => char.charCodeAt(0)).join(' ');
+            },
+            textToHex: function(text) {
+                return Array.from(text).map(char => char.charCodeAt(0).toString(16).padStart(2, '0')).join('');
+            },
+            textToBinary: function(text) {
+                return Array.from(text).map(char => char.charCodeAt(0).toString(2).padStart(8, '0')).join(' ');
+            },
+            textToBase32: function(text) {
+                const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+                let bits = 0;
+                let value = 0;
+                let result = '';
+                
+                for (let i = 0; i < text.length; i++) {
+                    value = (value << 8) | text.charCodeAt(i);
+                    bits += 8;
+                    
+                    while (bits >= 5) {
+                        result += alphabet[(value >>> (bits - 5)) & 31];
+                        bits -= 5;
+                    }
+                }
+                
+                if (bits > 0) {
+                    result += alphabet[(value << (5 - bits)) & 31];
+                }
+                
+                // Padding
+                while (result.length % 8 !== 0) {
+                    result += '=';
+                }
+                
+                return result;
+            },
+            textToBase64: function(text) {
+                return btoa(text);
+            },
+            textToUrl: function(text) {
+                return encodeURIComponent(text);
+            },
+
+            // Various formats to text
+            asciiToText: function(ascii) {
+                return ascii.split(' ').map(code => String.fromCharCode(parseInt(code))).join('');
+            },
+            hexToText: function(hex) {
+                let result = '';
+                for (let i = 0; i < hex.length; i += 2) {
+                    result += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+                }
+                return result;
+            },
+            binaryToText: function(binary) {
+                return binary.split(' ').map(bin => String.fromCharCode(parseInt(bin, 2))).join('');
+            },
+            base32ToText: function(base32) {
+                const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+                base32 = base32.toUpperCase().replace(/=+$/, '');
+                
+                let bits = 0;
+                let value = 0;
+                let result = '';
+                
+                for (let i = 0; i < base32.length; i++) {
+                    const v = alphabet.indexOf(base32.charAt(i));
+                    if (v === -1) throw new Error('Invalid character in Base32 string');
+                    
+                    value = (value << 5) | v;
+                    bits += 5;
+                    
+                    if (bits >= 8) {
+                        result += String.fromCharCode((value >>> (bits - 8)) & 255);
+                        bits -= 8;
+                    }
+                }
+                
+                return result;
+            },
+            base64ToText: function(base64) {
+                try {
+                    return atob(base64);
+                } catch (e) {
+                    throw new Error("Invalid Base64 input");
+                }
+            },
+            urlToText: function(url) {
+                return decodeURIComponent(url);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuItems = document.querySelectorAll('.menu-item');
+            const sectionTitle = document.getElementById('section-title');
+            const inputText = document.getElementById('input-text');
+            const inputFormat = document.getElementById('input-format');
+            const outputFormat = document.getElementById('output-format');
+            const convertBtn = document.getElementById('convert-btn');
+            const outputContainer = document.getElementById('output-container');
+            const errorMessage = document.getElementById('error-message');
+            const copyBtn = document.getElementById('copy-btn');
+
+            // Menu item click handler
+            menuItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    // Update active state
+                    menuItems.forEach(menuItem => menuItem.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Update section title
+                    sectionTitle.textContent = this.textContent;
+                    
+                    // Handle section-specific configurations
+                    const section = this.getAttribute('data-section');
+                    
+                    if (section === 'text-conversion') {
+                        // Reset to default view
+                        inputFormat.value = 'text';
+                        outputFormat.value = 'text';
+                    } else {
+                        // Set input to text and output to selected format
+                        inputFormat.value = 'text';
+                        outputFormat.value = section;
+                    }
+                });
+            });
+
+            // Convert button click handler
+            convertBtn.addEventListener('click', function() {
+                convert();
+            });
+
+            // Copy button click handler
+            copyBtn.addEventListener('click', function() {
+                const outputText = outputContainer.textContent;
+                if (outputText) {
+                    navigator.clipboard.writeText(outputText).then(() => {
+                        const originalText = copyBtn.textContent;
+                        copyBtn.textContent = 'Copied!';
+                        setTimeout(() => {
+                            copyBtn.textContent = originalText;
+                        }, 2000);
+                    });
+                }
+            });
+
+            // Main conversion function
+            function convert() {
+                const input = inputText.value;
+                const inFormat = inputFormat.value;
+                const outFormat = outputFormat.value;
+                
+                // Clear previous errors
+                errorMessage.textContent = '';
+                
+                try {
+                    // First convert input to plain text (if it's not already)
+                    let plainText = input;
+                    
+                    if (inFormat !== 'text') {
+                        const convertToTextFunc = converters[`${inFormat}ToText`];
+                        plainText = convertToTextFunc(input);
+                    }
+                    
+                    // Then convert plain text to output format (if needed)
+                    let result = plainText;
+                    
+                    if (outFormat !== 'text') {
+                        const convertFromTextFunc = converters[`textTo${outFormat.charAt(0).toUpperCase() + outFormat.slice(1)}`];
+                        result = convertFromTextFunc(plainText);
+                    }
+                    
+                    outputContainer.textContent = result;
+                } catch (error) {
+                    outputContainer.textContent = '';
+                    errorMessage.textContent = `Error: ${error.message}`;
+                }
+            }
+
+            // Initialize with default conversion
+            inputText.addEventListener('input', function() {
+                convert();
+            });
+        });
+    </script>
+</body>
+</html>
