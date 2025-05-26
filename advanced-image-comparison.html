@@ -265,7 +265,7 @@
             position: absolute;
             top: 20px;
             left: 20px;
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(0, 0, 0, 0.2);
             color: white;
             padding: 15px;
             border-radius: 10px;
@@ -297,7 +297,7 @@
             top: 20px;
             right: 20px;
             z-index: 30;
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(0, 0, 0, 0.2);
             color: white;
             border: none;
             padding: 12px;
@@ -1032,6 +1032,11 @@
              * @param {TouchEvent} e - The touch event.
              */
             startPanTouch(e) {
+                // IMPORTANT: Allow the exit fullscreen button to be touched
+                if (e.target.closest('.exit-fullscreen')) {
+                    return; // Let the button handle its own touch events
+                }
+        
                 if (e.touches.length === 1) {
                     e.preventDefault(); // Prevent default browser scrolling/zooming for single touch
                     this.isDragging = false; // Assume not dragging yet, will set in handlePanTouch
