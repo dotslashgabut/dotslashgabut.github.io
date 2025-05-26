@@ -48,6 +48,7 @@
         
         .file-inputs {
             display: grid;
+            /* Changed to 2 columns to accommodate both file and URL inputs */
             grid-template-columns: 1fr 1fr;
             gap: 20px;
             margin-bottom: 30px;
@@ -55,6 +56,10 @@
         
         .file-input-group {
             position: relative;
+            /* Added flex to align label and input/button vertically */
+            display: flex;
+            flex-direction: column;
+            align-items: stretch; /* Stretch items to fill the group */
         }
         
         .file-input-label {
@@ -66,6 +71,10 @@
             cursor: pointer;
             transition: all 0.3s ease;
             background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0.1) 100%);
+            flex-grow: 1; /* Allow label to grow and fill space */
+            display: flex; /* For vertical centering of content */
+            flex-direction: column;
+            justify-content: center;
         }
         
         .file-input-label:hover {
@@ -74,8 +83,29 @@
             box-shadow: 0 5px 15px rgba(79, 172, 254, 0.3);
         }
         
-        .file-input {
+        /* ONLY hide the file input type, not text inputs */
+        input[type="file"].file-input {
             display: none;
+        }
+        
+        /* Styles for the new URL text input fields */
+        .file-input-group input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px; /* Space between label and input */
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            display: block; /* Ensure it's visible and takes up space */
+            font-size: 1rem; /* Adjust font size for better readability */
+        }
+        
+        /* Styles for the new "Load URL" buttons */
+        .btn-url {
+            margin-top: 10px; /* Space between input and button */
+            width: 100%;
+            display: block; /* Make the button take full width */
+            text-align: center;
         }
         
         .toolbar {
@@ -334,6 +364,7 @@
         
         @media (max-width: 768px) {
             .file-inputs {
+                /* Changed to 1 column for better mobile layout */
                 grid-template-columns: 1fr;
             }
             
@@ -380,6 +411,23 @@
                         <small>Click or drag to upload</small>
                     </label>
                     <input type="file" id="image2" class="file-input" accept="image/*">
+                </div>
+            
+                <div class="file-input-group">
+                    <label for="imageUrl1" class="file-input-label">
+                        <div>🔗 Image 1 URL (Before)</div>
+                        <small>Paste image URL here</small>
+                    </label>
+                    <input type="text" id="imageUrl1" class="file-input" placeholder="e.g., https://example.com/image-before.jpg">
+                    <button class="btn btn-primary btn-url" onclick="comparison.loadImageFromUrl(document.getElementById('imageUrl1').value, 'before')">Load URL</button>
+                </div>
+                <div class="file-input-group">
+                    <label for="imageUrl2" class="file-input-label">
+                        <div>🔗 Image 2 URL (After)</div>
+                        <small>Paste image URL here</small>
+                    </label>
+                    <input type="text" id="imageUrl2" class="file-input" placeholder="e.g., https://example.com/image-after.jpg">
+                    <button class="btn btn-primary btn-url" onclick="comparison.loadImageFromUrl(document.getElementById('imageUrl2').value, 'after')">Load URL</button>
                 </div>
             </div>
             
@@ -665,6 +713,25 @@
         
                 this.imageBefore.src = preset.before;
                 this.imageAfter.src = preset.after;
+            }
+            
+            loadImageFromUrl(url, type) {
+                if (!url) {
+                    alert('Please enter a valid image URL.');
+                    return;
+                }
+                this.showLoading();
+                const img = type === 'before' ? this.imageBefore : this.imageAfter;
+                img.onload = () => {
+                    this.updateImageInfo();
+                    this.hideLoading();
+                };
+                img.onerror = () => {
+                    alert(`Failed to load image from URL: ${url}. Please check the URL and ensure it's a valid image and accessible (CORS issues might prevent loading from some domains).`);
+                    this.hideLoading();
+                    img.src = ''; // Clear the image source on error
+                };
+                img.src = url;
             }
         
             detectTouchDevice() {
