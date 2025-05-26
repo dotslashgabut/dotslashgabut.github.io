@@ -505,6 +505,10 @@
                 this.initialPinchDistance = 0; // Distance between two fingers at pinch start
                 this.initialPinchZoom = 1;     // Zoom level at pinch start
         
+                // New properties for double-tap detection
+                this.lastTapTime = 0;
+                this.doubleTapThreshold = 300; // Milliseconds: time between two taps to be considered a double-tap
+        
                 // Initialize DOM elements
                 this.initializeElements();
                 // Bind all event listeners
@@ -587,8 +591,10 @@
                 document.addEventListener('touchend', this.stopPanTouch.bind(this)); // Stop panning (on document to catch outside container)
                 document.addEventListener('touchcancel', this.stopPanTouch.bind(this)); // Handle interrupted touches
         
-                // Double-click to reset zoom (Mouse & Touch)
-                this.container.addEventListener('dblclick', this.resetZoom.bind(this));
+                // Double-click to reset zoom (Mouse only - touch handled by custom logic)
+                if (!this.isTouchDevice) {
+                    this.container.addEventListener('dblclick', this.resetZoom.bind(this));
+                }
         
                 // Keyboard shortcuts for various actions
                 document.addEventListener('keydown', this.handleKeyboard.bind(this));
@@ -1096,8 +1102,20 @@
                     const deltaX = Math.abs(touch.clientX - this.lastTouchStartX);
                     const deltaY = Math.abs(touch.clientY - this.lastTouchStartY);
         
+                    // If the touch moved less than the threshold, it's a tap
                     if (deltaX <= this.touchMoveThreshold && deltaY <= this.touchMoveThreshold) {
-                        this.handleContainerTap(e); // Call the dedicated tap handler
+                        const currentTime = new Date().getTime();
+                        const tapLength = currentTime - this.lastTapTime;
+        
+                        if (tapLength < this.doubleTapThreshold && tapLength > 0) {
+                            // Double tap detected!
+                            this.resetZoom();
+                            this.lastTapTime = 0; // Reset for next double tap
+                        } else {
+                            // Single tap detected, move slider
+                            this.handleContainerTap(e);
+                            this.lastTapTime = currentTime; // Store time for potential double tap
+                        }
                     }
                 }
         
