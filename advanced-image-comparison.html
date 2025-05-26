@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Image Comparison App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .controls {
+            padding: 30px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .file-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .file-input-group {
+            position: relative;
+        }
+        
+        .file-input-label {
+            display: block;
+            padding: 20px;
+            border: 3px dashed #4facfe;
+            border-radius: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0.1) 100%);
+        }
+        
+        .file-input-label:hover {
+            border-color: #00f2fe;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.3);
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .toolbar {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            color: #333;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .comparison-container {
+            position: relative;
+            width: auto;
+            height: 600px;
+            margin: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            cursor: grab;
+        }
+        
+        .comparison-container:active {
+            cursor: grabbing;
+        }
+        
+        .image-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: transform 0.1s ease;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+        
+        .image-before {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+        }
+        
+        .slider {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 1px;
+            height: 100%;
+            /* background: white; */
+            /* background: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%); */
+            cursor: ew-resize;
+            z-index: 10;
+            transform: translateX(-50%);
+            /* box-shadow: 0 0 20px rgba(79, 172, 254, 0.8); */
+            pointer-events: auto; /* Ensure slider can capture events */
+        }
+        
+        .slider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            /* width: 30px;
+            height: 30px;
+            background: white;
+            border: 2px solid #4facfe;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); */
+            pointer-events: auto; /* Ensure handle can capture events */
+        }
+        
+        .slider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            /* color: #4facfe;
+            font-size: 16px;
+            font-weight: bold; */
+            pointer-events: none;
+        }
+        
+        .zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 20;
+        }
+        
+        .zoom-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .zoom-btn:hover {
+            background: white;
+            transform: scale(1.1);
+        }
+        
+        .info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 20;
+            font-family: monospace;
+            min-width: 200px;
+            /* backdrop-filter: blur(10px); */
+        }
+        
+        .fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1000;
+            background: black;
+        }
+        
+        .fullscreen .comparison-container {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            border-radius: 0;
+        }
+        
+        .exit-fullscreen {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 30;
+            background: rgba(0, 0, 0, 0.4);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* backdrop-filter: blur(10px); */
+        }
+        
+        .preset-images {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .preset-btn {
+            padding: 8px 16px;
+            border: 2px solid #4facfe;
+            border-radius: 20px;
+            background: transparent;
+            color: #4facfe;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+        }
+        
+        .preset-btn:hover {
+            background: #4facfe;
+            color: white;
+        }
+        
+        .loading {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #4facfe;
+            font-size: 18px;
+            z-index: 15;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(79, 172, 254, 0.3);
+            border-radius: 50%;
+            border-top-color: #4facfe;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .file-inputs {
+                grid-template-columns: 1fr;
+            }
+            
+            .toolbar {
+                justify-content: center;
+            }
+            
+            .btn {
+                padding: 10px 16px;
+                font-size: 12px;
+            }
+            
+            .comparison-container {
+                height: 400px;
+                margin: 15px;
+            }
+            
+            .info-panel {
+                font-size: 12px;
+                min-width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✨ Advanced Image Comparison</h1>
+            <p>Compare images with precision and style</p>
+        </div>
+        
+        <div class="controls">
+            <div class="file-inputs">
+                <div class="file-input-group">
+                    <label for="image1" class="file-input-label">
+                        <div>📷 Choose Image 1 (Before)</div>
+                        <small>Click or drag to upload</small>
+                    </label>
+                    <input type="file" id="image1" class="file-input" accept="image/*">
+                </div>
+                <div class="file-input-group">
+                    <label for="image2" class="file-input-label">
+                        <div>📷 Choose Image 2 (After)</div>
+                        <small>Click or drag to upload</small>
+                    </label>
+                    <input type="file" id="image2" class="file-input" accept="image/*">
+                </div>
+            </div>
+            
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="toggleFullscreen()">🔍 Fullscreen</button>
+                <button class="btn btn-secondary" onclick="resetZoom()">🔄 Reset View</button>
+                <button class="btn btn-secondary" onclick="flipImages()">🔄 Flip Images</button>
+                <button class="btn btn-secondary" onclick="toggleOrientation()">↔️ Vertical Split</button>
+                <button class="btn btn-secondary" onclick="downloadComparison()">💾 Download</button>
+            </div>
+            
+            <div class="preset-images">
+                <button class="preset-btn" onclick="loadPresetImages('nature')">🌲 Nature Demo</button>
+                <button class="preset-btn" onclick="loadPresetImages('architecture')">🏛️ Architecture Demo</button>
+                <button class="preset-btn" onclick="loadPresetImages('portrait')">👤 Portrait Demo</button>
+            </div>
+        </div>
+        
+        <div class="comparison-container" id="comparisonContainer">
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                Loading images...
+            </div>
+            
+            <div class="image-container">
+                <img id="imageAfter" class="image" alt="After image">
+                <div class="image-before">
+                    <img id="imageBefore" class="image" alt="Before image">
+                </div>
+            </div>
+            
+            <div class="slider" id="slider"></div>
+            
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomIn()">+</button>
+                <button class="zoom-btn" onclick="zoomOut()">−</button>
+            </div>
+            
+            <div class="info-panel" id="infoPanel">
+                <div><strong>Controls:</strong></div>
+                <div>• Move mouse to compare</div>
+                <div>• Drag slider for manual control</div>
+                <div>• Scroll to zoom</div>
+                <div>• Drag to pan when zoomed</div>
+                <div>• Double-click to reset</div>
+                <div id="imageInfo"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class ImageComparison {
+            constructor() {
+                this.currentZoom = 1;
+                this.panX = 0;
+                this.panY = 0;
+                this.isDragging = false;
+                this.isSliderDragging = false;
+                this.sliderPosition = 50;
+                this.isVertical = false;
+                this.isFullscreen = false;
+                this.autoFollow = true; // Auto-follow mouse cursor
+                this.isTouchDevice = this.detectTouchDevice();
+        
+                this.requestedAutoFollowFrame = null; // For requestAnimationFrame
+                this.requestedSliderDragFrame = null; // For requestAnimationFrame
+        
+                this.initializeElements();
+                this.bindEvents();
+                this.loadPresetImages('nature'); // Load demo images
+            }
+        
+            initializeElements() {
+                this.container = document.getElementById('comparisonContainer');
+                this.slider = document.getElementById('slider');
+                this.imageBefore = document.getElementById('imageBefore');
+                this.imageAfter = document.getElementById('imageAfter');
+                this.imageBeforeContainer = document.querySelector('.image-before');
+                this.infoPanel = document.getElementById('infoPanel');
+                this.loading = document.getElementById('loading');
+            }
+        
+            bindEvents() {
+                // File inputs
+                document.getElementById('image1').addEventListener('change', (e) => this.loadImage(e, 'before'));
+                document.getElementById('image2').addEventListener('change', (e) => this.loadImage(e, 'after'));
+        
+                // Drag and drop
+                this.setupDragAndDrop();
+        
+                // Container mouse move for auto-follow (desktop only)
+                if (!this.isTouchDevice) {
+                    this.container.addEventListener('mousemove', (e) => {
+                        if (this.autoFollow && !this.isSliderDragging && !this.isDragging) {
+                            // Cancel any existing frame to prevent multiple updates
+                            if (this.requestedAutoFollowFrame) {
+                                cancelAnimationFrame(this.requestedAutoFollowFrame);
+                            }
+                            this.requestedAutoFollowFrame = requestAnimationFrame(() => this.handleMouseMove(e));
+                        }
+                    });
+                    this.container.addEventListener('mouseenter', () => {
+                        this.autoFollow = true;
+                    });
+                    this.container.addEventListener('mouseleave', () => {
+                        this.autoFollow = false;
+                        if (this.requestedAutoFollowFrame) {
+                            cancelAnimationFrame(this.requestedAutoFollowFrame);
+                            this.requestedAutoFollowFrame = null;
+                        }
+                    });
+                }
+        
+                // Slider events for manual control
+                this.slider.addEventListener('mousedown', this.startSliderDrag.bind(this));
+                document.addEventListener('mousemove', this.handleDocumentMouseMove.bind(this)); // New handler for document
+                document.addEventListener('mouseup', this.stopSliderDrag.bind(this));
+        
+                // Touch events for mobile (disable auto-follow)
+                this.slider.addEventListener('touchstart', this.startSliderDrag.bind(this));
+                document.addEventListener('touchmove', this.handleDocumentTouchMove.bind(this)); // New handler for document
+                document.addEventListener('touchend', this.stopSliderDrag.bind(this));
+        
+                // Pan and zoom events
+                this.container.addEventListener('wheel', this.handleWheel.bind(this));
+                this.container.addEventListener('mousedown', this.startPan.bind(this));
+                this.container.addEventListener('mousemove', this.handlePan.bind(this));
+                this.container.addEventListener('mouseup', this.stopPan.bind(this));
+                this.container.addEventListener('dblclick', this.resetZoom.bind(this));
+        
+                // Keyboard shortcuts
+                document.addEventListener('keydown', this.handleKeyboard.bind(this));
+            }
+        
+            setupDragAndDrop() {
+                const dropZones = document.querySelectorAll('.file-input-label');
+        
+                dropZones.forEach((zone, index) => {
+                    zone.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        zone.style.borderColor = '#00f2fe';
+                        zone.style.background = 'rgba(0, 242, 254, 0.2)';
+                    });
+        
+                    zone.addEventListener('dragleave', () => {
+                        zone.style.borderColor = '#4facfe';
+                        zone.style.background = 'linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0.1) 100%)';
+                    });
+        
+                    zone.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        const files = e.dataTransfer.files;
+                        if (files.length > 0) {
+                            const imageType = index === 0 ? 'before' : 'after';
+                            this.loadImageFromFile(files[0], imageType);
+                        }
+                        zone.style.borderColor = '#4facfe';
+                        zone.style.background = 'linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0.1) 100%)';
+                    });
+                });
+            }
+        
+            loadImage(event, type) {
+                const file = event.target.files[0];
+                if (file) {
+                    this.loadImageFromFile(file, type);
+                }
+            }
+        
+            loadImageFromFile(file, type) {
+                this.showLoading();
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = type === 'before' ? this.imageBefore : this.imageAfter;
+                    img.onload = () => {
+                        this.updateImageInfo();
+                        this.hideLoading();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        
+            loadPresetImages(type) {
+                this.showLoading();
+        
+                const presets = {
+                    nature: {
+                        before: 'data:image/svg+xml;base64,' + btoa(`
+                            <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="sky" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#87CEEB"/>
+                                        <stop offset="100%" style="stop-color:#98FB98"/>
+                                    </linearGradient>
+                                </defs>
+                                <rect width="800" height="600" fill="url(#sky)"/>
+                                <polygon points="100,400 200,200 300,300 400,150 500,250 600,180 700,220 800,200 800,600 0,600" fill="#228B22"/>
+                                <circle cx="150" cy="120" r="50" fill="#FFD700"/>
+                                <text x="400" y="500" text-anchor="middle" font-family="Arial" font-size="24" fill="#2F4F4F">Original Landscape</text>
+                            </svg>
+                        `),
+                        after: 'data:image/svg+xml;base64,' + btoa(`
+                            <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="sky2" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#FF7F50"/>
+                                        <stop offset="100%" style="stop-color:#FFB347"/>
+                                    </linearGradient>
+                                </defs>
+                                <rect width="800" height="600" fill="url(#sky2)"/>
+                                <polygon points="100,400 200,200 300,300 400,150 500,250 600,180 700,220 800,200 800,600 0,600" fill="#8B4513"/>
+                                <circle cx="150" cy="120" r="50" fill="#FF4500"/>
+                                <text x="400" y="500" text-anchor="middle" font-family="Arial" font-size="24" fill="#8B0000">Enhanced Landscape</text>
+                            </svg>
+                        `)
+                    },
+                    architecture: {
+                        before: 'data:image/svg+xml;base64,' + btoa(`
+                            <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="800" height="600" fill="#E0E0E0"/>
+                                <rect x="200" y="200" width="400" height="300" fill="#C0C0C0" stroke="#808080" stroke-width="2"/>
+                                <rect x="250" y="250" width="80" height="80" fill="#696969"/>
+                                <rect x="470" y="250" width="80" height="80" fill="#696969"/>
+                                <rect x="350" y="400" width="100" height="100" fill="#8B4513"/>
+                                <polygon points="180,200 400,100 620,200" fill="#B22222"/>
+                                <text x="400" y="550" text-anchor="middle" font-family="Arial" font-size="20" fill="#000">Classic Building</text>
+                            </svg>
+                        `),
+                        after: 'data:image/svg+xml;base64,' + btoa(`
+                            <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="modern" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#4169E1"/>
+                                        <stop offset="100%" style="stop-color:#1E90FF"/>
+                                    </linearGradient>
+                                </defs>
+                                <rect width="800" height="600" fill="#F0F8FF"/>
+                                <rect x="200" y="200" width="400" height="300" fill="url(#modern)" stroke="#0000CD" stroke-width="3"/>
+                                <rect x="250" y="250" width="80" height="80" fill="#00BFFF"/>
+                                <rect x="470" y="250" width="80" height="80" fill="#00BFFF"/>
+                                <rect x="350" y="400" width="100" height="100" fill="#4682B4"/>
+                                <polygon points="180,200 400,100 620,200" fill="#DC143C"/>
+                                <text x="400" y="550" text-anchor="middle" font-family="Arial" font-size="20" fill="#000080">Modern Building</text>
+                            </svg>
+                        `)
+                    },
+                    portrait: {
+                        before: 'data:image/svg+xml;base64,' + btoa(`
+                            <svg width="600" height="800" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="600" height="800" fill="#F5F5DC"/>
+                                <circle cx="300" cy="250" r="100" fill="#FDBCB4"/>
+                                <circle cx="270" cy="230" r="8" fill="#000"/>
+                                <circle cx="330" cy="230" r="8" fill="#000"/>
+                                <path d="M280,270 Q300,285 320,270" stroke="#000" stroke-width="2" fill="none"/>
+                                <rect x="250" y="350" width="100" height="150" fill="#4682B4"/>
+                                <text x="300" y="600" text-anchor="middle" font-family="Arial" font-size="18" fill="#000">Original Portrait</text>
+                            </svg>
+                        `),
+                        after: 'data:image/svg+xml;base64,' + btoa(`
+                            <svg width="600" height="800" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+                                        <stop offset="0%" style="stop-color:#FFE4E1"/>
+                                        <stop offset="100%" style="stop-color:#FFF8DC"/>
+                                    </radialGradient>
+                                </defs>
+                                <rect width="600" height="800" fill="url(#glow)"/>
+                                <circle cx="300" cy="250" r="100" fill="#FFDBAC"/>
+                                <circle cx="270" cy="230" r="8" fill="#000"/>
+                                <circle cx="330" cy="230" r="8" fill="#000"/>
+                                <path d="M280,270 Q300,285 320,270" stroke="#DC143C" stroke-width="2" fill="none"/>
+                                <rect x="250" y="350" width="100" height="150" fill="#8A2BE2"/>
+                                <text x="300" y="600" text-anchor="middle" font-family="Arial" font-size="18" fill="#4B0082">Enhanced Portrait</text>
+                            </svg>
+                        `)
+                    }
+                };
+        
+                const preset = presets[type];
+                this.imageBefore.onload = () => this.updateImageInfo();
+                this.imageAfter.onload = () => this.hideLoading();
+        
+                this.imageBefore.src = preset.before;
+                this.imageAfter.src = preset.after;
+            }
+        
+            detectTouchDevice() {
+                return 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
+            }
+        
+            handleMouseMove(e) {
+                // Check if mouse is over slider or its handle area
+                const sliderRect = this.slider.getBoundingClientRect();
+                const tolerance = 5; // pixels tolerance around slider
+        
+                let isOverSlider = false;
+                if (this.isVertical) {
+                    isOverSlider = Math.abs(e.clientY - (sliderRect.top + sliderRect.height / 2)) < tolerance;
+                } else {
+                    isOverSlider = Math.abs(e.clientX - (sliderRect.left + sliderRect.width / 2)) < tolerance;
+                }
+        
+                // Don't auto-follow if mouse is near slider
+                if (isOverSlider) return;
+        
+                const rect = this.container.getBoundingClientRect();
+        
+                if (this.isVertical) {
+                    const percentage = ((e.clientY - rect.top) / rect.height) * 100;
+                    this.sliderPosition = Math.max(0, Math.min(100, percentage));
+                } else {
+                    const percentage = ((e.clientX - rect.left) / rect.width) * 100;
+                    this.sliderPosition = Math.max(0, Math.min(100, percentage));
+                }
+                this.updateSliderPosition(); // Call this to apply changes
+                this.requestedAutoFollowFrame = null; // Reset the frame request
+            }
+        
+            startSliderDrag(e) {
+                this.isSliderDragging = true;
+                this.autoFollow = false; // Disable auto-follow when manually dragging
+                e.preventDefault();
+            }
+        
+            handleDocumentMouseMove(e) {
+                if (this.isSliderDragging) {
+                    if (this.requestedSliderDragFrame) {
+                        cancelAnimationFrame(this.requestedSliderDragFrame);
+                    }
+                    this.requestedSliderDragFrame = requestAnimationFrame(() => this.handleSliderDrag(e));
+                }
+            }
+        
+            handleSliderDrag(e) {
+                // Only update position, updateSliderPosition will handle the DOM changes
+                const rect = this.container.getBoundingClientRect();
+                let clientX = e.clientX;
+        
+                if (this.isVertical) {
+                    const percentage = ((e.clientY - rect.top) / rect.height) * 100;
+                    this.sliderPosition = Math.max(0, Math.min(100, percentage));
+                } else {
+                    const percentage = ((clientX - rect.left) / rect.width) * 100;
+                    this.sliderPosition = Math.max(0, Math.min(100, percentage));
+                }
+                this.updateSliderPosition(); // Apply changes
+                this.requestedSliderDragFrame = null; // Reset the frame request
+            }
+        
+            handleDocumentTouchMove(e) {
+                if (this.isSliderDragging) {
+                    e.preventDefault(); // Prevent default touch behavior (like scrolling)
+                    if (this.requestedSliderDragFrame) {
+                        cancelAnimationFrame(this.requestedSliderDragFrame);
+                    }
+                    this.requestedSliderDragFrame = requestAnimationFrame(() => this.handleSliderDragTouch(e));
+                }
+            }
+        
+            handleSliderDragTouch(e) {
+                const touch = e.touches[0];
+                const rect = this.container.getBoundingClientRect();
+        
+                if (this.isVertical) {
+                    const percentage = ((touch.clientY - rect.top) / rect.height) * 100;
+                    this.sliderPosition = Math.max(0, Math.min(100, percentage));
+                } else {
+                    const percentage = ((touch.clientX - rect.left) / rect.width) * 100;
+                    this.sliderPosition = Math.max(0, Math.min(100, percentage));
+                }
+                this.updateSliderPosition(); // Apply changes
+                this.requestedSliderDragFrame = null; // Reset the frame request
+            }
+        
+            stopSliderDrag() {
+                this.isSliderDragging = false;
+                if (this.requestedSliderDragFrame) {
+                    cancelAnimationFrame(this.requestedSliderDragFrame);
+                    this.requestedSliderDragFrame = null;
+                }
+                if (this.requestedAutoFollowFrame) {
+                    cancelAnimationFrame(this.requestedAutoFollowFrame);
+                    this.requestedAutoFollowFrame = null;
+                }
+        
+                // Re-enable auto-follow after manual drag ends (for desktop)
+                if (!this.isTouchDevice) {
+                    setTimeout(() => {
+                        this.autoFollow = true;
+                    }, 100);
+                }
+            }
+        
+            handleWheel(e) {
+                e.preventDefault();
+        
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                const newZoom = this.currentZoom * delta;
+        
+                if (newZoom >= 0.1 && newZoom <= 50) {
+                    this.currentZoom = newZoom;
+                    this.updateTransform();
+                }
+            }
+        
+            startPan(e) {
+                // Don't start panning if clicking on slider or zoom controls
+                if (e.target === this.slider ||
+                    e.target.closest('.zoom-controls') ||
+                    e.target.closest('.slider') ||
+                    this.isSliderDragging) return;
+        
+                this.isDragging = true;
+                this.lastX = e.clientX;
+                this.lastY = e.clientY;
+                this.container.style.cursor = 'grabbing';
+        
+                // Disable auto-follow while panning
+                this.autoFollow = false;
+            }
+        
+            handlePan(e) {
+                if (!this.isDragging || this.isSliderDragging) return;
+        
+                const deltaX = e.clientX - this.lastX;
+                const deltaY = e.clientY - this.lastY;
+        
+                this.panX += deltaX;
+                this.panY += deltaY;
+        
+                this.lastX = e.clientX;
+                this.lastY = e.clientY;
+        
+                this.updateTransform();
+        
+                // Disable auto-follow while panning
+                this.autoFollow = false;
+            }
+        
+            stopPan() {
+                this.isDragging = false;
+                this.container.style.cursor = 'grab';
+        
+                // Re-enable auto-follow after panning ends (for desktop)
+                if (!this.isTouchDevice) {
+                    setTimeout(() => {
+                        this.autoFollow = true;
+                    }, 100);
+                }
+            }
+        
+            updateTransform() {
+                const transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.currentZoom})`;
+                this.imageBefore.style.transform = transform;
+                this.imageAfter.style.transform = transform;
+                this.updateImageInfo();
+            }
+        
+            resetZoom() {
+                this.currentZoom = 1;
+                this.panX = 0;
+                this.panY = 0;
+                this.updateTransform();
+            }
+        
+            zoomIn() {
+                if (this.currentZoom < 10) {
+                    this.currentZoom *= 1.2;
+                    this.updateTransform();
+                }
+            }
+        
+            zoomOut() {
+                if (this.currentZoom > 0.1) {
+                    this.currentZoom /= 1.2;
+                    this.updateTransform();
+                }
+            }
+        
+            toggleFullscreen() {
+                if (!this.isFullscreen) {
+                    this.enterFullscreen();
+                } else {
+                    this.exitFullscreen();
+                }
+            }
+        
+            enterFullscreen() {
+                this.isFullscreen = true;
+                document.body.style.overflow = 'hidden';
+                this.container.classList.add('fullscreen');
+        
+                // Add exit button
+                const exitBtn = document.createElement('button');
+                exitBtn.className = 'exit-fullscreen';
+                exitBtn.innerHTML = '✕';
+                exitBtn.onclick = () => this.exitFullscreen();
+                this.container.appendChild(exitBtn);
+        
+                // Request actual fullscreen if available
+                if (this.container.requestFullscreen) {
+                    this.container.requestFullscreen();
+                } else if (this.container.webkitRequestFullscreen) {
+                    this.container.webkitRequestFullscreen();
+                }
+            }
+        
+            exitFullscreen() {
+                this.isFullscreen = false;
+                document.body.style.overflow = 'auto';
+                this.container.classList.remove('fullscreen');
+        
+                const exitBtn = this.container.querySelector('.exit-fullscreen');
+                if (exitBtn) {
+                    exitBtn.remove();
+                }
+        
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            }
+        
+            flipImages() {
+                const beforeSrc = this.imageBefore.src;
+                const afterSrc = this.imageAfter.src;
+        
+                this.imageBefore.src = afterSrc;
+                this.imageAfter.src = beforeSrc;
+        
+                this.updateImageInfo();
+            }
+        
+            toggleOrientation() {
+                this.isVertical = !this.isVertical;
+        
+                // Reset slider position to 50% for new orientation
+                this.sliderPosition = 50;
+                this.updateSliderPosition();
+        
+                if (this.isVertical) {
+                    this.slider.style.width = '100%';
+                    this.slider.style.height = '1px';
+                    this.slider.style.cursor = 'ns-resize';
+                    this.slider.style.transform = 'translateY(-50%)'; // For vertical centering
+                } else {
+                    this.slider.style.width = '1px';
+                    this.slider.style.height = '100%';
+                    this.slider.style.cursor = 'ew-resize';
+                    this.slider.style.transform = 'translateX(-50%)'; // For horizontal centering
+                }
+            }
+        
+            downloadComparison() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+        
+                const img1 = new Image();
+                const img2 = new Image();
+        
+                img1.crossOrigin = 'anonymous';
+                img2.crossOrigin = 'anonymous';
+        
+                img1.onload = () => {
+                    img2.onload = () => {
+                        canvas.width = Math.max(img1.width, img2.width);
+                        canvas.height = Math.max(img1.height, img2.height);
+        
+                        // Draw the comparison with current slider position
+                        if (this.isVertical) {
+                            const splitY = (canvas.height * this.sliderPosition) / 100;
+                            ctx.drawImage(img2, 0, 0, canvas.width, canvas.height);
+                            ctx.drawImage(img1, 0, 0, canvas.width, splitY, 0, 0, canvas.width, splitY);
+                        } else {
+                            const splitX = (canvas.width * this.sliderPosition) / 100;
+                            ctx.drawImage(img2, 0, 0, canvas.width, canvas.height);
+                            ctx.drawImage(img1, 0, 0, splitX, canvas.height, 0, 0, splitX, canvas.height);
+                        }
+        
+                        // Add slider line
+                        ctx.strokeStyle = '#4facfe';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        if (this.isVertical) {
+                            const y = (canvas.height * this.sliderPosition) / 100;
+                            ctx.moveTo(0, y);
+                            ctx.lineTo(canvas.width, y);
+                        } else {
+                            const x = (canvas.width * this.sliderPosition) / 100;
+                            ctx.moveTo(x, 0);
+                            ctx.lineTo(x, canvas.height);
+                        }
+                        ctx.stroke();
+        
+                        // Download
+                        const link = document.createElement('a');
+                        link.download = 'image-comparison.png';
+                        link.href = canvas.toDataURL();
+                        link.click();
+                    };
+                    img2.src = this.imageAfter.src;
+                };
+                img1.src = this.imageBefore.src;
+            }
+        
+            updateImageInfo() {
+                const info = document.getElementById('imageInfo');
+                info.innerHTML = `
+                    <div style="margin-top: 10px; border-top: 1px solid #444; padding-top: 10px;">
+                        <div>Zoom: ${Math.round(this.currentZoom * 100)}%</div>
+                        <div>Slider: ${Math.round(this.sliderPosition)}%</div>
+                        <div>Mode: ${this.isVertical ? 'Vertical' : 'Horizontal'}</div>
+                    </div>
+                `;
+            }
+        
+            showLoading() {
+                this.loading.style.display = 'block';
+            }
+        
+            hideLoading() {
+                this.loading.style.display = 'none';
+            }
+        
+            handleKeyboard(e) {
+                if (e.target.tagName === 'INPUT') return;
+        
+                switch(e.key) {
+                    case 'f':
+                    case 'F':
+                        this.toggleFullscreen();
+                        break;
+                    case 'r':
+                    case 'R':
+                        this.resetZoom();
+                        break;
+                    case 'v':
+                    case 'V':
+                        this.toggleOrientation();
+                        break;
+                    case 'ArrowLeft':
+                        if (!this.isVertical && this.sliderPosition > 0) { // Only for horizontal
+                            this.sliderPosition -= 1;
+                            this.updateSliderPosition();
+                        }
+                        break;
+                    case 'ArrowRight':
+                        if (!this.isVertical && this.sliderPosition < 100) { // Only for horizontal
+                            this.sliderPosition += 1;
+                            this.updateSliderPosition();
+                        }
+                        break;
+                    case 'ArrowUp':
+                        if (this.isVertical && this.sliderPosition > 0) { // Only for vertical
+                            this.sliderPosition -= 1;
+                            this.updateSliderPosition();
+                        } else if (!this.isVertical) { // For pan up in horizontal mode
+                            this.panY -= 10; // Adjust value as needed
+                            this.updateTransform();
+                        }
+                        break;
+                    case 'ArrowDown':
+                        if (this.isVertical && this.sliderPosition < 100) { // Only for vertical
+                            this.sliderPosition += 1;
+                            this.updateSliderPosition();
+                        } else if (!this.isVertical) { // For pan down in horizontal mode
+                            this.panY += 10; // Adjust value as needed
+                            this.updateTransform();
+                        }
+                        break;
+                    case 'Escape':
+                        if (this.isFullscreen) {
+                            this.exitFullscreen();
+                        }
+                        break;
+                    case '+':
+                        this.zoomIn();
+                        break;
+                    case '-':
+                        this.zoomOut();
+                        break;
+                }
+            }
+        
+            updateSliderPosition() {
+                if (this.isVertical) {
+                    this.slider.style.top = this.sliderPosition + '%';
+                    this.slider.style.left = '50%'; // Ensure horizontal centering for vertical mode
+                    this.imageBeforeContainer.style.clipPath = `polygon(0 0, 100% 0, 100% ${this.sliderPosition}%, 0 ${this.sliderPosition}%)`;
+                } else {
+                    this.slider.style.left = this.sliderPosition + '%';
+                    this.slider.style.top = '0'; // Ensure vertical alignment for horizontal mode
+                    this.imageBeforeContainer.style.clipPath = `polygon(0 0, ${this.sliderPosition}% 0, ${this.sliderPosition}% 100%, 0 100%)`;
+                }
+                this.updateImageInfo();
+            }
+        }
+        
+        // Global functions for buttons
+        let comparison;
+        
+        function toggleFullscreen() {
+            comparison.toggleFullscreen();
+        }
+        
+        function resetZoom() {
+            comparison.resetZoom();
+        }
+        
+        function flipImages() {
+            comparison.flipImages();
+        }
+        
+        function toggleOrientation() {
+            comparison.toggleOrientation();
+        }
+        
+        function downloadComparison() {
+            comparison.downloadComparison();
+        }
+        
+        function zoomIn() {
+            comparison.zoomIn();
+        }
+        
+        function zoomOut() {
+            comparison.zoomOut();
+        }
+        
+        function loadPresetImages(type) {
+            comparison.loadPresetImages(type);
+        }
+        
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            comparison = new ImageComparison();
+        });
+        
+        // Handle fullscreen change events
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement && comparison.isFullscreen) {
+                comparison.exitFullscreen();
+            }
+        });
+        
+        document.addEventListener('webkitfullscreenchange', () => {
+            if (!document.webkitFullscreenElement && comparison.isFullscreen) {
+                comparison.exitFullscreen();
+            }
+        });
+    </script>
+</body>
+</html>

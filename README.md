@@ -6,7 +6,7 @@ Just testing, the generated codes from LLMs.
 
 - [Color Palette Generator Plus HSL](https://dotslashgabut.github.io/color-palette-generator-plus.html)
 - [Fullscreen Image Comparison App](https://dotslashgabut.github.io/image-comparison-app-fullscreen.html)
-- [Image Comparison App](https://dotslashgabut.github.io/image-comparison-app.html)
+- [Advanced Image Comparison](https://dotslashgabut.github.io/advanced-image-comparison.html)
 - [Random AI Images Gallery](https://dotslashgabut.github.io/random-images/)
 - [Color Palette Generator](https://dotslashgabut.github.io/color-palette-generator-all.html)
 - [Encoder/Decoder Tool](https://dotslashgabut.github.io/encoder-decoder-tool-alt.html)
@@ -25,6 +25,7 @@ Just testing, the generated codes from LLMs.
 - [Random Color Palette Generator](https://dotslashgabut.github.io/random-color-palette-generator.html)
 - [QR Code Generator](https://dotslashgabut.github.io/qr-code-generator.html)
 - [QR Code Generator and Reader](https://dotslashgabut.github.io/qr-code-generator-and-reader.html)
+- [Image Comparison App](https://dotslashgabut.github.io/image-comparison-app.html)
 - [Retro Pixelated Image Effect](https://dotslashgabut.github.io/retro-pixelated-image-effect.html)
 - [Vibrant Audio Player](https://dotslashgabut.github.io/vibrant-audio-player.html)
 - [Pixel Coordinates to RGB Color Code style-1 #FFFFFF](https://dotslashgabut.github.io/color_code_pixel_style1.html)
