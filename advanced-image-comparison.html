@@ -484,22 +484,38 @@
                 this.currentZoom = 1;
                 this.panX = 0;
                 this.panY = 0;
-                this.isDragging = false;
-                this.isSliderDragging = false;
+                this.isDragging = false; // For single-finger image panning
+                this.isSliderDragging = false; // For manual slider movement
+                this.isPinching = false; // For two-finger pinch-to-zoom
+        
                 this.sliderPosition = 50;
                 this.isVertical = false;
                 this.isFullscreen = false;
-                this.autoFollow = true; // Auto-follow mouse cursor
+                this.autoFollow = true; // Auto-follow mouse cursor (desktop only)
                 this.isTouchDevice = this.detectTouchDevice();
         
-                this.requestedAutoFollowFrame = null; // For requestAnimationFrame
-                this.requestedSliderDragFrame = null; // For requestAnimationFrame
+                this.requestedAutoFollowFrame = null; // For requestAnimationFrame for auto-follow
+                this.requestedSliderDragFrame = null; // For requestAnimationFrame for slider drag
         
+                // Properties for 'tap to move slider' and pinch-zoom functionality
+                this.lastTouchStartX = 0;
+                this.lastTouchStartY = 0;
+                this.touchMoveThreshold = 10; // Pixels: if touch moves more than this, it's a drag, not a tap
+        
+                this.initialPinchDistance = 0; // Distance between two fingers at pinch start
+                this.initialPinchZoom = 1;     // Zoom level at pinch start
+        
+                // Initialize DOM elements
                 this.initializeElements();
+                // Bind all event listeners
                 this.bindEvents();
-                this.loadPresetImages('nature'); // Load demo images
+                // Load initial demo images
+                this.loadPresetImages('nature');
             }
         
+            /**
+             * Initializes references to all necessary DOM elements.
+             */
             initializeElements() {
                 this.container = document.getElementById('comparisonContainer');
                 this.slider = document.getElementById('slider');
@@ -510,28 +526,35 @@
                 this.loading = document.getElementById('loading');
             }
         
+            /**
+             * Binds all event listeners for file inputs, drag & drop, slider,
+             * panning, zooming, and keyboard shortcuts.
+             */
             bindEvents() {
-                // File inputs
+                // Event listeners for file input changes
                 document.getElementById('image1').addEventListener('change', (e) => this.loadImage(e, 'before'));
                 document.getElementById('image2').addEventListener('change', (e) => this.loadImage(e, 'after'));
         
-                // Drag and drop
+                // Setup drag and drop functionality for file inputs
                 this.setupDragAndDrop();
         
                 // Container mouse move for auto-follow (desktop only)
                 if (!this.isTouchDevice) {
                     this.container.addEventListener('mousemove', (e) => {
+                        // Only auto-follow if not manually dragging the slider or panning the image
                         if (this.autoFollow && !this.isSliderDragging && !this.isDragging) {
-                            // Cancel any existing frame to prevent multiple updates
+                            // Use requestAnimationFrame to optimize mousemove handling
                             if (this.requestedAutoFollowFrame) {
                                 cancelAnimationFrame(this.requestedAutoFollowFrame);
                             }
                             this.requestedAutoFollowFrame = requestAnimationFrame(() => this.handleMouseMove(e));
                         }
                     });
+                    // Re-enable auto-follow when mouse enters the container
                     this.container.addEventListener('mouseenter', () => {
                         this.autoFollow = true;
                     });
+                    // Disable auto-follow when mouse leaves the container
                     this.container.addEventListener('mouseleave', () => {
                         this.autoFollow = false;
                         if (this.requestedAutoFollowFrame) {
@@ -541,55 +564,76 @@
                     });
                 }
         
-                // Slider events for manual control
+                // Slider events for manual control (Mouse)
                 this.slider.addEventListener('mousedown', this.startSliderDrag.bind(this));
-                document.addEventListener('mousemove', this.handleDocumentMouseMove.bind(this)); // New handler for document
+                document.addEventListener('mousemove', this.handleDocumentMouseMove.bind(this));
                 document.addEventListener('mouseup', this.stopSliderDrag.bind(this));
         
-                // Touch events for mobile (disable auto-follow)
+                // Slider events for manual control (Touch)
                 this.slider.addEventListener('touchstart', this.startSliderDrag.bind(this));
-                document.addEventListener('touchmove', this.handleDocumentTouchMove.bind(this)); // New handler for document
+                document.addEventListener('touchmove', this.handleDocumentTouchMove.bind(this));
                 document.addEventListener('touchend', this.stopSliderDrag.bind(this));
+                this.slider.addEventListener('touchcancel', this.stopSliderDrag.bind(this)); // Handle interrupted touches
         
-                // Pan and zoom events
-                this.container.addEventListener('wheel', this.handleWheel.bind(this));
-                this.container.addEventListener('mousedown', this.startPan.bind(this));
-                this.container.addEventListener('mousemove', this.handlePan.bind(this));
-                this.container.addEventListener('mouseup', this.stopPan.bind(this));
+                // Pan and zoom events (Mouse)
+                this.container.addEventListener('wheel', this.handleWheel.bind(this)); // Mouse wheel for zoom
+                this.container.addEventListener('mousedown', this.startPan.bind(this)); // Start panning
+                this.container.addEventListener('mousemove', this.handlePan.bind(this)); // Handle panning movement
+                document.addEventListener('mouseup', this.stopPan.bind(this)); // Stop panning (on document to catch outside container)
+        
+                // Pan and zoom events (Touch)
+                this.container.addEventListener('touchstart', this.startPanTouch.bind(this));
+                this.container.addEventListener('touchmove', this.handlePanTouch.bind(this));
+                document.addEventListener('touchend', this.stopPanTouch.bind(this)); // Stop panning (on document to catch outside container)
+                document.addEventListener('touchcancel', this.stopPanTouch.bind(this)); // Handle interrupted touches
+        
+                // Double-click to reset zoom (Mouse & Touch)
                 this.container.addEventListener('dblclick', this.resetZoom.bind(this));
         
-                // Keyboard shortcuts
+                // Keyboard shortcuts for various actions
                 document.addEventListener('keydown', this.handleKeyboard.bind(this));
             }
         
+            /**
+             * Sets up drag and drop functionality for the file input labels.
+             */
             setupDragAndDrop() {
                 const dropZones = document.querySelectorAll('.file-input-label');
         
                 dropZones.forEach((zone, index) => {
+                    // Prevent default drag behaviors and highlight drop zone
                     zone.addEventListener('dragover', (e) => {
                         e.preventDefault();
                         zone.style.borderColor = '#00f2fe';
                         zone.style.background = 'rgba(0, 242, 254, 0.2)';
                     });
         
+                    // Reset highlight when drag leaves
                     zone.addEventListener('dragleave', () => {
                         zone.style.borderColor = '#4facfe';
                         zone.style.background = 'linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0.1) 100%)';
                     });
         
+                    // Handle dropped files
                     zone.addEventListener('drop', (e) => {
                         e.preventDefault();
                         const files = e.dataTransfer.files;
                         if (files.length > 0) {
-                            const imageType = index === 0 ? 'before' : 'after';
+                            const imageType = index === 0 ? 'before' : 'after'; // Determine if it's image 1 or 2
                             this.loadImageFromFile(files[0], imageType);
                         }
+                        // Reset highlight after drop
                         zone.style.borderColor = '#4facfe';
                         zone.style.background = 'linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0.1) 100%)';
                     });
                 });
             }
         
+            /**
+             * Loads an image from a file input event.
+             * @param {Event} event - The change event from the file input.
+             * @param {string} type - 'before' or 'after' to determine which image to load.
+             */
             loadImage(event, type) {
                 const file = event.target.files[0];
                 if (file) {
@@ -597,23 +641,67 @@
                 }
             }
         
+            /**
+             * Loads an image from a File object.
+             * @param {File} file - The File object to load.
+             * @param {string} type - 'before' or 'after' to determine which image to load.
+             */
             loadImageFromFile(file, type) {
-                this.showLoading();
+                this.showLoading(); // Show loading indicator
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const img = type === 'before' ? this.imageBefore : this.imageAfter;
                     img.onload = () => {
-                        this.updateImageInfo();
-                        this.hideLoading();
+                        this.updateImageInfo(); // Update info panel after image loads
+                        this.hideLoading(); // Hide loading indicator
                     };
-                    img.src = e.target.result;
+                    img.onerror = () => {
+                        this.hideLoading();
+                        const infoDiv = document.getElementById('imageInfo');
+                        infoDiv.innerHTML = `<div style="color: red; margin-top: 10px;">Error loading image from file: ${file.name}.</div>`;
+                        console.error(`Error loading image from file: ${file.name}`);
+                    };
+                    img.src = e.target.result; // Set image source to data URL
                 };
-                reader.readAsDataURL(file);
+                reader.readAsDataURL(file); // Read file as Data URL
             }
         
-            loadPresetImages(type) {
-                this.showLoading();
+            /**
+             * Loads an image from a given URL.
+             * @param {string} url - The URL of the image to load.
+             * @param {string} type - 'before' or 'after' to determine which image to load.
+             */
+            loadImageFromUrl(url, type) {
+                if (!url) {
+                    // Use a custom message box instead of alert() in production
+                    const infoDiv = document.getElementById('imageInfo');
+                    infoDiv.innerHTML = '<div style="color: red; margin-top: 10px;">Please enter a valid image URL.</div>';
+                    return;
+                }
+                this.showLoading(); // Show loading indicator
+                const img = type === 'before' ? this.imageBefore : this.imageAfter;
+                img.onload = () => {
+                    this.updateImageInfo(); // Update info panel after image loads
+                    this.hideLoading(); // Hide loading indicator
+                };
+                img.onerror = () => {
+                    // Use a custom message box instead of alert()
+                    const infoDiv = document.getElementById('imageInfo');
+                    infoDiv.innerHTML = `<div style="color: red; margin-top: 10px;">Failed to load image from URL: ${url}. Please check the URL and ensure it's a valid image and accessible (CORS issues might prevent loading from some domains).</div>`;
+                    this.hideLoading(); // Hide loading indicator
+                    img.src = ''; // Clear the image source on error to prevent broken image icon
+                };
+                img.src = url; // Set image source to the provided URL
+            }
         
+            /**
+             * Loads pre-defined demo images based on a type.
+             * @param {string} type - The type of preset images ('nature', 'architecture', 'portrait').
+             */
+            loadPresetImages(type) {
+                this.showLoading(); // Show loading indicator
+        
+                // SVG data URLs for demo images
                 const presets = {
                     nature: {
                         before: 'data:image/svg+xml;base64,' + btoa(`
@@ -708,36 +796,37 @@
                 };
         
                 const preset = presets[type];
-                this.imageBefore.onload = () => this.updateImageInfo();
-                this.imageAfter.onload = () => this.hideLoading();
+                // Ensure both images load before hiding loading indicator
+                let imagesLoaded = 0;
+                const onImageLoad = () => {
+                    imagesLoaded++;
+                    if (imagesLoaded === 2) {
+                        this.updateImageInfo();
+                        this.hideLoading();
+                    }
+                };
+        
+                this.imageBefore.onload = onImageLoad;
+                this.imageAfter.onload = onImageLoad;
+                this.imageBefore.onerror = () => { console.error('Error loading preset before image.'); onImageLoad(); };
+                this.imageAfter.onerror = () => { console.error('Error loading preset after image.'); onImageLoad(); };
         
                 this.imageBefore.src = preset.before;
                 this.imageAfter.src = preset.after;
             }
-            
-            loadImageFromUrl(url, type) {
-                if (!url) {
-                    alert('Please enter a valid image URL.');
-                    return;
-                }
-                this.showLoading();
-                const img = type === 'before' ? this.imageBefore : this.imageAfter;
-                img.onload = () => {
-                    this.updateImageInfo();
-                    this.hideLoading();
-                };
-                img.onerror = () => {
-                    alert(`Failed to load image from URL: ${url}. Please check the URL and ensure it's a valid image and accessible (CORS issues might prevent loading from some domains).`);
-                    this.hideLoading();
-                    img.src = ''; // Clear the image source on error
-                };
-                img.src = url;
-            }
         
+            /**
+             * Detects if the device is a touchscreen device.
+             * @returns {boolean} True if it's a touch device, false otherwise.
+             */
             detectTouchDevice() {
                 return 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
             }
         
+            /**
+             * Handles mouse movement over the container for auto-following the slider.
+             * @param {MouseEvent} e - The mouse event.
+             */
             handleMouseMove(e) {
                 // Check if mouse is over slider or its handle area
                 const sliderRect = this.slider.getBoundingClientRect();
@@ -750,8 +839,8 @@
                     isOverSlider = Math.abs(e.clientX - (sliderRect.left + sliderRect.width / 2)) < tolerance;
                 }
         
-                // Don't auto-follow if mouse is near slider
-                if (isOverSlider) return;
+                // Don't auto-follow if mouse is near slider or if a drag is active
+                if (isOverSlider || this.isDragging || this.isSliderDragging || this.isPinching) return;
         
                 const rect = this.container.getBoundingClientRect();
         
@@ -766,14 +855,23 @@
                 this.requestedAutoFollowFrame = null; // Reset the frame request
             }
         
+            /**
+             * Initiates slider dragging on mouse down or touch start.
+             * @param {Event} e - The mouse or touch event.
+             */
             startSliderDrag(e) {
                 this.isSliderDragging = true;
                 this.autoFollow = false; // Disable auto-follow when manually dragging
-                e.preventDefault();
+                e.preventDefault(); // Prevent default browser actions (e.g., image drag)
             }
         
+            /**
+             * Handles mouse movement for slider dragging.
+             * @param {MouseEvent} e - The mouse event.
+             */
             handleDocumentMouseMove(e) {
                 if (this.isSliderDragging) {
+                    // Use requestAnimationFrame to optimize slider dragging
                     if (this.requestedSliderDragFrame) {
                         cancelAnimationFrame(this.requestedSliderDragFrame);
                     }
@@ -781,13 +879,17 @@
                 }
             }
         
+            /**
+             * Updates slider position based on mouse movement.
+             * @param {MouseEvent} e - The mouse event.
+             */
             handleSliderDrag(e) {
-                // Only update position, updateSliderPosition will handle the DOM changes
                 const rect = this.container.getBoundingClientRect();
                 let clientX = e.clientX;
+                let clientY = e.clientY;
         
                 if (this.isVertical) {
-                    const percentage = ((e.clientY - rect.top) / rect.height) * 100;
+                    const percentage = ((clientY - rect.top) / rect.height) * 100;
                     this.sliderPosition = Math.max(0, Math.min(100, percentage));
                 } else {
                     const percentage = ((clientX - rect.left) / rect.width) * 100;
@@ -797,6 +899,10 @@
                 this.requestedSliderDragFrame = null; // Reset the frame request
             }
         
+            /**
+             * Handles touch movement for slider dragging.
+             * @param {TouchEvent} e - The touch event.
+             */
             handleDocumentTouchMove(e) {
                 if (this.isSliderDragging) {
                     e.preventDefault(); // Prevent default touch behavior (like scrolling)
@@ -807,8 +913,12 @@
                 }
             }
         
+            /**
+             * Updates slider position based on touch movement.
+             * @param {TouchEvent} e - The touch event.
+             */
             handleSliderDragTouch(e) {
-                const touch = e.touches[0];
+                const touch = e.touches[0]; // Get the first touch point
                 const rect = this.container.getBoundingClientRect();
         
                 if (this.isVertical) {
@@ -822,8 +932,12 @@
                 this.requestedSliderDragFrame = null; // Reset the frame request
             }
         
+            /**
+             * Stops slider dragging on mouse up or touch end.
+             */
             stopSliderDrag() {
                 this.isSliderDragging = false;
+                // Cancel any pending animation frames
                 if (this.requestedSliderDragFrame) {
                     cancelAnimationFrame(this.requestedSliderDragFrame);
                     this.requestedSliderDragFrame = null;
@@ -833,26 +947,35 @@
                     this.requestedAutoFollowFrame = null;
                 }
         
-                // Re-enable auto-follow after manual drag ends (for desktop)
+                // Re-enable auto-follow after manual drag ends (for desktop only)
                 if (!this.isTouchDevice) {
                     setTimeout(() => {
                         this.autoFollow = true;
-                    }, 100);
+                    }, 100); // Small delay to prevent immediate re-triggering
                 }
             }
         
+            /**
+             * Handles mouse wheel events for zooming.
+             * @param {WheelEvent} e - The wheel event.
+             */
             handleWheel(e) {
-                e.preventDefault();
+                e.preventDefault(); // Prevent page scrolling
         
-                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                const delta = e.deltaY > 0 ? 0.9 : 1.1; // Determine zoom direction
                 const newZoom = this.currentZoom * delta;
         
+                // Limit zoom level
                 if (newZoom >= 0.1 && newZoom <= 50) {
                     this.currentZoom = newZoom;
-                    this.updateTransform();
+                    this.updateTransform(); // Apply new zoom
                 }
             }
         
+            /**
+             * Initiates panning on mouse down.
+             * @param {MouseEvent} e - The mouse event.
+             */
             startPan(e) {
                 // Don't start panning if clicking on slider or zoom controls
                 if (e.target === this.slider ||
@@ -861,37 +984,42 @@
                     this.isSliderDragging) return;
         
                 this.isDragging = true;
-                this.lastX = e.clientX;
-                this.lastY = e.clientY;
-                this.container.style.cursor = 'grabbing';
+                this.lastX = e.clientX; // Store initial mouse X
+                this.lastY = e.clientY; // Store initial mouse Y
+                this.container.style.cursor = 'grabbing'; // Change cursor for visual feedback
         
-                // Disable auto-follow while panning
-                this.autoFollow = false;
+                this.autoFollow = false; // Disable auto-follow while panning
             }
         
+            /**
+             * Handles panning movement on mouse move.
+             * @param {MouseEvent} e - The mouse event.
+             */
             handlePan(e) {
-                if (!this.isDragging || this.isSliderDragging) return;
+                if (!this.isDragging || this.isSliderDragging) return; // Only pan if dragging is active and slider is not dragging
         
-                const deltaX = e.clientX - this.lastX;
-                const deltaY = e.clientY - this.lastY;
+                const deltaX = e.clientX - this.lastX; // Calculate change in X
+                const deltaY = e.clientY - this.lastY; // Calculate change in Y
         
-                this.panX += deltaX;
-                this.panY += deltaY;
+                this.panX += deltaX; // Update pan offset X
+                this.panY += deltaY; // Update pan offset Y
         
-                this.lastX = e.clientX;
-                this.lastY = e.clientY;
+                this.lastX = e.clientX; // Update last X for next movement
+                this.lastY = e.clientY; // Update last Y for next movement
         
-                this.updateTransform();
+                this.updateTransform(); // Apply new pan offsets
         
-                // Disable auto-follow while panning
-                this.autoFollow = false;
+                this.autoFollow = false; // Keep auto-follow disabled while panning
             }
         
+            /**
+             * Stops panning on mouse up.
+             */
             stopPan() {
                 this.isDragging = false;
-                this.container.style.cursor = 'grab';
+                this.container.style.cursor = 'grab'; // Reset cursor
         
-                // Re-enable auto-follow after panning ends (for desktop)
+                // Re-enable auto-follow after panning ends (for desktop only)
                 if (!this.isTouchDevice) {
                     setTimeout(() => {
                         this.autoFollow = true;
@@ -899,34 +1027,210 @@
                 }
             }
         
+            /**
+             * Initiates touch interaction (pan or pinch-zoom).
+             * @param {TouchEvent} e - The touch event.
+             */
+            startPanTouch(e) {
+                if (e.touches.length === 1) {
+                    e.preventDefault(); // Prevent default browser scrolling/zooming for single touch
+                    this.isDragging = false; // Assume not dragging yet, will set in handlePanTouch
+                    this.lastX = e.touches[0].clientX;
+                    this.lastY = e.touches[0].clientY;
+                    this.lastTouchStartX = e.touches[0].clientX; // For tap detection
+                    this.lastTouchStartY = e.touches[0].clientY; // For tap detection
+                    this.autoFollow = false;
+                } else if (e.touches.length === 2) {
+                    this.startPinchZoom(e); // Start pinch-zoom if two fingers
+                }
+            }
+        
+            /**
+             * Handles touch movement (pan or pinch-zoom).
+             * @param {TouchEvent} e - The touch event.
+             */
+            handlePanTouch(e) {
+                if (e.touches.length === 1) {
+                    if (this.isPinching || this.isSliderDragging) return; // If already pinching or slider dragging, ignore single touch move
+        
+                    e.preventDefault(); // Prevent default browser scrolling/zooming
+        
+                    const currentX = e.touches[0].clientX;
+                    const currentY = e.touches[0].clientY;
+        
+                    const deltaX = currentX - this.lastX;
+                    const deltaY = currentY - this.lastY;
+        
+                    // If movement exceeds threshold, it's a drag/pan
+                    if (!this.isDragging && (Math.abs(deltaX) > this.touchMoveThreshold || Math.abs(deltaY) > this.touchMoveThreshold)) {
+                        this.isDragging = true;
+                        this.container.style.cursor = 'grabbing';
+                    }
+        
+                    if (this.isDragging) {
+                        this.panX += deltaX;
+                        this.panY += deltaY;
+                        this.updateTransform();
+                    }
+        
+                    this.lastX = currentX;
+                    this.lastY = currentY;
+                } else if (e.touches.length === 2) {
+                    this.handlePinchZoom(e); // Handle pinch-zoom if two fingers
+                }
+            }
+        
+            /**
+             * Stops touch interaction (pan or pinch-zoom).
+             * @param {TouchEvent} e - The touch event.
+             */
+            stopPanTouch(e) {
+                // Check if it was a tap (not a drag, not a slider drag, and not a pinch)
+                if (!this.isDragging && !this.isSliderDragging && !this.isPinching && e.changedTouches.length === 1) {
+                    const touch = e.changedTouches[0];
+                    const deltaX = Math.abs(touch.clientX - this.lastTouchStartX);
+                    const deltaY = Math.abs(touch.clientY - this.lastTouchStartY);
+        
+                    if (deltaX <= this.touchMoveThreshold && deltaY <= this.touchMoveThreshold) {
+                        this.handleContainerTap(e); // Call the dedicated tap handler
+                    }
+                }
+        
+                this.isDragging = false;
+                this.isPinching = false; // Reset pinching state
+                this.initialPinchDistance = 0; // Reset pinch state
+                this.container.style.cursor = 'grab';
+        
+                if (!this.isTouchDevice) {
+                    setTimeout(() => {
+                        this.autoFollow = true;
+                    }, 100);
+                }
+            }
+        
+            /**
+             * Calculates the distance between two touch points.
+             * @param {TouchList} touches - The TouchList object.
+             * @returns {number} The distance between the two touches.
+             */
+            getDistance(touches) {
+                const dx = touches[0].clientX - touches[1].clientX;
+                const dy = touches[0].clientY - touches[1].clientY;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+        
+            /**
+             * Initiates pinch-to-zoom.
+             * @param {TouchEvent} e - The touch event.
+             */
+            startPinchZoom(e) {
+                if (e.touches.length === 2) {
+                    e.preventDefault(); // Prevent default browser zoom/scroll
+                    this.isPinching = true;
+                    this.initialPinchDistance = this.getDistance(e.touches);
+                    this.initialPinchZoom = this.currentZoom;
+                    this.autoFollow = false; // Disable auto-follow during pinch
+                }
+            }
+        
+            /**
+             * Handles pinch-to-zoom movement.
+             * @param {TouchEvent} e - The touch event.
+             */
+            handlePinchZoom(e) {
+                if (e.touches.length === 2 && this.isPinching) {
+                    e.preventDefault(); // Prevent default browser zoom/scroll
+        
+                    const currentPinchDistance = this.getDistance(e.touches);
+                    if (this.initialPinchDistance === 0) return; // Avoid division by zero
+        
+                    const zoomFactor = currentPinchDistance / this.initialPinchDistance;
+                    let newZoom = this.initialPinchZoom * zoomFactor;
+        
+                    // Clamp zoom to limits
+                    newZoom = Math.max(0.1, Math.min(50, newZoom));
+        
+                    // Calculate pan offset to zoom around the center of the pinch
+                    const rect = this.container.getBoundingClientRect();
+                    const touchCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                    const touchCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        
+                    // Calculate the point in the *original* image coordinates that the pinch is centered on
+                    // This is the point relative to the image's current top-left corner, scaled by the current zoom
+                    const originalPointX = (touchCenterX - rect.left - this.panX) / this.currentZoom;
+                    const originalPointY = (touchCenterY - rect.top - this.panY) / this.currentZoom;
+        
+                    // Calculate new pan based on the new zoom and the fixed original point
+                    this.panX = touchCenterX - rect.left - (originalPointX * newZoom);
+                    this.panY = touchCenterY - rect.top - (originalPointY * newZoom);
+        
+                    this.currentZoom = newZoom;
+                    this.updateTransform();
+                }
+            }
+        
+            /**
+             * Handles tap events on the comparison container to move the slider.
+             * This is triggered on `touchend` if it wasn't a drag or pinch.
+             * @param {TouchEvent} e - The touch event.
+             */
+            handleContainerTap(e) {
+                const touch = e.changedTouches[0]; // Use changedTouches as this is from touchend
+                const rect = this.container.getBoundingClientRect();
+        
+                if (this.isVertical) {
+                    const percentage = ((touch.clientY - rect.top) / rect.height) * 100;
+                    this.sliderPosition = Math.max(0, Math.min(100, percentage));
+                } else {
+                    const percentage = ((touch.clientX - rect.left) / rect.width) * 100;
+                    this.sliderPosition = Math.max(0, Math.min(100, percentage));
+                }
+                this.updateSliderPosition(); // Apply the new slider position
+            }
+        
+            /**
+             * Applies the current zoom and pan transformations to the images.
+             */
             updateTransform() {
                 const transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.currentZoom})`;
                 this.imageBefore.style.transform = transform;
                 this.imageAfter.style.transform = transform;
-                this.updateImageInfo();
+                this.updateImageInfo(); // Update info panel with new zoom/pan
             }
         
+            /**
+             * Resets zoom and pan to default values.
+             */
             resetZoom() {
                 this.currentZoom = 1;
                 this.panX = 0;
                 this.panY = 0;
-                this.updateTransform();
+                this.updateTransform(); // Apply reset transformations
             }
         
+            /**
+             * Increases the zoom level.
+             */
             zoomIn() {
-                if (this.currentZoom < 10) {
-                    this.currentZoom *= 1.2;
+                if (this.currentZoom < 10) { // Max zoom limit
+                    this.currentZoom *= 1.2; // Increase zoom by 20%
                     this.updateTransform();
                 }
             }
         
+            /**
+             * Decreases the zoom level.
+             */
             zoomOut() {
-                if (this.currentZoom > 0.1) {
-                    this.currentZoom /= 1.2;
+                if (this.currentZoom > 0.1) { // Min zoom limit
+                    this.currentZoom /= 1.2; // Decrease zoom by 20%
                     this.updateTransform();
                 }
             }
         
+            /**
+             * Toggles fullscreen mode for the comparison container.
+             */
             toggleFullscreen() {
                 if (!this.isFullscreen) {
                     this.enterFullscreen();
@@ -935,43 +1239,54 @@
                 }
             }
         
+            /**
+             * Enters fullscreen mode for the comparison container.
+             */
             enterFullscreen() {
                 this.isFullscreen = true;
-                document.body.style.overflow = 'hidden';
-                this.container.classList.add('fullscreen');
+                document.body.style.overflow = 'hidden'; // Prevent body scrolling
+                this.container.classList.add('fullscreen'); // Add fullscreen class for styling
         
-                // Add exit button
+                // Add an exit fullscreen button
                 const exitBtn = document.createElement('button');
                 exitBtn.className = 'exit-fullscreen';
                 exitBtn.innerHTML = '✕';
                 exitBtn.onclick = () => this.exitFullscreen();
                 this.container.appendChild(exitBtn);
         
-                // Request actual fullscreen if available
+                // Request actual browser fullscreen if supported
                 if (this.container.requestFullscreen) {
                     this.container.requestFullscreen();
-                } else if (this.container.webkitRequestFullscreen) {
+                } else if (this.container.webkitRequestFullscreen) { // Safari
                     this.container.webkitRequestFullscreen();
                 }
             }
         
+            /**
+             * Exits fullscreen mode.
+             */
             exitFullscreen() {
                 this.isFullscreen = false;
-                document.body.style.overflow = 'auto';
-                this.container.classList.remove('fullscreen');
+                document.body.style.overflow = 'auto'; // Re-enable body scrolling
+                this.container.classList.remove('fullscreen'); // Remove fullscreen styling
         
+                // Remove the exit fullscreen button
                 const exitBtn = this.container.querySelector('.exit-fullscreen');
                 if (exitBtn) {
                     exitBtn.remove();
                 }
         
+                // Exit actual browser fullscreen if supported
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) {
+                } else if (document.webkitExitFullscreen) { // Safari
                     document.webkitExitFullscreen();
                 }
             }
         
+            /**
+             * Swaps the 'before' and 'after' images.
+             */
             flipImages() {
                 const beforeSrc = this.imageBefore.src;
                 const afterSrc = this.imageAfter.src;
@@ -979,29 +1294,40 @@
                 this.imageBefore.src = afterSrc;
                 this.imageAfter.src = beforeSrc;
         
-                this.updateImageInfo();
+                this.updateImageInfo(); // Update info panel
             }
         
+            /**
+             * Toggles the orientation of the image split (horizontal/vertical).
+             */
             toggleOrientation() {
                 this.isVertical = !this.isVertical;
         
-                // Reset slider position to 50% for new orientation
+                // Reset slider position to 50% for new orientation to avoid odd behavior
                 this.sliderPosition = 50;
-                this.updateSliderPosition();
+                this.updateSliderPosition(); // Apply new orientation and position
         
+                // Adjust slider and image-before-container styles based on orientation
                 if (this.isVertical) {
                     this.slider.style.width = '100%';
                     this.slider.style.height = '1px';
-                    this.slider.style.cursor = 'ns-resize';
-                    this.slider.style.transform = 'translateY(-50%)'; // For vertical centering
+                    this.slider.style.cursor = 'ns-resize'; // North-south resize cursor
+                    this.slider.style.transform = 'translateY(-50%)'; // Vertically center slider line
+                    this.slider.style.left = '0'; // Ensure it spans full width
                 } else {
                     this.slider.style.width = '1px';
                     this.slider.style.height = '100%';
-                    this.slider.style.cursor = 'ew-resize';
-                    this.slider.style.transform = 'translateX(-50%)'; // For horizontal centering
+                    this.slider.style.cursor = 'ew-resize'; // East-west resize cursor
+                    this.slider.style.transform = 'translateX(-50%)'; // Horizontally center slider line
+                    this.slider.style.top = '0'; // Ensure it spans full height
                 }
             }
         
+            /**
+             * Downloads the current comparison view as a PNG image.
+             * Note: This might have CORS issues with images loaded from external URLs
+             * unless the server explicitly allows cross-origin image loading.
+             */
             downloadComparison() {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
@@ -1009,27 +1335,32 @@
                 const img1 = new Image();
                 const img2 = new Image();
         
+                // Set crossOrigin to 'anonymous' to try and enable CORS for images,
+                // but this only works if the server hosting the image supports it.
                 img1.crossOrigin = 'anonymous';
                 img2.crossOrigin = 'anonymous';
         
-                img1.onload = () => {
-                    img2.onload = () => {
+                let loadedCount = 0;
+                const checkAndDraw = () => {
+                    loadedCount++;
+                    if (loadedCount === 2) {
                         canvas.width = Math.max(img1.width, img2.width);
                         canvas.height = Math.max(img1.height, img2.height);
         
-                        // Draw the comparison with current slider position
+                        // Draw the 'after' image first (full background)
+                        ctx.drawImage(img2, 0, 0, canvas.width, canvas.height);
+        
+                        // Draw the 'before' image, clipped by the current slider position
                         if (this.isVertical) {
                             const splitY = (canvas.height * this.sliderPosition) / 100;
-                            ctx.drawImage(img2, 0, 0, canvas.width, canvas.height);
                             ctx.drawImage(img1, 0, 0, canvas.width, splitY, 0, 0, canvas.width, splitY);
                         } else {
                             const splitX = (canvas.width * this.sliderPosition) / 100;
-                            ctx.drawImage(img2, 0, 0, canvas.width, canvas.height);
                             ctx.drawImage(img1, 0, 0, splitX, canvas.height, 0, 0, splitX, canvas.height);
                         }
         
-                        // Add slider line
-                        ctx.strokeStyle = '#4facfe';
+                        // Add slider line for visual clarity in the downloaded image
+                        ctx.strokeStyle = '#4facfe'; // Matching theme color
                         ctx.lineWidth = 2;
                         ctx.beginPath();
                         if (this.isVertical) {
@@ -1043,17 +1374,33 @@
                         }
                         ctx.stroke();
         
-                        // Download
+                        // Trigger download
                         const link = document.createElement('a');
                         link.download = 'image-comparison.png';
-                        link.href = canvas.toDataURL();
+                        link.href = canvas.toDataURL('image/png'); // Get image data as PNG
                         link.click();
-                    };
-                    img2.src = this.imageAfter.src;
+                    }
                 };
+        
+                img1.onload = checkAndDraw;
+                img2.onload = checkAndDraw;
+        
+                img1.onerror = () => {
+                    console.error('Error loading before image for download. Check CORS.');
+                    checkAndDraw(); // Still try to proceed if one image fails
+                };
+                img2.onerror = () => {
+                    console.error('Error loading after image for download. Check CORS.');
+                    checkAndDraw(); // Still try to proceed if one image fails
+                };
+        
                 img1.src = this.imageBefore.src;
+                img2.src = this.imageAfter.src;
             }
         
+            /**
+             * Updates the information panel with current zoom, slider position, and mode.
+             */
             updateImageInfo() {
                 const info = document.getElementById('imageInfo');
                 info.innerHTML = `
@@ -1065,16 +1412,27 @@
                 `;
             }
         
+            /**
+             * Displays the loading indicator.
+             */
             showLoading() {
                 this.loading.style.display = 'block';
             }
         
+            /**
+             * Hides the loading indicator.
+             */
             hideLoading() {
                 this.loading.style.display = 'none';
             }
         
+            /**
+             * Handles keyboard shortcuts for various actions.
+             * @param {KeyboardEvent} e - The keyboard event.
+             */
             handleKeyboard(e) {
-                if (e.target.tagName === 'INPUT') return;
+                // Do not interfere with typing in input fields
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
         
                 switch(e.key) {
                     case 'f':
@@ -1090,33 +1448,39 @@
                         this.toggleOrientation();
                         break;
                     case 'ArrowLeft':
-                        if (!this.isVertical && this.sliderPosition > 0) { // Only for horizontal
+                        if (!this.isVertical && this.sliderPosition > 0) { // Only for horizontal slider
                             this.sliderPosition -= 1;
                             this.updateSliderPosition();
+                            e.preventDefault(); // Prevent page scrolling
                         }
                         break;
                     case 'ArrowRight':
-                        if (!this.isVertical && this.sliderPosition < 100) { // Only for horizontal
+                        if (!this.isVertical && this.sliderPosition < 100) { // Only for horizontal slider
                             this.sliderPosition += 1;
                             this.updateSliderPosition();
+                            e.preventDefault(); // Prevent page scrolling
                         }
                         break;
                     case 'ArrowUp':
-                        if (this.isVertical && this.sliderPosition > 0) { // Only for vertical
+                        if (this.isVertical && this.sliderPosition > 0) { // Only for vertical slider
                             this.sliderPosition -= 1;
                             this.updateSliderPosition();
+                            e.preventDefault(); // Prevent page scrolling
                         } else if (!this.isVertical) { // For pan up in horizontal mode
-                            this.panY -= 10; // Adjust value as needed
+                            this.panY -= 10;
                             this.updateTransform();
+                            e.preventDefault(); // Prevent page scrolling
                         }
                         break;
                     case 'ArrowDown':
-                        if (this.isVertical && this.sliderPosition < 100) { // Only for vertical
+                        if (this.isVertical && this.sliderPosition < 100) { // Only for vertical slider
                             this.sliderPosition += 1;
                             this.updateSliderPosition();
+                            e.preventDefault(); // Prevent page scrolling
                         } else if (!this.isVertical) { // For pan down in horizontal mode
-                            this.panY += 10; // Adjust value as needed
+                            this.panY += 10;
                             this.updateTransform();
+                            e.preventDefault(); // Prevent page scrolling
                         }
                         break;
                     case 'Escape':
@@ -1133,22 +1497,25 @@
                 }
             }
         
+            /**
+             * Updates the visual position of the slider and the clip-path of the 'before' image.
+             */
             updateSliderPosition() {
                 if (this.isVertical) {
                     this.slider.style.top = this.sliderPosition + '%';
-                    this.slider.style.left = '50%'; // Ensure horizontal centering for vertical mode
+                    this.slider.style.left = '0'; // Ensure it's aligned to the left edge
                     this.imageBeforeContainer.style.clipPath = `polygon(0 0, 100% 0, 100% ${this.sliderPosition}%, 0 ${this.sliderPosition}%)`;
                 } else {
                     this.slider.style.left = this.sliderPosition + '%';
-                    this.slider.style.top = '0'; // Ensure vertical alignment for horizontal mode
+                    this.slider.style.top = '0'; // Ensure it's aligned to the top edge
                     this.imageBeforeContainer.style.clipPath = `polygon(0 0, ${this.sliderPosition}% 0, ${this.sliderPosition}% 100%, 0 100%)`;
                 }
-                this.updateImageInfo();
+                this.updateImageInfo(); // Update info panel
             }
         }
         
-        // Global functions for buttons
-        let comparison;
+        // Global functions to be called from HTML buttons (delegated to the comparison instance)
+        let comparison; // Declare a global variable to hold the ImageComparison instance
         
         function toggleFullscreen() {
             comparison.toggleFullscreen();
@@ -1182,21 +1549,21 @@
             comparison.loadPresetImages(type);
         }
         
-        // Initialize the app
+        // Initialize the app when the DOM is fully loaded
         document.addEventListener('DOMContentLoaded', () => {
             comparison = new ImageComparison();
         });
         
-        // Handle fullscreen change events
+        // Handle fullscreen change events triggered by browser (e.g., F11 key)
         document.addEventListener('fullscreenchange', () => {
             if (!document.fullscreenElement && comparison.isFullscreen) {
-                comparison.exitFullscreen();
+                comparison.exitFullscreen(); // Ensure internal state is updated if exited externally
             }
         });
         
-        document.addEventListener('webkitfullscreenchange', () => {
+        document.addEventListener('webkitfullscreenchange', () => { // For Safari
             if (!document.webkitFullscreenElement && comparison.isFullscreen) {
-                comparison.exitFullscreen();
+                comparison.exitFullscreen(); // Ensure internal state is updated if exited externally
             }
         });
     </script>
