@@ -52,6 +52,9 @@
             transition: background-color 0.3s, transform 0.1s;
             touch-action: manipulation;
         }
+        .control-btn.active {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
         .control-btn:active {
             transform: scale(0.95);
         }
@@ -132,36 +135,33 @@
             color: white;
         }
         input[type="range"] {
-            -webkit-appearance: none; /* Remove default Chrome/Safari styling */
-            appearance: none; /* Remove default styling for other browsers */
+            -webkit-appearance: none;
+            appearance: none;
             flex: 1;
             cursor: pointer;
             background: #333;
             height: 8px;
             border-radius: 4px;
         }
-        /* Thumb (slider handle) styling for WebKit/Blink browsers (Chrome, Safari, Edge) */
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
             width: 16px;
             height: 16px;
-            background: #666; /* Dark gray thumb */
+            background: #666;
             border-radius: 50%;
             cursor: pointer;
         }
-        /* Thumb styling for Firefox */
         input[type="range"]::-moz-range-thumb {
             width: 16px;
             height: 16px;
-            background: #666; /* Dark gray thumb */
+            background: #666;
             border: none;
             border-radius: 50%;
             cursor: pointer;
         }
-        /* Track styling for Firefox */
         input[type="range"]::-moz-range-track {
-            background: #333; /* Dark gray track */
+            background: #333;
             height: 8px;
             border-radius: 4px;
         }
@@ -213,6 +213,7 @@
                 <button class="control-btn" id="pauseBtn" aria-label="Pause"><svg class="svg-icon" viewBox="0 0 16 16"><path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5m5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5"/></svg></button>
                 <button class="control-btn" id="stopBtn" aria-label="Stop"><svg class="svg-icon" viewBox="0 0 16 16"><path d="M5 3.5h6A1.5 1.5 0 0 1 12.5 5v6a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 11V5A1.5 1.5 0 0 1 5 3.5"/></svg></button>
                 <button class="control-btn" id="nextBtn" aria-label="Next track"><svg class="svg-icon" viewBox="0 0 16 16"><path d="M3.5 4v8a.5.5 0 0 0 .8.4L11 8.5V12a.5.5 0 0 0 1 0V4a.5.5 0 0 0-1 0v3.5L4.3 3.6a.5.5 0 0 0-.8.4z"/></svg></button>
+                <button class="control-btn" id="repeatBtn" aria-label="Toggle repeat"><svg class="svg-icon" viewBox="0 0 16 16"><path d="M5.5 5H11a1 1 0 0 1 1 1v1.5l3-2v5l-3-2V10a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm5 6H5a1 1 0 0 1-1-1V8.5l-3 2v-5l3 2V6a1 1 0 0 1 1-1h5.5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1z"/></svg></button>
                 <button class="control-btn" id="clearBtn" aria-label="Clear playlist"><svg class="svg-icon" viewBox="0 0 16 16"><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg></button>
             </div>
             <div class="sliders">
@@ -232,46 +233,6 @@
         <div id="errorMessage"></div>
         <input type="file" id="fileInput" accept="audio/*" multiple>
     </div>
-    <script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-    </script>
     <script>
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const canvas = document.getElementById('spectrum');
@@ -281,6 +242,7 @@
         const stopBtn = document.getElementById('stopBtn');
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
+        const repeatBtn = document.getElementById('repeatBtn');
         const clearBtn = document.getElementById('clearBtn');
         const dropArea = document.getElementById('dropArea');
         const fileInput = document.getElementById('fileInput');
@@ -302,7 +264,8 @@
         let pausedAt = 0;
         let hideTimeout;
         let lastFrameTime = 0;
-        const frameInterval = 1000 / 30; // Target 30 FPS for spectrum
+        let isRepeat = false;
+        const frameInterval = 1000 / 30;
 
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -427,6 +390,12 @@
             showControls();
         });
 
+        repeatBtn.addEventListener('click', () => {
+            isRepeat = !isRepeat;
+            repeatBtn.classList.toggle('active', isRepeat);
+            showControls();
+        });
+
         function playAudio() {
             if (!audioBuffer) return;
 
@@ -480,6 +449,8 @@
             }
             isPlaying = false;
             pausedAt = 0;
+            timeSlider.value = 0;
+            timeDisplay.textContent = `0:00 / ${audioBuffer ? formatTime(audioBuffer.duration) : '0:00'}`;
             updatePlaylistUI();
             if (!playlistFiles.length) {
                 dropArea.classList.remove('hide');
@@ -503,6 +474,14 @@
                 audioBuffer = playlistFiles[currentTrackIndex].buffer;
                 updatePlaylistUI();
                 playAudio();
+            } else if (isRepeat && playlistFiles.length > 0) {
+                stopAudio();
+                currentTrackIndex = 0;
+                audioBuffer = playlistFiles[currentTrackIndex].buffer;
+                updatePlaylistUI();
+                playAudio();
+            } else {
+                stopAudio();
             }
         }
 
@@ -510,11 +489,12 @@
             if (isPlaying && audioBuffer) {
                 const currentTime = audioContext.currentTime - startTime;
                 const duration = audioBuffer.duration;
-                timeSlider.value = (currentTime / duration) * 100;
-                timeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
                 if (currentTime >= duration) {
                     playNext();
+                    return;
                 }
+                timeSlider.value = (currentTime / duration) * 100;
+                timeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
                 requestAnimationFrame(updateTimeSlider);
             }
         }
