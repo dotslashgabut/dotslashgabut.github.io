@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resolution & Aspect Ratio Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* bg-gray-900 */
+        }
+        .card {
+            background-color: rgba(31, 41, 55, 0.5); /* bg-gray-800/50 */
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(55, 65, 81, 0.5); /* border-gray-700/50 */
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+        }
+        .input-field {
+            background-color: rgba(17, 24, 39, 0.7); /* bg-gray-900/70 */
+            border: 1px solid #4b5563; /* border-gray-600 */
+        }
+        .input-field:focus {
+            --tw-ring-color: #3b82f6; /* ring-blue-500 */
+            box-shadow: 0 0 0 2px var(--tw-ring-color);
+        }
+        .bg-pattern {
+            background-image: url(https://www.transparenttextures.com/patterns/cubes.png);
+            opacity: 0.1;
+        }
+    </style>
+</head>
+<body class="text-white antialiased">
+    <div class="absolute top-0 left-0 w-full h-full bg-cover bg-center bg-pattern"></div>
+
+    <main class="relative z-10 container mx-auto p-4 sm:p-6 lg:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-teal-300">
+                Resolution & Aspect Ratio Hub
+            </h1>
+            <p class="text-gray-400 mt-2 max-w-2xl mx-auto">
+                A complete toolkit for screen calculations. All your inputs are saved automatically.
+            </p>
+            <p id="userIdDisplay" class="text-xs text-gray-600 mt-2 font-mono"></p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Resolution Calculator -->
+            <div id="resolution-calculator" class="card">
+                <div class="p-4 border-b border-gray-700/50 flex items-center space-x-4">
+                    <div class="text-blue-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect width="20" height="14" x="2" y="3" rx="2"></rect><line x1="8" x2="16" y1="21" y2="21"></line><line x1="12" x2="12" y1="17" y2="21"></line></svg>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-100">Resolution Calculator</h2>
+                        <p class="text-sm text-gray-400">Find resolution from aspect ratio</p>
+                    </div>
+                </div>
+                <div class="p-4 space-y-4">
+                    <div>
+                        <label class="text-sm font-medium text-gray-400 mb-2 block">Aspect Ratio Presets</label>
+                        <div id="ar-presets" class="flex flex-wrap gap-2">
+                             <!-- Presets will be injected by JS -->
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="flex flex-col space-y-1 w-full"><label class="text-sm font-medium text-gray-400">AR</label><input id="res-ar-x" type="number" placeholder="16" class="w-full input-field rounded-md px-3 py-2 text-gray-100 transition-all duration-200"></div>
+                        <span class="text-gray-400 pt-6">:</span>
+                        <div class="flex flex-col space-y-1 w-full"><label class="text-sm font-medium text-gray-400">&nbsp;</label><input id="res-ar-y" type="number" placeholder="9" class="w-full input-field rounded-md px-3 py-2 text-gray-100 transition-all duration-200"></div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="flex flex-col space-y-1 w-full"><label class="text-sm font-medium text-gray-400">Width</label><input id="res-width" type="number" placeholder="1920" class="w-full input-field rounded-md px-3 py-2 text-gray-100 transition-all duration-200"></div>
+                        <span class="text-gray-400 pt-6">x</span>
+                        <div class="flex flex-col space-y-1 w-full"><label class="text-sm font-medium text-gray-400">Height</label><input id="res-height" type="number" placeholder="1080" class="w-full input-field rounded-md px-3 py-2 text-gray-100 transition-all duration-200"></div>
+                    </div>
+                    <div class="bg-gray-900/70 p-3 rounded-lg flex justify-between items-center">
+                        <span id="res-output" class="font-mono text-lg text-blue-300">... x ...</span>
+                        <button class="copy-btn p-2 rounded-md bg-gray-700/50 hover:bg-gray-600/50 text-gray-400 hover:text-gray-200" title="Copy to clipboard" data-copy-target="#res-output">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aspect Ratio Calculator -->
+            <div id="aspect-ratio-calculator" class="card">
+                <div class="p-4 border-b border-gray-700/50 flex items-center space-x-4">
+                    <div class="text-blue-400"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M21.5 21.5H17"></path><path d="M21.5 17v4.5"></path><path d="M2.5 2.5H7"></path><path d="M2.5 7V2.5"></path><path d="M21.5 2.5H17"></path><path d="M21.5 2.5V7"></path><path d="M2.5 21.5H7"></path><path d="M2.5 21.5V17"></path><path d="M2.5 12h19"></path></svg></div>
+                    <div><h2 class="text-lg font-bold text-gray-100">Aspect Ratio Calculator</h2><p class="text-sm text-gray-400">Find aspect ratio from resolution</p></div>
+                </div>
+                <div class="p-4 space-y-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="flex flex-col space-y-1 w-full"><label class="text-sm font-medium text-gray-400">Width</label><input id="ar-width" type="number" placeholder="1920" class="w-full input-field rounded-md px-3 py-2 text-gray-100 transition-all duration-200"></div>
+                        <span class="text-gray-400 pt-6">x</span>
+                        <div class="flex flex-col space-y-1 w-full"><label class="text-sm font-medium text-gray-400">Height</label><input id="ar-height" type="number" placeholder="1080" class="w-full input-field rounded-md px-3 py-2 text-gray-100 transition-all duration-200"></div>
+                    </div>
+                    <div class="bg-gray-900/70 p-3 rounded-lg flex justify-between items-center">
+                        <span id="ar-simplified-output" class="font-mono text-lg text-blue-300">N/A</span>
+                        <button class="copy-btn p-2 rounded-md bg-gray-700/50 hover:bg-gray-600/50 text-gray-400 hover:text-gray-200" title="Copy to clipboard" data-copy-target="#ar-simplified-output">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+                        </button>
+                    </div>
+                    <div class="bg-gray-900/70 p-3 rounded-lg flex justify-between items-center">
+                        <span id="ar-decimal-output" class="font-mono text-lg text-blue-300">N/A</span>
+                        <button class="copy-btn p-2 rounded-md bg-gray-700/50 hover:bg-gray-600/50 text-gray-400 hover:text-gray-200" title="Copy to clipboard" data-copy-target="#ar-decimal-output">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PPI Calculator -->
+            <div id="ppi-calculator" class="card">
+                <div class="p-4 border-b border-gray-700/50 flex items-center space-x-4">
+                    <div class="text-blue-400"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M6 11h.01"></path><path d="M11 6h.01"></path><path d="M11 11h.01"></path><path d="M16 6h.01"></path><path d="M16 11h.01"></path><path d="M21 16V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z"></path></svg></div>
+                    <div><h2 class="text-lg font-bold text-gray-100">Pixel Density (PPI)</h2><p class="text-sm text-gray-400">Calculate pixels per inch</p></div>
+                </div>
+                <div class="p-4 space-y-4">
+                    <div class="bg-gray-900/50 p-3 rounded-lg text-center">
+                        <p class="text-sm text-gray-400">Current Resolution</p>
+                        <p id="ppi-resolution" class="font-mono text-lg text-gray-200">...x...</p>
+                    </div>
+                    <div class="flex flex-col space-y-1 w-full"><label class="text-sm font-medium text-gray-400">Screen Diagonal (inches)</label><input id="ppi-diagonal" type="number" placeholder="24" value="24" class="w-full input-field rounded-md px-3 py-2 text-gray-100 transition-all duration-200"></div>
+                    <div class="bg-gray-900/70 p-3 rounded-lg flex justify-between items-center">
+                        <span id="ppi-output" class="font-mono text-2xl font-bold text-blue-300">...</span>
+                        <span class="text-gray-400">PPI</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Common Resolutions -->
+            <div id="resolution-list" class="card md:col-span-2 lg:col-span-3">
+                 <div class="p-4 border-b border-gray-700/50 flex items-center space-x-4">
+                    <div class="text-blue-400"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M21.5 21.5H17"></path><path d="M21.5 17v4.5"></path><path d="M2.5 2.5H7"></path><path d="M2.5 7V2.5"></path><path d="M21.5 2.5H17"></path><path d="M21.5 2.5V7"></path><path d="M2.5 21.5H7"></path><path d="M2.5 21.5V17"></path><path d="M2.5 12h19"></path></svg></div>
+                    <div><h2 class="text-lg font-bold text-gray-100">Common Resolutions</h2><p id="res-list-subtitle" class="text-sm text-gray-400">For aspect ratio ...</p></div>
+                </div>
+                <div class="p-4">
+                    <div id="res-list-output" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                        <!-- Resolutions will be injected by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="text-center mt-12 text-gray-500 text-sm">
+            <p>Built with HTML, Tailwind CSS & Vanilla JS. Hosted on a modern web platform.</p>
+        </footer>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- STATE & CONSTANTS ---
+        let db, auth, userId;
+        let globalWidth = '1920';
+        let globalHeight = '1080';
+        let debounceTimer;
+
+        const ASPECT_RATIO_PRESETS = [
+          { name: 'SD (4:3)', label: '4:3' },
+          { name: 'HD (16:9)', label: '16:9' },
+          { name: 'Cinema (21:9)', label: '21:9' },
+          { name: 'Square (1:1)', label: '1:1' },
+          { name: 'IMAX (1.43:1)', label: '1.43:1' },
+          { name: 'Vertical Video (9:16)', label: '9:16' },
+          { name: 'Classic Film (3:2)', label: '3:2' },
+        ];
+        const STANDARD_WIDTHS = [240, 360, 480, 720, 1024, 1080, 1280, 1366, 1440, 1600, 1920, 2560, 3840, 5120, 7680];
+
+        // --- DOM ELEMENTS ---
+        const el = {
+            resArX: document.getElementById('res-ar-x'),
+            resArY: document.getElementById('res-ar-y'),
+            resWidth: document.getElementById('res-width'),
+            resHeight: document.getElementById('res-height'),
+            resOutput: document.getElementById('res-output'),
+            arWidth: document.getElementById('ar-width'),
+            arHeight: document.getElementById('ar-height'),
+            arSimplified: document.getElementById('ar-simplified-output'),
+            arDecimal: document.getElementById('ar-decimal-output'),
+            ppiDiagonal: document.getElementById('ppi-diagonal'),
+            ppiResolution: document.getElementById('ppi-resolution'),
+            ppiOutput: document.getElementById('ppi-output'),
+            resListSubtitle: document.getElementById('res-list-subtitle'),
+            resListOutput: document.getElementById('res-list-output'),
+            arPresetsContainer: document.getElementById('ar-presets'),
+            userIdDisplay: document.getElementById('userIdDisplay'),
+        };
+
+        // --- HELPER FUNCTIONS ---
+        const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+        const copyIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>`;
+        const checkIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-green-400"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
+        // --- UPDATE FUNCTIONS ---
+        function updateAllCalculators() {
+            // Update Resolution Calculator display
+            el.resOutput.textContent = `${globalWidth || '...'} x ${globalHeight || '...'}`;
+
+            // Update Aspect Ratio Calculator
+            el.arWidth.value = globalWidth;
+            el.arHeight.value = globalHeight;
+            const w = parseInt(globalWidth);
+            const h = parseInt(globalHeight);
+            if (w > 0 && h > 0) {
+                const divisor = gcd(w, h);
+                const simplified = `${w / divisor}:${h / divisor}`;
+                el.arSimplified.textContent = simplified;
+                el.arDecimal.textContent = (w / h).toFixed(4);
+                
+                // Update Resolution List
+                el.resListSubtitle.textContent = `For aspect ratio ${simplified}`;
+                const ratio = w / h;
+                el.resListOutput.innerHTML = STANDARD_WIDTHS.map(stdWidth => {
+                    const resHeight = Math.round(stdWidth / ratio);
+                    const text = `${stdWidth}x${resHeight}`;
+                    return `
+                        <div class="bg-gray-900/70 p-3 rounded-lg flex justify-between items-center transition-transform hover:scale-105">
+                            <span class="font-mono text-sm text-gray-200">${text}</span>
+                            <button class="copy-btn p-2 rounded-md bg-gray-700/50 hover:bg-gray-600/50 text-gray-400 hover:text-gray-200" title="Copy to clipboard" data-copy-text="${text}">
+                                ${copyIconSVG}
+                            </button>
+                        </div>`;
+                }).join('');
+            } else {
+                el.arSimplified.textContent = 'N/A';
+                el.arDecimal.textContent = 'N/A';
+                el.resListSubtitle.textContent = 'For aspect ratio N/A';
+                el.resListOutput.innerHTML = '';
+            }
+
+            // Update PPI Calculator
+            el.ppiResolution.textContent = `${globalWidth || '...'}x${globalHeight || '...'}`;
+            const d = parseFloat(el.ppiDiagonal.value);
+            if (w > 0 && h > 0 && d > 0) {
+                const diagonalPixels = Math.sqrt(Math.pow(w, 2) + Math.pow(h, 2));
+                el.ppiOutput.textContent = (diagonalPixels / d).toFixed(2);
+            } else {
+                el.ppiOutput.textContent = '...';
+            }
+            
+            // Re-attach copy listeners for new elements
+            attachCopyListeners();
+        }
+
+        function saveToFirestore() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                if (db && userId) {
+                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                    // FIX: Path must have an even number of segments. Added '/settings' to point to a document.
+                    const docRef = doc(db, `artifacts/${appId}/users/${userId}/resolution-app/settings`);
+                    setDoc(docRef, { width: globalWidth, height: globalHeight }, { merge: true })
+                        .catch(err => console.error("Error saving data:", err));
+                }
+            }, 500);
+        }
+
+        // --- EVENT HANDLERS ---
+        function handleResolutionCalculation(changedInput) {
+            const arX = parseFloat(el.resArX.value);
+            const arY = parseFloat(el.resArY.value);
+            let width = parseFloat(el.resWidth.value);
+            let height = parseFloat(el.resHeight.value);
+
+            if (arX > 0 && arY > 0) {
+                if (changedInput === 'width' && width > 0) {
+                    height = Math.round((width * arY) / arX);
+                    el.resHeight.value = height;
+                } else if (changedInput === 'height' && height > 0) {
+                    width = Math.round((height * arX) / arY);
+                    el.resWidth.value = width;
+                } else if (changedInput === 'ar' && width > 0) {
+                    height = Math.round((width * arY) / arX);
+                    el.resHeight.value = height;
+                }
+            }
+
+            globalWidth = el.resWidth.value;
+            globalHeight = el.resHeight.value;
+            updateAllCalculators();
+            saveToFirestore();
+        }
+        
+        function handleAspectRatioCalculation() {
+            globalWidth = el.arWidth.value;
+            globalHeight = el.arHeight.value;
+            el.resWidth.value = globalWidth;
+            el.resHeight.value = globalHeight;
+            updateAllCalculators();
+            saveToFirestore();
+        }
+
+        function handleCopy(event) {
+            const button = event.currentTarget;
+            let textToCopy = '';
+            
+            if (button.dataset.copyText) {
+                textToCopy = button.dataset.copyText;
+            } else if (button.dataset.copyTarget) {
+                const targetElement = document.querySelector(button.dataset.copyTarget);
+                if (targetElement) {
+                    textToCopy = targetElement.textContent;
+                }
+            }
+
+            if (textToCopy) {
+                const textArea = document.createElement("textarea");
+                textArea.value = textToCopy;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    button.innerHTML = checkIconSVG;
+                    setTimeout(() => {
+                        button.innerHTML = copyIconSVG;
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                }
+                document.body.removeChild(textArea);
+            }
+        }
+
+        function attachCopyListeners() {
+            document.querySelectorAll('.copy-btn').forEach(btn => {
+                // Remove old listener to prevent duplicates
+                btn.removeEventListener('click', handleCopy); 
+                // Add new listener
+                btn.addEventListener('click', handleCopy);
+            });
+        }
+
+        // --- INITIALIZATION ---
+        function init() {
+            // Populate presets
+            el.arPresetsContainer.innerHTML = ASPECT_RATIO_PRESETS.map(p => 
+                `<button data-label="${p.label}" class="ar-preset-btn text-xs bg-gray-700/60 hover:bg-blue-500/30 text-gray-300 hover:text-white font-semibold py-1 px-3 rounded-full transition-colors duration-200">${p.name}</button>`
+            ).join('');
+
+            // Set initial values
+            el.resArX.value = 16;
+            el.resArY.value = 9;
+            el.resWidth.value = globalWidth;
+            el.resHeight.value = globalHeight;
+
+            // Attach event listeners
+            el.resArX.addEventListener('input', () => handleResolutionCalculation('ar'));
+            el.resArY.addEventListener('input', () => handleResolutionCalculation('ar'));
+            el.resWidth.addEventListener('input', () => handleResolutionCalculation('width'));
+            el.resHeight.addEventListener('input', () => handleResolutionCalculation('height'));
+            
+            el.arWidth.addEventListener('input', handleAspectRatioCalculation);
+            el.arHeight.addEventListener('input', handleAspectRatioCalculation);
+            
+            el.ppiDiagonal.addEventListener('input', updateAllCalculators);
+
+            document.querySelectorAll('.ar-preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const [x, y] = btn.dataset.label.split(':');
+                    el.resArX.value = x;
+                    el.resArY.value = y;
+                    handleResolutionCalculation('ar');
+                });
+            });
+
+            attachCopyListeners();
+            updateAllCalculators();
+        }
+        
+        // --- FIREBASE SETUP ---
+        document.addEventListener('DOMContentLoaded', () => {
+            init();
+            try {
+                const firebaseConfigStr = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
+                const firebaseConfig = JSON.parse(firebaseConfigStr);
+
+                if (Object.keys(firebaseConfig).length > 0) {
+                    const app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+
+                    onAuthStateChanged(auth, async (user) => {
+                        if (user) {
+                            userId = user.uid;
+                        } else {
+                            const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                            if (token) {
+                                await signInWithCustomToken(auth, token);
+                            } else {
+                                await signInAnonymously(auth);
+                            }
+                        }
+                        
+                        // This might run before userId is set from signIn, so we get it again.
+                        userId = auth.currentUser.uid;
+                        el.userIdDisplay.textContent = `User ID: ${userId}`;
+
+                        // Firestore listener
+                        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                        // FIX: Path must have an even number of segments. Added '/settings' to point to a document.
+                        const docRef = doc(db, `artifacts/${appId}/users/${userId}/resolution-app/settings`);
+                        onSnapshot(docRef, (docSnap) => {
+                            if (docSnap.exists()) {
+                                const data = docSnap.data();
+                                if (data.width && data.height) {
+                                    globalWidth = data.width;
+                                    globalHeight = data.height;
+                                    el.resWidth.value = globalWidth;
+                                    el.resHeight.value = globalHeight;
+                                    updateAllCalculators();
+                                }
+                            }
+                        });
+                    });
+                } else {
+                    console.warn("Firebase config not found. App will run without persistence.");
+                }
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+            }
+        });
+
+    </script>
+</body>
+</html>
