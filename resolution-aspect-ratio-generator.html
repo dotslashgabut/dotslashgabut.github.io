@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resolution & Aspect Ratio Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .title {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 700;
+            background: linear-gradient(45deg, #00d4ff, #ff00ff, #00ff88);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s ease-in-out infinite;
+            margin-bottom: 10px;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #888;
+            margin-bottom: 30px;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #00d4ff, #ff00ff, #00ff88);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover::before {
+            transform: translateX(0);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 212, 255, 0.2);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #b0b0b0;
+            font-size: 0.9rem;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 212, 255, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .results {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            font-weight: 500;
+            color: #b0b0b0;
+        }
+
+        .result-value {
+            font-weight: 600;
+            color: #00d4ff;
+            font-family: 'Courier New', monospace;
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 10px 5px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .preset-btn:hover {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: #00d4ff;
+        }
+
+        .ratio-display {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .ratio-visual {
+            /* Ensure it doesn't overflow its parent's content width */
+            max-width: 100%;
+            /* You might want to define a reasonable max height to prevent it from getting too tall */
+            max-height: 200px; /* Example: Adjust this value as needed for your layout */
+            
+            /* Display as block to allow margin:auto to center it and aspect-ratio to work */
+            display: flex; /* Keep flex for centering the internal text */
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto; /* To center it horizontally within .ratio-display */
+            
+            /* The key CSS property for aspect ratio.
+               We'll use a CSS custom property (variable) to update this with JavaScript. */
+            aspect-ratio: var(--current-aspect-ratio, 16 / 9); /* Default to 16:9 if JS variable not set */
+        
+            border: 2px solid #00d4ff;
+            border-radius: 8px;
+            position: relative; /* Keep if needed for absolute positioning of internal elements */
+            background: linear-gradient(45deg, rgba(0, 212, 255, 0.1), rgba(255, 0, 255, 0.1));
+            
+            font-weight: 600;
+            color: #00d4ff;
+            /* Add a subtle transition for smoother resizing */
+            transition: aspect-ratio 0.3s ease;
+        }
+
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: 10px;
+        }
+
+        .copy-btn:hover {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 5px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            background: transparent;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .tab.active {
+            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .aspect-calculator {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .calculator-result {
+            grid-column: 1 / -1;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #00d4ff;
+            margin-top: 10px;
+        }
+
+        .history {
+            max-height: 300px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .history-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .floating-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.8) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+            
+            .aspect-calculator {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 255, 136, 0.9);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            font-weight: 500;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #0099cc, #00d4ff);
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-particles" id="particles"></div>
+    
+    <div class="container">
+        <header>
+            <h1 class="title">Resolution & Aspect Ratio Generator</h1>
+            <p class="subtitle">Advanced toolkit for resolution calculations and aspect ratio management</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- Resolution Calculator -->
+            <div class="card">
+                <h2 class="card-title">📐 Resolution Calculator</h2>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('resolution', this)">By Dimensions</button>
+                    <button class="tab" onclick="switchTab('aspect', this)">By Aspect Ratio</button>
+                </div>
+
+                <div id="resolution-tab" class="tab-content active">
+                    <div class="input-group">
+                        <label class="input-label">Width (px)</label>
+                        <input type="number" class="input-field" id="width" placeholder="1920" oninput="calculateResolution()">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Height (px)</label>
+                        <input type="number" class="input-field" id="height" placeholder="1080" oninput="calculateResolution()">
+                    </div>
+                </div>
+
+                <div id="aspect-tab" class="tab-content">
+                    <div class="aspect-calculator">
+                        <div class="input-group">
+                            <label class="input-label">Aspect Width</label>
+                            <input type="number" class="input-field" id="aspectW" placeholder="16" oninput="calculateFromAspect()">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">Aspect Height</label>
+                            <input type="number" class="input-field" id="aspectH" placeholder="9" oninput="calculateFromAspect()">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">Base Width</label>
+                            <input type="number" class="input-field" id="baseWidth" placeholder="1920" oninput="calculateFromAspect()">
+                        </div>
+                        <div class="calculator-result" id="aspectResult">1920 × 1080</div>
+                    </div>
+                </div>
+
+                <div class="results" id="resolutionResults">
+                    <div class="result-item">
+                        <span class="result-label">Resolution:</span>
+                        <span class="result-value" id="resolutionValue">1920 × 1080</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Aspect Ratio:</span>
+                        <span class="result-value" id="aspectRatioValue">16:9</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Total Pixels:</span>
+                        <span class="result-value" id="totalPixels">2,073,600</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Megapixels:</span>
+                        <span class="result-value" id="megapixels">2.07 MP</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preset Resolutions -->
+            <div class="card">
+                <h2 class="card-title">📱 Preset Resolutions</h2>
+                <div class="preset-grid">
+                    <button class="preset-btn" onclick="setResolution(1920, 1080)">1920×1080<br>Full HD</button>
+                    <button class="preset-btn" onclick="setResolution(2560, 1440)">2560×1440<br>2K QHD</button>
+                    <button class="preset-btn" onclick="setResolution(3840, 2160)">3840×2160<br>4K UHD</button>
+                    <button class="preset-btn" onclick="setResolution(1280, 720)">1280×720<br>HD</button>
+                    <button class="preset-btn" onclick="setResolution(1366, 768)">1366×768<br>WXGA</button>
+                    <button class="preset-btn" onclick="setResolution(1024, 768)">1024×768<br>XGA</button>
+                    <button class="preset-btn" onclick="setResolution(375, 667)">375×667<br>iPhone SE</button>
+                    <button class="preset-btn" onclick="setResolution(390, 844)">390×844<br>iPhone 12</button>
+                    <button class="preset-btn" onclick="setResolution(360, 640)">360×640<br>Android</button>
+                    <button class="preset-btn" onclick="setResolution(768, 1024)">768×1024<br>iPad</button>
+                    <button class="preset-btn" onclick="setResolution(1024, 1366)">1024×1366<br>iPad Pro</button>
+                    <button class="preset-btn" onclick="setResolution(1920, 1200)">1920×1200<br>WUXGA</button>
+                </div>
+            </div>
+
+            <!-- Aspect Ratio Visualizer -->
+            <div class="card">
+                <h2 class="card-title">🎨 Aspect Ratio Visualizer</h2>
+                <div class="ratio-display">
+                    <div class="ratio-visual" id="ratioVisual">16:9</div>
+                    <p style="margin-top: 15px; color: #888;">Visual representation of current aspect ratio</p>
+                </div>
+                <div class="preset-grid">
+                    <button class="preset-btn" onclick="setAspectRatio(16, 9)">16:9<br>Widescreen</button>
+                    <button class="preset-btn" onclick="setAspectRatio(4, 3)">4:3<br>Standard</button>
+                    <button class="preset-btn" onclick="setAspectRatio(21, 9)">21:9<br>Ultra-wide</button>
+                    <button class="preset-btn" onclick="setAspectRatio(1, 1)">1:1<br>Square</button>
+                    <button class="preset-btn" onclick="setAspectRatio(3, 2)">3:2<br>Classic</button>
+                    <button class="preset-btn" onclick="setAspectRatio(5, 4)">5:4<br>Monitor</button>
+                </div>
+            </div>
+
+            <!-- Scale Calculator -->
+            <div class="card">
+                <h2 class="card-title">⚖️ Scale Calculator</h2>
+                <div class="input-group">
+                    <label class="input-label">Original Width</label>
+                    <input type="number" class="input-field" id="originalWidth" placeholder="1920" oninput="calculateScale()">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Original Height</label>
+                    <input type="number" class="input-field" id="originalHeight" placeholder="1080" oninput="calculateScale()">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Scale Factor (%)</label>
+                    <input type="number" class="input-field" id="scaleFactor" placeholder="50" oninput="calculateScale()">
+                </div>
+                <div class="results" id="scaleResults">
+                    <div class="result-item">
+                        <span class="result-label">Scaled Resolution:</span>
+                        <span class="result-value" id="scaledResolution">960 × 540</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Scale Factor:</span>
+                        <span class="result-value" id="scaleFactorDisplay">50%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PPI Calculator -->
+            <div class="card">
+                <h2 class="card-title">📏 PPI Calculator</h2>
+                <div class="input-group">
+                    <label class="input-label">Screen Width (px)</label>
+                    <input type="number" class="input-field" id="screenWidth" placeholder="1920" oninput="calculatePPI()">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Screen Height (px)</label>
+                    <input type="number" class="input-field" id="screenHeight" placeholder="1080" oninput="calculatePPI()">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Diagonal Size (inches)</label>
+                    <input type="number" class="input-field" id="diagonalSize" placeholder="24" step="0.1" oninput="calculatePPI()">
+                </div>
+                <div class="results" id="ppiResults">
+                    <div class="result-item">
+                        <span class="result-label">PPI:</span>
+                        <span class="result-value" id="ppiValue">91.79</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Diagonal (px):</span>
+                        <span class="result-value" id="diagonalPixels">2202.91</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History -->
+            <div class="card">
+                <h2 class="card-title">📜 History</h2>
+                <button class="btn" onclick="clearHistory()">Clear History</button>
+                <div class="history" id="historyList">
+                    <p style="color: #888; text-align: center;">No calculations yet</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        // Initialize particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.width = Math.random() * 4 + 2 + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // History management
+        let calculationHistory = [];
+
+        function addToHistory(calculation) {
+            calculationHistory.unshift(calculation);
+            if (calculationHistory.length > 10) {
+                calculationHistory.pop();
+            }
+            updateHistoryDisplay();
+        }
+
+        function updateHistoryDisplay() {
+            const historyList = document.getElementById('historyList');
+            if (calculationHistory.length === 0) {
+                historyList.innerHTML = '<p style="color: #888; text-align: center;">No calculations yet</p>';
+                return;
+            }
+
+            historyList.innerHTML = calculationHistory.map(calc => `
+                <div class="history-item" onclick="loadFromHistory('${calc}')">
+                    <strong>${calc}</strong>
+                    <small style="color: #888; display: block;">${new Date().toLocaleTimeString()}</small>
+                </div>
+            `).join('');
+        }
+
+        function loadFromHistory(calculation) {
+            const parts = calculation.split(' × ');
+            if (parts.length === 2) {
+                document.getElementById('width').value = parts[0];
+                document.getElementById('height').value = parts[1];
+                calculateResolution();
+            }
+        }
+
+        function clearHistory() {
+            calculationHistory = [];
+            updateHistoryDisplay();
+            showNotification('History cleared!');
+        }
+
+        // Tab switching
+        function switchTab(tabName, element) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            element.classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+
+        // Resolution calculator
+        function calculateResolution() {
+            const width = parseInt(document.getElementById('width').value) || 0;
+            const height = parseInt(document.getElementById('height').value) || 0;
+            
+            if (width > 0 && height > 0) {
+                const gcd = findGCD(width, height);
+                const aspectW = width / gcd;
+                const aspectH = height / gcd;
+                const totalPixels = width * height;
+                const megapixels = (totalPixels / 1000000).toFixed(2);
+                
+                document.getElementById('resolutionValue').textContent = `${width} × ${height}`;
+                document.getElementById('aspectRatioValue').textContent = `${aspectW}:${aspectH}`;
+                document.getElementById('totalPixels').textContent = totalPixels.toLocaleString();
+                document.getElementById('megapixels').textContent = `${megapixels} MP`;
+                
+                updateAspectRatioVisual(aspectW, aspectH);
+                addToHistory(`${width} × ${height}`);
+            }
+        }
+
+        function calculateFromAspect() {
+            const aspectW = parseInt(document.getElementById('aspectW').value) || 16;
+            const aspectH = parseInt(document.getElementById('aspectH').value) || 9;
+            const baseWidth = parseInt(document.getElementById('baseWidth').value) || 1920;
+            
+            const calculatedHeight = Math.round((baseWidth * aspectH) / aspectW);
+            
+            document.getElementById('aspectResult').textContent = `${baseWidth} × ${calculatedHeight}`;
+            document.getElementById('width').value = baseWidth;
+            document.getElementById('height').value = calculatedHeight;
+            calculateResolution();
+        }
+
+        // Aspect ratio functions
+        function findGCD(a, b) {
+            return b === 0 ? a : findGCD(b, a % b);
+        }
+
+        function updateAspectRatioVisual(aspectW, aspectH) {
+            const visual = document.getElementById('ratioVisual');
+            
+            // Update the CSS custom property for aspect-ratio
+            // The browser will then handle the sizing based on max-width, max-height, and aspect-ratio
+            visual.style.setProperty('--current-aspect-ratio', `${aspectW} / ${aspectH}`);
+            
+            // Update the text content displayed inside the visualizer
+            visual.textContent = `${aspectW}:${aspectH}`;
+        }
+
+        function setResolution(width, height) {
+            document.getElementById('width').value = width;
+            document.getElementById('height').value = height;
+            calculateResolution();
+            showNotification(`Resolution set to ${width}×${height}`);
+        }
+
+        function setAspectRatio(aspectW, aspectH) {
+            const baseWidth = parseInt(document.getElementById('baseWidth').value) || 1920;
+            const calculatedHeight = Math.round((baseWidth * aspectH) / aspectW);
+            
+            document.getElementById('aspectW').value = aspectW;
+            document.getElementById('aspectH').value = aspectH;
+            document.getElementById('width').value = baseWidth;
+            document.getElementById('height').value = calculatedHeight;
+            calculateResolution();
+            showNotification(`Aspect ratio set to ${aspectW}:${aspectH}`);
+        }
+
+        // Scale calculator
+        function calculateScale() {
+            const originalWidth = parseInt(document.getElementById('originalWidth').value) || 0;
+            const originalHeight = parseInt(document.getElementById('originalHeight').value) || 0;
+            const scaleFactor = parseFloat(document.getElementById('scaleFactor').value) || 0;
+            
+            if (originalWidth > 0 && originalHeight > 0 && scaleFactor > 0) {
+                const scaledWidth = Math.round(originalWidth * scaleFactor / 100);
+                const scaledHeight = Math.round(originalHeight * scaleFactor / 100);
+                
+                document.getElementById('scaledResolution').textContent = `${scaledWidth} × ${scaledHeight}`;
+                document.getElementById('scaleFactorDisplay').textContent = `${scaleFactor}%`;
+            }
+        }
+
+        // PPI calculator
+        function calculatePPI() {
+            const screenWidth = parseInt(document.getElementById('screenWidth').value) || 0;
+            const screenHeight = parseInt(document.getElementById('screenHeight').value) || 0;
+            const diagonalSize = parseFloat(document.getElementById('diagonalSize').value) || 0;
+            
+            if (screenWidth > 0 && screenHeight > 0 && diagonalSize > 0) {
+                const diagonalPixels = Math.sqrt(screenWidth * screenWidth + screenHeight * screenHeight);
+                const ppi = diagonalPixels / diagonalSize;
+                
+                document.getElementById('ppiValue').textContent = ppi.toFixed(2);
+                document.getElementById('diagonalPixels').textContent = diagonalPixels.toFixed(2);
+            }
+        }
+
+        // Notification system
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Copy to clipboard functionality
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('Copied to clipboard!');
+            });
+        }
+
+        // Add copy buttons to result values
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.result-value').forEach(element => {
+                element.style.cursor = 'pointer';
+                element.addEventListener('click', function() {
+                    copyToClipboard(this.textContent);
+                });
+            });
+            
+            // Initialize with default values
+            calculateResolution();
+            calculateFromAspect();
+            calculateScale();
+            calculatePPI();
+            createParticles();
+            
+            // Add touch support for mobile
+            addTouchSupport();
+        });
+
+        // Touch support for mobile devices
+        function addTouchSupport() {
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                card.addEventListener('touchstart', function() {
+                    this.style.transform = 'translateY(-2px)';
+                });
+                
+                card.addEventListener('touchend', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+        }
+
+        // Advanced resolution converter
+        function convertResolution() {
+            const fromFormat = document.getElementById('fromFormat').value;
+            const toFormat = document.getElementById('toFormat').value;
+            const inputRes = document.getElementById('inputResolution').value;
+            
+            // Implementation for resolution format conversion
+            // This would handle different aspect ratios and scaling
+        }
+
+        // Batch resolution generator
+        function generateBatchResolutions() {
+            const baseWidth = parseInt(document.getElementById('batchBaseWidth').value) || 1920;
+            const baseHeight = parseInt(document.getElementById('batchBaseHeight').value) || 1080;
+            const scales = [25, 50, 75, 100, 125, 150, 200];
+            
+            const results = scales.map(scale => {
+                const scaledWidth = Math.round(baseWidth * scale / 100);
+                const scaledHeight = Math.round(baseHeight * scale / 100);
+                return `${scaledWidth}×${scaledHeight} (${scale}%)`;
+            });
+            
+            document.getElementById('batchResults').innerHTML = results.map(result => 
+                `<div class="result-item">
+                    <span class="result-label">Resolution:</span>
+                    <span class="result-value" onclick="copyToClipboard('${result}')">${result}</span>
+                </div>`
+            ).join('');
+        }
+
+        // Export functionality
+        function exportResults() {
+            const width = document.getElementById('width').value;
+            const height = document.getElementById('height').value;
+            const aspectRatio = document.getElementById('aspectRatioValue').textContent;
+            const totalPixels = document.getElementById('totalPixels').textContent;
+            const megapixels = document.getElementById('megapixels').textContent;
+            
+            const exportData = {
+                resolution: `${width}×${height}`,
+                aspectRatio: aspectRatio,
+                totalPixels: totalPixels,
+                megapixels: megapixels,
+                timestamp: new Date().toISOString()
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = 'resolution_data.json';
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            showNotification('Data exported successfully!');
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'c':
+                        if (e.target.classList.contains('result-value')) {
+                            e.preventDefault();
+                            copyToClipboard(e.target.textContent);
+                        }
+                        break;
+                    case 'r':
+                        e.preventDefault();
+                        calculateResolution();
+                        showNotification('Resolution recalculated!');
+                        break;
+                    case 'h':
+                        e.preventDefault();
+                        clearHistory();
+                        break;
+                }
+            }
+        });
+
+        // Theme toggle functionality
+        function toggleTheme() {
+            document.body.classList.toggle('light-theme');
+            const theme = document.body.classList.contains('light-theme') ? 'light' : 'dark';
+            localStorage.setItem('theme', theme);
+            showNotification(`Switched to ${theme} theme`);
+        }
+
+        // Performance monitoring
+        function monitorPerformance() {
+            const performanceData = {
+                loadTime: performance.now(),
+                memory: performance.memory ? performance.memory.usedJSHeapSize : 'N/A',
+                calculations: calculationHistory.length
+            };
+            
+            console.log('Performance Data:', performanceData);
+        }
+
+        // Advanced aspect ratio calculations
+        function calculateAspectRatioFromDiagonal() {
+            const diagonal = parseFloat(document.getElementById('diagonalInput').value);
+            const aspectW = parseFloat(document.getElementById('aspectWInput').value);
+            const aspectH = parseFloat(document.getElementById('aspectHInput').value);
+            
+            if (diagonal && aspectW && aspectH) {
+                const ratio = aspectW / aspectH;
+                const height = diagonal / Math.sqrt(1 + ratio * ratio);
+                const width = height * ratio;
+                
+                document.getElementById('calculatedWidth').textContent = width.toFixed(2);
+                document.getElementById('calculatedHeight').textContent = height.toFixed(2);
+            }
+        }
+
+        // Responsive design breakpoints
+        const breakpoints = {
+            mobile: 480,
+            tablet: 768,
+            desktop: 1024,
+            widescreen: 1200
+        };
+
+        function generateResponsiveBreakpoints() {
+            const baseWidth = parseInt(document.getElementById('responsiveBaseWidth').value) || 1200;
+            const results = Object.entries(breakpoints).map(([device, width]) => {
+                const scaleFactor = width / baseWidth;
+                const scaledHeight = Math.round(scaleFactor * 800); // Assuming 800px base height
+                return `${device}: ${width}×${scaledHeight}`;
+            });
+            
+            document.getElementById('responsiveResults').innerHTML = results.map(result => 
+                `<div class="result-item">
+                    <span class="result-label">Breakpoint:</span>
+                    <span class="result-value">${result}</span>
+                </div>`
+            ).join('');
+        }
+
+        // Error handling
+        window.addEventListener('error', function(e) {
+            console.error('Application error:', e.error);
+            showNotification('An error occurred. Please refresh the page.');
+        });
+
+        // Initialize performance monitoring
+        window.addEventListener('load', function() {
+            setTimeout(monitorPerformance, 1000);
+        });
+    </script>
+</body>
+</html>
