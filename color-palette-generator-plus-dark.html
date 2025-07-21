@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Color Palette Generator Plus</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="script/tailwindcss.js"></script>
+  <script>
+    tailwind.config = { darkMode: 'class' };
+  </script>
+  <script src="script/color-thief.umd.js"></script>
+  <style>
+    .color-box {
+      width: calc(20% - 0.5rem);
+      aspect-ratio: 1 / 1;
+      margin: 0.25rem;
+      position: relative;
+      flex-grow: 0;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    @media (max-width: 640px) {
+      .color-box { width: calc(50% - 0.5rem); }
+    }
+    .color-box-content {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+    }
+    .hsl-sliders { display: none; margin-top: 1rem; }
+    .hsl-sliders.active { display: block; }
+    .slider-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .slider-container input[type="range"] { flex-grow: 1; margin-right: 0.5rem; }
+    .hsl-value { width: 28px; text-align: right; font-family: monospace; }
+    .color-box.selected {
+      outline: 2.5px solid #0f75fd;
+      outline-offset: 3px;
+      z-index: 10;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex flex-col items-center py-4 px-4 transition-colors">
+  <!-- Theme toggle -->
+  <button id="themeToggle"
+          class="fixed top-4 right-4 z-50 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-full w-10 h-10 flex items-center justify-center shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-label="Toggle dark mode">
+    <span id="themeIcon">🌙</span>
+  </button>
+
+  <div class="w-full max-w-2xl mx-auto mt-12">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+      <div class="p-4 sm:p-8">
+        <h1 class="text-2xl sm:text-3xl font-bold mb-6 text-center">Color Palette Generator +</h1>
+
+        <!-- Palette & codes -->
+        <div class="flex flex-wrap justify-center bg-gray-200 dark:bg-gray-700 p-1 rounded mb-4 text-sm">
+          Click any color box to adjust HSL.
+        </div>
+        <div id="palette" class="flex flex-wrap justify-center mb-6"></div>
+        <div id="colorCodes" class="text-sm font-mono text-center break-words mb-6"></div>
+
+        <!-- HSL sliders -->
+        <div id="hslSliders" class="hsl-sliders">
+          <div class="slider-container">
+            <label class="block text-sm font-medium w-6">H</label>
+            <input type="range" id="hueSlider" min="0" max="360" value="0">
+            <span id="hueValue" class="hsl-value">000</span>
+          </div>
+          <div class="slider-container">
+            <label class="block text-sm font-medium w-6">S</label>
+            <input type="range" id="saturationSlider" min="0" max="100" value="100">
+            <span id="saturationValue" class="hsl-value">100</span>
+          </div>
+          <div class="slider-container mb-6">
+            <label class="block text-sm font-medium w-6">L</label>
+            <input type="range" id="luminanceSlider" min="0" max="100" value="50">
+            <span id="luminanceValue" class="hsl-value">050</span>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <!-- Color count -->
+          <div class="flex items-center justify-center space-x-4">
+            <label for="colorCount">Colors:</label>
+            <input type="number" id="colorCount" min="1" max="100" value="5"
+                   class="border rounded px-2 py-1 w-16 dark:bg-gray-700 dark:border-gray-600">
+          </div>
+
+          <!-- Color categories -->
+          <div class="flex flex-wrap justify-center gap-x-3 gap-y-2">
+            <label><input type="radio" name="colorOption" value="random" checked> <span class="ml-1">Default</span></label>
+            <label><input type="radio" name="colorOption" value="vivid"> <span class="ml-1">Vivid</span></label>
+            <label><input type="radio" name="colorOption" value="light"> <span class="ml-1">Light</span></label>
+            <label><input type="radio" name="colorOption" value="dark"> <span class="ml-1">Dark</span></label>
+            <label><input type="radio" name="colorOption" value="earth"> <span class="ml-1">Earth</span></label>
+            <label><input type="radio" name="colorOption" value="ocean"> <span class="ml-1">Ocean</span></label>
+            <label><input type="radio" name="colorOption" value="sunset"> <span class="ml-1">Sunset</span></label>
+            <label><input type="radio" name="colorOption" value="forest"> <span class="ml-1">Forest</span></label>
+          </div>
+
+          <!-- Scheme radios -->
+          <div class="flex flex-wrap justify-center gap-4 bg-gray-200 dark:bg-gray-700 p-4 rounded">
+            <label><input type="radio" name="colorScheme" value="random" checked> <span class="ml-1">Random</span></label>
+            <label><input type="radio" name="colorScheme" value="harmonize"> <span class="ml-1">Harmonize</span></label>
+            <label><input type="radio" name="colorScheme" value="monotone"> <span class="ml-1">Monotone</span></label>
+            <label><input type="radio" name="colorScheme" value="gradient"> <span class="ml-1">Gradient</span></label>
+          </div>
+
+          <!-- Source radios -->
+          <div class="flex flex-wrap justify-center gap-4">
+            <label><input type="radio" name="colorSource" value="random" checked>
+              <span class="ml-1">Random Palette</span></label>
+            <label><input type="radio" name="colorSource" value="image">
+              <span class="ml-1">From File or URL</span></label>
+          </div>
+
+          <!-- Image inputs + preview -->
+          <div id="imageInputs" class="flex-col items-center space-y-4 hidden">
+            <input type="file" id="imageUpload" accept="image/*"
+                   class="border rounded px-2 py-1 w-full dark:bg-gray-700 dark:border-gray-600">
+            <input type="text" id="imageUrl" placeholder="Enter image URL"
+                   class="border rounded px-2 py-1 w-full dark:bg-gray-700 dark:border-gray-600">
+            <div id="imagePreviewWrapper"
+                 class="relative w-full max-w-xs border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+              <img id="imagePreview" class="w-full h-auto" alt="Preview" style="display:none;">
+              <div id="previewError" class="text-red-500 text-sm p-2 hidden">❌ Could not load image</div>
+            </div>
+          </div>
+
+          <!-- Generate / Download -->
+          <div class="text-center flex flex-wrap justify-center gap-4 items-center">
+            <button id="generateBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Generate</button>
+            <div class="flex items-center">
+              <button id="downloadBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">Download</button>
+              <label class="ml-2 flex items-center">
+                <input type="checkbox" id="includeHexCodes" class="form-checkbox h-5 w-5 text-blue-600" checked>
+                <span class="ml-2">Include hex codes</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ---------- THEME SWITCHER ---------- */
+    const html = document.documentElement;
+    const toggleBtn = document.getElementById('themeToggle');
+    const icon = document.getElementById('themeIcon');
+    function setTheme(dark) {
+      html.classList.toggle('dark', dark);
+      icon.textContent = dark ? '☀️' : '🌙';
+      localStorage.setItem('theme', dark ? 'dark' : 'light');
+    }
+    const saved = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setTheme(saved ? saved === 'dark' : prefersDark);
+    toggleBtn.addEventListener('click', () => setTheme(!html.classList.contains('dark')));
+  
+    /* ---------- UTILITIES ---------- */
+    function hslToRgb(h, s, l) {
+      h /= 360; s /= 100; l /= 100;
+      let r, g, b;
+      if (s === 0) { r = g = b = l; } else {
+        const hue2rgb = (p, q, t) => {
+          if (t < 0) t += 1; if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+      }
+      return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+    }
+    function rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h, s, l = (max + min) / 2;
+      if (max === min) { h = s = 0; } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+      return [h * 360, s * 100, l * 100];
+    }
+    function rgbToHex(r, g, b) {
+      return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+    }
+  
+    /* ---------- COLOR GENERATORS ---------- */
+    const generators = {
+      random: () => [Math.floor(Math.random()*256), Math.floor(Math.random()*256), Math.floor(Math.random()*256)],
+      vivid:  () => hslToRgb(Math.random()*360, 80+Math.random()*20, 50+Math.random()*10),
+      light:  () => hslToRgb(Math.random()*360, 60+Math.random()*20, 80+Math.random()*15),
+      dark:   () => hslToRgb(Math.random()*360, 60+Math.random()*20, 10+Math.random()*20),
+      earth:  () => hslToRgb(20+Math.random()*25, 26+Math.random()*15, 36+Math.random()*41),
+      ocean:  () => hslToRgb(180+Math.random()*40, 40+Math.random()*30, 30+Math.random()*50),
+      sunset: () => hslToRgb(Math.random()*40, 60+Math.random()*30, 40+Math.random()*50),
+      forest: () => hslToRgb(80+Math.random()*70, 30+Math.random()*40, 20+Math.random()*50)
+    };
+  
+    function harmonize(baseColor, count) {
+      const [h, s, l] = rgbToHsl(...baseColor);
+      const colors = [baseColor];
+      for (let i = 1; i < count; i++) colors.push(hslToRgb((h + i * (360 / count)) % 360, s, l));
+      return colors;
+    }
+    function monotone(baseColor, count) {
+      const [h, s, l] = rgbToHsl(...baseColor);
+      const colors = [];
+      for (let i = 0; i < count; i++) {
+        const newL = l + (i - Math.floor(count / 2)) * (30 / count);
+        colors.push(hslToRgb(h, s, Math.max(0, Math.min(100, newL))));
+      }
+      return colors;
+    }
+    function gradient(startColor, endColor, count) {
+      const colors = [];
+      for (let i = 0; i < count; i++) {
+        const t = i / (count - 1);
+        colors.push([
+          Math.round(startColor[0] + (endColor[0] - startColor[0]) * t),
+          Math.round(startColor[1] + (endColor[1] - startColor[1]) * t),
+          Math.round(startColor[2] + (endColor[2] - startColor[2]) * t)
+        ]);
+      }
+      return colors;
+    }
+  
+    /* ---------- DOM ---------- */
+    const palette = document.getElementById('palette');
+    const colorCodes = document.getElementById('colorCodes');
+    const colorCount = document.getElementById('colorCount');
+    const generateBtn = document.getElementById('generateBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const imageInputs = document.getElementById('imageInputs');
+    const colorThief = new ColorThief();
+  
+    /* ---------- IMAGE PREVIEW ---------- */
+    const imageUpload = document.getElementById('imageUpload');
+    const imageUrl = document.getElementById('imageUrl');
+    const imagePreview = document.getElementById('imagePreview');
+    const previewError = document.getElementById('previewError');
+  
+    function showPreview(src) {
+      imagePreview.style.display = 'block';
+      previewError.classList.add('hidden');
+      imagePreview.src = src;
+    }
+    function clearPreview() {
+      imagePreview.style.display = 'none';
+      previewError.classList.add('hidden');
+      imagePreview.src = '';
+    }
+    imageUpload.addEventListener('change', e => {
+      if (e.target.files && e.target.files[0]) showPreview(URL.createObjectURL(e.target.files[0]));
+    });
+    imageUrl.addEventListener('change', e => {
+      if (e.target.value.trim()) showPreview(e.target.value.trim());
+      else clearPreview();
+    });
+    imagePreview.addEventListener('error', () => {
+      imagePreview.style.display = 'none';
+      previewError.classList.remove('hidden');
+    });
+  
+    /* ---------- DISPLAY ---------- */
+    function displayColors(colors) {
+      palette.innerHTML = '';
+      colorCodes.innerHTML = '';
+      colors.forEach((color, idx) => {
+        const box = document.createElement('div');
+        box.className = 'color-box rounded';
+        box.style.backgroundColor = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+        box.dataset.rgb = color.join(','); // 👈 store exact RGB
+        const content = document.createElement('div');
+        content.className = 'color-box-content';
+        const hex = rgbToHex(...color);
+        const txt = document.createElement('div');
+        txt.className = 'text-xs sm:text-sm text-center bg-black/50 text-white py-1 w-full';
+        txt.textContent = hex;
+        content.appendChild(txt); box.appendChild(content); palette.appendChild(box);
+        colorCodes.innerHTML += `${hex} `;
+        box.addEventListener('click', () => {
+          activateHSLSliders(color, idx);
+          highlightSelectedColor(idx);
+        });
+      });
+      const boxes = palette.querySelectorAll('.color-box');
+      const isMobile = window.innerWidth <= 640;
+      const boxWidth = isMobile ? 32 : (100 / Math.min(5, colors.length));
+      boxes.forEach(b => b.style.width = `calc(${boxWidth}% - 0.5rem)`);
+    }
+    function highlightSelectedColor(idx) {
+      document.querySelectorAll('.color-box').forEach((b, i) => b.classList.toggle('selected', i === idx));
+    }
+    function activateHSLSliders(color, idx) {
+      const sliders = document.getElementById('hslSliders');
+      sliders.classList.add('active');
+      const hueS = document.getElementById('hueSlider');
+      const satS = document.getElementById('saturationSlider');
+      const lumS = document.getElementById('luminanceSlider');
+      const hueV = document.getElementById('hueValue');
+      const satV = document.getElementById('saturationValue');
+      const lumV = document.getElementById('luminanceValue');
+  
+      // 👇 use exact stored RGB instead of computed CSS
+      const [r, g, b] = palette.children[idx].dataset.rgb.split(',').map(Number);
+      const [h, s, l] = rgbToHsl(r, g, b);
+      hueS.value = Math.round(h);
+      satS.value = Math.round(s);
+      lumS.value = Math.round(l);
+  
+      function update() {
+        const newColor = hslToRgb(+hueS.value, +satS.value, +lumS.value);
+        const box = palette.children[idx];
+        box.style.backgroundColor = `rgb(${newColor[0]}, ${newColor[1]}, ${newColor[2]})`;
+        box.dataset.rgb = newColor.join(','); // update stored RGB
+        const hex = rgbToHex(...newColor);
+        box.querySelector('.color-box-content div').textContent = hex;
+        const codes = colorCodes.textContent.split(' ');
+        codes[idx] = hex;
+        colorCodes.textContent = codes.join(' ');
+        hueV.textContent = hueS.value.padStart(3, '0');
+        satV.textContent = satS.value.padStart(3, '0');
+        lumV.textContent = lumS.value.padStart(3, '0');
+      }
+      hueS.oninput = satS.oninput = lumS.oninput = update;
+      update();
+    }
+  
+    /* ---------- GENERATE ---------- */
+    async function generateColors() {
+      const count = +colorCount.value;
+      const option = document.querySelector('input[name="colorOption"]:checked').value;
+      const scheme = document.querySelector('input[name="colorScheme"]:checked').value;
+      const source = document.querySelector('input[name="colorSource"]:checked').value;
+      let colors = [];
+      if (source === 'image') {
+        let img;
+        if (imageUpload.files.length) {
+          img = new Image();
+          img.src = URL.createObjectURL(imageUpload.files[0]);
+          await new Promise(r => img.onload = r);
+        } else if (imageUrl.value.trim()) {
+          img = new Image(); img.crossOrigin = 'Anonymous'; img.src = imageUrl.value.trim();
+          await new Promise(r => img.onload = r);
+        } else { alert('Please upload an image or enter a URL.'); return; }
+        colors = colorThief.getPalette(img, count);
+      } else {
+        const base = generators[option]();
+        switch (scheme) {
+          case 'harmonize': colors = harmonize(base, count); break;
+          case 'monotone': colors = monotone(base, count); break;
+          case 'gradient': colors = gradient(base, generators[option](), count); break;
+          default: colors = Array.from({ length: count }, generators[option]);
+        }
+      }
+      displayColors(colors);
+    }
+  
+    /* ---------- DOWNLOAD ---------- */
+    function downloadPalette() {
+      const colors = Array.from(palette.children).map(c => getComputedStyle(c).backgroundColor);
+      const count = colors.length;
+      const includeHex = document.getElementById('includeHexCodes').checked;
+      const gridSize = Math.ceil(Math.sqrt(count));
+      const canvasSize = 1000;
+      const cell = canvasSize / gridSize;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = canvasSize;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvasSize, canvasSize);
+      colors.forEach((color, idx) => {
+        const row = Math.floor(idx / gridSize);
+        const col = idx % gridSize;
+        ctx.fillStyle = color;
+        ctx.fillRect(col * cell, row * cell, cell, cell);
+        if (includeHex) {
+          const rgb = color.match(/\d+/g).map(Number);
+          const hex = rgbToHex(...rgb);
+          ctx.fillStyle = (rgb[0]*299 + rgb[1]*587 + rgb[2]*114) > 128000 ? 'black' : 'white';
+          ctx.font = `${cell/10}px Arial`;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(hex, (col + 0.5) * cell, (row + 0.5) * cell);
+        }
+      });
+      const link = document.createElement('a');
+      link.download = 'color_palette_grid.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+  
+    /* ---------- EVENT LISTENERS ---------- */
+    generateBtn.addEventListener('click', generateColors);
+    downloadBtn.addEventListener('click', downloadPalette);
+    document.querySelectorAll('input[name="colorSource"]').forEach(r =>
+      r.addEventListener('change', e => {
+        imageInputs.style.display = e.target.value === 'image' ? 'flex' : 'none';
+        if (e.target.value !== 'image') clearPreview();
+      })
+    );
+    generateColors();
+  </script>
+</body>
+</html>

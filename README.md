@@ -4,6 +4,7 @@ Just testing, the generated codes from LLMs.
 
 ### 🟡 https://dotslashgabut.github.io/
 
+- [Color Palette Generator Plus HSL - Dark Mode](https://dotslashgabut.github.io/color-palette-generator-plus-dark.html)
 - [Color Palette Generator Plus HSL](https://dotslashgabut.github.io/color-palette-generator-plus.html)
 - [Fullscreen Image Comparison App](https://dotslashgabut.github.io/image-comparison-app-fullscreen.html)
 - [Advanced Image Comparison](https://dotslashgabut.github.io/advanced-image-comparison.html)
