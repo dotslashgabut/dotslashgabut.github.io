@@ -59,6 +59,39 @@
       <div class="p-4 sm:p-8">
         <h1 class="text-2xl sm:text-3xl font-bold mb-6 text-center">Color Palette Generator +</h1>
 
+          <!-- Source radios -->
+          <div class="flex flex-wrap justify-center gap-4 mb-4">
+            <label><input type="radio" name="colorSource" value="random" checked>
+              <span class="ml-1">Random Palette</span></label>
+            <label><input type="radio" name="colorSource" value="image">
+              <span class="ml-1">From File or URL</span></label>
+          </div>
+
+          <!-- Image inputs + preview -->
+          <div id="imageInputs" class="flex-col items-center space-y-4 hidden mb-4 ">
+            <input type="file" id="imageUpload" accept="image/*"
+                   class="border rounded px-2 py-1 w-full dark:bg-gray-700 dark:border-gray-600">
+            <input type="text" id="imageUrl" placeholder="Enter image URL"
+                   class="border rounded px-2 py-1 w-full dark:bg-gray-700 dark:border-gray-600">
+            <div id="imagePreviewWrapper"
+                 class="relative w-full max-w-xs border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+              <img id="imagePreview" class="w-full h-auto" alt="Preview" style="display:none;">
+              <div id="previewError" class="text-red-500 text-sm p-2 hidden">❌ Could not load image</div>
+            </div>
+          </div>
+
+          <!-- Generate / Download -->
+          <div class="text-center flex flex-wrap justify-center gap-4 items-center mb-4">
+            <button id="generateBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Generate</button>
+            <div class="flex items-center">
+              <button id="downloadBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">Download</button>
+              <label class="ml-2 flex items-center">
+                <input type="checkbox" id="includeHexCodes" class="form-checkbox h-5 w-5 text-blue-600" checked>
+                <span class="ml-2">Include hex codes</span>
+              </label>
+            </div>
+          </div>
+
         <!-- Palette & codes -->
         <div class="flex flex-wrap justify-center bg-gray-200 dark:bg-gray-700 p-1 rounded mb-4 text-sm">
           Click any color box to adjust HSL.
@@ -113,38 +146,6 @@
             <label><input type="radio" name="colorScheme" value="gradient"> <span class="ml-1">Gradient</span></label>
           </div>
 
-          <!-- Source radios -->
-          <div class="flex flex-wrap justify-center gap-4">
-            <label><input type="radio" name="colorSource" value="random" checked>
-              <span class="ml-1">Random Palette</span></label>
-            <label><input type="radio" name="colorSource" value="image">
-              <span class="ml-1">From File or URL</span></label>
-          </div>
-
-          <!-- Image inputs + preview -->
-          <div id="imageInputs" class="flex-col items-center space-y-4 hidden">
-            <input type="file" id="imageUpload" accept="image/*"
-                   class="border rounded px-2 py-1 w-full dark:bg-gray-700 dark:border-gray-600">
-            <input type="text" id="imageUrl" placeholder="Enter image URL"
-                   class="border rounded px-2 py-1 w-full dark:bg-gray-700 dark:border-gray-600">
-            <div id="imagePreviewWrapper"
-                 class="relative w-full max-w-xs border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-              <img id="imagePreview" class="w-full h-auto" alt="Preview" style="display:none;">
-              <div id="previewError" class="text-red-500 text-sm p-2 hidden">❌ Could not load image</div>
-            </div>
-          </div>
-
-          <!-- Generate / Download -->
-          <div class="text-center flex flex-wrap justify-center gap-4 items-center">
-            <button id="generateBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Generate</button>
-            <div class="flex items-center">
-              <button id="downloadBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">Download</button>
-              <label class="ml-2 flex items-center">
-                <input type="checkbox" id="includeHexCodes" class="form-checkbox h-5 w-5 text-blue-600" checked>
-                <span class="ml-2">Include hex codes</span>
-              </label>
-            </div>
-          </div>
         </div>
       </div>
     </div>
