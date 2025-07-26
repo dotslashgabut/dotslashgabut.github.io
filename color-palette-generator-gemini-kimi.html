@@ -98,18 +98,17 @@
                                 <label for="image-url" class="block text-sm font-medium text-slate-400 mb-1">Image URL</label>
                                 <input type="url" id="image-url" placeholder="https://example.com/image.png"
                                        class="w-full bg-slate-700 border border-slate-600 rounded-md px-3 py-2 text-slate-200 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none placeholder-slate-500">
-                                <img id="image-preview" class="mt-2 rounded-lg hidden max-h-48 w-auto object-contain" alt="preview">
                             </div>
                             <button id="extract-url-btn"
                                     class="w-full bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200">
                                 Extract from URL
                             </button>
-                            <div class="text-center text-slate-500">or</div>
                             <button id="upload-btn"
                                     class="w-full bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200">
                                 Browse File
                             </button>
                             <input type="file" id="image-upload" class="hidden" accept="image/*">
+                            <img id="image-preview" class="mt-2 rounded-lg hidden max-h-48 w-auto object-contain" alt="preview">
                         </div>
                     </div>
                 </div>
@@ -292,52 +291,35 @@
                 img.src=src;
             };
 
-            // ----------  IMAGE FROM URL  (blob → objectURL, no proxy) ----------
+            // ---------- URL WITH PREVIEW ----------
             extractUrlBtn.addEventListener('click', async () => {
               const url = imageUrlInput.value.trim();
-              if (!url) {
-                showToast('Please enter an image URL.');
-                return;
-              }
-
+              if (!url) return showToast('Enter an image URL.');
               extractUrlBtn.disabled = true;
               extractUrlBtn.textContent = 'Loading…';
-
               try {
                 const res = await fetch(url);
-                if (!res.ok) throw new Error('Network error');
+                if (!res.ok) throw new Error('Network');
                 const blob = await res.blob();
-                if (!blob.type.startsWith('image/')) throw new Error('Not an image');
-
-                const localURL = URL.createObjectURL(blob);
-                imagePreview.src = localURL;
+                imagePreview.src = URL.createObjectURL(blob);
                 imagePreview.classList.remove('hidden');
-
-                imagePreview.onload = () => {
-                  getColorsFromImage(localURL);
-                  showToast('Palette extracted!');
-                };
-                imagePreview.onerror = () => {
-                  showToast('Could not decode image.');
-                };
-              } catch (e) {
-                showToast('Could not load image – check the URL.');
-                console.error(e);
-              } finally {
-                extractUrlBtn.disabled = false;
-                extractUrlBtn.textContent = 'Extract from URL';
-              }
+                imagePreview.onload = () => getColorsFromImage(imagePreview.src);
+                imagePreview.onerror = () => showToast('Bad image.');
+              } catch { showToast('Could not load image.'); }
+              finally { extractUrlBtn.disabled = false; extractUrlBtn.textContent = 'Extract from URL'; }
             });
 
-            // ----------  FILE UPLOAD  ----------
-            uploadBtn.addEventListener('click',()=>imageUploadInput.click());
-            imageUploadInput.addEventListener('change',e=>{
-                const file=e.target.files[0];
-                if(file){
-                    const reader=new FileReader();
-                    reader.onload=ev=>getColorsFromImage(ev.target.result);
-                    reader.readAsDataURL(file);
-                }
+            // ---------- FILE UPLOAD WITH PREVIEW ----------
+            uploadBtn.addEventListener('click', () => imageUploadInput.click());
+            imageUploadInput.addEventListener('change', e => {
+              const file = e.target.files[0];
+              if (!file) return;
+              // revoke old blob to prevent leaks
+              if (imagePreview.src.startsWith('blob:')) URL.revokeObjectURL(imagePreview.src);
+              const localURL = URL.createObjectURL(file);
+              imagePreview.src = localURL;
+              imagePreview.classList.remove('hidden');
+              imagePreview.onload = () => getColorsFromImage(localURL);
             });
 
             // ----------  THEME & OTHER LISTENERS ----------
