@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ultra-QR Studio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root{
+      --bg:#f5f7fa;
+      --fg:#111;
+      --accent:#0066ff;
+      --radius:.5rem;
+      --shadow:0 2px 8px rgba(0,0,0,.08);
+      --font:"Inter",system-ui;
+      --transition:.2s ease;
+    }
+    [data-theme="dark"]{
+      --bg:#111;
+      --fg:#f5f7fa;
+      --accent:#0af;
+    }
+    *{box-sizing:border-box;font-family:var(--font)}
+    body{margin:0;background:var(--bg);color:var(--fg);display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem}
+    .card{background:var(--bg);border-radius:var(--radius);box-shadow:var(--shadow);max-width:420px;width:100%;padding:1.5rem}
+    h1{font-size:1.25rem;margin:0 0 1rem;text-align:center}
+    .tabs{display:flex;gap:.25rem;margin-bottom:1rem;flex-wrap:wrap}
+    .tab{flex:1;padding:.5rem .75rem;border:none;border-radius:var(--radius);background:transparent;cursor:pointer;font-size:.75rem;color:var(--fg);transition:var(--transition)}
+    .tab.active{background:var(--accent);color:#fff}
+    .field{display:flex;flex-direction:column;margin-bottom:.75rem}
+    label{font-size:.75rem;margin-bottom:.25rem}
+    input,select,textarea{font-size:.875rem;padding:.5rem;border:1px solid #ccc;border-radius:var(--radius);background:var(--bg);color:var(--fg);transition:var(--transition)}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+    textarea{resize:vertical;min-height:3rem}
+    .qr{display:flex;justify-content:center;margin:1rem 0}
+    .qr canvas{border:1px solid #ccc;border-radius:var(--radius)}
+    .controls{display:flex;gap:.5rem;flex-wrap:wrap}
+    .btn{flex:1;padding:.5rem;border:none;border-radius:var(--radius);cursor:pointer;background:#bbb;color:var(--fg);transition:var(--transition)}
+    .btn.primary{background:var(--accent);color:#fff}
+    .btn:hover{opacity:.9}
+    .hidden{display:none}
+    .settings{display:flex;justify-content:space-between;align-items:center;font-size:.75rem;margin-bottom:.75rem}
+    .theme-toggle{background:none;border:none;cursor:pointer;font-size:1.2rem}
+    .size-slider{width:100%;margin:.5rem 0}
+    .size-value{font-size:.75rem;text-align:center}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="settings">
+      <h1>Ultra-QR Studio</h1>
+      <button class="theme-toggle" title="Toggle dark mode" onclick="toggleTheme()">🌓</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-type="text">Text</button>
+      <button class="tab" data-type="url">URL</button>
+      <button class="tab" data-type="wifi">Wi-Fi</button>
+      <button class="tab" data-type="vcard">vCard</button>
+      <button class="tab" data-type="email">Email</button>
+      <button class="tab" data-type="sms">SMS</button>
+      <button class="tab" data-type="event">Event</button>
+      <button class="tab" data-type="location">Location</button>
+    </div>
+
+    <!-- Text -->
+    <div class="field" data-panel="text">
+      <label>Plain Text</label>
+      <textarea id="textInput" placeholder="Type anything..."></textarea>
+    </div>
+
+    <!-- URL -->
+    <div class="field hidden" data-panel="url">
+      <label>URL</label>
+      <input id="urlInput" type="url" placeholder="https://example.com">
+    </div>
+
+    <!-- Wi-Fi -->
+    <div class="hidden" data-panel="wifi">
+      <div class="field">
+        <label>SSID</label>
+        <input id="wifiSSID" placeholder="Network Name">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input id="wifiPass" type="password" placeholder="Password">
+      </div>
+      <div class="field">
+        <label>Security</label>
+        <select id="wifiEnc">
+          <option>WPA</option>
+          <option>WEP</option>
+          <option>None</option>
+        </select>
+      </div>
+      <label><input type="checkbox" id="wifiHidden"> Hidden Network</label>
+    </div>
+
+    <!-- vCard -->
+    <div class="hidden" data-panel="vcard">
+      <div class="field">
+        <label>Name</label>
+        <input id="vcName" placeholder="John Doe">
+      </div>
+      <div class="field">
+        <label>Company</label>
+        <input id="vcOrg" placeholder="ACME Inc">
+      </div>
+      <div class="field">
+        <label>Phone</label>
+        <input id="vcTel" placeholder="+123456789">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input id="vcEmail" type="email" placeholder="john@doe.com">
+      </div>
+    </div>
+
+    <!-- Email -->
+    <div class="hidden" data-panel="email">
+      <div class="field">
+        <label>To</label>
+        <input id="emailTo" type="email" placeholder="recipient@mail.com">
+      </div>
+      <div class="field">
+        <label>Subject</label>
+        <input id="emailSub" placeholder="Subject">
+      </div>
+      <div class="field">
+        <label>Body</label>
+        <textarea id="emailBody" placeholder="Message..."></textarea>
+      </div>
+    </div>
+
+    <!-- SMS -->
+    <div class="hidden" data-panel="sms">
+      <div class="field">
+        <label>Number</label>
+        <input id="smsNum" type="tel" placeholder="+123456789">
+      </div>
+      <div class="field">
+        <label>Message</label>
+        <textarea id="smsMsg" placeholder="SMS text..."></textarea>
+      </div>
+    </div>
+
+    <!-- Event -->
+    <div class="hidden" data-panel="event">
+      <div class="field">
+        <label>Title</label>
+        <input id="evTitle" placeholder="Team Meeting">
+      </div>
+      <div class="field">
+        <label>Start</label>
+        <input id="evStart" type="datetime-local">
+      </div>
+      <div class="field">
+        <label>End</label>
+        <input id="evEnd" type="datetime-local">
+      </div>
+      <div class="field">
+        <label>Location</label>
+        <input id="evLoc" placeholder="Conference Room">
+      </div>
+      <div class="field">
+        <label>Description</label>
+        <textarea id="evDesc" placeholder="Details..."></textarea>
+      </div>
+    </div>
+
+    <!-- Location -->
+    <div class="hidden" data-panel="location">
+      <div class="field">
+        <label>Latitude</label>
+        <input id="locLat" type="number" placeholder="48.8584">
+      </div>
+      <div class="field">
+        <label>Longitude</label>
+        <input id="locLng" type="number" placeholder="2.2945">
+      </div>
+      <div class="field">
+        <label>Query (optional)</label>
+        <input id="locQuery" placeholder="Eiffel Tower">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Size <span class="size-value"><span id="sizeValue">200</span>px</span></label>
+      <input class="size-slider" id="sizeRange" type="range" min="100" max="360" value="200">
+    </div>
+
+    <div class="qr">
+      <canvas id="qrCanvas" width="200" height="200"></canvas>
+    </div>
+
+    <div class="controls">
+      <button class="btn primary" onclick="generateQR()">Generate</button>
+      <button class="btn" onclick="downloadQR()">Download PNG</button>
+      <button class="btn" onclick="downloadSVG()">Download SVG</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+  <script>
+    // ---------- Theme ----------
+    const setTheme = t => document.documentElement.setAttribute('data-theme', t);
+    const toggleTheme = () => setTheme(localStorage.theme === 'dark' ? (localStorage.theme='light') : (localStorage.theme='dark'));
+    if (!localStorage.theme) localStorage.theme = 'light';
+    setTheme(localStorage.theme);
+
+    // ---------- Tab Switch ----------
+    const tabs = document.querySelectorAll('.tab');
+    const panels = document.querySelectorAll('[data-panel]');
+    const switchTab = type => {
+      tabs.forEach(t => t.classList.toggle('active', t.dataset.type === type));
+      panels.forEach(p => p.classList.toggle('hidden', p.dataset.panel !== type));
+      generateQR();
+    };
+    tabs.forEach(t => t.addEventListener('click', () => switchTab(t.dataset.type)));
+
+    // ---------- Build Content ----------
+    const buildContent = () => {
+      const t = document.querySelector('.tab.active').dataset.type;
+      switch (t) {
+        case 'text': return document.getElementById('textInput').value.trim() || 'Hello World';
+        case 'url': return document.getElementById('urlInput').value.trim() || 'https://example.com';
+        case 'wifi': {
+          const ssid = document.getElementById('wifiSSID').value.trim();
+          const pass = document.getElementById('wifiPass').value;
+          const enc = document.getElementById('wifiEnc').value;
+          const hidden = document.getElementById('wifiHidden').checked;
+          return `WIFI:T:${enc};S:${ssid};P:${pass};H:${hidden ? 'true' : 'false'};;`;
+        }
+        case 'vcard': {
+          const n = document.getElementById('vcName').value.trim();
+          const o = document.getElementById('vcOrg').value.trim();
+          const t = document.getElementById('vcTel').value.trim();
+          const e = document.getElementById('vcEmail').value.trim();
+          return `BEGIN:VCARD\nVERSION:3.0\nFN:${n}\nORG:${o}\nTEL:${t}\nEMAIL:${e}\nEND:VCARD`;
+        }
+        case 'email': {
+          const to = document.getElementById('emailTo').value.trim();
+          const sub = document.getElementById('emailSub').value.trim();
+          const body = document.getElementById('emailBody').value.trim();
+          return `mailto:${to}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
+        }
+        case 'sms': {
+          const num = document.getElementById('smsNum').value.trim();
+          const msg = document.getElementById('smsMsg').value.trim();
+          return `smsto:${num}:${msg}`;
+        }
+        case 'event': {
+          const title = document.getElementById('evTitle').value.trim();
+          const start = new Date(document.getElementById('evStart').value).toISOString().replace(/[-:]/g,'').slice(0,15);
+          const end = new Date(document.getElementById('evEnd').value).toISOString().replace(/[-:]/g,'').slice(0,15);
+          const loc = document.getElementById('evLoc').value.trim();
+          const desc = document.getElementById('evDesc').value.trim();
+          return `BEGIN:VEVENT\nSUMMARY:${title}\nDTSTART:${start}\nDTEND:${end}\nLOCATION:${loc}\nDESCRIPTION:${desc}\nEND:VEVENT`;
+        }
+        case 'location': {
+          const lat = document.getElementById('locLat').value || '0';
+          const lng = document.getElementById('locLng').value || '0';
+          const q = document.getElementById('locQuery').value;
+          return `geo:${lat},${lng}?q=${encodeURIComponent(q)}`;
+        }
+        default: return '';
+      }
+    };
+
+    // ---------- Generate ----------
+    const generateQR = () => {
+      const content = buildContent();
+      const size = document.getElementById('sizeRange').value;
+      document.getElementById('sizeValue').textContent = size;
+      const canvas = document.getElementById('qrCanvas');
+      canvas.width = canvas.height = size;
+      QRCode.toCanvas(canvas, content, { width: size, margin: 2, color: { dark: '#000', light: '#fff' } });
+    };
+
+    // ---------- Downloads ----------
+    const downloadQR = () => {
+      const canvas = document.getElementById('qrCanvas');
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = 'qr.png';
+      a.click();
+    };
+    const downloadSVG = () => {
+      const content = buildContent();
+      const size = document.getElementById('sizeRange').value;
+      QRCode.toString(content, { type: 'svg', width: size }, (err, svg) => {
+        if (err) return;
+        const blob = new Blob([svg], { type: 'image/svg+xml' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'qr.svg';
+        a.click();
+      });
+    };
+
+    // ---------- Live Update ----------
+    document.querySelectorAll('input, textarea, select').forEach(el => el.addEventListener('input', generateQR));
+
+    // ---------- Init ----------
+    generateQR();
+  </script>
+</body>
+</html>
