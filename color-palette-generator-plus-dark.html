@@ -8,6 +8,15 @@
   <script>
     tailwind.config = { darkMode: 'class' };
   </script>
+  <script>
+    (function() {
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (saved ? saved === 'dark' : prefersDark) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
   <script src="script/color-thief.umd.js"></script>
   <style>
     .color-box {
