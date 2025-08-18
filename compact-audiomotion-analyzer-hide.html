@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Audio Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0a0a0a;
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #analyzer {
+            width: 100%;
+            height: 100%;
+        }
+
+        #controls {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 12px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            transition: opacity 0.3s;
+            z-index: 10;
+            max-width: 280px;
+        }
+
+        #controls.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .control-group {
+            margin-bottom: 10px;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 3px;
+            font-size: 12px;
+            color: #aaa;
+            font-weight: 500;
+        }
+
+        .inline-label {
+            font-size: 11px;
+            color: #aaa;
+            min-width: 60px;
+            margin: 0;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-label {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #1a73e8;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 12px;
+            text-align: center;
+            width: 100%;
+        }
+
+        .file-label:hover {
+            background: #1557b0;
+        }
+
+        select, input[type="range"] {
+            flex: 1;
+            padding: 6px;
+            background: #222;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        input[type="range"] {
+            padding: 0;
+            height: 24px;
+        }
+
+        .range-value {
+            font-size: 11px;
+            color: #aaa;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        button {
+            padding: 6px 10px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 11px;
+            flex: 1;
+        }
+
+        button:hover {
+            background: #555;
+        }
+
+        button.active {
+            background: #1a73e8;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .button-grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .button-grid-4 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .media-controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .media-btn {
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        #info {
+            position: absolute;
+            bottom: 30px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            backdrop-filter: blur(10px);
+        }
+
+        #shortcuts {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            backdrop-filter: blur(10px);
+            max-width: 180px;
+        }
+
+        .shortcut {
+            margin-bottom: 3px;
+            color: #aaa;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .shortcut kbd {
+            background: #333;
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="analyzer"></div>
+        
+        <div id="controls">
+            <div class="control-group">
+                <label for="fileInput" class="file-label">
+                    📁 Browse Audio File
+                </label>
+                <input type="file" id="fileInput" accept="audio/*">
+            </div>
+
+            <div class="media-controls">
+                <button id="playBtn" class="media-btn">▶️ Play</button>
+                <button id="pauseBtn" class="media-btn">⏸️ Pause</button>
+                <button id="stopBtn" class="media-btn">⏹️ Stop</button>
+            </div>
+
+            <div class="control-group">
+                <label>Mode</label>
+                <select id="modeSelect">
+                    <option value="0">Discrete frequencies</option>
+                    <option value="1">1/24th octave</option>
+                    <option value="2">1/12th octave</option>
+                    <option value="3">1/8th octave</option>
+                    <option value="4">1/6th octave</option>
+                    <option value="5">1/4th octave</option>
+                    <option value="6">1/3rd octave</option>
+                    <option value="7">Half octave</option>
+                    <option value="8">Full octave</option>
+                    <option value="9">Line/Area</option>
+                    <option value="10" selected>Radial</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Gradient</label>
+                <select id="gradientSelect">
+                    <option value="classic">Classic</option>
+                    <option value="prism">Prism</option>
+                    <option value="rainbow">Rainbow</option>
+                    <option value="orangered">Orange-Red</option>
+                    <option value="steelblue">Steel Blue</option>
+                </select>
+            </div>
+
+            <div class="control-row">
+                <label class="inline-label">Sensitivity</label>
+                <input type="range" id="sensitivity" min="0.1" max="5" step="0.1" value="1">
+                <span class="range-value" id="sensitivityValue">1.0</span>
+            </div>
+
+            <div class="control-row">
+                <label class="inline-label">Smoothing</label>
+                <input type="range" id="smoothing" min="0" max="0.9" step="0.1" value="0.5">
+                <span class="range-value" id="smoothingValue">0.5</span>
+            </div>
+
+            <div class="button-grid-4">
+                <button id="togglePeaks">Peaks</button>
+                <button id="toggleLeds">LEDs</button>
+                <button id="toggleLumi">Lumi</button>
+                <button id="toggleReflex">Reflex</button>
+            </div>
+
+            <div class="button-grid-3">
+                <button id="toggleScaleX">Scale X</button>
+                <button id="toggleScaleY" class="active">Scale Y</button>
+                <button id="toggleMirror">Mirror</button>
+            </div>
+
+            <div class="button-grid">
+                <button id="toggleSpin">Spin</button>
+                <button id="toggleStereo">Stereo</button>
+                <button id="toggleLinear">Linear</button>
+                <button id="toggleFillAlpha">Fill Alpha</button>
+            </div>
+
+            <div class="button-grid">
+                <button id="fullscreenBtn">Fullscreen</button>
+                <button id="toggleControls">Hide UI</button>
+            </div>
+        </div>
+
+<!--    <div id="info">
+            <div>FPS: <span id="fps">0</span></div>
+            <div>Energy: <span id="energy">0</span></div>
+            <div>Status: <span id="status">Ready</span></div>
+        </div> -->
+
+<!--    <div id="shortcuts">
+            <div class="shortcut"><span>Play/Pause</span><kbd>Space</kbd></div>
+            <div class="shortcut"><span>Stop</span><kbd>X</kbd></div>
+            <div class="shortcut"><span>Fullscreen</span><kbd>F</kbd></div>
+            <div class="shortcut"><span>Hide UI</span><kbd>H</kbd></div>
+            <div class="shortcut"><span>Next Mode</span><kbd>M</kbd></div>
+            <div class="shortcut"><span>Gradient</span><kbd>G</kbd></div>
+            <div class="shortcut"><span>Reflex</span><kbd>R</kbd></div>
+            <div class="shortcut"><span>Spin</span><kbd>S</kbd></div>
+            <div class="shortcut"><span>Mirror</span><kbd>T</kbd></div>
+        </div> -->
+    </div>
+
+    <script src="https://unpkg.com/audiomotion-analyzer/dist"></script>
+    <script>
+        let audioMotion;
+        let audioElement;
+        let isSpinning = false;
+        let spinAngle = 0;
+
+        // Initialize the analyzer
+        function initAnalyzer() {
+            try {
+                audioMotion = new AudioMotionAnalyzer(
+                    document.getElementById('analyzer'),
+                    {
+                        mode: 10,
+                        gradient: 'classic',
+                        showScaleX: false,
+                        showScaleY: true,
+                        showPeaks: false,
+                        smoothing: 0.5,
+                        reflexRatio: 0,
+                        reflexAlpha: 0.25,
+                        reflexBright: 1,
+                        ledBars: false,
+                        lumiBars: false,
+                        channelLayout: 'single',
+                        frequencyScale: 'log',
+                        showFPS: false,
+                        bgAlpha: 0,
+                        fillAlpha: 1,
+                        lineWidth: 0,
+                        mirror: 0,
+                        outlineBars: false,
+                        onCanvasDraw: (instance) => {
+                            // Update info display
+                            document.getElementById('fps').textContent = Math.round(instance.fps);
+                            document.getElementById('energy').textContent = instance.getEnergy().toFixed(2);
+                        }
+                    }
+                );
+
+                // Create audio element
+                audioElement = new Audio();
+                audioElement.controls = false;
+                audioElement.crossOrigin = "anonymous";
+                
+                // Connect audio to analyzer
+                audioMotion.connectInput(audioElement);
+
+                // Set initial button states
+                updateButtonStates();
+                
+                document.getElementById('status').textContent = 'Analyzer Ready';
+                console.log('AudioMotion analyzer initialized successfully');
+
+            } catch (error) {
+                console.error('Error initializing audioMotion:', error);
+                document.getElementById('status').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        function updateButtonStates() {
+            if (!audioMotion) return;
+            
+            // Update all button states based on current audioMotion settings
+            document.getElementById('togglePeaks').classList.toggle('active', audioMotion.showPeaks);
+            document.getElementById('toggleLeds').classList.toggle('active', audioMotion.ledBars);
+            document.getElementById('toggleLumi').classList.toggle('active', audioMotion.lumiBars);
+            document.getElementById('toggleReflex').classList.toggle('active', audioMotion.reflexRatio > 0);
+            document.getElementById('toggleScaleX').classList.toggle('active', audioMotion.showScaleX);
+            document.getElementById('toggleScaleY').classList.toggle('active', audioMotion.showScaleY);
+            document.getElementById('toggleSpin').classList.toggle('active', isSpinning);
+            document.getElementById('toggleStereo').classList.toggle('active', audioMotion.channelLayout !== 'single');
+            document.getElementById('toggleMirror').classList.toggle('active', audioMotion.mirror !== 0);
+            document.getElementById('toggleFillAlpha').classList.toggle('active', audioMotion.fillAlpha < 1);
+            document.getElementById('toggleLinear').classList.toggle('active', audioMotion.frequencyScale === 'linear');
+        }
+
+        // File input handler
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && audioElement) {
+                const url = URL.createObjectURL(file);
+                audioElement.src = url;
+                document.getElementById('status').textContent = 'File loaded: ' + file.name;
+            }
+        });
+
+        // Media controls
+        document.getElementById('playBtn').addEventListener('click', () => {
+            if (audioElement && audioElement.src) {
+                audioElement.play().then(() => {
+                    document.getElementById('status').textContent = 'Playing';
+                }).catch(err => {
+                    console.error('Play error:', err);
+                    document.getElementById('status').textContent = 'Play error: ' + err.message;
+                });
+            } else {
+                document.getElementById('status').textContent = 'No audio file loaded';
+            }
+        });
+
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            if (audioElement) {
+                audioElement.pause();
+                document.getElementById('status').textContent = 'Paused';
+            }
+        });
+
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            if (audioElement) {
+                audioElement.pause();
+                audioElement.currentTime = 0;
+                document.getElementById('status').textContent = 'Stopped';
+            }
+        });
+
+        // Mode selector
+        document.getElementById('modeSelect').addEventListener('change', (e) => {
+            if (audioMotion) {
+                audioMotion.mode = parseInt(e.target.value);
+            }
+        });
+
+        // Gradient selector
+        document.getElementById('gradientSelect').addEventListener('change', (e) => {
+            if (audioMotion) {
+                audioMotion.gradient = e.target.value;
+            }
+        });
+
+        // Sensitivity control
+        document.getElementById('sensitivity').addEventListener('input', (e) => {
+            if (audioMotion) {
+                const value = parseFloat(e.target.value);
+                audioMotion.minDecibels = -85 + (1 - value) * 35;
+                audioMotion.maxDecibels = -25 + (value - 1) * 15;
+                document.getElementById('sensitivityValue').textContent = value.toFixed(1);
+            }
+        });
+
+        // Smoothing control
+        document.getElementById('smoothing').addEventListener('input', (e) => {
+            if (audioMotion) {
+                audioMotion.smoothing = parseFloat(e.target.value);
+                document.getElementById('smoothingValue').textContent = e.target.value;
+            }
+        });
+
+        // Toggle buttons with proper state management
+        document.getElementById('togglePeaks').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.showPeaks = !audioMotion.showPeaks;
+                this.classList.toggle('active', audioMotion.showPeaks);
+            }
+        });
+
+        document.getElementById('toggleLeds').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.ledBars = !audioMotion.ledBars;
+                this.classList.toggle('active', audioMotion.ledBars);
+            }
+        });
+
+        document.getElementById('toggleLumi').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.lumiBars = !audioMotion.lumiBars;
+                this.classList.toggle('active', audioMotion.lumiBars);
+            }
+        });
+
+        document.getElementById('toggleReflex').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.reflexRatio = audioMotion.reflexRatio > 0 ? 0 : 0.4;
+                this.classList.toggle('active', audioMotion.reflexRatio > 0);
+            }
+        });
+
+        document.getElementById('toggleScaleX').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.showScaleX = !audioMotion.showScaleX;
+                this.classList.toggle('active', audioMotion.showScaleX);
+            }
+        });
+
+        document.getElementById('toggleScaleY').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.showScaleY = !audioMotion.showScaleY;
+                this.classList.toggle('active', audioMotion.showScaleY);
+            }
+        });
+
+        document.getElementById('toggleMirror').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.mirror = audioMotion.mirror !== 0 ? 0 : -1;
+                this.classList.toggle('active', audioMotion.mirror !== 0);
+            }
+        });
+
+        document.getElementById('toggleFillAlpha').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.fillAlpha = audioMotion.fillAlpha < 1 ? 1 : 0.3;
+                this.classList.toggle('active', audioMotion.fillAlpha < 1);
+            }
+        });
+
+        document.getElementById('toggleLinear').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.frequencyScale = audioMotion.frequencyScale === 'log' ? 'linear' : 'log';
+                this.classList.toggle('active', audioMotion.frequencyScale === 'linear');
+            }
+        });
+
+        document.getElementById('toggleSpin').addEventListener('click', function() {
+            isSpinning = !isSpinning;
+            this.classList.toggle('active', isSpinning);
+            if (isSpinning) {
+                startSpin();
+            }
+        });
+
+        document.getElementById('toggleStereo').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.channelLayout = audioMotion.channelLayout === 'single' ? 'dual-combined' : 'single';
+                this.classList.toggle('active', audioMotion.channelLayout !== 'single');
+            }
+        });
+
+        // Fullscreen
+        document.getElementById('fullscreenBtn').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        // Toggle controls visibility
+        document.getElementById('toggleControls').addEventListener('click', () => {
+            toggleUI();
+        });
+
+        function toggleUI() {
+            document.getElementById('controls').classList.toggle('hidden');
+            document.getElementById('info').classList.toggle('hidden');
+            document.getElementById('shortcuts').classList.toggle('hidden');
+        }
+
+        // Spin animation
+        function startSpin() {
+            if (isSpinning && audioMotion) {
+                spinAngle += 0.5;
+                audioMotion.canvas.style.transform = `rotate(${spinAngle}deg)`;
+                requestAnimationFrame(startSpin);
+            } else if (audioMotion) {
+                audioMotion.canvas.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            switch(e.key.toLowerCase()) {
+                case ' ':
+                    e.preventDefault();
+                    if (audioElement && audioElement.src) {
+                        if (audioElement.paused) {
+                            audioElement.play();
+                        } else {
+                            audioElement.pause();
+                        }
+                    }
+                    break;
+                case 'x':
+                    document.getElementById('stopBtn').click();
+                    break;
+                case 'f':
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen();
+                    } else {
+                        document.exitFullscreen();
+                    }
+                    break;
+                case 'h':
+                    toggleUI();
+                    break;
+                case 'm':
+                    if (audioMotion) {
+                        const currentMode = parseInt(audioMotion.mode);
+                        audioMotion.mode = (currentMode + 1) % 11;
+                        document.getElementById('modeSelect').value = audioMotion.mode;
+                    }
+                    break;
+                case 'g':
+                    if (audioMotion) {
+                        const gradients = ['classic', 'prism', 'rainbow', 'orangered', 'steelblue'];
+                        const currentIndex = gradients.indexOf(audioMotion.gradient);
+                        audioMotion.gradient = gradients[(currentIndex + 1) % gradients.length];
+                        document.getElementById('gradientSelect').value = audioMotion.gradient;
+                    }
+                    break;
+                case 'r':
+                    document.getElementById('toggleReflex').click();
+                    break;
+                case 's':
+                    document.getElementById('toggleSpin').click();
+                    break;
+                case 't':
+                    document.getElementById('toggleMirror').click();
+                    break;
+            }
+        });
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            setTimeout(initAnalyzer, 100); // Small delay to ensure DOM is fully ready
+        });
+
+        // Debug logging
+        window.addEventListener('error', (e) => {
+            console.error('Global error:', e.error);
+            document.getElementById('status').textContent = 'Error: ' + e.message;
+        });
+    </script>
+</body>
+</html>

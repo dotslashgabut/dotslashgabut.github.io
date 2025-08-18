@@ -10,6 +10,7 @@ Just testing, the generated codes from LLMs.
 - [Fullscreen Image Comparison App](https://dotslashgabut.github.io/image-comparison-app-fullscreen.html)
 - [Advanced Image Comparison](https://dotslashgabut.github.io/advanced-image-comparison.html)
 - [Random AI Images Gallery](https://dotslashgabut.github.io/random-images/)
+- [Compact UI for AudioMotion Analyzer](https://dotslashgabut.github.io/compact-audiomotion-analyzer.html)
 - [Resolution & Aspect Ratio Generator](https://dotslashgabut.github.io/resolution-aspect-ratio-generator.html)
 - [Resolution & Aspect Ratio Hub](https://dotslashgabut.github.io/resolution-aspect-ratio-hub.html)
 - [Color Palette Generator](https://dotslashgabut.github.io/color-palette-generator-all.html)
