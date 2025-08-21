@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>audioMotion-analyzer Web UI</title>
+    <script src="script/audiomotion-analyzer.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        #container {
+            width: 100%;
+            height: 400px;
+            background-color: #000;
+        }
+        #controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 5px;
+            padding: 10px;
+            background-color: #ddd;
+            max-width: 100%;
+        }
+        #controls button, #controls select, #controls input {
+            padding: 5px 10px;
+            font-size: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #controls button {
+            background-color: #007bff;
+            color: white;
+        }
+        #controls button:hover {
+            background-color: #0056b3;
+        }
+        #controls input[type="range"] {
+            width: 150px;
+        }
+        #audio-file {
+            font-size: 12px;
+        }
+        #seek-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        #current-time {
+            font-size: 12px;
+        }
+        #shortcut-info {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border: 1px solid #ccc;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        #shortcut-info ul {
+            list-style: none;
+            padding: 0;
+        }
+        #shortcut-info button {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    <div id="controls">
+        <input type="file" id="audio-file" accept="audio/*">
+        <button id="mic-btn">Toggle Mic</button>
+        <button id="play-pause">Play/Pause (Space)</button>
+        <button id="stop-analyzer">Stop (S)</button>
+        <button id="fullscreen">Fullscreen (F)</button>
+        <button id="toggle-scale-x">Hide Scale X</button>
+        <button id="toggle-scale-y">Show Scale Y</button>
+        <button id="toggle-bg">Hide BG Color</button>
+        <div id="seek-container">
+            <input type="range" id="seek" min="0" max="0" step="0.1" value="0">
+            <span id="current-time">0:00 / 0:00</span>
+        </div>
+        <select id="gradient-select">
+            <option value="classic">Classic</option>
+            <option value="orangered">OrangeRed</option>
+            <option value="prism">Prism</option>
+            <option value="rainbow" selected>Rainbow</option>
+            <option value="steelblue">SteelBlue</option>
+        </select>
+        <button id="cycle-gradient">Cycle Gradient (G)</button>
+        <select id="mode-select">
+            <option value="0">Mode 0 (Discrete)</option>
+            <option value="1">Mode 1 (1/24 Octave)</option>
+            <option value="2">Mode 2 (1/12 Octave)</option>
+            <option value="3" selected>Mode 3 (1/8 Octave)</option>
+            <option value="4">Mode 4 (1/6 Octave)</option>
+            <option value="5">Mode 5 (1/4 Octave)</option>
+            <option value="6">Mode 6 (1/3 Octave)</option>
+            <option value="7">Mode 7 (1/2 Octave)</option>
+            <option value="8">Mode 8 (Full Octave)</option>
+            <option value="10">Mode 10 (Area Graph)</option>
+        </select>
+        <button id="cycle-mode">Cycle Mode (M)</button>
+        <button id="toggle-radial">Toggle Radial</button>
+        <button id="toggle-leds">Toggle LEDs</button>
+        <button id="toggle-mirror">Toggle Mirror</button>
+        <input type="range" id="volume" min="0" max="2" step="0.01" value="1">
+        <label for="volume" style="font-size: 12px;">Volume</label>
+        <input type="range" id="reflex-ratio" min="0" max="0.99" step="0.01" value="0">
+        <label for="reflex-ratio" style="font-size: 12px;">Reflection (0-0.99)</label>
+        <button id="toggle-ansi">Toggle ANSI Bands</button>
+        <select id="freq-scale">
+            <option value="bark">Bark</option>
+            <option value="linear">Linear</option>
+            <option value="log" selected>Log</option>
+            <option value="mel">Mel</option>
+        </select>
+        <select id="fft-size">
+            <option value="1024">FFT 1024</option>
+            <option value="2048">FFT 2048</option>
+            <option value="4096">FFT 4096</option>
+            <option value="8192" selected>FFT 8192</option>
+            <option value="16384">FFT 16384</option>
+            <option value="32768">FFT 32768</option>
+        </select>
+        <button id="show-shortcuts">Shortcuts</button>
+    </div>
+    <div id="shortcut-info">
+        <h3>Keyboard Shortcuts</h3>
+        <ul>
+            <li>Space: Play/Pause</li>
+            <li>S: Stop</li>
+            <li>F: Fullscreen</li>
+            <li>M: Cycle Mode</li>
+            <li>G: Cycle Gradient (Theme)</li>
+        </ul>
+        <button id="close-shortcuts">Close</button>
+    </div>
+
+    <script>
+        const container = document.getElementById('container');
+        const audioEl = document.createElement('audio');
+        let micStream = null;
+        let micSource = null;
+        let isMicActive = false;
+
+        const gradients = ['classic', 'orangered', 'prism', 'rainbow', 'steelblue'];
+        let currentGradientIndex = 3; // rainbow
+        const modes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 10];
+        let currentModeIndex = 3; // mode 3
+
+        const audioMotion = new AudioMotionAnalyzer(container, {
+            gradient: gradients[currentGradientIndex],
+            mode: modes[currentModeIndex],
+            showScaleX: true,
+            showScaleY: false,
+            showBgColor: true,
+            radial: false,
+            ledBars: false,
+            mirror: 0,
+            reflexRatio: 0,
+            ansiBands: false,
+            frequencyScale: 'log',
+            fftSize: 8192,
+            height: 400,
+            start: false // we'll start manually
+        });
+
+        // Connect audio element to analyzer
+        audioMotion.connectInput(audioEl);
+        audioMotion.volume = 1; // initial volume
+
+        // File input
+        document.getElementById('audio-file').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                audioEl.src = URL.createObjectURL(file);
+                audioEl.load();
+            }
+        });
+
+        // Play/Pause button
+        const playPauseBtn = document.getElementById('play-pause');
+        playPauseBtn.addEventListener('click', togglePlayPause);
+
+        function togglePlayPause() {
+            if (audioEl.paused) {
+                audioEl.play();
+                audioMotion.start();
+                playPauseBtn.textContent = 'Pause (Space)';
+            } else {
+                audioEl.pause();
+                audioMotion.stop();
+                playPauseBtn.textContent = 'Play (Space)';
+            }
+        }
+
+        // Stop analyzer button
+        const stopBtn = document.getElementById('stop-analyzer');
+        stopBtn.addEventListener('click', stopAnalyzer);
+
+        function stopAnalyzer() {
+            audioMotion.stop();
+            audioEl.pause();
+            audioEl.currentTime = 0;
+            playPauseBtn.textContent = 'Play/Pause (Space)';
+        }
+
+        // Fullscreen button
+        document.getElementById('fullscreen').addEventListener('click', () => {
+            audioMotion.toggleFullscreen();
+        });
+
+        // Toggle Scale X
+        const scaleXBtn = document.getElementById('toggle-scale-x');
+        scaleXBtn.addEventListener('click', () => {
+            const newVal = !audioMotion.showScaleX;
+            audioMotion.showScaleX = newVal;
+            scaleXBtn.textContent = newVal ? 'Hide Scale X' : 'Show Scale X';
+        });
+
+        // Toggle Scale Y
+        const scaleYBtn = document.getElementById('toggle-scale-y');
+        scaleYBtn.addEventListener('click', () => {
+            const newVal = !audioMotion.showScaleY;
+            audioMotion.showScaleY = newVal;
+            scaleYBtn.textContent = newVal ? 'Hide Scale Y' : 'Show Scale Y';
+        });
+
+        // Toggle BG Color
+        const bgBtn = document.getElementById('toggle-bg');
+        bgBtn.addEventListener('click', () => {
+            const newVal = !audioMotion.showBgColor;
+            audioMotion.showBgColor = newVal;
+            bgBtn.textContent = newVal ? 'Hide BG Color' : 'Show BG Color';
+        });
+
+        // Player seek slider
+        const seek = document.getElementById('seek');
+        const timeDisplay = document.getElementById('current-time');
+        audioEl.addEventListener('loadedmetadata', () => {
+            seek.max = audioEl.duration;
+        });
+        audioEl.addEventListener('timeupdate', () => {
+            seek.value = audioEl.currentTime;
+            const current = formatTime(audioEl.currentTime);
+            const total = formatTime(audioEl.duration);
+            timeDisplay.textContent = `${current} / ${total}`;
+        });
+        seek.addEventListener('input', () => {
+            audioEl.currentTime = seek.value;
+        });
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        // Gradient select
+        const gradientSelect = document.getElementById('gradient-select');
+        gradientSelect.addEventListener('change', (e) => {
+            audioMotion.gradient = e.target.value;
+            currentGradientIndex = gradients.indexOf(e.target.value);
+        });
+
+        // Cycle gradient button
+        document.getElementById('cycle-gradient').addEventListener('click', cycleGradient);
+
+        function cycleGradient() {
+            currentGradientIndex = (currentGradientIndex + 1) % gradients.length;
+            const newGradient = gradients[currentGradientIndex];
+            audioMotion.gradient = newGradient;
+            gradientSelect.value = newGradient;
+        }
+
+        // Mode select
+        const modeSelect = document.getElementById('mode-select');
+        modeSelect.addEventListener('change', (e) => {
+            audioMotion.mode = parseInt(e.target.value);
+            currentModeIndex = modes.indexOf(parseInt(e.target.value));
+        });
+
+        // Cycle mode button
+        document.getElementById('cycle-mode').addEventListener('click', cycleMode);
+
+        function cycleMode() {
+            currentModeIndex = (currentModeIndex + 1) % modes.length;
+            const newMode = modes[currentModeIndex];
+            audioMotion.mode = newMode;
+            modeSelect.value = newMode;
+        }
+
+        // Toggle Radial
+        const radialBtn = document.getElementById('toggle-radial');
+        radialBtn.addEventListener('click', () => {
+            const newVal = !audioMotion.radial;
+            audioMotion.radial = newVal;
+            radialBtn.textContent = `Toggle Radial (${newVal ? 'On' : 'Off'})`;
+        });
+
+        // Toggle LEDs
+        const ledsBtn = document.getElementById('toggle-leds');
+        ledsBtn.addEventListener('click', () => {
+            const newVal = !audioMotion.ledBars;
+            audioMotion.ledBars = newVal;
+            ledsBtn.textContent = `Toggle LEDs (${newVal ? 'On' : 'Off'})`;
+        });
+
+        // Toggle Mirror
+        const mirrorBtn = document.getElementById('toggle-mirror');
+        mirrorBtn.addEventListener('click', () => {
+            const newVal = audioMotion.mirror ? 0 : 1;
+            audioMotion.mirror = newVal;
+            mirrorBtn.textContent = `Toggle Mirror (${newVal ? 'On' : 'Off'})`;
+        });
+
+        // Volume slider
+        document.getElementById('volume').addEventListener('input', (e) => {
+            audioMotion.volume = parseFloat(e.target.value);
+        });
+
+        // Reflection slider
+        document.getElementById('reflex-ratio').addEventListener('input', (e) => {
+            audioMotion.reflexRatio = parseFloat(e.target.value);
+        });
+
+        // Toggle ANSI Bands
+        const ansiBtn = document.getElementById('toggle-ansi');
+        ansiBtn.addEventListener('click', () => {
+            const newVal = !audioMotion.ansiBands;
+            audioMotion.ansiBands = newVal;
+            ansiBtn.textContent = `Toggle ANSI Bands (${newVal ? 'On' : 'Off'})`;
+        });
+
+        // Frequency Scale select
+        document.getElementById('freq-scale').addEventListener('change', (e) => {
+            audioMotion.frequencyScale = e.target.value;
+        });
+
+        // FFT Size select
+        document.getElementById('fft-size').addEventListener('change', (e) => {
+            audioMotion.fftSize = parseInt(e.target.value);
+        });
+
+        // Microphone toggle
+        const micBtn = document.getElementById('mic-btn');
+        micBtn.addEventListener('click', async () => {
+            if (!isMicActive) {
+                try {
+                    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    micSource = audioMotion.audioCtx.createMediaStreamSource(micStream);
+                    audioMotion.connectInput(micSource);
+                    audioMotion.start();
+                    isMicActive = true;
+                    micBtn.textContent = 'Stop Mic';
+                } catch (err) {
+                    console.error('Mic access denied', err);
+                }
+            } else {
+                audioMotion.disconnectInput(micSource, true);
+                isMicActive = false;
+                micBtn.textContent = 'Toggle Mic';
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return; // ignore if focused on input
+            const key = e.key.toLowerCase();
+            if (key === ' ') {
+                e.preventDefault();
+                togglePlayPause();
+            } else if (key === 's') {
+                stopAnalyzer();
+            } else if (key === 'f') {
+                audioMotion.toggleFullscreen();
+            } else if (key === 'm') {
+                cycleMode();
+            } else if (key === 'g') {
+                cycleGradient();
+            }
+        });
+
+        // Shortcut info
+        const shortcutInfo = document.getElementById('shortcut-info');
+        document.getElementById('show-shortcuts').addEventListener('click', () => {
+            shortcutInfo.style.display = 'block';
+        });
+        document.getElementById('close-shortcuts').addEventListener('click', () => {
+            shortcutInfo.style.display = 'none';
+        });
+    </script>
+</body>
+</html>

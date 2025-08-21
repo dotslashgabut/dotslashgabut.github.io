@@ -603,10 +603,14 @@
                 document.getElementById('micBtn').classList.remove('active');
                 document.getElementById('status').textContent = 'Microphone off';
             } else {
-                // Start microphone
                 try {
                     micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    audioMotion.connectInput(micStream);
+        
+                    // ✅ Create AudioNode from MediaStream
+                    const micSource = audioMotion.audioCtx.createMediaStreamSource(micStream);
+        
+                    // Connect to analyzer
+                    audioMotion.connectInput(micSource);
                     document.getElementById('micBtn').classList.add('active');
                     document.getElementById('status').textContent = 'Microphone active';
                 } catch (err) {
