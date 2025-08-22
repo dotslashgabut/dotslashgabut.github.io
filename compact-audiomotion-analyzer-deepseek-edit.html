@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced AudioMotion Analyzer</title>
+    <link rel="stylesheet" href="script/fontawesome-free-7.0.0-web/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1a73e8;
+            --primary-dark: #1557b0;
+            --secondary: #ff4081;
+            --bg-dark: #0a0a0a;
+            --bg-light: #1a1a1a;
+            --text-light: #ffffff;
+            --text-dim: #aaaaaa;
+            --accent: #00bfff;
+            --success: #00c853;
+            --warning: #ffab00;
+            --danger: #ff5252;
+            --border-radius: 8px;
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        body.light-theme {
+            --bg-dark: #f0f0f0;
+            --bg-light: #ffffff;
+            --text-light: #333333;
+            --text-dim: #666666;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+        }
+
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #analyzer {
+            width: 100%;
+            height: 100%;
+            flex: 1;
+        }
+
+        /* Main controls panel */
+        #controls {
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            backdrop-filter: blur(15px);
+            transition: var(--transition);
+            z-index: 10;
+            width: 360px;
+            max-height: 85vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        body.light-theme #controls {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        #controls.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(-20px);
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        body.light-theme .control-header {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .control-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .control-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .tab-btn {
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-dim);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 11px;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-dim);
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .inline-label {
+            font-size: 12px;
+            color: var(--text-dim);
+            min-width: 80px;
+            margin: 0;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-label {
+            display: inline-block;
+            padding: 10px 15px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 12px;
+            text-align: center;
+            width: 100%;
+            border: none;
+        }
+
+        .file-label:hover {
+            background: linear-gradient(135deg, var(--primary-dark), #0f4c8c);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        select, input[type="range"] {
+            flex: 1;
+            padding: 8px;
+            background: var(--bg-light);
+            color: var(--text-light);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: var(--transition);
+        }
+
+        body.light-theme select, 
+        body.light-theme input[type="range"] {
+            background: #f5f5f5;
+            border: 1px solid rgba(0, 0, 0, 0.15);
+        }
+
+        input[type="range"] {
+            padding: 0;
+            height: 20px;
+            -webkit-appearance: none;
+            background: transparent;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            margin-top: -6px;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        body.light-theme input[type="range"]::-webkit-slider-runnable-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .range-value {
+            font-size: 12px;
+            color: var(--text-dim);
+            min-width: 40px;
+            text-align: center;
+        }
+
+        button {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        body.light-theme button {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--text-light);
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        body.light-theme button:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        button.active {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 4px 8px rgba(26, 115, 232, 0.3);
+        }
+
+        .button-grid {
+            display: grid;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .button-grid-2 {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .button-grid-3 {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .button-grid-4 {
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+        }
+
+        .media-controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .media-btn {
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #333, #444);
+        }
+
+        .media-btn:hover {
+            background: linear-gradient(135deg, #555, #666);
+        }
+
+        /* Info panel */
+        #info {
+            position: absolute;
+            bottom: 30px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 12px 16px;
+            border-radius: var(--border-radius);
+            font-size: 12px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: var(--transition);
+        }
+
+        body.light-theme #info {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        #info.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+        }
+
+        .info-section {
+            display: flex;
+            flex-direction: column;
+            min-width: 80px;
+            gap: 4px;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        body.light-theme .info-value {
+            color: var(--primary);
+        }
+
+        /* Media controls */
+        #media-controls {
+            position: absolute;
+            bottom: 30px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 12px 16px;
+            border-radius: var(--border-radius);
+            font-size: 12px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: var(--transition);
+        }
+
+        body.light-theme #media-controls {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        #media-controls.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+        }
+
+        .media-controls-bottom {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .media-controls-bottom button {
+            padding: 8px 12px;
+            font-size: 12px;
+            min-width: 40px;
+            height: 36px;
+        }
+
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #progressBar {
+            width: 150px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body.light-theme #progressBar {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        #progressFill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.1s;
+        }
+
+        .time-display {
+            font-size: 11px;
+            color: var(--text-dim);
+            min-width: 40px;
+            text-align: center;
+        }
+
+        /* Shortcuts panel */
+        #shortcuts {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 12px 14px;
+            border-radius: var(--border-radius);
+            font-size: 12px;
+            backdrop-filter: blur(15px);
+            min-width: 140px;
+            max-width: 180px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: var(--transition);
+        }
+
+        body.light-theme #shortcuts {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        #shortcuts.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(20px);
+        }
+
+        .shortcut {
+            margin-bottom: 4px;
+            color: var(--text-dim);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .shortcut kbd {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            min-width: 24px;
+            text-align: center;
+        }
+
+        body.light-theme .shortcut kbd {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 13px;
+            color: var(--accent);
+            margin: 12px 0 8px 0;
+            font-weight: bold;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        body.light-theme .section-title {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            color: var(--primary);
+        }
+
+        /* Theme toggle */
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 220px;
+            z-index: 20;
+            background: rgba(0, 0, 0, 0.7);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: var(--transition);
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        body.light-theme .theme-toggle {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        /* Presets panel */
+        #presets {
+            position: absolute;
+            bottom: 100px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 12px 14px;
+            border-radius: var(--border-radius);
+            font-size: 12px;
+            backdrop-filter: blur(15px);
+            width: 180px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: var(--transition);
+            z-index: 9;
+        }
+
+        body.light-theme #presets {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        #themeToggle.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(20px);
+        }
+
+        #presets.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(20px);
+        }
+
+        .preset-btn {
+            width: 100%;
+            margin-bottom: 6px;
+            text-align: left;
+            padding: 6px 10px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        body.light-theme .preset-btn {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        body.light-theme .preset-btn:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Beat indicator */
+        .beat-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--danger);
+            margin-left: 5px;
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+
+        .beat-indicator.active {
+            opacity: 1;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            #controls {
+                width: 320px;
+                max-height: 70vh;
+            }
+            
+            .button-grid-4 {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            #info, #media-controls, #shortcuts, #presets {
+                max-width: calc(100% - 40px);
+            }
+            
+            .theme-toggle {
+                right: 80px;
+                top: 15px;
+            }
+        }
+
+        /* Custom scrollbar */
+        #controls::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #controls::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        #controls::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 3px;
+        }
+
+        /* Animation for visualizer bars */
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="analyzer"></div>
+        
+        <div class="theme-toggle" id="themeToggle">
+            <i class="fas fa-moon"></i>
+        </div>
+        
+        <div id="controls">
+            <div class="control-header">
+                <div class="control-title">Audio Controls</div>
+                <button id="minimizeBtn"><i class="fas fa-minus"></i></button>
+            </div>
+            
+            <div class="control-tabs">
+                <button class="tab-btn active" data-tab="visual">Visual</button>
+                <button class="tab-btn" data-tab="audio">Audio</button>
+                <button class="tab-btn" data-tab="effects">Effects</button>
+            </div>
+            
+            <div class="tab-content active" id="visual-tab">
+                <div class="button-grid-2">
+                    <label for="fileInput" class="file-label">
+                        <i class="fas fa-file-audio"></i> Load Audio
+                    </label>
+                    <input type="file" id="fileInput" accept="audio/*">
+                    <button id="micBtn" class="file-label"><i class="fas fa-microphone"></i> Microphone</button>
+                </div>
+
+                <div class="control-group">
+                    <label>Visualization Mode</label>
+                    <select id="modeSelect">
+                        <option value="0">Discrete frequencies</option>
+                        <option value="1">1/24th octave (240 bands)</option>
+                        <option value="2">1/12th octave (120 bands)</option>
+                        <option value="3">1/8th octave (80 bands)</option>
+                        <option value="4">1/6th octave (60 bands)</option>
+                        <option value="5">1/4th octave (40 bands)</option>
+                        <option value="6">1/3rd octave (30 bands)</option>
+                        <option value="7">Half octave (20 bands)</option>
+                        <option value="8">Full octave (10 bands)</option>
+                        <option value="10" selected>Graph</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Color Gradient</label>
+                    <select id="gradientSelect">
+                        <option value="classic">Classic</option>
+                        <option value="prism">Prism</option>
+                        <option value="rainbow">Rainbow</option>
+                        <option value="orangered">Orange-Red</option>
+                        <option value="steelblue">Steel Blue</option>
+                        <option value="neon">Neon</option>
+                        <option value="fire">Fire</option>
+                        <option value="ocean">Ocean</option>
+                    </select>
+                </div>
+
+                <div class="control-row">
+                    <label class="inline-label">Sensitivity</label>
+                    <input type="range" id="sensitivity" min="0.1" max="3" step="0.1" value="1">
+                    <span class="range-value" id="sensitivityValue">1.0</span>
+                </div>
+
+                <div class="control-row">
+                    <label class="inline-label">Smoothing</label>
+                    <input type="range" id="smoothing" min="0" max="0.9" step="0.1" value="0.5">
+                    <span class="range-value" id="smoothingValue">0.5</span>
+                </div>
+
+                <div class="control-row">
+                    <label class="inline-label">Volume</label>
+                    <input type="range" id="volume" min="0" max="2" step="0.1" value="1">
+                    <span class="range-value" id="volumeValue">1.0</span>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="audio-tab">
+                <div class="control-group">
+                    <label>FFT Size</label>
+                    <select id="fftSize">
+                        <option value="32">32 (Fastest)</option>
+                        <option value="64">64</option>
+                        <option value="128">128</option>
+                        <option value="256" selected>256 (Default)</option>
+                        <option value="512">512</option>
+                        <option value="1024">1024</option>
+                        <option value="2048">2048 (Highest Quality)</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>Frequency Range</label>
+                    <select id="frequencyRange">
+                        <option value="full">Full Spectrum</option>
+                        <option value="bass">Bass Boost</option>
+                        <option value="mid">Mid Range</option>
+                        <option value="treble">Treble Focus</option>
+                    </select>
+                </div>
+                
+                <div class="control-row">
+                    <label class="inline-label">Bass Boost</label>
+                    <input type="range" id="bassBoost" min="0" max="2" step="0.1" value="1">
+                    <span class="range-value" id="bassBoostValue">1.0</span>
+                </div>
+                
+                <div class="control-row">
+                    <label class="inline-label">Treble</label>
+                    <input type="range" id="treble" min="0" max="2" step="0.1" value="1">
+                    <span class="range-value" id="trebleValue">1.0</span>
+                </div>
+                
+                <div class="control-group">
+                    <label>Audio Presets</label>
+                    <div class="button-grid button-grid-2">
+                        <button id="presetFlat">Flat</button>
+                        <button id="presetBass">Bass Boost</button>
+                        <button id="presetTreble">Treble Boost</button>
+                        <button id="presetVocal">Vocal Focus</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="effects-tab">
+                <div class="section-title">
+                    <i class="fas fa-sliders-h"></i> Visual Effects
+                </div>
+                <div class="button-grid button-grid-4">
+                    <button id="togglePeaks"><i class="fas fa-chart-line"></i> Peaks</button>
+                    <button id="toggleLeds"><i class="fas fa-lightbulb"></i> LEDs</button>
+                    <button id="toggleLumi"><i class="fas fa-sun"></i> Lumi</button>
+                    <button id="toggleAlpha"><i class="fas fa-adjust"></i> Alpha</button>
+                </div>
+
+                <div class="button-grid button-grid-4">
+                    <button id="toggleReflex"><i class="fas fa-sync"></i> Reflex</button>
+                    <button id="toggleRadial"><i class="fas fa-circle"></i> Radial</button>
+                    <button id="toggleMirror"><i class="fas fa-copy"></i> Mirror</button>
+                    <button id="toggleOutline"><i class="fas fa-border-style"></i> Outline</button>
+                </div>
+
+                <div class="button-grid button-grid-3">
+                    <button id="toggleScaleX" class="active"><i class="fas fa-arrows-alt-h"></i> Scale X</button>
+                    <button id="toggleScaleY"><i class="fas fa-arrows-alt-v"></i> Scale Y</button>
+                    <button id="toggleBgColor" class="active"><i class="fas fa-paint-brush"></i> BG Color</button>
+                </div>
+
+                <div class="section-title">
+                    <i class="fas fa-cogs"></i> Advanced
+                </div>
+                <div class="button-grid button-grid-3">
+                    <button id="toggleStereo"><i class="fas fa-headphones"></i> Stereo</button>
+                    <button id="toggleLinear"><i class="fas fa-ruler"></i> Linear</button>
+                    <button id="toggleWeight"><i class="fas fa-filter"></i> Weight</button>
+                </div>
+
+                <div class="button-grid button-grid-3">
+                    <button id="toggleFade"><i class="fas fa-ghost"></i> FadePks</button>
+                    <button id="toggleRound"><i class="fas fa-dot-circle"></i> Round</button>
+                    <button id="toggleNotes"><i class="fas fa-music"></i> Notes</button>
+                </div>
+                
+            </div>
+
+            <div class="section-title">
+                <i class="fas fa-gamepad"></i> Controls
+            </div>
+            <div class="button-grid button-grid-3">
+                <button id="fullscreenBtn"><i class="fas fa-expand"></i> Fullscreen</button>
+                <button id="toggleControls"><i class="fas fa-eye"></i> Hide UI (H)</button>
+                <button id="togglePanels"><i class="fas fa-th"></i> Panels (I)</button>
+            </div>
+        </div>
+
+        <div id="info">
+            <div class="info-section">
+                <div>FPS: <span class="info-value" id="fps">0</span></div>
+                <div>Energy: <span class="info-value" id="energy">0.00</span></div>
+            </div>
+            <div class="info-section">
+                <div>Peak: <span class="info-value" id="peakFreq">0</span> Hz</div>
+                <div>Beat: <span class="info-value" id="beat">0.00</span></div>
+            </div>
+            <div class="info-section">
+                <div class="beat-indicator" id="beatIndicator"></div>
+                <div>Status: <span class="info-value" id="status">Ready</span></div>
+            </div>
+        </div>
+            
+        <div id="media-controls">
+            <div class="media-controls-bottom">
+                <button id="playBtn" class="media-btn"><i class="fas fa-play"></i></button>
+                <button id="pauseBtn" class="media-btn"><i class="fas fa-pause"></i></button>
+                <button id="stopBtn" class="media-btn"><i class="fas fa-stop"></i></button>
+                <button id="loopBtn" class="media-btn"><i class="fas fa-redo"></i></button>
+            </div>
+            
+            <div class="progress-container">
+                <div class="time-display" id="currentTime">0:00</div>
+                <div id="progressBar">
+                    <div id="progressFill"></div>
+                </div>
+                <div class="time-display" id="duration">0:00</div>
+            </div>
+            
+            <div class="media-controls-bottom">
+                <button id="prevBtn" class="media-btn"><i class="fas fa-step-backward"></i></button>
+                <button id="nextBtn" class="media-btn"><i class="fas fa-step-forward"></i></button>
+                <button id="shuffleBtn" class="media-btn"><i class="fas fa-random"></i></button>
+            </div>
+        </div>
+
+        <div id="shortcuts">
+            <div class="shortcut"><span>Play/Pause</span><kbd>Space</kbd></div>
+            <div class="shortcut"><span>Stop</span><kbd>X</kbd></div>
+            <div class="shortcut"><span>Microphone</span><kbd>Ctrl+M</kbd></div>
+            <div class="shortcut"><span>Fullscreen</span><kbd>F</kbd></div>
+            <div class="shortcut"><span>Hide UI</span><kbd>H</kbd></div>
+            <div class="shortcut"><span>Panels</span><kbd>I</kbd></div>
+            <div class="shortcut"><span>Mode</span><kbd>M</kbd></div>
+            <div class="shortcut"><span>Gradient</span><kbd>G</kbd></div>
+            <div class="shortcut"><span>Radial</span><kbd>R</kbd></div>
+            <div class="shortcut"><span>Theme</span><kbd>T</kbd></div>
+        </div>
+        
+        <div id="presets">
+            <div class="section-title">Visual Presets</div>
+            <button class="preset-btn" data-preset="default">Default</button>
+            <button class="preset-btn" data-preset="wave">Wave Form</button>
+            <button class="preset-btn" data-preset="spectrum">Spectrum</button>
+            <button class="preset-btn" data-preset="nebula">Nebula</button>
+            <button class="preset-btn" data-preset="fire">Fire</button>
+            <button class="preset-btn" data-preset="linear">Linear</button>
+        </div>
+    </div>
+
+    <script src="script/audiomotion-analyzer.js"></script>
+    <script>
+        let audioMotion;
+        let audioElement;
+        let micStream;
+        let audioContext;
+        let beatHistory = [];
+        let currentTheme = 'dark';
+        let playlist = [];
+        let currentTrackIndex = 0;
+
+        // Initialize the analyzer
+        function initAnalyzer() {
+            try {
+                audioMotion = new AudioMotionAnalyzer(
+                    document.getElementById('analyzer'),
+                    {
+                        mode: 10,
+                        gradient: 'classic',
+                        showScaleX: true,
+                        showScaleY: false,
+                        showPeaks: false,
+                        showBgColor: true,
+                        smoothing: 0.5,
+                        reflexRatio: 0,
+                        reflexAlpha: 0.15,
+                        reflexBright: 1,
+                        ledBars: false,
+                        lumiBars: false,
+                        alphaBars: false,
+                        channelLayout: 'single',
+                        frequencyScale: 'log',
+                        showFPS: false,
+                        bgAlpha: 0.7,
+                        fillAlpha: 1,
+                        lineWidth: 2,
+                        mirror: 0,
+                        outlineBars: false,
+                        radial: false,
+                        weightingFilter: '',
+                        volume: 1,
+                        minDecibels: -85,
+                        maxDecibels: -25,
+                        barSpace: 0.1,
+                        gravity: 3.8,
+                        fadePeaks: false,
+                        roundBars: false,
+                        noteLabels: false,
+                        linearAmplitude: false,
+                        onCanvasDraw: (instance) => {
+                            // Update info display
+                            document.getElementById('fps').textContent = Math.round(instance.fps);
+                            document.getElementById('energy').textContent = instance.getEnergy().toFixed(2);
+                            
+                            // Beat detection
+                            detectBeat(instance.getEnergy());
+                            
+                            // Get peak frequency
+                            try {
+                                const bars = instance.getBars();
+                                if (bars && bars.length > 0) {
+                                    let maxBar = bars[0];
+                                    for (let bar of bars) {
+                                        if (bar.value[0] > maxBar.value[0]) {
+                                            maxBar = bar;
+                                        }
+                                    }
+                                    document.getElementById('peakFreq').textContent = Math.round(maxBar.freq);
+                                }
+                            } catch (e) {
+                                // Fallback if getBars() fails
+                            }
+                        }
+                    }
+                );
+
+                // Create audio element
+                audioElement = new Audio();
+                audioElement.crossOrigin = "anonymous";
+                
+                // Connect audio to analyzer
+                audioMotion.connectInput(audioElement);
+                
+                // Set up audio context for advanced processing
+                audioContext = audioMotion.audioCtx;
+
+                // Set initial button states
+                updateButtonStates();
+                
+                document.getElementById('status').textContent = 'Ready - Load audio file';
+                console.log('AudioMotion analyzer initialized successfully');
+
+            } catch (error) {
+                console.error('Error initializing audioMotion:', error);
+                document.getElementById('status').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        // Beat detection function
+        function detectBeat(energy) {
+            const now = Date.now();
+            beatHistory.push({ time: now, energy: energy });
+            
+            // Keep only the last second of history
+            beatHistory = beatHistory.filter(item => now - item.time < 1000);
+            
+            // Calculate average energy
+            const avgEnergy = beatHistory.reduce((sum, item) => sum + item.energy, 0) / beatHistory.length;
+            
+            // If current energy is significantly higher than average, it's a beat
+            const isBeat = energy > avgEnergy * 1.5;
+            
+            document.getElementById('beat').textContent = avgEnergy.toFixed(2);
+            
+            const beatIndicator = document.getElementById('beatIndicator');
+            if (isBeat) {
+                beatIndicator.classList.add('active');
+                setTimeout(() => beatIndicator.classList.remove('active'), 100);
+            }
+        }
+
+        function updateButtonStates() {
+            if (!audioMotion) return;
+            
+            // Update all button states based on current audioMotion settings
+            document.getElementById('togglePeaks').classList.toggle('active', audioMotion.showPeaks);
+            document.getElementById('toggleLeds').classList.toggle('active', audioMotion.ledBars);
+            document.getElementById('toggleLumi').classList.toggle('active', audioMotion.lumiBars);
+            document.getElementById('toggleAlpha').classList.toggle('active', audioMotion.alphaBars);
+            document.getElementById('toggleReflex').classList.toggle('active', audioMotion.reflexRatio > 0);
+            document.getElementById('toggleRadial').classList.toggle('active', audioMotion.radial);
+            document.getElementById('toggleScaleX').classList.toggle('active', audioMotion.showScaleX);
+            document.getElementById('toggleScaleY').classList.toggle('active', audioMotion.showScaleY);
+            document.getElementById('toggleBgColor').classList.toggle('active', audioMotion.showBgColor);
+            document.getElementById('toggleStereo').classList.toggle('active', audioMotion.channelLayout !== 'single');
+            document.getElementById('toggleMirror').classList.toggle('active', audioMotion.mirror !== 0);
+            document.getElementById('toggleOutline').classList.toggle('active', audioMotion.outlineBars);
+            document.getElementById('toggleLinear').classList.toggle('active', audioMotion.linearAmplitude);
+            document.getElementById('toggleWeight').classList.toggle('active', audioMotion.weightingFilter !== '');
+            document.getElementById('toggleFade').classList.toggle('active', audioMotion.fadePeaks);
+            document.getElementById('toggleRound').classList.toggle('active', audioMotion.roundBars);
+            document.getElementById('toggleNotes').classList.toggle('active', audioMotion.noteLabels);
+            
+            // Update loop button state
+            document.getElementById('loopBtn').classList.toggle('active', audioElement.loop);
+        }
+
+        // File input handler
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && audioElement) {
+                const url = URL.createObjectURL(file);
+                audioElement.src = url;
+                
+                // Add to playlist
+                playlist.push({
+                    name: file.name,
+                    url: url,
+                    type: file.type
+                });
+                currentTrackIndex = playlist.length - 1;
+                
+                document.getElementById('status').textContent = 'Loaded: ' + file.name;
+                
+                // Auto-play
+                audioElement.play().then(() => {
+                    document.getElementById('status').textContent = 'Playing: ' + file.name;
+                }).catch(err => {
+                    console.error('Play error:', err);
+                });
+            }
+        });
+
+        // Media controls
+        document.getElementById('playBtn').addEventListener('click', () => {
+            if (audioElement && audioElement.src) {
+                audioElement.play().then(() => {
+                    document.getElementById('status').textContent = 'Playing';
+                }).catch(err => {
+                    console.error('Play error:', err);
+                    document.getElementById('status').textContent = 'Play error';
+                });
+            } else {
+                document.getElementById('status').textContent = 'No audio loaded';
+            }
+        });
+
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            if (audioElement) {
+                audioElement.pause();
+                document.getElementById('status').textContent = 'Paused';
+            }
+        });
+
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            if (audioElement) {
+                audioElement.pause();
+                audioElement.currentTime = 0;
+                document.getElementById('status').textContent = 'Stopped';
+            }
+        });
+
+        document.getElementById('loopBtn').addEventListener('click', function() {
+            if (audioElement) {
+                audioElement.loop = !audioElement.loop;
+                this.classList.toggle('active', audioElement.loop);
+                document.getElementById('status').textContent = audioElement.loop ? 'Loop enabled' : 'Loop disabled';
+            }
+        });
+
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            if (playlist.length > 0) {
+                currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
+                loadTrack(currentTrackIndex);
+            }
+        });
+
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            if (playlist.length > 0) {
+                currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+                loadTrack(currentTrackIndex);
+            }
+        });
+
+        document.getElementById('shuffleBtn').addEventListener('click', function() {
+            if (playlist.length > 0) {
+                // Simple shuffle implementation
+                shuffleArray(playlist);
+                currentTrackIndex = 0;
+                loadTrack(currentTrackIndex);
+                this.classList.toggle('active');
+            }
+        });
+
+        function loadTrack(index) {
+            if (index >= 0 && index < playlist.length) {
+                audioElement.src = playlist[index].url;
+                audioElement.play().then(() => {
+                    document.getElementById('status').textContent = 'Playing: ' + playlist[index].name;
+                });
+            }
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // Microphone input
+        document.getElementById('micBtn').addEventListener('click', async () => {
+            if (micStream) {
+                // Stop microphone
+                micStream.getTracks().forEach(track => track.stop());
+                audioMotion.disconnectInput(micStream);
+                micStream = null;
+                document.getElementById('micBtn').classList.remove('active');
+                document.getElementById('status').textContent = 'Microphone off';
+            } else {
+                try {
+                    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+                    // Create AudioNode from MediaStream
+                    const micSource = audioMotion.audioCtx.createMediaStreamSource(micStream);
+        
+                    // Connect to analyzer
+                    audioMotion.connectInput(micSource);
+                    document.getElementById('micBtn').classList.add('active');
+                    document.getElementById('status').textContent = 'Microphone active';
+                } catch (err) {
+                    console.error('Microphone error:', err);
+                    document.getElementById('status').textContent = 'Mic error: ' + err.message;
+                }
+            }
+        });
+
+        // Mode selector
+        document.getElementById('modeSelect').addEventListener('change', (e) => {
+            if (audioMotion) {
+                audioMotion.mode = parseInt(e.target.value);
+            }
+        });
+
+        // Gradient selector
+        document.getElementById('gradientSelect').addEventListener('change', (e) => {
+            if (audioMotion) {
+                audioMotion.gradient = e.target.value;
+            }
+        });
+
+        // FFT Size selector
+        document.getElementById('fftSize').addEventListener('change', (e) => {
+            if (audioMotion) {
+                audioMotion.fftSize = parseInt(e.target.value);
+            }
+        });
+
+        // Frequency Range selector
+        document.getElementById('frequencyRange').addEventListener('change', (e) => {
+            if (audioMotion) {
+                switch(e.target.value) {
+                    case 'bass':
+                        audioMotion.minDecibels = -85;
+                        audioMotion.maxDecibels = -15;
+                        break;
+                    case 'mid':
+                        audioMotion.minDecibels = -70;
+                        audioMotion.maxDecibels = -25;
+                        break;
+                    case 'treble':
+                        audioMotion.minDecibels = -60;
+                        audioMotion.maxDecibels = -20;
+                        break;
+                    default:
+                        audioMotion.minDecibels = -85;
+                        audioMotion.maxDecibels = -25;
+                }
+            }
+        });
+
+        // Bass Boost control
+        document.getElementById('bassBoost').addEventListener('input', (e) => {
+            // This would require additional audio processing nodes
+            document.getElementById('bassBoostValue').textContent = e.target.value;
+        });
+
+        // Treble control
+        document.getElementById('treble').addEventListener('input', (e) => {
+            // This would require additional audio processing nodes
+            document.getElementById('trebleValue').textContent = e.target.value;
+        });
+
+        // Sensitivity control
+        document.getElementById('sensitivity').addEventListener('input', (e) => {
+            if (audioMotion) {
+                const value = parseFloat(e.target.value);
+                audioMotion.setSensitivity(-85 + (1 - value) * 35, -25 + (value - 1) * 15);
+                document.getElementById('sensitivityValue').textContent = value.toFixed(1);
+            }
+        });
+
+        // Smoothing control
+        document.getElementById('smoothing').addEventListener('input', (e) => {
+            if (audioMotion) {
+                audioMotion.smoothing = parseFloat(e.target.value);
+                document.getElementById('smoothingValue').textContent = e.target.value;
+            }
+        });
+
+        // Volume control
+        document.getElementById('volume').addEventListener('input', (e) => {
+            if (audioMotion) {
+                audioMotion.volume = parseFloat(e.target.value);
+                document.getElementById('volumeValue').textContent = e.target.value;
+            }
+        });
+
+        // Toggle buttons with proper state management
+        const toggleButtons = [
+            'togglePeaks', 'toggleLeds', 'toggleLumi', 'toggleAlpha', 'toggleReflex', 
+            'toggleRadial', 'toggleScaleX', 'toggleScaleY', 'toggleBgColor', 'toggleMirror',
+            'toggleOutline', 'toggleLinear', 'toggleWeight', 'toggleStereo', 'toggleFade',
+            'toggleRound', 'toggleNotes'
+        ];
+
+        toggleButtons.forEach(btnId => {
+            document.getElementById(btnId).addEventListener('click', function() {
+                if (!audioMotion) return;
+                
+                switch(btnId) {
+                    case 'togglePeaks':
+                        audioMotion.showPeaks = !audioMotion.showPeaks;
+                        this.classList.toggle('active', audioMotion.showPeaks);
+                        break;
+                    case 'toggleLeds':
+                        audioMotion.ledBars = !audioMotion.ledBars;
+                        this.classList.toggle('active', audioMotion.ledBars);
+                        break;
+                    case 'toggleLumi':
+                        audioMotion.lumiBars = !audioMotion.lumiBars;
+                        this.classList.toggle('active', audioMotion.lumiBars);
+                        break;
+                    case 'toggleAlpha':
+                        audioMotion.alphaBars = !audioMotion.alphaBars;
+                        this.classList.toggle('active', audioMotion.alphaBars);
+                        break;
+                    case 'toggleReflex':
+                        audioMotion.reflexRatio = audioMotion.reflexRatio > 0 ? 0 : 0.4;
+                        this.classList.toggle('active', audioMotion.reflexRatio > 0);
+                        break;
+                    case 'toggleRadial':
+                        audioMotion.radial = !audioMotion.radial;
+                        this.classList.toggle('active', audioMotion.radial);
+                        break;
+                    case 'toggleScaleX':
+                        audioMotion.showScaleX = !audioMotion.showScaleX;
+                        this.classList.toggle('active', audioMotion.showScaleX);
+                        break;
+                    case 'toggleScaleY':
+                        audioMotion.showScaleY = !audioMotion.showScaleY;
+                        this.classList.toggle('active', audioMotion.showScaleY);
+                        break;
+                    case 'toggleBgColor':
+                        audioMotion.showBgColor = !audioMotion.showBgColor;
+                        this.classList.toggle('active', audioMotion.showBgColor);
+                        break;
+                    case 'toggleMirror':
+                        audioMotion.mirror = audioMotion.mirror !== 0 ? 0 : -1;
+                        this.classList.toggle('active', audioMotion.mirror !== 0);
+                        break;
+                    case 'toggleOutline':
+                        audioMotion.outlineBars = !audioMotion.outlineBars;
+                        this.classList.toggle('active', audioMotion.outlineBars);
+                        break;
+                    case 'toggleLinear':
+                        audioMotion.linearAmplitude = !audioMotion.linearAmplitude;
+                        this.classList.toggle('active', audioMotion.linearAmplitude);
+                        break;
+                    case 'toggleWeight':
+                        const filters = ['', 'A', 'B', 'C', 'D', '468'];
+                        const current = filters.indexOf(audioMotion.weightingFilter);
+                        audioMotion.weightingFilter = filters[(current + 1) % filters.length];
+                        this.classList.toggle('active', audioMotion.weightingFilter !== '');
+                        document.getElementById('status').textContent = 'Filter: ' + (audioMotion.weightingFilter || 'None');
+                        break;
+                    case 'toggleStereo':
+                        audioMotion.channelLayout = audioMotion.channelLayout === 'single' ? 'dual-combined' : 'single';
+                        this.classList.toggle('active', audioMotion.channelLayout !== 'single');
+                        break;
+                    case 'toggleFade':
+                        audioMotion.fadePeaks = !audioMotion.fadePeaks;
+                        this.classList.toggle('active', audioMotion.fadePeaks);
+                        break;
+                    case 'toggleRound':
+                        audioMotion.roundBars = !audioMotion.roundBars;
+                        this.classList.toggle('active', audioMotion.roundBars);
+                        break;
+                    case 'toggleNotes':
+                        audioMotion.noteLabels = !audioMotion.noteLabels;
+                        this.classList.toggle('active', audioMotion.noteLabels);
+                        break;
+                }
+            });
+        });
+
+        // Fullscreen
+        document.getElementById('fullscreenBtn').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        // Toggle controls visibility
+        document.getElementById('toggleControls').addEventListener('click', () => {
+            toggleUI();
+        });
+
+        // Toggle panels visibility (info, shortcuts, media-controls, presets)
+        document.getElementById('togglePanels').addEventListener('click', () => {
+            togglePanels();
+        });
+
+        // Theme toggle
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            toggleTheme();
+        });
+
+        // Tab functionality
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.getAttribute('data-tab');
+                
+                // Deactivate all tabs
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                // Activate clicked tab
+                btn.classList.add('active');
+                document.getElementById(`${tabName}-tab`).classList.add('active');
+            });
+        });
+
+        // Preset buttons
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const preset = btn.getAttribute('data-preset');
+                applyPreset(preset);
+            });
+        });
+
+        // Audio preset buttons
+        document.getElementById('presetFlat').addEventListener('click', () => {
+            if (audioMotion) {
+                audioMotion.minDecibels = -85;
+                audioMotion.maxDecibels = -25;
+                document.getElementById('bassBoost').value = 1;
+                document.getElementById('treble').value = 1;
+                document.getElementById('bassBoostValue').textContent = '1.0';
+                document.getElementById('trebleValue').textContent = '1.0';
+                document.getElementById('frequencyRange').value = 'full';
+            }
+        });
+
+        document.getElementById('presetBass').addEventListener('click', () => {
+            if (audioMotion) {
+                audioMotion.minDecibels = -85;
+                audioMotion.maxDecibels = -15;
+                document.getElementById('bassBoost').value = 1.8;
+                document.getElementById('treble').value = 0.8;
+                document.getElementById('bassBoostValue').textContent = '1.8';
+                document.getElementById('trebleValue').textContent = '0.8';
+                document.getElementById('frequencyRange').value = 'bass';
+            }
+        });
+
+        document.getElementById('presetTreble').addEventListener('click', () => {
+            if (audioMotion) {
+                audioMotion.minDecibels = -60;
+                audioMotion.maxDecibels = -20;
+                document.getElementById('bassBoost').value = 0.7;
+                document.getElementById('treble').value = 1.7;
+                document.getElementById('bassBoostValue').textContent = '0.7';
+                document.getElementById('trebleValue').textContent = '1.7';
+                document.getElementById('frequencyRange').value = 'treble';
+            }
+        });
+
+        document.getElementById('presetVocal').addEventListener('click', () => {
+            if (audioMotion) {
+                audioMotion.minDecibels = -70;
+                audioMotion.maxDecibels = -25;
+                document.getElementById('bassBoost').value = 0.9;
+                document.getElementById('treble').value = 1.3;
+                document.getElementById('bassBoostValue').textContent = '0.9';
+                document.getElementById('trebleValue').textContent = '1.3';
+                document.getElementById('frequencyRange').value = 'mid';
+            }
+        });
+
+        function toggleUI() {
+            document.getElementById('controls').classList.toggle('hidden');
+        }
+
+        function togglePanels() {
+            document.getElementById('info').classList.toggle('hidden');
+            document.getElementById('shortcuts').classList.toggle('hidden');
+            document.getElementById('media-controls').classList.toggle('hidden');
+            document.getElementById('presets').classList.toggle('hidden');
+            document.getElementById('themeToggle').classList.toggle('hidden');
+        }
+
+        function toggleTheme() {
+            if (currentTheme === 'dark') {
+                document.body.classList.add('light-theme');
+                currentTheme = 'light';
+                document.getElementById('themeToggle').innerHTML = '<i class="fas fa-sun"></i>';
+            } else {
+                document.body.classList.remove('light-theme');
+                currentTheme = 'dark';
+                document.getElementById('themeToggle').innerHTML = '<i class="fas fa-moon"></i>';
+            }
+        }
+
+        function applyPreset(preset) {
+            if (!audioMotion) return;
+            
+            switch(preset) {
+                case 'default':
+                    audioMotion.mode = 10;
+                    audioMotion.gradient = 'classic';
+                    audioMotion.showPeaks = false;
+                    audioMotion.ledBars = false;
+                    audioMotion.lumiBars = false;
+                    audioMotion.alphaBars = false;
+                    audioMotion.reflexRatio = 0;
+                    audioMotion.radial = false;
+                    audioMotion.showScaleX = true;
+                    audioMotion.showScaleY = false;
+                    audioMotion.showBgColor = true;
+                    audioMotion.mirror = 0;
+                    audioMotion.outlineBars = false;
+                    audioMotion.linearAmplitude = false;
+                    audioMotion.weightingFilter = '';
+                    audioMotion.fadePeaks = false;
+                    audioMotion.roundBars = false;
+                    audioMotion.noteLabels = false;
+                    audioMotion.channelLayout = 'single';
+                    break;
+                    
+                case 'wave':
+                    audioMotion.mode = 10;
+                    audioMotion.gradient = 'ocean';
+                    audioMotion.showPeaks = true;
+                    audioMotion.ledBars = false;
+                    audioMotion.lumiBars = true;
+                    audioMotion.alphaBars = true;
+                    audioMotion.reflexRatio = 0.5;
+                    audioMotion.radial = false;
+                    audioMotion.showScaleX = false;
+                    audioMotion.showScaleY = false;
+                    audioMotion.showBgColor = true;
+                    audioMotion.mirror = 1;
+                    audioMotion.outlineBars = false;
+                    break;
+                    
+                case 'spectrum':
+                    audioMotion.mode = 4;
+                    audioMotion.gradient = 'rainbow';
+                    audioMotion.showPeaks = true;
+                    audioMotion.ledBars = true;
+                    audioMotion.lumiBars = false;
+                    audioMotion.alphaBars = false;
+                    audioMotion.reflexRatio = 0;
+                    audioMotion.radial = false;
+                    audioMotion.showScaleX = true;
+                    audioMotion.showScaleY = false;
+                    audioMotion.showBgColor = false;
+                    audioMotion.mirror = 0;
+                    audioMotion.outlineBars = true;
+                    break;
+                    
+                case 'nebula':
+                    audioMotion.mode = 10;
+                    audioMotion.gradient = 'prism';
+                    audioMotion.showPeaks = false;
+                    audioMotion.ledBars = false;
+                    audioMotion.lumiBars = true;
+                    audioMotion.alphaBars = true;
+                    audioMotion.reflexRatio = 0.3;
+                    audioMotion.radial = true;
+                    audioMotion.showScaleX = false;
+                    audioMotion.showScaleY = false;
+                    audioMotion.showBgColor = true;
+                    audioMotion.mirror = -1;
+                    audioMotion.outlineBars = false;
+                    audioMotion.smoothing = 0.7;
+                    break;
+                    
+                case 'fire':
+                    audioMotion.mode = 6;
+                    audioMotion.gradient = 'fire';
+                    audioMotion.showPeaks = false;
+                    audioMotion.ledBars = false;
+                    audioMotion.lumiBars = true;
+                    audioMotion.alphaBars = false;
+                    audioMotion.reflexRatio = 0.2;
+                    audioMotion.radial = false;
+                    audioMotion.showScaleX = false;
+                    audioMotion.showScaleY = false;
+                    audioMotion.showBgColor = true;
+                    audioMotion.mirror = 0;
+                    audioMotion.outlineBars = false;
+                    audioMotion.smoothing = 0.6;
+                    break;
+                    
+                case 'linear':
+                    audioMotion.mode = 0;
+                    audioMotion.gradient = 'ocean';
+                    audioMotion.linearAmplitude = true;
+                    audioMotion.showPeaks = false;
+                    audioMotion.ledBars = false;
+                    audioMotion.lumiBars = false;
+                    audioMotion.alphaBars = false;
+                    audioMotion.reflexRatio = 0.5;
+                    audioMotion.radial = false;
+                    audioMotion.showScaleX = false;
+                    audioMotion.showScaleY = false;
+                    audioMotion.showBgColor = false;
+                    audioMotion.mirror = 0;
+                    audioMotion.outlineBars = false;
+                    break;
+            }
+            
+            updateButtonStates();
+            document.getElementById('status').textContent = `Preset applied: ${preset}`;
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Check for Ctrl+M for microphone
+            if (e.ctrlKey && e.key.toLowerCase() === 'm') {
+                e.preventDefault();
+                document.getElementById('micBtn').click();
+                return;
+            }
+
+            switch(e.key.toLowerCase()) {
+                case ' ':
+                    e.preventDefault();
+                    if (audioElement && audioElement.src) {
+                        if (audioElement.paused) {
+                            audioElement.play();
+                        } else {
+                            audioElement.pause();
+                        }
+                    }
+                    break;
+                case 'x':
+                    document.getElementById('stopBtn').click();
+                    break;
+                case 'f':
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen();
+                    } else {
+                        document.exitFullscreen();
+                    }
+                    break;
+                case 'h':
+                    toggleUI();
+                    break;
+                case 'i':
+                    togglePanels();
+                    break;
+                case 't':
+                    toggleTheme();
+                    break;
+                case 'm':
+                    if (audioMotion) {
+                        const currentMode = parseInt(audioMotion.mode);
+                        // Skip mode 9 (reserved)
+                        let nextMode = (currentMode + 1) % 11;
+                        if (nextMode === 9) nextMode = 10;
+                        audioMotion.mode = nextMode;
+                        document.getElementById('modeSelect').value = audioMotion.mode;
+                    }
+                    break;
+                case 'g':
+                    if (audioMotion) {
+                        const gradients = ['classic', 'prism', 'rainbow', 'orangered', 'steelblue', 'neon', 'fire', 'ocean'];
+                        const currentIndex = gradients.indexOf(audioMotion.gradient);
+                        audioMotion.gradient = gradients[(currentIndex + 1) % gradients.length];
+                        document.getElementById('gradientSelect').value = audioMotion.gradient;
+                    }
+                    break;
+                case 'r':
+                    document.getElementById('toggleRadial').click();
+                    break;
+                case 'p':
+                    document.getElementById('togglePeaks').click();
+                    break;
+                case 'l':
+                    document.getElementById('toggleLeds').click();
+                    break;
+                case 'n':
+                    document.getElementById('toggleNotes').click();
+                    break;
+            }
+        });
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            setTimeout(initAnalyzer, 100);
+        });
+
+        // Handle fullscreen changes
+        document.addEventListener('fullscreenchange', () => {
+            const btn = document.getElementById('fullscreenBtn');
+            if (document.fullscreenElement) {
+                btn.innerHTML = '<i class="fas fa-compress"></i> Exit FS';
+                btn.classList.add('active');
+            } else {
+                btn.innerHTML = '<i class="fas fa-expand"></i> Fullscreen';
+                btn.classList.remove('active');
+            }
+        });
+
+        // Audio element event listeners
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (audioElement) {
+                    audioElement.addEventListener('loadstart', () => {
+                        document.getElementById('status').textContent = 'Loading...';
+                    });
+                    
+                    audioElement.addEventListener('canplay', () => {
+                        document.getElementById('status').textContent = 'Ready to play';
+                    });
+                    
+                    audioElement.addEventListener('loadedmetadata', () => {
+                        updateDuration();
+                    });
+                    
+                    audioElement.addEventListener('timeupdate', () => {
+                        updateProgress();
+                    });
+                    
+                    audioElement.addEventListener('ended', () => {
+                        document.getElementById('status').textContent = 'Playback ended';
+                        // Auto-play next track if available
+                        if (playlist.length > 0) {
+                            currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+                            loadTrack(currentTrackIndex);
+                        }
+                    });
+                    
+                    audioElement.addEventListener('error', (e) => {
+                        document.getElementById('status').textContent = 'Audio error';
+                        console.error('Audio error:', e);
+                    });
+                }
+            }, 200);
+        });
+
+        // Progress bar functionality
+        function updateProgress() {
+            if (audioElement && audioElement.duration) {
+                const progress = (audioElement.currentTime / audioElement.duration) * 100;
+                document.getElementById('progressFill').style.width = progress + '%';
+                document.getElementById('currentTime').textContent = formatTime(audioElement.currentTime);
+            }
+        }
+
+        function updateDuration() {
+            if (audioElement && audioElement.duration) {
+                document.getElementById('duration').textContent = formatTime(audioElement.duration);
+            }
+        }
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Progress bar click handler
+        document.getElementById('progressBar').addEventListener('click', (e) => {
+            if (audioElement && audioElement.duration) {
+                const rect = e.target.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const percentage = clickX / rect.width;
+                audioElement.currentTime = percentage * audioElement.duration;
+            }
+        });
+
+        // Register custom gradients
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (audioMotion) {
+                    // Register some custom gradients
+                    try {
+                        audioMotion.registerGradient('neon', {
+                            bgColor: '#000',
+                            colorStops: [
+                                '#ff00ff',
+                                '#00ffff',
+                                '#ffff00',
+                                '#ff0080'
+                            ]
+                        });
+                        
+                        audioMotion.registerGradient('fire', {
+                            bgColor: '#1a0000',
+                            colorStops: [
+                                '#ff0000',
+                                '#ff4500',
+                                '#ffa500',
+                                '#ffff00',
+                                '#ffffff'
+                            ]
+                        });
+                        
+                        audioMotion.registerGradient('ocean', {
+                            bgColor: '#000a1a',
+                            colorStops: [
+                                '#000080',
+                                '#0000ff',
+                                '#00bfff',
+                                '#00ffff',
+                                '#ffffff'
+                            ]
+                        });
+                        
+                    } catch (e) {
+                        console.log('Custom gradients not added:', e);
+                    }
+                }
+            }, 300);
+        });
+
+        // Error handling
+        window.addEventListener('error', (e) => {
+            console.error('Global error:', e.error);
+            document.getElementById('status').textContent = 'Error: ' + e.message;
+        });
+    </script>
+</body>
+</html>
