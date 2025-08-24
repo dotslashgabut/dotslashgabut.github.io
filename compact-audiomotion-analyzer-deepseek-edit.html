@@ -1563,6 +1563,39 @@
                     audioMotion.smoothing = 0.7;
                     break;
                     
+                case 'spectrum':
+                    audioMotion.mode = 4;
+                    audioMotion.gradient = 'rainbow';
+                    audioMotion.showPeaks = true;
+                    audioMotion.ledBars = true;
+                    audioMotion.lumiBars = false;
+                    audioMotion.alphaBars = false;
+                    audioMotion.reflexRatio = 0;
+                    audioMotion.radial = false;
+                    audioMotion.showScaleX = true;
+                    audioMotion.showScaleY = false;
+                    audioMotion.showBgColor = false;
+                    audioMotion.mirror = 0;
+                    audioMotion.outlineBars = true;
+                    break;
+                    
+                case 'nebula':
+                    audioMotion.mode = 10;
+                    audioMotion.gradient = 'prism';
+                    audioMotion.showPeaks = false;
+                    audioMotion.ledBars = false;
+                    audioMotion.lumiBars = true;
+                    audioMotion.alphaBars = true;
+                    audioMotion.reflexRatio = 0.3;
+                    audioMotion.radial = true;
+                    audioMotion.showScaleX = false;
+                    audioMotion.showScaleY = false;
+                    audioMotion.showBgColor = true;
+                    audioMotion.mirror = -1;
+                    audioMotion.outlineBars = false;
+                    audioMotion.smoothing = 0.7;
+                    break;
+                    
                 case 'fire':
                     audioMotion.mode = 6;
                     audioMotion.gradient = 'fire';
@@ -1818,36 +1851,4 @@
         });
     </script>
 </body>
-</html>ion.showScaleY = false;
-                    audioMotion.showBgColor = true;
-                    audioMotion.mirror = 1;
-                    audioMotion.outlineBars = false;
-                    break;
-                    
-                case 'spectrum':
-                    audioMotion.mode = 4;
-                    audioMotion.gradient = 'rainbow';
-                    audioMotion.showPeaks = true;
-                    audioMotion.ledBars = true;
-                    audioMotion.lumiBars = false;
-                    audioMotion.alphaBars = false;
-                    audioMotion.reflexRatio = 0;
-                    audioMotion.radial = false;
-                    audioMotion.showScaleX = true;
-                    audioMotion.showScaleY = false;
-                    audioMotion.showBgColor = false;
-                    audioMotion.mirror = 0;
-                    audioMotion.outlineBars = true;
-                    break;
-                    
-                case 'nebula':
-                    audioMotion.mode = 10;
-                    audioMotion.gradient = 'prism';
-                    audioMotion.showPeaks = false;
-                    audioMotion.ledBars = false;
-                    audioMotion.lumiBars = true;
-                    audioMotion.alphaBars = true;
-                    audioMotion.reflexRatio = 0.3;
-                    audioMotion.radial = true;
-                    audioMotion.showScaleX = false;
-                    audioMot
+</html>
