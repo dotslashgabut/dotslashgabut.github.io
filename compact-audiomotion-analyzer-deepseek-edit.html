@@ -384,6 +384,10 @@
             transform: translateY(20px);
         }
 
+        #loadBtn i {
+            margin: 0;
+        }
+
         .media-controls-bottom {
             display: flex;
             gap: 6px;
@@ -593,6 +597,29 @@
 
         .beat-indicator.active {
             opacity: 1;
+        }
+
+        /* Load button styling for media controls */
+        .load-btn {
+            background: linear-gradient(135deg, var(--success), #00a043);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            min-width: 40px;
+            height: 36px;
+        }
+
+        .load-btn:hover {
+            background: linear-gradient(135deg, #00a043, #008a37);
+            transform: translateY(-2px);
         }
 
         /* Responsive adjustments */
@@ -809,10 +836,14 @@
             <div class="section-title">
                 <i class="fas fa-gamepad"></i> Controls
             </div>
-            <div class="button-grid button-grid-3">
+            <div class="button-grid button-grid-2">
                 <button id="fullscreenBtn"><i class="fas fa-expand"></i> Fullscreen</button>
+                <button id="toggleAll"><i class="fas fa-eye"></i> Hide All (A)</button>
+            </div>
+            <div class="button-grid button-grid-3">
                 <button id="toggleControls"><i class="fas fa-eye"></i> Hide UI (H)</button>
                 <button id="togglePanels"><i class="fas fa-th"></i> Panels (I)</button>
+                <button id="togglePlayer"><i class="fas fa-play"></i> Player (P)</button>
             </div>
         </div>
 
@@ -837,6 +868,10 @@
                 <button id="pauseBtn" class="media-btn"><i class="fas fa-pause"></i></button>
                 <button id="stopBtn" class="media-btn"><i class="fas fa-stop"></i></button>
                 <button id="loopBtn" class="media-btn"><i class="fas fa-redo"></i></button>
+                <button id="loadBtn" class="media-btn">
+                    <i class="fas fa-folder-open"></i>
+                </button>
+                <input type="file" id="fileInputMedia" accept="audio/*" style="display:none;">
             </div>
             
             <div class="progress-container">
@@ -859,6 +894,7 @@
             <div class="shortcut"><span>Stop</span><kbd>X</kbd></div>
             <div class="shortcut"><span>Microphone</span><kbd>Ctrl+M</kbd></div>
             <div class="shortcut"><span>Fullscreen</span><kbd>F</kbd></div>
+            <div class="shortcut"><span>Hide All</span><kbd>A</kbd></div>
             <div class="shortcut"><span>Hide UI</span><kbd>H</kbd></div>
             <div class="shortcut"><span>Panels</span><kbd>I</kbd></div>
             <div class="shortcut"><span>Mode</span><kbd>M</kbd></div>
@@ -1025,9 +1061,18 @@
             document.getElementById('loopBtn').classList.toggle('active', audioElement.loop);
         }
 
-        // File input handler
+        // File input handler for main controls
         document.getElementById('fileInput').addEventListener('change', (e) => {
-            const file = e.target.files[0];
+            handleFileLoad(e.target.files[0]);
+        });
+
+        // File input handler for media controls
+        document.getElementById('fileInputMedia').addEventListener('change', (e) => {
+            handleFileLoad(e.target.files[0]);
+        });
+
+        // Shared file loading function
+        function handleFileLoad(file) {
             if (file && audioElement) {
                 const url = URL.createObjectURL(file);
                 audioElement.src = url;
@@ -1049,7 +1094,7 @@
                     console.error('Play error:', err);
                 });
             }
-        });
+        }
 
         // Media controls
         document.getElementById('playBtn').addEventListener('click', () => {
@@ -1086,6 +1131,10 @@
                 this.classList.toggle('active', audioElement.loop);
                 document.getElementById('status').textContent = audioElement.loop ? 'Loop enabled' : 'Loop disabled';
             }
+        });
+
+        document.getElementById('loadBtn').addEventListener('click', () => {
+            document.getElementById('fileInputMedia').click();
         });
 
         document.getElementById('prevBtn').addEventListener('click', () => {
@@ -1333,6 +1382,11 @@
             }
         });
 
+        // Toggle controls & panels visibility
+        document.getElementById('toggleAll').addEventListener('click', () => {
+            toggleAll();
+        });
+
         // Toggle controls visibility
         document.getElementById('toggleControls').addEventListener('click', () => {
             toggleUI();
@@ -1341,6 +1395,11 @@
         // Toggle panels visibility (info, shortcuts, media-controls, presets)
         document.getElementById('togglePanels').addEventListener('click', () => {
             togglePanels();
+        });
+        
+        // Toggle player visibility (media-controls)
+        document.getElementById('togglePlayer').addEventListener('click', () => {
+            togglePlayer();
         });
 
         // Theme toggle
@@ -1424,10 +1483,27 @@
             document.getElementById('controls').classList.toggle('hidden');
         }
 
+        function toggleAll() {
+            document.getElementById('controls').classList.toggle('hidden');
+            document.getElementById('info').classList.toggle('hidden');
+            document.getElementById('shortcuts').classList.toggle('hidden');
+            document.getElementById('media-controls').classList.toggle('hidden');
+            document.getElementById('presets').classList.toggle('hidden');
+            document.getElementById('themeToggle').classList.toggle('hidden');
+        }
+
         function togglePanels() {
             document.getElementById('info').classList.toggle('hidden');
             document.getElementById('shortcuts').classList.toggle('hidden');
             document.getElementById('media-controls').classList.toggle('hidden');
+            document.getElementById('presets').classList.toggle('hidden');
+            document.getElementById('themeToggle').classList.toggle('hidden');
+        }
+        
+        function togglePlayer() {
+            document.getElementById('controls').classList.toggle('hidden');
+            document.getElementById('info').classList.toggle('hidden');
+            document.getElementById('shortcuts').classList.toggle('hidden');
             document.getElementById('presets').classList.toggle('hidden');
             document.getElementById('themeToggle').classList.toggle('hidden');
         }
@@ -1479,38 +1555,6 @@
                     audioMotion.alphaBars = true;
                     audioMotion.reflexRatio = 0.5;
                     audioMotion.radial = false;
-                    audioMotion.showScaleX = false;
-                    audioMotion.showScaleY = false;
-                    audioMotion.showBgColor = true;
-                    audioMotion.mirror = 1;
-                    audioMotion.outlineBars = false;
-                    break;
-                    
-                case 'spectrum':
-                    audioMotion.mode = 4;
-                    audioMotion.gradient = 'rainbow';
-                    audioMotion.showPeaks = true;
-                    audioMotion.ledBars = true;
-                    audioMotion.lumiBars = false;
-                    audioMotion.alphaBars = false;
-                    audioMotion.reflexRatio = 0;
-                    audioMotion.radial = false;
-                    audioMotion.showScaleX = true;
-                    audioMotion.showScaleY = false;
-                    audioMotion.showBgColor = false;
-                    audioMotion.mirror = 0;
-                    audioMotion.outlineBars = true;
-                    break;
-                    
-                case 'nebula':
-                    audioMotion.mode = 10;
-                    audioMotion.gradient = 'prism';
-                    audioMotion.showPeaks = false;
-                    audioMotion.ledBars = false;
-                    audioMotion.lumiBars = true;
-                    audioMotion.alphaBars = true;
-                    audioMotion.reflexRatio = 0.3;
-                    audioMotion.radial = true;
                     audioMotion.showScaleX = false;
                     audioMotion.showScaleY = false;
                     audioMotion.showBgColor = true;
@@ -1588,11 +1632,17 @@
                         document.exitFullscreen();
                     }
                     break;
+                case 'a':
+                    toggleAll();
+                    break;
                 case 'h':
                     toggleUI();
                     break;
                 case 'i':
                     togglePanels();
+                    break;
+                case 'p':
+                    togglePlayer();
                     break;
                 case 't':
                     toggleTheme();
@@ -1768,4 +1818,36 @@
         });
     </script>
 </body>
-</html>
+</html>ion.showScaleY = false;
+                    audioMotion.showBgColor = true;
+                    audioMotion.mirror = 1;
+                    audioMotion.outlineBars = false;
+                    break;
+                    
+                case 'spectrum':
+                    audioMotion.mode = 4;
+                    audioMotion.gradient = 'rainbow';
+                    audioMotion.showPeaks = true;
+                    audioMotion.ledBars = true;
+                    audioMotion.lumiBars = false;
+                    audioMotion.alphaBars = false;
+                    audioMotion.reflexRatio = 0;
+                    audioMotion.radial = false;
+                    audioMotion.showScaleX = true;
+                    audioMotion.showScaleY = false;
+                    audioMotion.showBgColor = false;
+                    audioMotion.mirror = 0;
+                    audioMotion.outlineBars = true;
+                    break;
+                    
+                case 'nebula':
+                    audioMotion.mode = 10;
+                    audioMotion.gradient = 'prism';
+                    audioMotion.showPeaks = false;
+                    audioMotion.ledBars = false;
+                    audioMotion.lumiBars = true;
+                    audioMotion.alphaBars = true;
+                    audioMotion.reflexRatio = 0.3;
+                    audioMotion.radial = true;
+                    audioMotion.showScaleX = false;
+                    audioMot
