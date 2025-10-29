@@ -442,6 +442,8 @@
             <div class="shortcut"><span>Next Mode</span><kbd>M</kbd></div>
             <div class="shortcut"><span>Gradient</span><kbd>G</kbd></div>
             <div class="shortcut"><span>Radial</span><kbd>R</kbd></div>
+            <div class="shortcut"><span>Peaks</span><kbd>E</kbd></div>
+            <div class="shortcut"><span>Random Preset</span><kbd>P</kbd></div>
         </div>
     </div>
 
@@ -917,7 +919,7 @@
                 case 'r':
                     document.getElementById('toggleRadial').click();
                     break;
-                case 'p':
+                case 'e':
                     document.getElementById('togglePeaks').click();
                     break;
                 case 'l':
@@ -925,6 +927,9 @@
                     break;
                 case 'n':
                     document.getElementById('toggleNotes').click();
+                    break;
+                case 'p':
+                    randomizePreset();
                     break;
             }
         });
