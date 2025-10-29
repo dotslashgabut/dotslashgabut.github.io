@@ -392,10 +392,11 @@
                 <button id="toggleWeight">Weight</button>
             </div>
 
-            <div class="button-grid-3">
+            <div class="button-grid-4">
                 <button id="toggleFade">FadePks</button>
                 <button id="toggleRound">Round</button>
                 <button id="toggleNotes">Notes</button>
+                <button onclick="randomizePreset()">Random</button>
             </div>
 
             <div class="section-title">Controls</div>
@@ -552,6 +553,37 @@
             document.getElementById('toggleFade').classList.toggle('active', audioMotion.fadePeaks);
             document.getElementById('toggleRound').classList.toggle('active', audioMotion.roundBars);
             document.getElementById('toggleNotes').classList.toggle('active', audioMotion.noteLabels);
+        }
+        
+        function randomizePreset() {
+            // Define randomizable properties and their possible values
+            const modes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 10];
+            const gradients = ['classic', 'prism', 'rainbow', 'steelblue', 'orangered'];
+            const channelLayouts = ['single', 'dual-combined', 'dual-horizontal', 'dual-vertical'];
+            const frequencyScales = ['log', 'linear', 'bark', 'mel'];
+            const weightingFilters = ['', 'A', 'B', 'C', 'D', '468'];
+        
+            // Generate a random preset object
+            const randomPreset = {
+                mode: modes[Math.floor(Math.random() * modes.length)],
+                gradient: gradients[Math.floor(Math.random() * gradients.length)],
+                channelLayout: channelLayouts[Math.floor(Math.random() * channelLayouts.length)],
+                frequencyScale: frequencyScales[Math.floor(Math.random() * frequencyScales.length)],
+                weightingFilter: weightingFilters[Math.floor(Math.random() * weightingFilters.length)],
+                lumiBars: Math.random() > 0.5,
+                ledBars: Math.random() > 0.5,
+                outlineBars: Math.random() > 0.5,
+                radial: Math.random() > 0.2, // Less frequent
+                mirror: Math.random() > 0.8 ? 1 : 0, // Less frequent
+                spinSpeed: Math.random() > 0.9 ? Math.floor(Math.random() * 10) - 5 : 0, // Rare, between -5 and 5
+                reflexRatio: Math.random() > 0.7 ? Math.random() * 0.5 : 0, // 0 to 0.5
+                barSpace: Math.random() * 0.5, // 0 to 0.5
+                linearBoost: 1 + Math.random() * 4 // 1 to 5
+            };
+        
+            // Apply the random preset
+            audioMotion.setOptions(randomPreset);
+            console.log("New random preset applied:", randomPreset);
         }
 
         // File input handler
