@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compact AudioMotion Analyzer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0a0a0a; color: #ffffff; overflow: hidden; }
+        #container { width: 100vw; height: 100vh; position: relative; }
+        #analyzer { width: 100%; height: 100%; }
+        
+        /* Tab Navigation Styles */
+        .tab-nav {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 4px 8px;
+            background: #222;
+            border: none;
+            border-bottom: 2px solid transparent;
+            border-radius: 4px 4px 0 0;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .tab-btn:hover {
+            background: #333;
+        }
+        
+        .tab-btn.active {
+            background: #1a73e8;
+            border-bottom-color: #00bfff;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+
+        #controls {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 10px;
+            border-radius: 8px;
+            backdrop-filter: blur(15px);
+            transition: opacity 0.3s;
+            z-index: 10;
+            width: 340px;
+            border: 1px solid rgba(255,255,255,0.1);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        #controls.hidden, #info.hidden, #shortcuts.hidden, #media-controls.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .control-group { margin-bottom: 8px; }
+        .control-row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+        label { display: block; font-size: 11px; color: #bbb; font-weight: 500; }
+        .inline-label { font-size: 10px; color: #bbb; min-width: 55px; margin: 0; }
+        input[type="file"] { display: none; }
+        .file-label { display: inline-block; padding: 8px 12px; background: linear-gradient(135deg, #1a73e8, #1557b0); color: white; border-radius: 6px; cursor: pointer; transition: all 0.3s; font-size: 11px; text-align: center; width: 100%; border: 1px solid #1a73e8; }
+        .file-label:hover { background: linear-gradient(135deg, #1557b0, #0f4c8c); transform: translateY(-1px); }
+        select, input[type="range"] { flex: 1; padding: 5px; background: #222; color: white; border: 1px solid #444; border-radius: 4px; cursor: pointer; font-size: 10px; }
+        input[type="range"] { padding: 0; height: 20px; }
+        .range-value { font-size: 10px; color: #bbb; min-width: 35px; text-align: center; }
+        button { padding: 5px 8px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer; transition: all 0.3s; font-size: 10px; flex: 1; min-height: 28px; }
+        button:hover { background: #555; transform: translateY(-1px); }
+        button.active { background: linear-gradient(135deg, #1a73e8, #1557b0); box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3); }
+        .button-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 6px; }
+        .button-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-bottom: 6px; }
+        .button-grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px; margin-bottom: 6px; }
+        .media-controls { display: flex; gap: 4px; margin-bottom: 8px; }
+        .media-btn { padding: 6px 10px; font-size: 11px; font-weight: bold; background: linear-gradient(135deg, #333, #444); }
+        #info { position: absolute; bottom: 30px; left: 15px; background: rgba(0, 0, 0, 0.9); padding: 8px 12px; border-radius: 6px; font-size: 10px; backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 15px; }
+        .info-section { display: flex; flex-direction: column; gap: 2px; }
+        #media-controls { position: absolute; bottom: 30px; right: 15px; background: rgba(0, 0, 0, 0.9); padding: 8px 12px; border-radius: 6px; font-size: 10px; backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 15px; }
+        .media-controls-bottom { display: flex; gap: 4px; align-items: center; }
+        #progressBar { width: 120px; height: 4px; background: #333; border-radius: 2px; cursor: pointer; position: relative; border: 1px solid #555; }
+        #progressFill { height: 100%; background: linear-gradient(90deg, #1a73e8, #00bfff); border-radius: 2px; width: 0%; transition: width 0.1s; }
+        .time-display { font-size: 9px; color: #aaa; min-width: 35px; text-align: center; }
+        #shortcuts { position: absolute; top: 15px; right: 15px; background: rgba(0, 0, 0, 0.9); padding: 8px 10px; border-radius: 6px; font-size: 10px; backdrop-filter: blur(15px); min-width: 120px; max-width: 160px; border: 1px solid rgba(255,255,255,0.1); }
+        .shortcut { margin-bottom: 2px; color: #bbb; display: flex; justify-content: space-between; }
+        .shortcut kbd { background: #333; padding: 1px 4px; border-radius: 2px; font-size: 9px; }
+        .section-title { font-size: 11px; color: #1a73e8; margin: 8px 0 4px 0; font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 2px; }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="analyzer"></div>
+        
+        <div id="controls">
+            <!-- Tab Navigation -->
+            <div class="tab-nav">
+                <button class="tab-btn active" data-tab="main">Main</button>
+                <button class="tab-btn" data-tab="effects">Effects</button>
+                <button class="tab-btn" data-tab="radial">Radial</button>
+                <button class="tab-btn" data-tab="advanced">Advanced</button>
+            </div>
+            
+            <!-- Main Tab -->
+            <div class="tab-content active" id="main-tab">
+                <div class="button-grid-2">
+                    <label for="fileInput" class="file-label">📁 Load Audio File</label>
+                    <input type="file" id="fileInput" accept="audio/*">
+                    <button id="micBtn" class="file-label">🎤 Microphone</button>
+                </div>
+
+                <div class="control-group">
+                    <label>Mode</label>
+                    <select id="modeSelect">
+                        <option value="0">Discrete frequencies</option>
+                        <option value="1">1/24th octave (240 bands)</option>
+                        <option value="2">1/12th octave (120 bands)</option>
+                        <option value="3">1/8th octave (80 bands)</option>
+                        <option value="4">1/6th octave (60 bands)</option>
+                        <option value="5">1/4th octave (40 bands)</option>
+                        <option value="6">1/3rd octave (30 bands)</option>
+                        <option value="7">Half octave (20 bands)</option>
+                        <option value="8">Full octave (10 bands)</option>
+                        <option value="10" selected>Graph</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Gradient</label>
+                    <select id="gradientSelect">
+                        <option value="classic">Classic</option>
+                        <option value="prism">Prism</option>
+                        <option value="rainbow">Rainbow</option>
+                        <option value="orangered">Orange-Red</option>
+                        <option value="steelblue">Steel Blue</option>
+                    </select>
+                </div>
+
+                <div class="control-row">
+                    <label class="inline-label">Sensitivity</label>
+                    <input type="range" id="sensitivity" min="0.1" max="3" step="0.1" value="1">
+                    <span class="range-value" id="sensitivityValue">1.0</span>
+                </div>
+
+                <div class="control-row">
+                    <label class="inline-label">Smoothing</label>
+                    <input type="range" id="smoothing" min="0" max="0.9" step="0.1" value="0.5">
+                    <span class="range-value" id="smoothingValue">0.5</span>
+                </div>
+
+                <div class="control-row">
+                    <label class="inline-label">Volume</label>
+                    <input type="range" id="volume" min="0" max="2" step="0.1" value="1">
+                    <span class="range-value" id="volumeValue">1.0</span>
+                </div>
+            </div>
+
+            <!-- Effects Tab -->
+            <div class="tab-content" id="effects-tab">
+                <div class="section-title">Visual Effects</div>
+                <div class="button-grid-4">
+                    <button id="togglePeaks">Peaks</button>
+                    <button id="toggleLeds">LEDs</button>
+                    <button id="toggleLumi">Lumi</button>
+                    <button id="toggleAlpha">Alpha</button>
+                </div>
+
+                <div class="button-grid-4">
+                    <button id="toggleReflex">Reflex</button>
+                    <button id="toggleMirror">Mirror</button>
+                    <button id="toggleOutline">Outline</button>
+                    <button id="toggleFade">FadePks</button>
+                </div>
+
+                <div class="control-row">
+                    <label class="inline-label">Reflex Alpha</label>
+                    <input type="range" id="reflexAlpha" min="0" max="1" step="0.05" value="0.15">
+                    <span class="range-value" id="reflexAlphaValue">0.15</span>
+                </div>
+                
+                <div class="control-row">
+                    <label class="inline-label">Reflex Bright</label>
+                    <input type="range" id="reflexBright" min="0.5" max="2" step="0.1" value="1">
+                    <span class="range-value" id="reflexBrightValue">1.0</span>
+                </div>
+
+                <div class="control-row">
+                    <label class="inline-label">LED Height</label>
+                    <input type="range" id="ledHeight" min="0" max="1" step="0.05" value="0">
+                    <span class="range-value" id="ledHeightValue">0.0</span>
+                </div>
+
+                <div class="control-row">
+                    <label class="inline-label">Gravity</label>
+                    <input type="range" id="gravity" min="0" max="10" step="0.1" value="3.8">
+                    <span class="range-value" id="gravityValue">3.8</span>
+                </div>
+
+                <div class="control-row">
+                    <label class="inline-label">Peak Hold</label>
+                    <input type="range" id="peakHoldTime" min="0" max="5000" step="100" value="0">
+                    <span class="range-value" id="peakHoldTimeValue">0ms</span>
+                </div>
+
+                <div class="button-grid-3">
+                    <button id="toggleScaleX" class="active">Scale X</button>
+                    <button id="toggleScaleY">Scale Y</button>
+                    <button id="toggleBgColor" class="active">BG Color</button>
+                </div>
+
+                <div class="button-grid-3">
+                    <button id="toggleFreqLabels">Freq Labels</button>
+                    <button id="toggleRound">Round</button>
+                    <button id="toggleNotes">Notes</button>
+                </div>
+            </div>
+
+            <!-- Radial Tab -->
+            <div class="tab-content" id="radial-tab">
+                <div class="control-row">
+                    <label class="inline-label">Spin Speed</label>
+                    <input type="range" id="spinSpeed" min="-5" max="5" step="0.5" value="0">
+                    <span class="range-value" id="spinSpeedValue">0.0</span>
+                </div>
+
+                <div class="button-grid-2">
+                    <button id="toggleRadial">Enable Radial</button>
+                    <button id="toggleRadialInvert">Invert</button>
+                </div>
+
+                <div class="button-grid-2">
+                    <button id="toggleShowChannels">Show Channels</button>
+                    <button id="toggleLoRes">Lo-Res</button>
+                </div>
+
+                <div class="section-title">Frequency Range</div>
+                <div class="control-row">
+                    <label class="inline-label">Min Hz</label>
+                    <input type="range" id="minFreq" min="20" max="5000" step="10" value="20">
+                    <span class="range-value" id="minFreqValue">20</span>
+                </div>
+                <div class="control-row">
+                    <label class="inline-label">Max Hz</label>
+                    <input type="range" id="maxFreq" min="2000" max="24000" step="100" value="22000">
+                    <span class="range-value" id="maxFreqValue">22000</span>
+                </div>
+            </div>
+
+            <!-- Advanced Tab -->
+            <div class="tab-content" id="advanced-tab">
+                <div class="button-grid-3">
+                    <button id="toggleStereo">Stereo</button>
+                    <button id="toggleLinear">Linear</button>
+                    <button id="toggleWeight">Weight</button>
+                </div>
+
+                <div class="button-grid-2">
+                    <button id="toggleDcBlock" class="active">DC Block</button>
+                    <button onclick="randomizePreset()">Random Preset</button>
+                </div>
+
+                <div class="section-title">Controls</div>
+                <div class="button-grid-3">
+                    <button id="fullscreenBtn">Fullscreen</button>
+                    <button id="toggleControls">Hide UI (H)</button>
+                    <button id="togglePanels">Hide Panels (I)</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="info">
+            <div class="info-section">
+                <div>FPS: <span id="fps">0</span></div>
+                <div>Energy: <span id="energy">0.00</span></div>
+                <div>Peak: <span id="peakFreq">0</span> Hz</div>
+                <div>Status: <span id="status">Ready</span></div>
+            </div>
+        </div>
+            
+        <div id="media-controls">
+            <div class="media-controls-bottom">
+                <button id="playBtn" class="media-btn">▶️</button>
+                <button id="pauseBtn" class="media-btn">⏸️</button>
+                <button id="stopBtn" class="media-btn">⏹️</button>
+            </div>
+            
+            <div class="progress-container">
+                <div class="time-display" id="currentTime">0:00</div>
+                <div id="progressBar">
+                    <div id="progressFill"></div>
+                </div>
+                <div class="time-display" id="duration">0:00</div>
+            </div>
+        </div>
+
+        <div id="shortcuts">
+            <div class="shortcut"><span>Play/Pause</span><kbd>Space</kbd></div>
+            <div class="shortcut"><span>Stop</span><kbd>X</kbd></div>
+            <div class="shortcut"><span>Microphone</span><kbd>Ctrl+M</kbd></div>
+            <div class="shortcut"><span>Fullscreen</span><kbd>F</kbd></div>
+            <div class="shortcut"><span>Hide UI</span><kbd>H</kbd></div>
+            <div class="shortcut"><span>Hide Panels</span><kbd>I</kbd></div>
+            <div class="shortcut"><span>Next Mode</span><kbd>M</kbd></div>
+            <div class="shortcut"><span>Gradient</span><kbd>G</kbd></div>
+            <div class="shortcut"><span>Radial</span><kbd>R</kbd></div>
+            <div class="shortcut"><span>Peaks</span><kbd>E</kbd></div>
+            <div class="shortcut"><span>Freq Labels</span><kbd>L</kbd></div>
+            <div class="shortcut"><span>Spin Speed</span><kbd>↑/↓</kbd></div>
+            <div class="shortcut"><span>Random Preset</span><kbd>P</kbd></div>
+        </div>
+    </div>
+
+    <script src="script/audiomotion-analyzer.js"></script>
+    <script>
+        let audioMotion;
+        let audioElement;
+        let micStream;
+
+        // Initialize the analyzer
+        function initAnalyzer() {
+            try {
+                if (typeof AudioMotionAnalyzer === 'undefined') {
+                    throw new Error('AudioMotionAnalyzer library not loaded. Check internet connection.');
+                }
+
+                audioMotion = new AudioMotionAnalyzer(
+                    document.getElementById('analyzer'),
+                    {
+                        mode: 10,
+                        gradient: 'classic',
+                        showScaleX: true,
+                        showScaleY: false,
+                        showPeaks: false,
+                        showBgColor: true,
+                        smoothing: 0.5,
+                        reflexRatio: 0,
+                        reflexAlpha: 0.15,
+                        reflexBright: 1,
+                        ledBars: false,
+                        lumiBars: false,
+                        alphaBars: false,
+                        channelLayout: 'single',
+                        frequencyScale: 'log',
+                        showFPS: false,
+                        bgAlpha: 0.7,
+                        fillAlpha: 1,
+                        lineWidth: 2,
+                        mirror: 0,
+                        outlineBars: false,
+                        radial: false,
+                        weightingFilter: '',
+                        volume: 1,
+                        minDecibels: -85,
+                        maxDecibels: -25,
+                        barSpace: 0.1,
+                        gravity: 3.8,
+                        fadePeaks: false,
+                        roundBars: false,
+                        noteLabels: false,
+                        linearAmplitude: false,
+                        minFreq: 20,
+                        maxFreq: 22000,
+                        showFreq: true,
+                        freqLabelScale: 'log',
+                        spinSpeed: 0,
+                        radialInvert: false,
+                        showChannels: false,
+                        loRes: false,
+                        dcBlock: true,
+                        peakHoldTime: 0,
+                        ledHeight: 0,
+                        onCanvasDraw: (instance) => {
+                            // Update info display
+                            document.getElementById('fps').textContent = Math.round(instance.fps);
+                            document.getElementById('energy').textContent = instance.getEnergy().toFixed(2);
+                            
+                            // Get peak frequency
+                            try {
+                                const bars = instance.getBars();
+                                if (bars && bars.length > 0) {
+                                    let maxBar = bars[0];
+                                    for (let bar of bars) {
+                                        if (bar.value[0] > maxBar.value[0]) {
+                                            maxBar = bar;
+                                        }
+                                    }
+                                    document.getElementById('peakFreq').textContent = Math.round(maxBar.freq);
+                                }
+                            } catch (e) {
+                                // Fallback if getBars() fails
+                            }
+                        }
+                    }
+                );
+
+                // Create audio element
+                audioElement = new Audio();
+                audioElement.crossOrigin = "anonymous";
+                
+                // Connect audio to analyzer
+                audioMotion.connectInput(audioElement);
+
+                // Set initial button states
+                updateButtonStates();
+                
+                document.getElementById('status').textContent = 'Ready - Load audio file';
+                console.log('AudioMotion analyzer initialized successfully');
+
+            } catch (error) {
+                console.error('Error initializing audioMotion:', error);
+                document.getElementById('status').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        function updateButtonStates() {
+            if (!audioMotion) return;
+            
+            // Update all button states based on current audioMotion settings
+            document.getElementById('togglePeaks').classList.toggle('active', audioMotion.showPeaks);
+            document.getElementById('toggleLeds').classList.toggle('active', audioMotion.ledBars);
+            document.getElementById('toggleLumi').classList.toggle('active', audioMotion.lumiBars);
+            document.getElementById('toggleAlpha').classList.toggle('active', audioMotion.alphaBars);
+            document.getElementById('toggleReflex').classList.toggle('active', audioMotion.reflexRatio > 0);
+            document.getElementById('toggleRadial').classList.toggle('active', audioMotion.radial);
+            document.getElementById('toggleScaleX').classList.toggle('active', audioMotion.showScaleX);
+            document.getElementById('toggleScaleY').classList.toggle('active', audioMotion.showScaleY);
+            document.getElementById('toggleBgColor').classList.toggle('active', audioMotion.showBgColor);
+            document.getElementById('toggleStereo').classList.toggle('active', audioMotion.channelLayout !== 'single');
+            document.getElementById('toggleMirror').classList.toggle('active', audioMotion.mirror !== 0);
+            document.getElementById('toggleOutline').classList.toggle('active', audioMotion.outlineBars);
+            document.getElementById('toggleLinear').classList.toggle('active', audioMotion.linearAmplitude);
+            document.getElementById('toggleWeight').classList.toggle('active', audioMotion.weightingFilter !== '');
+            document.getElementById('toggleFade').classList.toggle('active', audioMotion.fadePeaks);
+            document.getElementById('toggleRound').classList.toggle('active', audioMotion.roundBars);
+            document.getElementById('toggleNotes').classList.toggle('active', audioMotion.noteLabels);
+            document.getElementById('toggleRadialInvert').classList.toggle('active', audioMotion.radialInvert);
+            document.getElementById('toggleShowChannels').classList.toggle('active', audioMotion.showChannels);
+            document.getElementById('toggleLoRes').classList.toggle('active', audioMotion.loRes);
+            document.getElementById('toggleDcBlock').classList.toggle('active', audioMotion.dcBlock);
+            document.getElementById('toggleFreqLabels').classList.toggle('active', audioMotion.showFreq);
+        }
+        
+        // FIXED: Added null check and global scope
+        window.randomizePreset = function() {
+            if (!audioMotion) {
+                document.getElementById('status').textContent = 'Analyzer not ready yet';
+                return;
+            }
+            
+            // Define randomizable properties and their possible values
+            const modes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 10];
+            const gradients = ['classic', 'prism', 'rainbow', 'steelblue', 'orangered'];
+            const channelLayouts = ['single', 'dual-combined', 'dual-horizontal', 'dual-vertical'];
+            const frequencyScales = ['log', 'linear', 'bark', 'mel'];
+            const weightingFilters = ['', 'A', 'B', 'C', 'D', '468'];
+        
+            // Generate a random preset object
+            const randomPreset = {
+                mode: modes[Math.floor(Math.random() * modes.length)],
+                gradient: gradients[Math.floor(Math.random() * gradients.length)],
+                channelLayout: channelLayouts[Math.floor(Math.random() * channelLayouts.length)],
+                frequencyScale: frequencyScales[Math.floor(Math.random() * frequencyScales.length)],
+                weightingFilter: weightingFilters[Math.floor(Math.random() * weightingFilters.length)],
+                lumiBars: Math.random() > 0.5,
+                ledBars: Math.random() > 0.5,
+                outlineBars: Math.random() > 0.5,
+                radial: Math.random() > 0.2, // Less frequent
+                mirror: Math.random() > 0.8 ? 1 : 0, // Less frequent
+                spinSpeed: Math.random() > 0.9 ? Math.floor(Math.random() * 10) - 5 : 0, // Rare, between -5 and 5
+                reflexRatio: Math.random() > 0.7 ? Math.random() * 0.5 : 0, // 0 to 0.5
+                barSpace: Math.random() * 0.5, // 0 to 0.5
+                linearBoost: 1 + Math.random() * 4, // 1 to 5
+                minFreq: Math.floor(Math.random() * 1000) + 20, // 20-1020 Hz
+                maxFreq: Math.floor(Math.random() * 20000) + 2000, // 2000-22000 Hz
+                radialInvert: Math.random() > 0.7,
+                showChannels: Math.random() > 0.7,
+                loRes: Math.random() > 0.8,
+                peakHoldTime: Math.random() > 0.6 ? Math.floor(Math.random() * 5000) : 0,
+                gravity: Math.random() * 10
+            };
+        
+            // Apply the random preset
+            audioMotion.setOptions(randomPreset);
+            updateButtonStates();
+            document.getElementById('status').textContent = 'Random preset applied!';
+            console.log("New random preset applied:", randomPreset);
+        }
+
+        // File input handler
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && audioElement) {
+                const url = URL.createObjectURL(file);
+                audioElement.src = url;
+                document.getElementById('status').textContent = 'Loaded: ' + file.name;
+            } else if (!audioElement) {
+                document.getElementById('status').textContent = 'Error: Audio system not ready';
+            }
+        });
+
+        // Media controls
+        document.getElementById('playBtn').addEventListener('click', () => {
+            if (!audioElement) {
+                document.getElementById('status').textContent = 'Error: Audio not initialized';
+                return;
+            }
+            if (audioElement.src) {
+                audioElement.play().then(() => {
+                    document.getElementById('status').textContent = 'Playing';
+                }).catch(err => {
+                    console.error('Play error:', err);
+                    document.getElementById('status').textContent = 'Play error: ' + err.message;
+                });
+            } else {
+                document.getElementById('status').textContent = 'No audio loaded';
+            }
+        });
+
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            if (audioElement) {
+                audioElement.pause();
+                document.getElementById('status').textContent = 'Paused';
+            }
+        });
+
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            if (audioElement) {
+                audioElement.pause();
+                audioElement.currentTime = 0;
+                document.getElementById('status').textContent = 'Stopped';
+            }
+        });
+
+        // Microphone input
+        document.getElementById('micBtn').addEventListener('click', async () => {
+            if (!audioMotion) {
+                document.getElementById('status').textContent = 'Error: Analyzer not ready';
+                return;
+            }
+            
+            if (micStream) {
+                // Stop microphone
+                micStream.getTracks().forEach(track => track.stop());
+                audioMotion.disconnectInput(micStream);
+                micStream = null;
+                document.getElementById('micBtn').classList.remove('active');
+                document.getElementById('status').textContent = 'Microphone off';
+            } else {
+                try {
+                    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+                    // ✅ Create AudioNode from MediaStream
+                    const micSource = audioMotion.audioCtx.createMediaStreamSource(micStream);
+        
+                    // Connect to analyzer
+                    audioMotion.connectInput(micSource);
+                    document.getElementById('micBtn').classList.add('active');
+                    document.getElementById('status').textContent = 'Microphone active';
+                } catch (err) {
+                    console.error('Microphone error:', err);
+                    document.getElementById('status').textContent = 'Mic error: ' + err.message;
+                }
+            }
+        });
+
+        // Tab switching functionality
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tabName = e.target.dataset.tab;
+                
+                // Update active tab button
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                // Update active tab content
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                document.getElementById(tabName + '-tab').classList.add('active');
+            });
+        });
+
+        // All other event listeners...
+        // Mode selector
+        document.getElementById('modeSelect').addEventListener('change', (e) => {
+            if (audioMotion) {
+                audioMotion.mode = parseInt(e.target.value);
+            }
+        });
+
+        // Gradient selector
+        document.getElementById('gradientSelect').addEventListener('change', (e) => {
+            if (audioMotion) {
+                audioMotion.gradient = e.target.value;
+            }
+        });
+
+        // Sensitivity control
+        document.getElementById('sensitivity').addEventListener('input', (e) => {
+            if (audioMotion) {
+                const value = parseFloat(e.target.value);
+                audioMotion.setSensitivity(-85 + (1 - value) * 35, -25 + (value - 1) * 15);
+                document.getElementById('sensitivityValue').textContent = value.toFixed(1);
+            }
+        });
+
+        // Smoothing control
+        document.getElementById('smoothing').addEventListener('input', (e) => {
+            if (audioMotion) {
+                audioMotion.smoothing = parseFloat(e.target.value);
+                document.getElementById('smoothingValue').textContent = e.target.value;
+            }
+        });
+
+        // Volume control
+        document.getElementById('volume').addEventListener('input', (e) => {
+            if (audioMotion) {
+                audioMotion.volume = parseFloat(e.target.value);
+                document.getElementById('volumeValue').textContent = e.target.value;
+            }
+        });
+
+        // Frequency Range controls
+        document.getElementById('minFreq').addEventListener('input', (e) => {
+            if (audioMotion) {
+                audioMotion.minFreq = parseInt(e.target.value);
+                document.getElementById('minFreqValue').textContent = e.target.value;
+            }
+        });
+
+        document.getElementById('maxFreq').addEventListener('input', (e) => {
+            if (audioMotion) {
+                audioMotion.maxFreq = parseInt(e.target.value);
+                document.getElementById('maxFreqValue').textContent = e.target.value;
+            }
+        });
+
+        // Spin Speed control
+        document.getElementById('spinSpeed').addEventListener('input', (e) => {
+            if (audioMotion) {
+                audioMotion.spinSpeed = parseFloat(e.target.value);
+                document.getElementById('spinSpeedValue').textContent = parseFloat(e.target.value).toFixed(1);
+            }
+        });
+
+        // Radial Invert toggle
+        document.getElementById('toggleRadialInvert').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.radialInvert = !audioMotion.radialInvert;
+                this.classList.toggle('active', audioMotion.radialInvert);
+            }
+        });
+
+        // Show Channels toggle
+        document.getElementById('toggleShowChannels').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.showChannels = !audioMotion.showChannels;
+                this.classList.toggle('active', audioMotion.showChannels);
+            }
+        });
+
+        // Lo-Res toggle
+        document.getElementById('toggleLoRes').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.loRes = !audioMotion.loRes;
+                this.classList.toggle('active', audioMotion.loRes);
+                document.getElementById('status').textContent = audioMotion.loRes ? 'Lo-Res ON' : 'Lo-Res OFF';
+            }
+        });
+
+        // Peak Hold Time control
+        document.getElementById('peakHoldTime').addEventListener('input', (e) => {
+            if (audioMotion) {
+                audioMotion.peakHoldTime = parseInt(e.target.value);
+                document.getElementById('peakHoldTimeValue').textContent = e.target.value + 'ms';
+            }
+        });
+
+        // Gravity control
+        document.getElementById('gravity').addEventListener('input', (e) => {
+            if (audioMotion) {
+                audioMotion.gravity = parseFloat(e.target.value);
+                document.getElementById('gravityValue').textContent = parseFloat(e.target.value).toFixed(1);
+            }
+        });
+
+        // LED Height control
+        document.getElementById('ledHeight').addEventListener('input', (e) => {
+            if (audioMotion) {
+                audioMotion.ledHeight = parseFloat(e.target.value);
+                document.getElementById('ledHeightValue').textContent = parseFloat(e.target.value).toFixed(2);
+            }
+        });
+
+        // Reflex Alpha control
+        document.getElementById('reflexAlpha').addEventListener('input', (e) => {
+            if (audioMotion) {
+                audioMotion.reflexAlpha = parseFloat(e.target.value);
+                document.getElementById('reflexAlphaValue').textContent = parseFloat(e.target.value).toFixed(2);
+            }
+        });
+
+        // Reflex Bright control
+        document.getElementById('reflexBright').addEventListener('input', (e) => {
+            if (audioMotion) {
+                audioMotion.reflexBright = parseFloat(e.target.value);
+                document.getElementById('reflexBrightValue').textContent = parseFloat(e.target.value).toFixed(1);
+            }
+        });
+
+        // Frequency Labels toggle
+        document.getElementById('toggleFreqLabels').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.showFreq = !audioMotion.showFreq;
+                this.classList.toggle('active', audioMotion.showFreq);
+            }
+        });
+
+        // DC Block toggle
+        document.getElementById('toggleDcBlock').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.dcBlock = !audioMotion.dcBlock;
+                this.classList.toggle('active', audioMotion.dcBlock);
+            }
+        });
+
+        // Toggle buttons...
+        document.getElementById('togglePeaks').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.showPeaks = !audioMotion.showPeaks;
+                this.classList.toggle('active', audioMotion.showPeaks);
+            }
+        });
+
+        document.getElementById('toggleLeds').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.ledBars = !audioMotion.ledBars;
+                this.classList.toggle('active', audioMotion.ledBars);
+            }
+        });
+
+        document.getElementById('toggleLumi').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.lumiBars = !audioMotion.lumiBars;
+                this.classList.toggle('active', audioMotion.lumiBars);
+            }
+        });
+
+        document.getElementById('toggleAlpha').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.alphaBars = !audioMotion.alphaBars;
+                this.classList.toggle('active', audioMotion.alphaBars);
+            }
+        });
+
+        document.getElementById('toggleReflex').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.reflexRatio = audioMotion.reflexRatio > 0 ? 0 : 0.4;
+                this.classList.toggle('active', audioMotion.reflexRatio > 0);
+            }
+        });
+
+        document.getElementById('toggleRadial').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.radial = !audioMotion.radial;
+                this.classList.toggle('active', audioMotion.radial);
+            }
+        });
+
+        document.getElementById('toggleScaleX').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.showScaleX = !audioMotion.showScaleX;
+                this.classList.toggle('active', audioMotion.showScaleX);
+            }
+        });
+
+        document.getElementById('toggleScaleY').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.showScaleY = !audioMotion.showScaleY;
+                this.classList.toggle('active', audioMotion.showScaleY);
+            }
+        });
+
+        document.getElementById('toggleBgColor').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.showBgColor = !audioMotion.showBgColor;
+                this.classList.toggle('active', audioMotion.showBgColor);
+            }
+        });
+
+        document.getElementById('toggleMirror').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.mirror = audioMotion.mirror !== 0 ? 0 : -1;
+                this.classList.toggle('active', audioMotion.mirror !== 0);
+            }
+        });
+
+        document.getElementById('toggleOutline').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.outlineBars = !audioMotion.outlineBars;
+                this.classList.toggle('active', audioMotion.outlineBars);
+            }
+        });
+
+        document.getElementById('toggleLinear').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.linearAmplitude = !audioMotion.linearAmplitude;
+                this.classList.toggle('active', audioMotion.linearAmplitude);
+            }
+        });
+
+        document.getElementById('toggleWeight').addEventListener('click', function() {
+            if (audioMotion) {
+                const filters = ['', 'A', 'B', 'C', 'D', '468'];
+                const current = filters.indexOf(audioMotion.weightingFilter);
+                audioMotion.weightingFilter = filters[(current + 1) % filters.length];
+                this.classList.toggle('active', audioMotion.weightingFilter !== '');
+                document.getElementById('status').textContent = 'Filter: ' + (audioMotion.weightingFilter || 'None');
+            }
+        });
+
+        document.getElementById('toggleStereo').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.channelLayout = audioMotion.channelLayout === 'single' ? 'dual-combined' : 'single';
+                this.classList.toggle('active', audioMotion.channelLayout !== 'single');
+            }
+        });
+
+        document.getElementById('toggleFade').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.fadePeaks = !audioMotion.fadePeaks;
+                this.classList.toggle('active', audioMotion.fadePeaks);
+            }
+        });
+
+        document.getElementById('toggleRound').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.roundBars = !audioMotion.roundBars;
+                this.classList.toggle('active', audioMotion.roundBars);
+            }
+        });
+
+        document.getElementById('toggleNotes').addEventListener('click', function() {
+            if (audioMotion) {
+                audioMotion.noteLabels = !audioMotion.noteLabels;
+                this.classList.toggle('active', audioMotion.noteLabels);
+            }
+        });
+
+        // Fullscreen
+        document.getElementById('fullscreenBtn').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        // Toggle controls visibility
+        document.getElementById('toggleControls').addEventListener('click', () => {
+            toggleUI();
+        });
+
+        // Toggle panels visibility
+        document.getElementById('togglePanels').addEventListener('click', () => {
+            togglePanels();
+        });
+
+        function toggleUI() {
+            document.getElementById('controls').classList.toggle('hidden');
+            document.getElementById('info').classList.toggle('hidden');
+            document.getElementById('shortcuts').classList.toggle('hidden');
+            document.getElementById('media-controls').classList.toggle('hidden');
+        }
+
+        function togglePanels() {
+            const info = document.getElementById('info');
+            const shortcuts = document.getElementById('shortcuts');
+            const mediaControls = document.getElementById('media-controls');
+            
+            if (info) info.classList.toggle('hidden');
+            if (shortcuts) shortcuts.classList.toggle('hidden');
+            if (mediaControls) mediaControls.classList.toggle('hidden');
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Check for Ctrl+M for microphone
+            if (e.ctrlKey && e.key.toLowerCase() === 'm') {
+                e.preventDefault();
+                document.getElementById('micBtn').click();
+                return;
+            }
+
+            // Spin speed adjustment with arrow keys
+            if (audioMotion && audioMotion.radial) {
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    const newSpeed = Math.min(5, audioMotion.spinSpeed + 0.5);
+                    audioMotion.spinSpeed = newSpeed;
+                    document.getElementById('spinSpeed').value = newSpeed;
+                    document.getElementById('spinSpeedValue').textContent = newSpeed.toFixed(1);
+                    return;
+                }
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    const newSpeed = Math.max(-5, audioMotion.spinSpeed - 0.5);
+                    audioMotion.spinSpeed = newSpeed;
+                    document.getElementById('spinSpeed').value = newSpeed;
+                    document.getElementById('spinSpeedValue').textContent = newSpeed.toFixed(1);
+                    return;
+                }
+            }
+
+            switch(e.key.toLowerCase()) {
+                case ' ':
+                    e.preventDefault();
+                    if (audioElement && audioElement.src) {
+                        if (audioElement.paused) {
+                            audioElement.play();
+                        } else {
+                            audioElement.pause();
+                        }
+                    }
+                    break;
+                case 'x':
+                    document.getElementById('stopBtn').click();
+                    break;
+                case 'f':
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen();
+                    } else {
+                        document.exitFullscreen();
+                    }
+                    break;
+                case 'h':
+                    toggleUI();
+                    break;
+                case 'i':
+                    togglePanels();
+                    break;
+                case 'm':
+                    if (audioMotion) {
+                        const currentMode = parseInt(audioMotion.mode);
+                        let nextMode = (currentMode + 1) % 11;
+                        if (nextMode === 9) nextMode = 10;
+                        audioMotion.mode = nextMode;
+                        document.getElementById('modeSelect').value = audioMotion.mode;
+                    }
+                    break;
+                case 'g':
+                    if (audioMotion) {
+                        const gradients = ['classic', 'prism', 'rainbow', 'orangered', 'steelblue'];
+                        const currentIndex = gradients.indexOf(audioMotion.gradient);
+                        audioMotion.gradient = gradients[(currentIndex + 1) % gradients.length];
+                        document.getElementById('gradientSelect').value = audioMotion.gradient;
+                    }
+                    break;
+                case 'r':
+                    document.getElementById('toggleRadial').click();
+                    break;
+                case 'e':
+                    document.getElementById('togglePeaks').click();
+                    break;
+                case 'l':
+                    document.getElementById('toggleFreqLabels').click();
+                    break;
+                case 'p':
+                    randomizePreset();
+                    break;
+            }
+        });
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            setTimeout(initAnalyzer, 100);
+        });
+
+        // Handle fullscreen changes
+        document.addEventListener('fullscreenchange', () => {
+            const btn = document.getElementById('fullscreenBtn');
+            if (document.fullscreenElement) {
+                btn.textContent = 'Exit FS';
+                btn.classList.add('active');
+            } else {
+                btn.textContent = 'Fullscreen';
+                btn.classList.remove('active');
+            }
+        });
+
+        // Audio element event listeners
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (audioElement) {
+                    audioElement.addEventListener('loadstart', () => {
+                        document.getElementById('status').textContent = 'Loading...';
+                    });
+                    
+                    audioElement.addEventListener('canplay', () => {
+                        document.getElementById('status').textContent = 'Ready to play';
+                    });
+                    
+                    audioElement.addEventListener('loadedmetadata', () => {
+                        updateDuration();
+                    });
+                    
+                    audioElement.addEventListener('timeupdate', () => {
+                        updateProgress();
+                    });
+                    
+                    audioElement.addEventListener('ended', () => {
+                        document.getElementById('status').textContent = 'Playback ended';
+                    });
+                    
+                    audioElement.addEventListener('error', (e) => {
+                        document.getElementById('status').textContent = 'Audio error';
+                        console.error('Audio error:', e);
+                    });
+                }
+            }, 200);
+        });
+
+        // Progress bar functionality
+        function updateProgress() {
+            if (audioElement && audioElement.duration) {
+                const progress = (audioElement.currentTime / audioElement.duration) * 100;
+                document.getElementById('progressFill').style.width = progress + '%';
+                document.getElementById('currentTime').textContent = formatTime(audioElement.currentTime);
+            }
+        }
+
+        function updateDuration() {
+            if (audioElement && audioElement.duration) {
+                document.getElementById('duration').textContent = formatTime(audioElement.duration);
+            }
+        }
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Progress bar click handler
+        document.getElementById('progressBar').addEventListener('click', (e) => {
+            if (audioElement && audioElement.duration) {
+                const rect = e.target.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const percentage = clickX / rect.width;
+                audioElement.currentTime = percentage * audioElement.duration;
+            }
+        });
+
+        // Register custom gradients
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (audioMotion) {
+                    try {
+                        audioMotion.registerGradient('neon', {
+                            bgColor: '#000',
+                            colorStops: ['#ff00ff', '#00ffff', '#ffff00', '#ff0080']
+                        });
+                        
+                        audioMotion.registerGradient('fire', {
+                            bgColor: '#1a0000',
+                            colorStops: ['#ff0000', '#ff4500', '#ffa500', '#ffff00', '#ffffff']
+                        });
+                        
+                        audioMotion.registerGradient('ocean', {
+                            bgColor: '#000a1a',
+                            colorStops: ['#000080', '#0000ff', '#00bfff', '#00ffff', '#ffffff']
+                        });
+
+                        const gradientSelect = document.getElementById('gradientSelect');
+                        gradientSelect.innerHTML += '<option value="neon">Neon</option>';
+                        gradientSelect.innerHTML += '<option value="fire">Fire</option>';
+                        gradientSelect.innerHTML += '<option value="ocean">Ocean</option>';
+                        
+                    } catch (e) {
+                        console.log('Custom gradients not added:', e);
+                    }
+                }
+            }, 300);
+        });
+
+        // Error handling
+        window.addEventListener('error', (e) => {
+            console.error('Global error:', e.error);
+            document.getElementById('status').textContent = 'Error: ' + e.message;
+        });
+    </script>
+</body>
+</html>
