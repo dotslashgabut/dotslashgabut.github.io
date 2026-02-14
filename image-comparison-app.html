@@ -238,22 +238,31 @@
         }
         
         function adjustImageContainer() {
-            if (!beforeWidth || !afterWidth) return;
+            // Logic Check: Allow rendering if at least one image is loaded to prevent lockout
+            if (!beforeWidth && !afterWidth) return;
         
             let targetWidth, targetHeight;
         
             switch (aspectRatioMode) {
                 case 'before':
-                    targetWidth = beforeWidth;
-                    targetHeight = beforeHeight;
+                    targetWidth = beforeWidth || afterWidth; // Fallback if before is missing
+                    targetHeight = beforeHeight || afterHeight;
                     break;
                 case 'after':
-                    targetWidth = afterWidth;
-                    targetHeight = afterHeight;
+                    targetWidth = afterWidth || beforeWidth; // Fallback if after is missing
+                    targetHeight = afterHeight || beforeHeight;
                     break;
                 case 'both':
-                    targetWidth = Math.max(beforeWidth, afterWidth);
-                    targetHeight = Math.max(beforeHeight, afterHeight);
+                    // Safe access in case one is missing
+                    const w1 = beforeWidth || 0;
+                    const w2 = afterWidth || 0;
+                    const h1 = beforeHeight || 0;
+                    const h2 = afterHeight || 0;
+                    targetWidth = Math.max(w1, w2);
+                    targetHeight = Math.max(h1, h2);
+                    // Prevent division by zero if something went wrong
+                    if (targetWidth === 0) targetWidth = 100;
+                    if (targetHeight === 0) targetHeight = 100;
                     break;
             }
         
@@ -263,18 +272,19 @@
             const containerWidth = container.offsetWidth;
             const containerHeight = containerWidth / aspectRatio;
             
-            const beforeScale = Math.min(
+            // Calculate scale. If a dimension is missing (undefined), use 1 to avoid NaN
+            const beforeScale = beforeWidth ? Math.min(
                 containerWidth / beforeWidth,
                 containerHeight / beforeHeight
-            ) * zoom;
+            ) * zoom : 0;
             
-            const afterScale = Math.min(
+            const afterScale = afterWidth ? Math.min(
                 containerWidth / afterWidth,
                 containerHeight / afterHeight
-            ) * zoom;
+            ) * zoom : 0;
         
-            beforeImage.style.backgroundSize = `${beforeWidth * beforeScale}px ${beforeHeight * beforeScale}px`;
-            afterImage.style.backgroundSize = `${afterWidth * afterScale}px ${afterHeight * afterScale}px`;
+            beforeImage.style.backgroundSize = beforeWidth ? `${beforeWidth * beforeScale}px ${beforeHeight * beforeScale}px` : '0 0';
+            afterImage.style.backgroundSize = afterWidth ? `${afterWidth * afterScale}px ${afterHeight * afterScale}px` : '0 0';
             
             updateSliderPosition();
         }
@@ -331,6 +341,16 @@
             beforeAspectBtn.classList.toggle('active', mode === 'before');
             afterAspectBtn.classList.toggle('active', mode === 'after');
             fitBothBtn.classList.toggle('active', mode === 'both');
+
+            // --- BUG FIX ---
+            // When switching aspect modes (like Fit Both), reset the zoom and pan
+            // to auto-fit the images, exactly like the Reset button does.
+            zoom = 1;
+            currentPanX = 0;
+            currentPanY = 0;
+            updatePan();
+            // --- END FIX ---
+
             adjustImageContainer();
         }
         

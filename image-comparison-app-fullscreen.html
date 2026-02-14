@@ -280,17 +280,22 @@
 
                 // Check if both images are loaded
                 if (beforeImageLoaded && afterImageLoaded) {
-                    resetImagePosition(beforeImage, 'before');
-                    resetImagePosition(afterImage, 'after');
                     beforeImage.style.display = 'block'; // Show before image
                     afterImage.style.display = 'block'; // Show after image
-                    adjustImageContainer();
+                    
+                    // FIXED: Replaced manual position reset with standard "Reset" logic
+                    zoom = 1;
+                    currentPanX = 0;
+                    currentPanY = 0;
+                    updateZoom(); // Calls adjustImageContainer() + updatePan()
                 }
             };
             img.src = src;
         }
         
         function resetImagePosition(imgElement, type) {
+            // This function is kept to preserve structure but is no longer 
+            // used in the main loading flow to avoid the "small zoom" bug.
             const viewportHeight = window.innerHeight;
             const aspectRatio = (type === 'before' ? beforeWidth / beforeHeight : afterWidth / afterHeight);
             const scale = viewportHeight / (type === 'before' ? beforeHeight : afterHeight);
