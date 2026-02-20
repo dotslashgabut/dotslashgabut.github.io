@@ -7,6 +7,7 @@ Just testing, the generated codes from LLMs.
 - [Color Palette Generator Plus HSL - Dark Mode](https://dotslashgabut.github.io/color-palette-generator-plus-dark.html)
 - [Color Palette Generator Plus HSL](https://dotslashgabut.github.io/color-palette-generator-plus.html)
 - [Color Palette Generator](https://dotslashgabut.github.io/color-palette-generator-gemini-kimi.html)
+- [Minimalist Media Compare](https://dotslashgabut.github.io/minimalist-media-compare.html)
 - [Fullscreen Image Comparison App](https://dotslashgabut.github.io/image-comparison-app-fullscreen.html)
 - [Advanced Image Comparison](https://dotslashgabut.github.io/advanced-image-comparison.html)
 - [Random AI Images Gallery](https://dotslashgabut.github.io/random-images/)

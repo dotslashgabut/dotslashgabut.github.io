@@ -1,0 +1,473 @@
+<!DOCTYPE html>  
+<html lang="en">  
+<head>  
+    <meta charset="UTF-8">  
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
+    <title>Minimalist Media Compare</title>  
+    <style>  
+        :root {  
+            --bg-color: #0a0a0a;  
+            --ui-bg: rgba(20, 20, 20, 0.85);  
+            --ui-border: #333;  
+            --ui-hover: #fff;  
+            --ui-hover-text: #000;  
+            --text-color: #aaa;  
+        }  
+  
+        * {  
+            box-sizing: border-box;  
+            user-select: none;  
+        }  
+  
+        body, html {  
+            margin: 0;  
+            padding: 0;  
+            width: 100%;  
+            height: 100%;  
+            background-color: var(--bg-color);  
+            color: var(--text-color);  
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;  
+            overflow: hidden;  
+        }  
+  
+        /* App Container */  
+        #app {  
+            position: relative;  
+            width: 100vw;  
+            height: 100vh;  
+            cursor: crosshair;  
+        }  
+  
+        #app.dragging {  
+            cursor: grabbing;  
+        }  
+  
+        /* Image Layers */  
+        .layer {  
+            position: absolute;  
+            top: 0; left: 0;  
+            width: 100%; height: 100%;  
+            display: flex;  
+            align-items: center;  
+            justify-content: center;  
+            pointer-events: none;  
+        }  
+  
+        .layer img, .layer video {  
+            max-width: 100%;  
+            max-height: 100%;  
+            object-fit: contain;  
+            transform-origin: center center;  
+            will-change: transform;  
+        }  
+  
+        #layer-right {  
+            clip-path: inset(0 0 0 50%);  
+        }  
+  
+        /* Slider Line */  
+        #slider-line {  
+            position: absolute;  
+            top: 0; bottom: 0; left: 50%;  
+            width: 1px;  
+            background: #fff;  
+            transform: translateX(-50%);  
+            pointer-events: none;  
+            box-shadow: 0 0 8px rgba(0,0,0,0.8);  
+            z-index: 10;  
+        }  
+  
+        /* UI Elements */  
+        .ui-container {  
+            position: absolute;  
+            display: flex;  
+            gap: 8px;  
+            z-index: 20;  
+            transition: opacity 0.2s;  
+        }  
+  
+        #ui-left { bottom: 20px; left: 20px; }  
+        #ui-right { bottom: 20px; right: 20px; }  
+        #ui-global { top: 20px; right: 20px; }  
+  
+        .ui-label {  
+            position: absolute;  
+            top: -24px;  
+            font-size: 11px;  
+            letter-spacing: 1px;  
+            text-transform: uppercase;  
+            color: #666;  
+            white-space: nowrap;  
+        }  
+  
+        /* Minimalist Square Buttons */  
+        button {  
+            width: 44px;  
+            height: 44px;  
+            background: var(--ui-bg);  
+            border: 1px solid var(--ui-border);  
+            color: var(--text-color);  
+            border-radius: 0;  
+            cursor: pointer;  
+            display: flex;  
+            align-items: center;  
+            justify-content: center;  
+            transition: all 0.15s ease;  
+            backdrop-filter: blur(4px);  
+        }  
+  
+        button:hover {  
+            background: var(--ui-hover);  
+            color: var(--ui-hover-text);  
+            border-color: var(--ui-hover);  
+        }  
+  
+        button svg {  
+            width: 20px;  
+            height: 20px;  
+            fill: currentColor;  
+        }  
+  
+        /* Help Modal */  
+        #help-modal {  
+            position: absolute;  
+            top: 50%; left: 50%;  
+            transform: translate(-50%, -50%);  
+            background: var(--ui-bg);  
+            border: 1px solid var(--ui-border);  
+            padding: 30px;  
+            z-index: 100;  
+            backdrop-filter: blur(10px);  
+            display: none;  
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);  
+        }  
+  
+        #help-modal.visible {  
+            display: block;  
+        }  
+  
+        #help-modal h2 { margin: 0 0 20px 0; color: #fff; font-weight: 400; font-size: 18px; }  
+        .shortcut { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; gap: 40px;}  
+        .key { background: #333; padding: 2px 6px; border-radius: 3px; color: #fff; font-family: monospace;}  
+  
+        .hidden { opacity: 0; pointer-events: none; }  
+    </style>  
+</head>  
+<body>  
+  
+    <div id="app">  
+        <!-- Left Media -->  
+        <div class="layer" id="layer-left">  
+            <!-- Default Placeholder SVG Data URIs -->  
+            <img id="img-left" draggable="false" src="data:image/svg+xml;utf8,<svg width='1920' height='1080' xmlns='http://www.w3.org/2000/svg'><rect width='100%' height='100%' fill='%23111'/><text x='50%' y='50%' fill='%23444' font-family='sans-serif' font-size='48' text-anchor='middle' dominant-baseline='middle'>MEDIA 1</text></svg>">  
+            <video id="video-left" draggable="false" autoplay loop muted playsinline style="display: none;"></video>
+        </div>  
+          
+        <!-- Right Media -->  
+        <div class="layer" id="layer-right">  
+            <img id="img-right" draggable="false" src="data:image/svg+xml;utf8,<svg width='1920' height='1080' xmlns='http://www.w3.org/2000/svg'><rect width='100%' height='100%' fill='%231a1a1a'/><text x='50%' y='50%' fill='%23555' font-family='sans-serif' font-size='48' text-anchor='middle' dominant-baseline='middle'>MEDIA 2</text></svg>">  
+            <video id="video-right" draggable="false" autoplay loop muted playsinline style="display: none;"></video>
+        </div>  
+  
+        <!-- Slider Line -->  
+        <div id="slider-line"></div>  
+    </div>  
+  
+    <!-- UI Overlay -->  
+    <div id="ui">  
+        <!-- Global Controls -->  
+        <div class="ui-container" id="ui-global">  
+            <button onclick="toggleFullscreen()" title="Toggle Fullscreen (F)">
+                <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+            </button>
+            <button onclick="resetView()" title="Reset Zoom/Pan (R)">  
+                <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>  
+            </button>  
+            <button onclick="toggleHelp()" title="Help (H)">  
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>  
+            </button>  
+        </div>  
+  
+        <!-- Left Image Controls -->  
+        <div class="ui-container" id="ui-left">  
+            <div class="ui-label">Media 1</div>  
+            <button onclick="loadLocal('left')" title="Load Local (1)">  
+                <svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>  
+            </button>  
+            <button onclick="loadURL('left')" title="Load URL (U)">  
+                <svg viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>  
+            </button>  
+        </div>  
+  
+        <!-- Right Image Controls -->  
+        <div class="ui-container" id="ui-right">  
+            <div class="ui-label">Media 2</div>  
+            <button onclick="loadLocal('right')" title="Load Local (2)">  
+                <svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>  
+            </button>  
+            <button onclick="loadURL('right')" title="Load URL (I)">  
+                <svg viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>  
+            </button>  
+        </div>  
+    </div>  
+  
+    <!-- Help Modal -->  
+    <div id="help-modal">  
+        <h2>Shortcuts</h2>  
+        <div class="shortcut"><span>Move Slider</span> <span>Hover / Touch</span></div>  
+        <div class="shortcut"><span>Pan Images</span> <span>Drag / 2-Fingers</span></div>  
+        <div class="shortcut"><span>Zoom</span> <span>Scroll / Pinch</span></div>  
+        <div class="shortcut"><span>Reset View</span> <span class="key">R</span></div>  
+        <div class="shortcut"><span>Toggle Fullscreen</span> <span class="key">F</span></div>
+        <div class="shortcut"><span>Load Local Left</span> <span class="key">1</span></div>  
+        <div class="shortcut"><span>Load Local Right</span> <span class="key">2</span></div>  
+        <div class="shortcut"><span>Load URL Left</span> <span class="key">U</span></div>  
+        <div class="shortcut"><span>Load URL Right</span> <span class="key">I</span></div>  
+        <div class="shortcut"><span>Toggle UI</span> <span class="key">H</span></div>  
+    </div>  
+  
+    <script>  
+        // State  
+        let splitPos = 50;  
+        let zoom = 1;  
+        let panX = 0;  
+        let panY = 0;  
+          
+        let isDragging = false;  
+        let startX, startY, initialPanX, initialPanY;  
+  
+        // DOM Elements  
+        const app = document.getElementById('app');  
+        const layerRight = document.getElementById('layer-right');  
+        const sliderLine = document.getElementById('slider-line');  
+        const imgLeft = document.getElementById('img-left');  
+        const imgRight = document.getElementById('img-right');  
+        const videoLeft = document.getElementById('video-left');  
+        const videoRight = document.getElementById('video-right');  
+        const ui = document.getElementById('ui');  
+        const helpModal = document.getElementById('help-modal');  
+  
+        // Functions: View Logic  
+        function updateSplit() {  
+            layerRight.style.clipPath = `inset(0 0 0 ${splitPos}%)`;  
+            sliderLine.style.left = `${splitPos}%`;  
+        }  
+  
+        function updateTransform() {  
+            const transform = `scale(${zoom}) translate(${panX}px, ${panY}px)`;  
+            imgLeft.style.transform = transform;  
+            imgRight.style.transform = transform;  
+            videoLeft.style.transform = transform;  
+            videoRight.style.transform = transform;  
+        }  
+  
+        function resetView() {  
+            zoom = 1;  
+            panX = 0;  
+            panY = 0;  
+            updateTransform();  
+        }  
+  
+        function toggleHelp() {  
+            helpModal.classList.toggle('visible');  
+        }  
+  
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.warn(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // Functions: Media Loading  
+        function setMedia(side, url, isVideo) {
+            const img = document.getElementById(`img-${side}`);
+            const vid = document.getElementById(`video-${side}`);
+            if (isVideo) {
+                img.style.display = 'none';
+                vid.style.display = 'block';
+                vid.src = url;
+                // Attempt to synchronize videos if the other side is also a playing video
+                const otherVid = document.getElementById(`video-${side === 'left' ? 'right' : 'left'}`);
+                if (otherVid.style.display === 'block' && !otherVid.paused) {
+                    vid.currentTime = otherVid.currentTime;
+                }
+            } else {
+                vid.style.display = 'none';
+                img.style.display = 'block';
+                img.src = url;
+            }
+        }
+
+        function loadLocal(side) {  
+            const input = document.createElement('input');  
+            input.type = 'file';  
+            input.accept = 'image/*,video/*';  
+            input.onchange = (e) => {  
+                const file = e.target.files[0];  
+                if (file) {  
+                    const url = URL.createObjectURL(file);  
+                    setMedia(side, url, file.type.startsWith('video/'));
+                }  
+            };  
+            input.click();  
+        }  
+  
+        function loadURL(side) {  
+            const url = prompt(`Enter image or video URL for ${side === 'left' ? 'Media 1' : 'Media 2'}:`);  
+            if (url) {  
+                // Basic check for common video extensions in the URL
+                const isVideo = url.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i) !== null;
+                setMedia(side, url, isVideo);
+            }  
+        }  
+  
+        // Event Listeners: Mouse Interaction  
+        app.addEventListener('mousemove', (e) => {  
+            if (!isDragging) {  
+                // Move slider to follow cursor  
+                splitPos = (e.clientX / window.innerWidth) * 100;  
+                updateSplit();  
+            } else {  
+                // Pan images  
+                panX = initialPanX + (e.clientX - startX) / zoom;  
+                panY = initialPanY + (e.clientY - startY) / zoom;  
+                updateTransform();  
+            }  
+        });  
+  
+        app.addEventListener('mousedown', (e) => {  
+            if (e.button !== 0) return; // Only left click  
+            isDragging = true;  
+            startX = e.clientX;  
+            startY = e.clientY;  
+            initialPanX = panX;  
+            initialPanY = panY;  
+            app.classList.add('dragging');  
+        });  
+  
+        window.addEventListener('mouseup', () => {  
+            isDragging = false;  
+            app.classList.remove('dragging');  
+        });  
+  
+        // Event Listeners: Touch Interaction (Mobile)
+        let lastPinchDist = null;
+        let lastPinchCenter = null;
+
+        app.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                splitPos = (e.touches[0].clientX / window.innerWidth) * 100;
+                updateSplit();
+            } else if (e.touches.length === 2) {
+                isDragging = true;
+                const t1 = e.touches[0], t2 = e.touches[1];
+                lastPinchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+                lastPinchCenter = { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
+            }
+        }, { passive: false });
+
+        app.addEventListener('touchmove', (e) => {
+            if (e.cancelable) e.preventDefault(); // Prevent scrolling on touch
+            
+            if (e.touches.length === 1 && !isDragging) {
+                splitPos = (e.touches[0].clientX / window.innerWidth) * 100;
+                updateSplit();
+            } else if (e.touches.length === 2) {
+                const t1 = e.touches[0], t2 = e.touches[1];
+                const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+                const currentCenter = { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
+                
+                if (lastPinchDist) {
+                    const zoomDelta = currentDist / lastPinchDist;
+                    const newZoom = Math.max(0.1, Math.min(zoom * zoomDelta, 50));
+                    
+                    const rect = app.getBoundingClientRect();
+                    const centerX = currentCenter.x - rect.left - rect.width / 2;
+                    const centerY = currentCenter.y - rect.top - rect.height / 2;
+                    
+                    panX += (centerX / newZoom) - (centerX / zoom);
+                    panY += (centerY / newZoom) - (centerY / zoom);
+                    
+                    const dx = currentCenter.x - lastPinchCenter.x;
+                    const dy = currentCenter.y - lastPinchCenter.y;
+                    
+                    panX += dx / newZoom;
+                    panY += dy / newZoom;
+                    
+                    zoom = newZoom;
+                    updateTransform();
+                }
+                
+                lastPinchDist = currentDist;
+                lastPinchCenter = currentCenter;
+            }
+        }, { passive: false });
+
+        app.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2) {
+                lastPinchDist = null;
+                lastPinchCenter = null;
+                isDragging = false;
+            }
+        });
+
+        // Event Listeners: Zoom (Scroll Wheel)  
+        app.addEventListener('wheel', (e) => {  
+            e.preventDefault();  
+              
+            const zoomSensitivity = 0.0015;  
+            const delta = e.deltaY * -zoomSensitivity;  
+            const newZoom = Math.max(0.1, Math.min(zoom * Math.exp(delta), 50)); // Clamp between 0.1x and 50x  
+  
+            // Math to zoom directly towards mouse cursor  
+            const rect = app.getBoundingClientRect();  
+            const mouseX = e.clientX - rect.left - rect.width / 2;  
+            const mouseY = e.clientY - rect.top - rect.height / 2;  
+  
+            // Fixed Math: Added scaled components instead of subtracting them to maintain focus position
+            panX += (mouseX / newZoom) - (mouseX / zoom);  
+            panY += (mouseY / newZoom) - (mouseY / zoom);  
+  
+            zoom = newZoom;  
+            updateTransform();  
+        }, { passive: false });  
+  
+        // Event Listeners: Keyboard Shortcuts  
+        window.addEventListener('keydown', (e) => {  
+            // Ignore combinations with Ctrl, Alt, or Meta keys to prevent conflict with browser shortcuts
+            if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+            // Ignore if user is typing in a prompt (though browser prompts block execution anyway)  
+            const key = e.key.toLowerCase();  
+              
+            switch(key) {  
+                case 'r': resetView(); break;  
+                case 'f': toggleFullscreen(); break;
+                case '1': loadLocal('left'); break;  
+                case '2': loadLocal('right'); break;  
+                case 'u': loadURL('left'); break;  
+                case 'i': loadURL('right'); break;  
+                case 'h': toggleHelp(); break;  
+                case 'escape': helpModal.classList.remove('visible'); break;  
+                case 'tab':   
+                    e.preventDefault();  
+                    ui.classList.toggle('hidden');   
+                    break;  
+            }  
+        });  
+  
+        // Hide help modal on click outside  
+        app.addEventListener('click', () => {  
+            if(helpModal.classList.contains('visible')) {  
+                helpModal.classList.remove('visible');  
+            }  
+        });  
+    </script>  
+</body>  
+</html>
