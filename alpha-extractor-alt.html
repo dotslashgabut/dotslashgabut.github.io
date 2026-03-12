@@ -21,7 +21,6 @@
             --text-muted: #737373;
             --accent: #fff;
             --error: #dc2626;
-            --success: #22c55e;
         }
 
         body {
@@ -70,96 +69,29 @@
             background: var(--bg-elevated);
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 16px;
+            padding: 24px;
+            text-align: center;
             transition: all 0.15s ease;
+            cursor: pointer;
             position: relative;
-            min-height: 200px;
+            min-height: 180px;
             display: flex;
             flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
 
         .upload-card:hover {
             border-color: var(--border-hover);
+            background: var(--bg-hover);
         }
 
         .upload-card.has-image {
-            min-height: auto;
             padding: 12px;
+            min-height: auto;
         }
 
-        .upload-tabs {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 12px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 8px;
-            position: relative;
-            z-index: 20;
-            transition: opacity 0.15s ease;
-        }
-
-        .upload-card.has-image .upload-tabs {
-            display: none;
-        }
-
-        .tab-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            padding: 4px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-
-        .tab-btn:hover {
-            color: var(--text);
-            background: var(--bg-hover);
-        }
-
-        .tab-btn.active {
-            color: var(--text);
-            background: var(--bg);
-        }
-
-        .upload-content-wrapper {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            min-height: 140px;
-        }
-
-        /* Hide upload content when image is loaded - use !important to override inline styles */
-        .upload-card.has-image .upload-content-wrapper {
-            display: none !important;
-        }
-
-        .upload-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            cursor: pointer;
-            padding: 20px;
-            border: 1px dashed var(--border);
-            border-radius: 6px;
-            transition: all 0.15s ease;
-            height: 100%;
-            position: relative;
-        }
-
-        .upload-content:hover {
-            border-color: var(--border-hover);
-            background: var(--bg-hover);
-        }
-
-        .file-input {
+        input[type="file"] {
             position: absolute;
             inset: 0;
             opacity: 0;
@@ -169,90 +101,12 @@
             z-index: 10;
         }
 
-        .url-input-group {
-            display: none;
+        .upload-content {
+            display: flex;
             flex-direction: column;
-            gap: 8px;
-            height: 100%;
+            align-items: center;
             justify-content: center;
-            position: relative;
-            z-index: 15;
-        }
-
-        .url-input-group.active {
-            display: flex;
-        }
-
-        /* Hide URL input when image is loaded */
-        .upload-card.has-image .url-input-group {
-            display: none !important;
-        }
-
-        .url-input-wrapper {
-            display: flex;
-            gap: 8px;
-        }
-
-        .url-input {
-            flex: 1;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 10px 12px;
-            color: var(--text);
-            font-size: 13px;
-            outline: none;
-            transition: all 0.15s ease;
-            position: relative;
-            z-index: 16;
-        }
-
-        .url-input:focus {
-            border-color: var(--border-hover);
-        }
-
-        .url-input::placeholder {
-            color: var(--text-muted);
-        }
-
-        .url-load-btn {
-            background: var(--bg-hover);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            white-space: nowrap;
-            position: relative;
-            z-index: 16;
-        }
-
-        .url-load-btn:hover:not(:disabled) {
-            background: var(--border-hover);
-            border-color: var(--border-hover);
-        }
-
-        .url-load-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .url-status {
-            font-size: 11px;
-            color: var(--text-muted);
-            text-align: center;
-            min-height: 16px;
-        }
-
-        .url-status.error {
-            color: var(--error);
-        }
-
-        .url-status.success {
-            color: var(--success);
+            gap: 12px;
         }
 
         .upload-icon {
@@ -274,22 +128,12 @@
             display: block;
         }
 
-        /* White BG card - white icon background with dark icon */
         .upload-card.white-bg .upload-icon {
             background: #fafafa;
         }
 
-        .upload-card.white-bg .upload-icon svg {
-            stroke: #0d0d0d;
-        }
-
-        /* Black BG card - black icon background with white icon */
         .upload-card.black-bg .upload-icon {
-            background: #000000;
-        }
-
-        .upload-card.black-bg .upload-icon svg {
-            stroke: #fafafa;
+            background: #000;
         }
 
         .upload-text-group {
@@ -316,17 +160,20 @@
             border-radius: 6px;
             display: none;
             object-fit: contain;
-            margin: 0 auto;
         }
 
         .upload-card.has-image .preview-image {
             display: block;
         }
 
+        .upload-card.has-image .upload-content {
+            display: none;
+        }
+
         .image-label {
             position: absolute;
-            top: 12px;
-            left: 12px;
+            top: 8px;
+            left: 8px;
             background: rgba(0,0,0,0.8);
             padding: 4px 8px;
             border-radius: 4px;
@@ -551,7 +398,7 @@
             position: relative;
             border-radius: 6px;
             overflow: hidden;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
         canvas {
@@ -567,14 +414,6 @@
             background-color: #0f0f0f;
         }
 
-        /* Download Buttons */
-        .download-group {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
         .download-btn {
             background: transparent;
             color: var(--text);
@@ -585,9 +424,6 @@
             border-radius: 6px;
             cursor: pointer;
             transition: all 0.15s ease;
-            display: flex;
-            align-items: center;
-            gap: 6px;
         }
 
         .download-btn:hover {
@@ -595,38 +431,11 @@
             border-color: var(--border-hover);
         }
 
-        .download-btn.primary {
-            background: var(--text);
-            color: var(--bg);
-            border-color: var(--text);
-            font-weight: 600;
-        }
-
-        .download-btn.primary:hover {
-            background: #e5e5e5;
-            border-color: #e5e5e5;
-        }
-
-        .format-badge {
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            opacity: 0.7;
-            background: rgba(255,255,255,0.1);
-            padding: 2px 6px;
-            border-radius: 3px;
-        }
-
-        .download-btn.primary .format-badge {
-            background: rgba(0,0,0,0.2);
-            color: var(--bg);
-        }
-
         /* Remove button */
         .remove-btn {
             position: absolute;
-            top: 12px;
-            right: 12px;
+            top: 8px;
+            right: 8px;
             width: 24px;
             height: 24px;
             background: rgba(0,0,0,0.8);
@@ -670,9 +479,6 @@
             #processBtn {
                 width: 100%;
             }
-            .download-group {
-                flex-direction: column;
-            }
         }
     </style>
 </head>
@@ -685,9 +491,19 @@
 
         <div class="upload-section">
             <div class="upload-card white-bg" id="whiteCard">
-                <div class="upload-tabs">
-                    <button class="tab-btn active" data-tab="file" data-card="white">File</button>
-                    <button class="tab-btn" data-tab="url" data-card="white">URL</button>
+                <input type="file" id="whiteInput" accept="image/*">
+                <div class="upload-content">
+                    <div class="upload-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <div class="upload-text-group">
+                        <div class="upload-text">White BG</div>
+                        <div class="upload-hint">Drop or click</div>
+                    </div>
                 </div>
                 <span class="image-label">White</span>
                 <button class="remove-btn" id="removeWhite">
@@ -696,39 +512,23 @@
                         <line x1="6" y1="6" x2="18" y2="18"/>
                     </svg>
                 </button>
-                
-                <div class="upload-content-wrapper" id="whiteFileWrapper">
-                    <div class="upload-content">
-                        <input type="file" class="file-input" id="whiteInput" accept="image/*">
-                        <div class="upload-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                <polyline points="17 8 12 3 7 8"/>
-                                <line x1="12" y1="3" x2="12" y2="15"/>
-                            </svg>
-                        </div>
-                        <div class="upload-text-group">
-                            <div class="upload-text">White BG</div>
-                            <div class="upload-hint">Drop or click</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="url-input-group" id="whiteUrlWrapper">
-                    <div class="url-input-wrapper">
-                        <input type="text" class="url-input" id="whiteUrl" placeholder="https://example.com/image.jpg">
-                        <button class="url-load-btn" id="whiteLoadBtn">Load</button>
-                    </div>
-                    <div class="url-status" id="whiteStatus"></div>
-                </div>
-                
                 <img class="preview-image" id="whitePreview">
             </div>
 
             <div class="upload-card black-bg" id="blackCard">
-                <div class="upload-tabs">
-                    <button class="tab-btn active" data-tab="file" data-card="black">File</button>
-                    <button class="tab-btn" data-tab="url" data-card="black">URL</button>
+                <input type="file" id="blackInput" accept="image/*">
+                <div class="upload-content">
+                    <div class="upload-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <div class="upload-text-group">
+                        <div class="upload-text">Black BG</div>
+                        <div class="upload-hint">Drop or click</div>
+                    </div>
                 </div>
                 <span class="image-label">Black</span>
                 <button class="remove-btn" id="removeBlack">
@@ -737,32 +537,6 @@
                         <line x1="6" y1="6" x2="18" y2="18"/>
                     </svg>
                 </button>
-                
-                <div class="upload-content-wrapper" id="blackFileWrapper">
-                    <div class="upload-content">
-                        <input type="file" class="file-input" id="blackInput" accept="image/*">
-                        <div class="upload-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                <polyline points="17 8 12 3 7 8"/>
-                                <line x1="12" y1="3" x2="12" y2="15"/>
-                            </svg>
-                        </div>
-                        <div class="upload-text-group">
-                            <div class="upload-text">Black BG</div>
-                            <div class="upload-hint">Drop or click</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="url-input-group" id="blackUrlWrapper">
-                    <div class="url-input-wrapper">
-                        <input type="text" class="url-input" id="blackUrl" placeholder="https://example.com/image.jpg">
-                        <button class="url-load-btn" id="blackLoadBtn">Load</button>
-                    </div>
-                    <div class="url-status" id="blackStatus"></div>
-                </div>
-                
                 <img class="preview-image" id="blackPreview">
             </div>
         </div>
@@ -808,21 +582,12 @@
             <div class="result-card">
                 <div class="result-label">
                     Result
-                    <span style="color: var(--text-muted); font-weight: 400;">— Transparent</span>
+                    <span style="color: var(--text-muted); font-weight: 400;">— Transparent PNG</span>
                 </div>
                 <div class="canvas-container">
                     <canvas id="resultCanvas"></canvas>
                 </div>
-                <div class="download-group">
-                    <button class="download-btn primary" id="downloadPng">
-                        Download
-                        <span class="format-badge">PNG</span>
-                    </button>
-                    <button class="download-btn" id="downloadWebp">
-                        Download
-                        <span class="format-badge">WEBP</span>
-                    </button>
-                </div>
+                <button class="download-btn" id="downloadBtn">Download</button>
             </div>
         </div>
     </div>
@@ -845,8 +610,7 @@
         const processBtn = document.getElementById('processBtn');
         const results = document.getElementById('results');
         const resultCanvas = document.getElementById('resultCanvas');
-        const downloadPng = document.getElementById('downloadPng');
-        const downloadWebp = document.getElementById('downloadWebp');
+        const downloadBtn = document.getElementById('downloadBtn');
         const loading = document.getElementById('loading');
         const error = document.getElementById('error');
         
@@ -856,39 +620,6 @@
         const refinementValue = document.getElementById('refinementValue');
         const thresholdFill = document.getElementById('thresholdFill');
         const refinementFill = document.getElementById('refinementFill');
-
-        // Tab switching - simplified to not use inline styles
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const card = e.target.dataset.card;
-                const tab = e.target.dataset.tab;
-                
-                // Update active tab
-                document.querySelectorAll(`.tab-btn[data-card="${card}"]`).forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                
-                // Show/hide content using classList instead of inline styles
-                const fileWrapper = document.getElementById(`${card}FileWrapper`);
-                const urlWrapper = document.getElementById(`${card}UrlWrapper`);
-                
-                if (tab === 'file') {
-                    fileWrapper.classList.remove('hidden');
-                    urlWrapper.classList.remove('active');
-                } else {
-                    fileWrapper.classList.add('hidden');
-                    urlWrapper.classList.add('active');
-                }
-            });
-        });
-
-        // Add CSS class for hidden state
-        const style = document.createElement('style');
-        style.textContent = `
-            .upload-content-wrapper.hidden {
-                display: none !important;
-            }
-        `;
-        document.head.appendChild(style);
 
         function updateSliderFill(slider, fill, display) {
             const min = parseInt(slider.min);
@@ -931,56 +662,11 @@
             });
         }
 
-        function loadImageFromUrl(url) {
-            return new Promise((resolve, reject) => {
-                if (!url || !url.match(/^https?:\/\/.+/i)) {
-                    reject('Please enter a valid URL');
-                    return;
-                }
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.onload = () => resolve(img);
-                img.onerror = () => reject('Failed to load image from URL. Make sure the URL is valid and allows CORS.');
-                img.src = url;
-            });
-        }
-
-        async function handleImageLoad(promise, cardName, statusEl) {
-            try {
-                statusEl.textContent = 'Loading...';
-                statusEl.className = 'url-status';
-                const img = await promise;
-                if (cardName === 'white') {
-                    whiteImage = img;
-                    whitePreview.src = img.src;
-                    whiteCard.classList.add('has-image');
-                } else {
-                    blackImage = img;
-                    blackPreview.src = img.src;
-                    blackCard.classList.add('has-image');
-                }
-                statusEl.textContent = 'Loaded successfully';
-                statusEl.className = 'url-status success';
-                checkReady();
-                setTimeout(() => {
-                    statusEl.textContent = '';
-                    statusEl.className = 'url-status';
-                }, 2000);
-            } catch (err) {
-                statusEl.textContent = err;
-                statusEl.className = 'url-status error';
-            }
-        }
-
-        // File inputs
         whiteInput.addEventListener('change', async (e) => {
             try {
-                const img = await handleFile(e.target.files[0]);
-                whiteImage = img;
-                whitePreview.src = img.src;
+                whiteImage = await handleFile(e.target.files[0]);
+                whitePreview.src = whiteImage.src;
                 whiteCard.classList.add('has-image');
-                // Reset file wrapper classes
-                document.getElementById('whiteFileWrapper').classList.remove('hidden');
                 checkReady();
             } catch (err) {
                 showError(err);
@@ -989,38 +675,15 @@
 
         blackInput.addEventListener('change', async (e) => {
             try {
-                const img = await handleFile(e.target.files[0]);
-                blackImage = img;
-                blackPreview.src = img.src;
+                blackImage = await handleFile(e.target.files[0]);
+                blackPreview.src = blackImage.src;
                 blackCard.classList.add('has-image');
-                // Reset file wrapper classes
-                document.getElementById('blackFileWrapper').classList.remove('hidden');
                 checkReady();
             } catch (err) {
                 showError(err);
             }
         });
 
-        // URL inputs
-        document.getElementById('whiteLoadBtn').addEventListener('click', () => {
-            const url = document.getElementById('whiteUrl').value;
-            handleImageLoad(loadImageFromUrl(url), 'white', document.getElementById('whiteStatus'));
-        });
-
-        document.getElementById('blackLoadBtn').addEventListener('click', () => {
-            const url = document.getElementById('blackUrl').value;
-            handleImageLoad(loadImageFromUrl(url), 'black', document.getElementById('blackStatus'));
-        });
-
-        document.getElementById('whiteUrl').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') document.getElementById('whiteLoadBtn').click();
-        });
-
-        document.getElementById('blackUrl').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') document.getElementById('blackLoadBtn').click();
-        });
-
-        // Remove buttons - properly reset all state
         removeWhite.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -1028,20 +691,6 @@
             whitePreview.src = '';
             whiteCard.classList.remove('has-image');
             whiteInput.value = '';
-            document.getElementById('whiteUrl').value = '';
-            document.getElementById('whiteStatus').textContent = '';
-            document.getElementById('whiteStatus').className = 'url-status';
-            
-            // Reset to file tab and clear hidden classes
-            const fileWrapper = document.getElementById('whiteFileWrapper');
-            const urlWrapper = document.getElementById('whiteUrlWrapper');
-            fileWrapper.classList.remove('hidden');
-            urlWrapper.classList.remove('active');
-            
-            // Reset tabs
-            document.querySelectorAll('.tab-btn[data-card="white"]').forEach(b => b.classList.remove('active'));
-            document.querySelector('.tab-btn[data-card="white"][data-tab="file"]').classList.add('active');
-            
             checkReady();
         });
 
@@ -1052,20 +701,6 @@
             blackPreview.src = '';
             blackCard.classList.remove('has-image');
             blackInput.value = '';
-            document.getElementById('blackUrl').value = '';
-            document.getElementById('blackStatus').textContent = '';
-            document.getElementById('blackStatus').className = 'url-status';
-            
-            // Reset to file tab and clear hidden classes
-            const fileWrapper = document.getElementById('blackFileWrapper');
-            const urlWrapper = document.getElementById('blackUrlWrapper');
-            fileWrapper.classList.remove('hidden');
-            urlWrapper.classList.remove('active');
-            
-            // Reset tabs
-            document.querySelectorAll('.tab-btn[data-card="black"]').forEach(b => b.classList.remove('active'));
-            document.querySelector('.tab-btn[data-card="black"][data-tab="file"]').classList.add('active');
-            
             checkReady();
         });
 
@@ -1079,7 +714,6 @@
             setTimeout(() => error.classList.remove('visible'), 4000);
         }
 
-        // Drag and drop
         [whiteCard, blackCard].forEach(card => {
             card.addEventListener('dragover', (e) => {
                 e.preventDefault();
@@ -1094,7 +728,7 @@
                 card.style.borderColor = '';
                 const files = e.dataTransfer.files;
                 if (files.length > 0) {
-                    const input = card.querySelector('.file-input');
+                    const input = card.querySelector('input');
                     const event = new Event('change');
                     Object.defineProperty(event, 'target', { value: { files }, enumerable: true });
                     input.dispatchEvent(event);
@@ -1196,26 +830,13 @@
             }, 50);
         });
 
-        // Download functions
-        function downloadImage(format) {
+        downloadBtn.addEventListener('click', () => {
             if (!processedCanvas) return;
-            
             const link = document.createElement('a');
-            const timestamp = new Date().toISOString().slice(0,19).replace(/:/g,'-');
-            
-            if (format === 'png') {
-                link.download = `transparent-${timestamp}.png`;
-                link.href = processedCanvas.toDataURL('image/png');
-            } else if (format === 'webp') {
-                link.download = `transparent-${timestamp}.webp`;
-                link.href = processedCanvas.toDataURL('image/webp', 0.9);
-            }
-            
+            link.download = 'transparent.png';
+            link.href = processedCanvas.toDataURL('image/png');
             link.click();
-        }
-
-        downloadPng.addEventListener('click', () => downloadImage('png'));
-        downloadWebp.addEventListener('click', () => downloadImage('webp'));
+        });
     </script>
 </body>
 </html>
