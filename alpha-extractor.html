@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alpha Extractor - Transparent Image Generator from White and Black Images</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0d0d0d;
+            --bg-elevated: #141414;
+            --bg-hover: #1a1a1a;
+            --border: #262626;
+            --border-hover: #404040;
+            --text: #fafafa;
+            --text-muted: #737373;
+            --accent: #fff;
+            --error: #dc2626;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 24px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* Upload Section */
+        .upload-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .upload-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            position: relative;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .upload-card:hover {
+            border-color: var(--border-hover);
+            background: var(--bg-hover);
+        }
+
+        .upload-card.has-image {
+            padding: 12px;
+            min-height: auto;
+        }
+
+        input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+
+        .upload-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .upload-icon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .upload-icon svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--text-muted);
+            display: block;
+        }
+
+        .upload-card.white-bg .upload-icon {
+            background: #fafafa;
+        }
+
+        .upload-card.black-bg .upload-icon {
+            background: #000;
+        }
+
+        .upload-text-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .upload-text {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .upload-hint {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 160px;
+            border-radius: 6px;
+            display: none;
+            object-fit: contain;
+        }
+
+        .upload-card.has-image .preview-image {
+            display: block;
+        }
+
+        .upload-card.has-image .upload-content {
+            display: none;
+        }
+
+        .image-label {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(0,0,0,0.8);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid var(--border);
+            display: none;
+            z-index: 5;
+        }
+
+        .upload-card.has-image .image-label {
+            display: block;
+        }
+
+        /* Controls */
+        .controls {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: flex;
+            gap: 24px;
+            align-items: flex-end;
+        }
+
+        .sliders {
+            display: flex;
+            gap: 24px;
+            flex: 1;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 600;
+        }
+
+        .value-badge {
+            font-family: 'SF Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text);
+            background: var(--bg);
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .slider-wrapper {
+            position: relative;
+            height: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .slider-track {
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: var(--bg);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .slider-fill {
+            height: 100%;
+            background: var(--text);
+            width: 0%;
+        }
+
+        input[type="range"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            -webkit-appearance: none;
+            cursor: pointer;
+            z-index: 2;
+            margin: 0;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--text);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            border: 2px solid var(--bg-elevated);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        /* Extract Button */
+        #processBtn {
+            background: var(--text);
+            color: var(--bg);
+            border: none;
+            padding: 10px 24px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            height: 36px;
+        }
+
+        #processBtn:hover:not(:disabled) {
+            background: #e5e5e5;
+            transform: translateY(-1px);
+        }
+
+        #processBtn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .loading.visible {
+            display: block;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 2px solid var(--bg);
+            border-top-color: var(--text);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading p {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* Error */
+        .error {
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid rgba(220, 38, 38, 0.2);
+            color: var(--error);
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            display: none;
+            font-size: 13px;
+        }
+
+        .error.visible {
+            display: block;
+        }
+
+        /* Results */
+        .results {
+            display: none;
+        }
+
+        .results.visible {
+            display: block;
+        }
+
+        .result-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .result-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .canvas-container {
+            position: relative;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        canvas {
+            max-width: 100%;
+            display: block;
+            background-image: 
+                linear-gradient(45deg, #1a1a1a 25%, transparent 25%), 
+                linear-gradient(-45deg, #1a1a1a 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #1a1a1a 75%), 
+                linear-gradient(-45deg, transparent 75%, #1a1a1a 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+            background-color: #0f0f0f;
+        }
+
+        .download-btn {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 8px 20px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .download-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-hover);
+        }
+
+        /* Remove button */
+        .remove-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 20;
+            padding: 0;
+        }
+
+        .remove-btn:hover {
+            background: var(--error);
+            border-color: var(--error);
+        }
+
+        .remove-btn svg {
+            width: 14px;
+            height: 14px;
+            stroke: var(--text);
+        }
+
+        .upload-card.has-image .remove-btn {
+            display: flex;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .upload-section {
+                grid-template-columns: 1fr;
+            }
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .sliders {
+                flex-direction: column;
+            }
+            #processBtn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Alpha Extractor</h1>
+            <p class="subtitle">Difference matting for transparent PNG generation</p>
+        </header>
+
+        <div class="upload-section">
+            <div class="upload-card white-bg" id="whiteCard">
+                <input type="file" id="whiteInput" accept="image/*">
+                <div class="upload-content">
+                    <div class="upload-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <div class="upload-text-group">
+                        <div class="upload-text">White BG</div>
+                        <div class="upload-hint">Drop or click</div>
+                    </div>
+                </div>
+                <span class="image-label">White</span>
+                <button class="remove-btn" id="removeWhite">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+                <img class="preview-image" id="whitePreview">
+            </div>
+
+            <div class="upload-card black-bg" id="blackCard">
+                <input type="file" id="blackInput" accept="image/*">
+                <div class="upload-content">
+                    <div class="upload-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <div class="upload-text-group">
+                        <div class="upload-text">Black BG</div>
+                        <div class="upload-hint">Drop or click</div>
+                    </div>
+                </div>
+                <span class="image-label">Black</span>
+                <button class="remove-btn" id="removeBlack">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+                <img class="preview-image" id="blackPreview">
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="sliders">
+                <div class="control-group">
+                    <div class="control-header">
+                        <label>Threshold</label>
+                        <span class="value-badge" id="thresholdValue">5</span>
+                    </div>
+                    <div class="slider-wrapper">
+                        <div class="slider-track">
+                            <div class="slider-fill" id="thresholdFill"></div>
+                        </div>
+                        <input type="range" id="threshold" min="0" max="50" value="5">
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="control-header">
+                        <label>Refinement</label>
+                        <span class="value-badge" id="refinementValue">10</span>
+                    </div>
+                    <div class="slider-wrapper">
+                        <div class="slider-track">
+                            <div class="slider-fill" id="refinementFill"></div>
+                        </div>
+                        <input type="range" id="refinement" min="0" max="100" value="10">
+                    </div>
+                </div>
+            </div>
+            <button id="processBtn" disabled>Extract</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Processing...</p>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="results" id="results">
+            <div class="result-card">
+                <div class="result-label">
+                    Result
+                    <span style="color: var(--text-muted); font-weight: 400;">— Transparent PNG</span>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="resultCanvas"></canvas>
+                </div>
+                <button class="download-btn" id="downloadBtn">Download</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let whiteImage = null;
+        let blackImage = null;
+        let processedCanvas = null;
+
+        // Elements
+        const whiteInput = document.getElementById('whiteInput');
+        const blackInput = document.getElementById('blackInput');
+        const whitePreview = document.getElementById('whitePreview');
+        const blackPreview = document.getElementById('blackPreview');
+        const whiteCard = document.getElementById('whiteCard');
+        const blackCard = document.getElementById('blackCard');
+        const removeWhite = document.getElementById('removeWhite');
+        const removeBlack = document.getElementById('removeBlack');
+        const processBtn = document.getElementById('processBtn');
+        const results = document.getElementById('results');
+        const resultCanvas = document.getElementById('resultCanvas');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        
+        const thresholdSlider = document.getElementById('threshold');
+        const refinementSlider = document.getElementById('refinement');
+        const thresholdValue = document.getElementById('thresholdValue');
+        const refinementValue = document.getElementById('refinementValue');
+        const thresholdFill = document.getElementById('thresholdFill');
+        const refinementFill = document.getElementById('refinementFill');
+
+        function updateSliderFill(slider, fill, display) {
+            const min = parseInt(slider.min);
+            const max = parseInt(slider.max);
+            const val = parseInt(slider.value);
+            const percentage = ((val - min) / (max - min)) * 100;
+            fill.style.width = percentage + '%';
+            display.textContent = val;
+        }
+
+        function initSliders() {
+            updateSliderFill(thresholdSlider, thresholdFill, thresholdValue);
+            updateSliderFill(refinementSlider, refinementFill, refinementValue);
+        }
+
+        thresholdSlider.addEventListener('input', () => {
+            updateSliderFill(thresholdSlider, thresholdFill, thresholdValue);
+        });
+
+        refinementSlider.addEventListener('input', () => {
+            updateSliderFill(refinementSlider, refinementFill, refinementValue);
+        });
+
+        initSliders();
+
+        function handleFile(file) {
+            return new Promise((resolve, reject) => {
+                if (!file || !file.type.startsWith('image/')) {
+                    reject('Invalid image file');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.onerror = () => reject('Failed to load image');
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        whiteInput.addEventListener('change', async (e) => {
+            try {
+                whiteImage = await handleFile(e.target.files[0]);
+                whitePreview.src = whiteImage.src;
+                whiteCard.classList.add('has-image');
+                checkReady();
+            } catch (err) {
+                showError(err);
+            }
+        });
+
+        blackInput.addEventListener('change', async (e) => {
+            try {
+                blackImage = await handleFile(e.target.files[0]);
+                blackPreview.src = blackImage.src;
+                blackCard.classList.add('has-image');
+                checkReady();
+            } catch (err) {
+                showError(err);
+            }
+        });
+
+        removeWhite.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            whiteImage = null;
+            whitePreview.src = '';
+            whiteCard.classList.remove('has-image');
+            whiteInput.value = '';
+            checkReady();
+        });
+
+        removeBlack.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            blackImage = null;
+            blackPreview.src = '';
+            blackCard.classList.remove('has-image');
+            blackInput.value = '';
+            checkReady();
+        });
+
+        function checkReady() {
+            processBtn.disabled = !(whiteImage && blackImage);
+        }
+
+        function showError(msg) {
+            error.textContent = msg;
+            error.classList.add('visible');
+            setTimeout(() => error.classList.remove('visible'), 4000);
+        }
+
+        [whiteCard, blackCard].forEach(card => {
+            card.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                card.style.borderColor = 'var(--border-hover)';
+            });
+            card.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                card.style.borderColor = '';
+            });
+            card.addEventListener('drop', (e) => {
+                e.preventDefault();
+                card.style.borderColor = '';
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const input = card.querySelector('input');
+                    const event = new Event('change');
+                    Object.defineProperty(event, 'target', { value: { files }, enumerable: true });
+                    input.dispatchEvent(event);
+                }
+            });
+        });
+
+        function extractAlpha(whiteImg, blackImg, threshold, refinement) {
+            const width = Math.min(whiteImg.width, blackImg.width);
+            const height = Math.min(whiteImg.height, blackImg.height);
+            
+            const whiteCanvas = document.createElement('canvas');
+            const blackCanvas = document.createElement('canvas');
+            whiteCanvas.width = blackCanvas.width = width;
+            whiteCanvas.height = blackCanvas.height = height;
+            
+            const whiteCtx = whiteCanvas.getContext('2d');
+            const blackCtx = blackCanvas.getContext('2d');
+            
+            whiteCtx.drawImage(whiteImg, 0, 0, width, height);
+            blackCtx.drawImage(blackImg, 0, 0, width, height);
+            
+            const whiteData = whiteCtx.getImageData(0, 0, width, height).data;
+            const blackData = blackCtx.getImageData(0, 0, width, height).data;
+            
+            const outputCanvas = document.createElement('canvas');
+            outputCanvas.width = width;
+            outputCanvas.height = height;
+            const outputCtx = outputCanvas.getContext('2d');
+            const outputData = outputCtx.createImageData(width, height);
+            const out = outputData.data;
+            
+            const bgDist = Math.sqrt(3 * 255 * 255);
+            const thresh = threshold / 255;
+            const refine = refinement / 100;
+            
+            for (let i = 0; i < width * height; i++) {
+                const idx = i * 4;
+                
+                const rW = whiteData[idx], gW = whiteData[idx + 1], bW = whiteData[idx + 2];
+                const rB = blackData[idx], gB = blackData[idx + 1], bB = blackData[idx + 2];
+                
+                const pixelDist = Math.sqrt(Math.pow(rW - rB, 2) + Math.pow(gW - gB, 2) + Math.pow(bW - bB, 2));
+                
+                let alpha = 1 - (pixelDist / bgDist);
+                
+                if (alpha < thresh) alpha = 0;
+                else if (alpha > 1 - thresh) alpha = 1;
+                else alpha = (alpha - thresh) / (1 - 2 * thresh);
+                
+                if (refine > 0 && alpha > 0 && alpha < 1) {
+                    alpha = Math.pow(alpha, 1 + (refine * 0.5));
+                }
+                
+                let rOut = 0, gOut = 0, bOut = 0;
+                
+                if (alpha > 0.01) {
+                    const invAlpha = 1 / alpha;
+                    rOut = Math.min(255, rB * invAlpha);
+                    gOut = Math.min(255, gB * invAlpha);
+                    bOut = Math.min(255, bB * invAlpha);
+                }
+                
+                out[idx] = Math.round(rOut);
+                out[idx + 1] = Math.round(gOut);
+                out[idx + 2] = Math.round(bOut);
+                out[idx + 3] = Math.round(alpha * 255);
+            }
+            
+            outputCtx.putImageData(outputData, 0, 0);
+            return outputCanvas;
+        }
+
+        processBtn.addEventListener('click', () => {
+            if (!whiteImage || !blackImage) return;
+            
+            loading.classList.add('visible');
+            results.classList.remove('visible');
+            error.classList.remove('visible');
+            
+            setTimeout(() => {
+                try {
+                    const threshold = parseInt(thresholdSlider.value);
+                    const refinement = parseInt(refinementSlider.value);
+                    
+                    processedCanvas = extractAlpha(whiteImage, blackImage, threshold, refinement);
+                    
+                    resultCanvas.width = processedCanvas.width;
+                    resultCanvas.height = processedCanvas.height;
+                    const ctx = resultCanvas.getContext('2d');
+                    ctx.drawImage(processedCanvas, 0, 0);
+                    
+                    loading.classList.remove('visible');
+                    results.classList.add('visible');
+                } catch (err) {
+                    loading.classList.remove('visible');
+                    showError('Processing failed');
+                }
+            }, 50);
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            if (!processedCanvas) return;
+            const link = document.createElement('a');
+            link.download = 'transparent.png';
+            link.href = processedCanvas.toDataURL('image/png');
+            link.click();
+        });
+    </script>
+</body>
+</html>
