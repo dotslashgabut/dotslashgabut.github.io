@@ -88,52 +88,7 @@
   
         #ui-left { bottom: 20px; left: 20px; }  
         #ui-right { bottom: 20px; right: 20px; }  
-        #ui-global { top: 20px; right: 20px; }
-        #ui-compare { top: 20px; left: 20px; flex-direction: column; gap: 6px; }
-
-        #ui-compare button {
-            width: auto;
-            height: 36px;
-            padding: 0 12px;
-            font-size: 11px;
-            letter-spacing: 0.8px;
-            text-transform: uppercase;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            justify-content: flex-start;
-            gap: 8px;
-        }
-
-        #ui-compare button.active {
-            background: var(--ui-hover);
-            color: var(--ui-hover-text);
-            border-color: var(--ui-hover);
-        }
-
-        #ui-compare button svg {
-            width: 14px;
-            height: 14px;
-            flex-shrink: 0;
-        }
-
-        .size-badge {
-            position: absolute;
-            bottom: 90px;
-            background: rgba(0,0,0,0.72);
-            color: #fff;
-            font-size: 11px;
-            letter-spacing: 0.5px;
-            padding: 4px 10px;
-            pointer-events: none;
-            z-index: 15;
-            border: 1px solid #333;
-            backdrop-filter: blur(4px);
-            white-space: nowrap;
-            display: none;
-            font-family: monospace;
-        }
-        #badge-left, #badge-right {
-            position: absolute;
-        }
+        #ui-global { top: 20px; right: 20px; }  
   
         .ui-label {  
             position: absolute;  
@@ -215,35 +170,11 @@
         </div>  
   
         <!-- Slider Line -->  
-        <div id="slider-line"></div>
-
-        <!-- Size Badges -->
-        <div class="size-badge" id="badge-left"></div>
-        <div class="size-badge" id="badge-right"></div>
+        <div id="slider-line"></div>  
     </div>  
   
     <!-- UI Overlay -->  
     <div id="ui">  
-        <!-- Compare Mode Controls -->
-        <div class="ui-container" id="ui-compare">
-            <button id="btn-height" onclick="setCompareMode('height')" title="Compare by Height">
-                <svg viewBox="0 0 24 24"><path d="M16 11h-4V3h-1v8H7l4.5 4.5L16 11zm-9 2v1h10v-1H7zm0 3v1h10v-1H7z"/></svg>
-                Match Height
-            </button>
-            <button id="btn-width" onclick="setCompareMode('width')" title="Compare by Width">
-                <svg viewBox="0 0 24 24"><path d="M13 16v-4h8v-1h-8V7l-4.5 4.5L13 16zm-2 1H4v1h7v-1zm-7-4H3v1h1v-1zm0-3H3v1h1V10z"/></svg>
-                Match Width
-            </button>
-            <button id="btn-ratio" onclick="setCompareMode('ratio')" title="Compare by Aspect Ratio">
-                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z"/></svg>
-                Match Ratio
-            </button>
-            <button id="btn-resolution" onclick="setCompareMode('resolution')" title="Compare by Real Resolution">
-                <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12zM10 9h2.5v1.5H10V12h4v-4h-4z"/></svg>
-                Real Resolution
-            </button>
-        </div>
-
         <!-- Global Controls -->  
         <div class="ui-container" id="ui-global">  
             <button onclick="toggleFullscreen()" title="Toggle Fullscreen (F)">
@@ -303,11 +234,7 @@
         let panY = 0;  
           
         let isDragging = false;  
-        let startX, startY, initialPanX, initialPanY;
-
-        // Compare Mode State
-        let compareMode = null; // null | 'height' | 'width' | 'ratio' | 'resolution'
-        let mediaDims = { left: null, right: null }; // { w, h } natural dimensions
+        let startX, startY, initialPanX, initialPanY;  
   
         // DOM Elements  
         const app = document.getElementById('app');  
@@ -318,21 +245,12 @@
         const videoLeft = document.getElementById('video-left');  
         const videoRight = document.getElementById('video-right');  
         const ui = document.getElementById('ui');  
-        const helpModal = document.getElementById('help-modal');
-        const badgeLeft = document.getElementById('badge-left');
-        const badgeRight = document.getElementById('badge-right');
+        const helpModal = document.getElementById('help-modal');  
   
         // Functions: View Logic  
         function updateSplit() {  
             layerRight.style.clipPath = `inset(0 0 0 ${splitPos}%)`;  
-            sliderLine.style.left = `${splitPos}%`;
-            // Keep badges inside their respective halves, hugging the slider line
-            const sliderPx = (splitPos / 100) * window.innerWidth;
-            const gap = 10;
-            badgeLeft.style.left   = '';
-            badgeLeft.style.right  = `${window.innerWidth - sliderPx + gap}px`;
-            badgeRight.style.right = '';
-            badgeRight.style.left  = `${sliderPx + gap}px`;
+            sliderLine.style.left = `${splitPos}%`;  
         }  
   
         function updateTransform() {  
@@ -346,158 +264,8 @@
         function resetView() {  
             zoom = 1;  
             panX = 0;  
-            panY = 0;
-            // Also reset compare mode overrides
-            clearCompareSizing();
+            panY = 0;  
             updateTransform();  
-        }
-
-        // ── Compare Mode Functions ──────────────────────────────────────────
-
-        function getActiveEl(side) {
-            const vid = document.getElementById(`video-${side}`);
-            const img = document.getElementById(`img-${side}`);
-            return vid.style.display !== 'none' ? vid : img;
-        }
-
-        function getNaturalDims(side) {
-            const vid = document.getElementById(`video-${side}`);
-            const img = document.getElementById(`img-${side}`);
-            if (vid.style.display !== 'none') {
-                return vid.videoWidth && vid.videoHeight
-                    ? { w: vid.videoWidth, h: vid.videoHeight }
-                    : null;
-            }
-            return img.naturalWidth && img.naturalHeight
-                ? { w: img.naturalWidth, h: img.naturalHeight }
-                : null;
-        }
-
-        function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
-
-        function ratioStr(w, h) {
-            const d = gcd(w, h);
-            return `${w/d}:${h/d}`;
-        }
-
-        function clearCompareSizing() {
-            for (const side of ['left', 'right']) {
-                const el = getActiveEl(side);
-                el.style.width = '';
-                el.style.height = '';
-                el.style.maxWidth = '';
-                el.style.maxHeight = '';
-                el.style.objectFit = 'contain';
-            }
-            badgeLeft.style.display = 'none';
-            badgeRight.style.display = 'none';
-        }
-
-        function applyCompareSizing() {
-            if (!compareMode) { clearCompareSizing(); return; }
-
-            const dL = mediaDims.left || getNaturalDims('left');
-            const dR = mediaDims.right || getNaturalDims('right');
-            if (!dL || !dR) return;
-
-            const elL = getActiveEl('left');
-            const elR = getActiveEl('right');
-
-            // Base size: use viewport as reference
-            const vw = window.innerWidth;
-            const vh = window.innerHeight;
-
-            // Reset first
-            for (const el of [elL, elR]) {
-                el.style.objectFit = 'fill';
-                el.style.maxWidth = 'none';
-                el.style.maxHeight = 'none';
-            }
-
-            let wL, hL, wR, hR;
-
-            if (compareMode === 'height') {
-                // Both rendered at same pixel height; widths scale with aspect ratio
-                const refH = vh * 0.8;
-                hL = refH; wL = (dL.w / dL.h) * refH;
-                hR = refH; wR = (dR.w / dR.h) * refH;
-
-                badgeLeft.textContent  = `H: ${Math.round(refH)}px  (${dL.w}×${dL.h})`;
-                badgeRight.textContent = `H: ${Math.round(refH)}px  (${dR.w}×${dR.h})`;
-
-            } else if (compareMode === 'width') {
-                // Both rendered at same pixel width; heights scale with aspect ratio
-                const refW = vw * 0.4;
-                wL = refW; hL = (dL.h / dL.w) * refW;
-                wR = refW; hR = (dR.h / dR.w) * refW;
-
-                badgeLeft.textContent  = `W: ${Math.round(refW)}px  (${dL.w}×${dL.h})`;
-                badgeRight.textContent = `W: ${Math.round(refW)}px  (${dR.w}×${dR.h})`;
-
-            } else if (compareMode === 'ratio') {
-                // Fit both to same bounding box; highlight aspect ratio diff via actual shape
-                const box = Math.min(vw * 0.38, vh * 0.7);
-                // Scale each so its largest dimension = box
-                const scaleL = box / Math.max(dL.w, dL.h);
-                wL = dL.w * scaleL; hL = dL.h * scaleL;
-                const scaleR = box / Math.max(dR.w, dR.h);
-                wR = dR.w * scaleR; hR = dR.h * scaleR;
-
-                badgeLeft.textContent  = `Ratio: ${ratioStr(dL.w, dL.h)}`;
-                badgeRight.textContent = `Ratio: ${ratioStr(dR.w, dR.h)}`;
-
-            } else if (compareMode === 'resolution') {
-                // Scale both so 1 media-pixel = same screen-pixel count
-                // Use the larger media as baseline and scale the other down proportionally
-                const maxPx = Math.max(dL.w * dL.h, dR.w * dR.h);
-                const refScale = Math.min(vw * 0.38, vh * 0.7) / Math.sqrt(maxPx);
-
-                wL = dL.w * refScale; hL = dL.h * refScale;
-                wR = dR.w * refScale; hR = dR.h * refScale;
-
-                badgeLeft.textContent  = `${dL.w}×${dL.h}  (${(dL.w*dL.h/1e6).toFixed(2)}MP)`;
-                badgeRight.textContent = `${dR.w}×${dR.h}  (${(dR.w*dR.h/1e6).toFixed(2)}MP)`;
-            }
-
-            elL.style.width  = `${wL}px`;
-            elL.style.height = `${hL}px`;
-            elR.style.width  = `${wR}px`;
-            elR.style.height = `${hR}px`;
-
-            badgeLeft.style.display  = 'block';
-            badgeRight.style.display = 'block';
-        }
-
-        function setCompareMode(mode) {
-            if (compareMode === mode) {
-                // Toggle off
-                compareMode = null;
-                document.querySelectorAll('#ui-compare button').forEach(b => b.classList.remove('active'));
-                clearCompareSizing();
-                updateTransform();
-                return;
-            }
-            compareMode = mode;
-            document.querySelectorAll('#ui-compare button').forEach(b => b.classList.remove('active'));
-            document.getElementById(`btn-${mode}`).classList.add('active');
-            // Update cached dims
-            mediaDims.left  = getNaturalDims('left');
-            mediaDims.right = getNaturalDims('right');
-            applyCompareSizing();
-        }
-
-        function onMediaLoaded(side) {
-            mediaDims[side] = getNaturalDims(side);
-            if (compareMode) applyCompareSizing();
-        }
-
-        // Patch updateTransform to not override compare sizing
-        function updateTransform() {
-            const transform = `scale(${zoom}) translate(${panX}px, ${panY}px)`;
-            imgLeft.style.transform   = transform;
-            imgRight.style.transform  = transform;
-            videoLeft.style.transform = transform;
-            videoRight.style.transform = transform;
         }  
   
         function toggleHelp() {  
@@ -524,7 +292,6 @@
                 img.style.display = 'none';
                 vid.style.display = 'block';
                 vid.src = url;
-                vid.onloadedmetadata = () => onMediaLoaded(side);
                 // Attempt to synchronize videos if the other side is also a playing video
                 const otherVid = document.getElementById(`video-${side === 'left' ? 'right' : 'left'}`);
                 if (otherVid.style.display === 'block' && !otherVid.paused) {
@@ -534,7 +301,6 @@
                 vid.style.display = 'none';
                 img.style.display = 'block';
                 img.src = url;
-                img.onload = () => onMediaLoaded(side);
             }
         }
 
