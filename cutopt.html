@@ -93,7 +93,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .kseg{width:3px;background:rgba(255,255,255,.18);flex-shrink:0}
 .sheets-con{display:flex;flex-direction:column;gap:18px;margin-top:4px;max-height:540px;overflow-y:auto;padding-right:3px}
 .sheet-wrap{}
-.sheet-lbl{font-family:var(--mono);font-size:.7rem;color:var(--text-muted);margin-bottom:5px;display:flex;justify-content:space-between}
+.sheet-lbl{font-family:var(--mono);font-size:.7rem;color:var(--text-muted);margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.btn-dl{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:6px;font-size:.7rem;font-weight:700;font-family:var(--sans);cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--accent);transition:all .2s;white-space:nowrap;text-decoration:none;flex-shrink:0}
+.btn-dl:hover{background:var(--accent);color:#0d0f14;border-color:var(--accent);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,229,176,.25)}
 .sheet-cv-wrap{position:relative;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:var(--surface2)}
 .sheet-cv-wrap canvas{display:block;width:100%;height:auto}
 .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
@@ -115,7 +117,25 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .toast{position:fixed;bottom:22px;right:22px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);padding:12px 18px;border-radius:var(--radius-sm);font-size:.82rem;z-index:999;box-shadow:var(--shadow);color:var(--text);transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none;max-width:320px}
 .toast.show{transform:none;opacity:1}
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--surface)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+/* ── PAPER MODE ── */
+.paper-size-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:6px;margin-top:6px;max-height:200px;overflow-y:auto;padding-right:2px}
+.psz-btn{padding:7px 6px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);cursor:pointer;font-family:var(--mono);font-size:.68rem;color:var(--text-muted);transition:all .18s;text-align:center;line-height:1.35}
+.psz-btn:hover{border-color:var(--accent);color:var(--accent)}
+.psz-btn.active{background:var(--accent);color:#0d0f14;border-color:var(--accent);font-weight:700}
+.psz-btn .psz-name{font-weight:700;font-size:.75rem;display:block}
+.psz-btn .psz-dim{font-size:.6rem;opacity:.75;display:block}
+.paper-family-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
+.pftab{padding:4px 12px;border-radius:99px;font-size:.7rem;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);font-family:var(--sans);transition:all .18s}
+.pftab.active{background:var(--accent);color:#0d0f14;border-color:var(--accent)}
+.ph-paper{display:grid;grid-template-columns:1fr 1fr 1fr 36px;gap:6px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:7px;padding:0 2px}
+.pr-paper{display:grid;grid-template-columns:1fr 1fr 1fr 36px;gap:6px;align-items:center;margin-bottom:7px;animation:si .2s ease}
+.pr-paper input,.pr-paper select{padding:6px 8px;font-size:.8rem}
+.orient-tog{display:flex;gap:4px}
+.orient-btn{flex:1;padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;font-size:.7rem;font-weight:700;font-family:var(--sans);transition:all .18s;text-align:center}
+.orient-btn.active{background:var(--surface);color:var(--text);border-color:var(--accent)}
+.grain-indicator{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:middle;margin-left:4px}
 @media(max-width:600px){header{padding:12px 14px}.container{padding:14px 10px}.card{padding:16px 12px}.ph2d,.pr2d{grid-template-columns:1.2fr 1.2fr 1.5fr .8fr 28px}.mode-banner{flex-direction:column;gap:8px;padding:10px 14px}}
+
 @media print{header,.btn,.tab,.chip,.btn-del,.arow,.mode-banner{display:none!important}body{background:#fff;color:#000}.card{border:1px solid #ccc;box-shadow:none}}
 </style>
 </head>
@@ -134,6 +154,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
   <div class="mode-switcher">
     <button class="mode-btn active" id="btn1D" onclick="setMode('1d')">📏 1D Linear</button>
     <button class="mode-btn" id="btn2D" onclick="setMode('2d')">▦ 2D Sheet</button>
+    <button class="mode-btn" id="btnPaper" onclick="setMode('paper')">📄 Paper</button>
   </div>
 </div>
 
@@ -223,6 +244,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
       <div style="margin-top:20px"><div class="cpt">Cut Layout Visualization</div><div class="cpcon" id="viz1d"></div><div class="legend" id="leg1d"></div></div>
       <div style="margin-top:20px"><div class="cpt">Piece Summary</div><div style="overflow-x:auto"><table class="stbl"><thead><tr><th>Label</th><th>Length</th><th>Qty</th><th>Bar(s)</th><th>Status</th></tr></thead><tbody id="sum1d"></tbody></table></div></div>
       <div class="arow" style="margin-top:16px">
+        <button class="btn btn-s btn-sm" onclick="dlAllBars()">⬇ Download All Bars</button>
         <button class="btn btn-s btn-sm" onclick="copy1d()">📋 Copy Report</button>
         <button class="btn btn-s btn-sm" onclick="window.print()">🖨 Print</button>
         <button class="btn btn-d btn-sm" onclick="document.getElementById('res1d').style.display='none'">✕ Close</button>
@@ -321,9 +343,166 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
       <div style="margin-top:20px"><div class="cpt">Sheet Layout Visualization</div><div class="sheets-con" id="shviz"></div><div class="legend" id="leg2d"></div></div>
       <div style="margin-top:20px"><div class="cpt">Piece Summary</div><div style="overflow-x:auto"><table class="stbl"><thead><tr><th>Label</th><th>W × H</th><th>Qty</th><th>Sheet(s)</th><th>Rotated</th><th>Status</th></tr></thead><tbody id="sum2d"></tbody></table></div></div>
       <div class="arow" style="margin-top:16px">
+        <button class="btn btn-s btn-sm" onclick="dlAllSheets()">⬇ Download All Sheets</button>
         <button class="btn btn-s btn-sm" onclick="copy2d()">📋 Copy Report</button>
         <button class="btn btn-s btn-sm" onclick="window.print()">🖨 Print</button>
         <button class="btn btn-d btn-sm" onclick="document.getElementById('res2d').style.display='none'">✕ Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ PAPER SECTION ══════════════ -->
+<div id="secPaper" style="display:none">
+  <div class="grid">
+    <!-- LEFT: Parent sheet settings -->
+    <div><div class="card">
+      <div class="card-title">Parent Sheet (Stock)</div>
+
+      <div class="form-group">
+        <label>Paper Family</label>
+        <div class="paper-family-tabs" id="pfamilyTabs">
+          <button class="pftab active" onclick="showFamily('iso-a',this)">ISO A</button>
+          <button class="pftab" onclick="showFamily('iso-b',this)">ISO B</button>
+          <button class="pftab" onclick="showFamily('iso-c',this)">ISO C</button>
+          <button class="pftab" onclick="showFamily('us',this)">US / ANSI</button>
+          <button class="pftab" onclick="showFamily('arch',this)">Arch</button>
+          <button class="pftab" onclick="showFamily('photo',this)">Photo</button>
+          <button class="pftab" onclick="showFamily('newspaper',this)">Newspaper</button>
+          <button class="pftab" onclick="showFamily('envelope',this)">Envelope</button>
+          <button class="pftab" onclick="showFamily('book',this)">Book</button>
+          <button class="pftab" onclick="showFamily('custom',this)">Custom</button>
+        </div>
+        <div class="paper-size-grid" id="parentSizeGrid"></div>
+      </div>
+
+      <div class="form-group" id="customParentGroup" style="display:none">
+        <label>Custom Sheet Size (mm)</label>
+        <div class="input-row">
+          <input type="number" id="custParentW" placeholder="Width mm" min="1" oninput="updateParentDisplay()">
+          <input type="number" id="custParentH" placeholder="Height mm" min="1" oninput="updateParentDisplay()">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Sheet Orientation</label>
+        <div class="orient-tog">
+          <button class="orient-btn active" id="porP" onclick="setParentOrient('portrait',this)">◻ Portrait</button>
+          <button class="orient-btn" id="porL" onclick="setParentOrient('landscape',this)">▭ Landscape</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Selected Sheet Size</label>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-family:var(--mono);font-size:.9rem">
+          <span id="parentSizeDisplay" style="color:var(--accent)">A1 — 594 × 841 mm</span>
+        </div>
+      </div>
+
+      <div class="input-row">
+        <div class="form-group"><label>Sheet Count</label><input type="number" id="paperSheetCount" value="5" min="1" max="100"></div>
+        <div class="form-group"><label>Blade Kerf (mm)</label><input type="number" id="paperKerf" value="1" min="0" step="0.5"></div>
+      </div>
+      <div class="input-row">
+        <div class="form-group"><label>Edge Margin (mm)</label><input type="number" id="paperMargin" value="0" min="0"></div>
+        <div class="form-group"><label>Allow Rotation?</label>
+          <select id="paperRotate"><option value="1">Yes</option><option value="0">No (keep orientation)</option></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Packing Algorithm</label>
+        <select id="paperAlgo">
+          <option value="guillotine">Guillotine (Best for paper)</option>
+          <option value="maxrects">Max-Rects BFD</option>
+          <option value="shelf">Shelf Next-Fit (Fast)</option>
+        </select>
+      </div>
+      <div class="ibox"><span class="iicon">ℹ</span>All dimensions in mm. Portrait = shorter side is width. Guillotine best matches how paper is physically cut in sequence.</div>
+    </div></div>
+
+    <!-- RIGHT: Pieces to cut -->
+    <div><div class="card">
+      <div class="card-title">Pieces to Cut</div>
+      <div class="tabs">
+        <button class="tab active" onclick="swTabPaper('named',this)">Named Sizes</button>
+        <button class="tab" onclick="swTabPaper('custom',this)">Custom Sizes</button>
+        <button class="tab" onclick="swTabPaper('bulk',this)">Bulk Import</button>
+      </div>
+
+      <!-- Named sizes tab -->
+      <div id="tPaperNamed">
+        <div class="form-group">
+          <label>Select Paper Family</label>
+          <div class="paper-family-tabs" id="pieceFamilyTabs">
+            <button class="pftab active" onclick="showPieceFamily('iso-a',this)">ISO A</button>
+            <button class="pftab" onclick="showPieceFamily('iso-b',this)">ISO B</button>
+            <button class="pftab" onclick="showPieceFamily('iso-c',this)">ISO C</button>
+            <button class="pftab" onclick="showPieceFamily('us',this)">US / ANSI</button>
+            <button class="pftab" onclick="showPieceFamily('arch',this)">Arch</button>
+            <button class="pftab" onclick="showPieceFamily('photo',this)">Photo</button>
+            <button class="pftab" onclick="showPieceFamily('newspaper',this)">News</button>
+            <button class="pftab" onclick="showPieceFamily('envelope',this)">Env</button>
+            <button class="pftab" onclick="showPieceFamily('book',this)">Book</button>
+          </div>
+          <div class="paper-size-grid" id="pieceSizeGrid" style="margin-top:8px"></div>
+        </div>
+        <div class="form-group">
+          <label>Quantity</label>
+          <input type="number" id="namedPieceQty" value="1" min="1" max="999">
+        </div>
+        <div class="arow">
+          <button class="btn btn-s btn-sm" onclick="addNamedPiece()">+ Add Selected</button>
+        </div>
+      </div>
+
+      <!-- Custom sizes tab -->
+      <div id="tPaperCustom" style="display:none">
+        <div class="ph-paper"><span>W (mm)</span><span>H (mm)</span><span>Label / Qty</span><span></span></div>
+        <div id="listPaper"></div>
+        <div class="arow">
+          <button class="btn btn-s btn-sm" onclick="addPPaper()">+ Add</button>
+          <button class="btn btn-d btn-sm" onclick="clearPPaper()">🗑 Clear All</button>
+        </div>
+      </div>
+
+      <!-- Bulk import tab -->
+      <div id="tPaperBulk" style="display:none">
+        <label>Format: width, height, label, qty (mm)</label>
+        <textarea id="bulkPaper" style="height:100px;resize:vertical" placeholder="210, 297, A4, 10&#10;148, 210, A5, 20&#10;105, 148, A6, 30"></textarea>
+        <div class="arow">
+          <button class="btn btn-s btn-sm" onclick="parseBulkPaper()">Parse & Import</button>
+          <button class="btn btn-s btn-sm" onclick="exBulkPaper()">Load Example</button>
+        </div>
+      </div>
+
+      <!-- Piece list summary (always visible) -->
+      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div class="cpt" style="margin-bottom:0">Cut List (<span id="paperPieceCount">0</span> types)</div>
+          <button class="btn btn-d btn-sm" onclick="clearPPaper()" style="padding:4px 10px;font-size:.7rem">🗑 Clear All</button>
+        </div>
+        <div id="paperPieceList" style="max-height:160px;overflow-y:auto"></div>
+      </div>
+
+      <div style="margin-top:18px">
+        <button class="btn btn-p btn-full" onclick="runPaper()">⚡ Optimize Paper Cuts</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- PAPER RESULTS -->
+  <div class="results-section" id="resPaper" style="display:none">
+    <div class="card" style="animation-delay:.1s">
+      <div class="card-title">Results — Paper Cutting</div>
+      <div class="stats-grid" id="sgPaper"></div>
+      <div class="eff-wrap"><div class="eff-lbl"><span>Sheet Efficiency</span><span id="epPaper">0%</span></div><div class="eff-track"><div class="eff-fill" id="efPaper" style="width:0%"></div></div></div>
+      <div style="margin-top:20px"><div class="cpt">Sheet Layout Visualization</div><div class="sheets-con" id="shvizPaper"></div><div class="legend" id="legPaper"></div></div>
+      <div style="margin-top:20px"><div class="cpt">Cut Summary</div><div style="overflow-x:auto"><table class="stbl"><thead><tr><th>Label</th><th>Size</th><th>Qty</th><th>Sheet(s)</th><th>Rotated</th><th>Status</th></tr></thead><tbody id="sumPaper"></tbody></table></div></div>
+      <div class="arow" style="margin-top:16px">
+        <button class="btn btn-s btn-sm" onclick="dlAllPaper()">⬇ Download All Sheets</button>
+        <button class="btn btn-s btn-sm" onclick="copyPaper()">📋 Copy Report</button>
+        <button class="btn btn-s btn-sm" onclick="window.print()">🖨 Print</button>
+        <button class="btn btn-d btn-sm" onclick="document.getElementById('resPaper').style.display='none'">✕ Close</button>
       </div>
     </div>
   </div>
@@ -343,6 +522,7 @@ window.onload=()=>{
   updateU1d();
   addP2d(600,400,'Door Panel',2);addP2d(300,200,'Shelf Board',6);addP2d(500,300,'Side Panel',4);addP2d(200,200,'Base Plate',3);
   updateU2d();
+  initPaper();
 };
 
 // ════════ THEME ════════
@@ -353,8 +533,10 @@ document.getElementById('themeToggle').onclick=()=>{dark=!dark;document.document
 function setMode(m){
   document.getElementById('sec1d').style.display=m==='1d'?'':'none';
   document.getElementById('sec2d').style.display=m==='2d'?'':'none';
+  document.getElementById('secPaper').style.display=m==='paper'?'':'none';
   document.getElementById('btn1D').classList.toggle('active',m==='1d');
   document.getElementById('btn2D').classList.toggle('active',m==='2d');
+  document.getElementById('btnPaper').classList.toggle('active',m==='paper');
 }
 
 // ════════ MATERIAL ════════
@@ -445,17 +627,8 @@ function run1d(){
     <div class="stat-box"><div class="stat-value">${fv(tk,unit)}</div><div class="stat-label">Kerf Loss</div></div>`;
   document.getElementById('ep1d').textContent=eff+'%';
   setTimeout(()=>{document.getElementById('ef1d').style.width=eff+'%'},80);
-  // Visual
-  document.getElementById('viz1d').innerHTML=bins.map((b,i)=>{
-    const segs=b.cuts.map((cut,ci)=>{
-      const pct=(cut.len/sLen*100).toFixed(3),kp=(kerf/sLen*100).toFixed(3);
-      const ks=(ci<b.cuts.length-1&&kerf>0)?`<div class="kseg" style="width:${kp}%"></div>`:'';
-      return `<div class="cseg" style="width:${pct}%;background:${c1[cut.label]}" title="${cut.label}: ${cut.len}${unit}"><span>${pct>5?cut.len:''}</span></div>${ks}`;
-    }).join('');
-    const wp=b.rem/sLen;const ws=b.rem>1?`<div class="wseg" title="Waste: ${fv(b.rem,unit)}">${wp>0.08?fv(b.rem,unit)+' waste':''}</div>`:'';
-    const et=trim>0?`<div class="kseg" style="width:${(trim/sLen*100).toFixed(2)}%;background:rgba(255,200,50,.2)"></div>`:'';
-    return `<div class="sbw"><div class="slbl"><span>Bar #${i+1}</span><span>${b.cuts.length} cuts · waste: ${fv(b.rem,unit)}</span></div><div class="sbar">${et}${segs}${ws}</div></div>`;
-  }).join('');
+  // Canvas-based bar visualization
+  draw1dBars(bins, sLen, kerf, trim, unit);
   const ulbls=[...new Set(cuts.map(c=>c.label))];
   document.getElementById('leg1d').innerHTML=ulbls.map(l=>`<div class="lgnd"><div class="ldot" style="background:${c1[l]}"></div>${l}</div>`).join('');
   const sm={};bins.forEach((b,bi)=>b.cuts.forEach(cut=>{if(!sm[cut.label])sm[cut.label]={len:cut.origLen,qty:0,bars:new Set()};sm[cut.label].qty++;sm[cut.label].bars.add(bi+1)}));
@@ -463,6 +636,134 @@ function run1d(){
   document.getElementById('res1d').style.display='';
   document.getElementById('res1d').scrollIntoView({behavior:'smooth',block:'start'});
   toast(`✓ Done! ${bins.length} bar(s) — ${eff}% efficiency`);
+}
+
+// ════════ 1D BAR CANVAS RENDERER ════════
+let _barCanvases=[];
+function dlBar(idx){
+  const cv=_barCanvases[idx];if(!cv)return;
+  const a=document.createElement('a');
+  a.download=`bar-${idx+1}.png`;
+  a.href=cv.toDataURL('image/png');
+  a.click();
+  toast(`⬇ Bar #${idx+1} downloaded`);
+}
+function dlAllBars(){
+  if(!_barCanvases.length){toast('⚠ No bars to download',true);return}
+  _barCanvases.forEach((cv,i)=>{
+    setTimeout(()=>{
+      const a=document.createElement('a');
+      a.download=`bar-${i+1}.png`;
+      a.href=cv.toDataURL('image/png');
+      a.click();
+    },i*180);
+  });
+  toast(`⬇ Downloading ${_barCanvases.length} bar image(s)…`);
+}
+function draw1dBars(bins,sLen,kerf,trim,unit){
+  _barCanvases=[];
+  const con=document.getElementById('viz1d');con.innerHTML='';
+  const isDark=document.documentElement.getAttribute('data-theme')!=='light';
+  const DW=Math.min((con.offsetWidth||680),900);
+  const BAR_H=52, PAD=12, HR=2; // HR = hi-res multiplier for download
+  bins.forEach((b,i)=>{
+    // Wrapper
+    const wrap=document.createElement('div');wrap.className='sbw';wrap.style.cssText='margin-bottom:14px';
+    // Label row
+    const lbl=document.createElement('div');lbl.className='slbl';
+    lbl.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:5px';
+    const info=document.createElement('span');info.textContent=`Bar #${i+1}`;
+    const meta=document.createElement('span');
+    meta.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap';
+    const metaText=document.createElement('span');
+    metaText.textContent=`${b.cuts.length} cuts · waste: ${fv(b.rem,unit)}`;
+    const dlBtn=document.createElement('button');
+    dlBtn.className='btn-dl';dlBtn.innerHTML='⬇ PNG';dlBtn.title=`Download Bar #${i+1} as PNG`;
+    dlBtn.onclick=()=>dlBar(i);
+    meta.appendChild(metaText);meta.appendChild(dlBtn);
+    lbl.appendChild(info);lbl.appendChild(meta);
+    // Display canvas
+    const cw=DW, ch=BAR_H+PAD*2;
+    const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;cv.style.cssText=`width:100%;border-radius:6px;display:block;border:1px solid var(--border)`;
+    // Hi-res canvas for download
+    const hcv=document.createElement('canvas');hcv.width=cw*HR;hcv.height=ch*HR;
+    _barCanvases.push(hcv);
+    wrap.appendChild(lbl);wrap.appendChild(cv);con.appendChild(wrap);
+    // Draw on both
+    [[cv,1],[hcv,HR]].forEach(([target,S])=>{
+      const ctx=target.getContext('2d');
+      if(S>1)ctx.scale(S,S);
+      const W=cw, H=ch;
+      // BG
+      ctx.fillStyle=isDark?'#1e2330':'#e8eaf2';ctx.fillRect(0,0,W,H);
+      // Bar area
+      const bx=PAD,by=PAD,bw=W-PAD*2,bh=BAR_H;
+      // Hatch for waste background
+      const hc=document.createElement('canvas');hc.width=8;hc.height=8;
+      const hx=hc.getContext('2d');hx.strokeStyle=isDark?'rgba(255,92,92,.5)':'rgba(200,60,60,.4)';
+      hx.lineWidth=1;hx.beginPath();hx.moveTo(0,8);hx.lineTo(8,0);hx.stroke();
+      const pat=ctx.createPattern(hc,'repeat');
+      ctx.save();ctx.beginPath();ctx.roundRect?ctx.roundRect(bx,by,bw,bh,5):ctx.rect(bx,by,bw,bh);
+      ctx.clip();ctx.fillStyle=isDark?'#161a23':'#d8dcea';ctx.fillRect(bx,by,bw,bh);
+      // Draw end trim
+      let curX=bx;
+      if(trim>0){
+        const tw=(trim/sLen)*bw;
+        ctx.fillStyle='rgba(255,200,77,.18)';ctx.fillRect(curX,by,tw,bh);
+        curX+=tw;
+      }
+      // Draw cuts
+      b.cuts.forEach((cut,ci)=>{
+        const kerfPx=(ci>0&&kerf>0)?(kerf/sLen)*bw:0;
+        curX+=kerfPx;
+        const segW=(cut.len/sLen)*bw;
+        const col=c1[cut.label]||'#888';
+        ctx.globalAlpha=.92;ctx.fillStyle=col;
+        ctx.fillRect(curX,by+1,segW-0.5,bh-2);
+        ctx.globalAlpha=1;
+        // Kerf gap line before this piece
+        if(ci>0&&kerf>0){
+          ctx.fillStyle=isDark?'rgba(255,255,255,.15)':'rgba(0,0,0,.1)';
+          ctx.fillRect(curX-kerfPx,by,kerfPx,bh);
+        }
+        // Label
+        const fs=Math.max(8,Math.min(segW*.14,13));
+        if(segW>28){
+          ctx.save();ctx.fillStyle='rgba(0,0,0,.7)';
+          ctx.font=`bold ${fs}px DM Mono,monospace`;
+          ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.beginPath();ctx.rect(curX,by+1,segW-1,bh-2);ctx.clip();
+          ctx.fillText(cut.label,curX+segW/2,by+bh/2-(fs*.38));
+          ctx.font=`${fs*.82}px DM Mono,monospace`;
+          ctx.fillStyle='rgba(0,0,0,.55)';
+          ctx.fillText(`${cut.len}`,curX+segW/2,by+bh/2+(fs*.65));
+          ctx.restore();
+        }
+        curX+=segW;
+      });
+      // Waste area
+      const remainW=bw-(curX-bx);
+      if(remainW>2){
+        ctx.globalAlpha=.28;ctx.fillStyle=pat;ctx.fillRect(curX,by,remainW,bh);ctx.globalAlpha=1;
+        if(remainW>40){
+          ctx.fillStyle=isDark?'rgba(255,92,92,.8)':'rgba(200,50,50,.7)';
+          ctx.font=`bold ${Math.min(11,remainW*.09)}px DM Mono,monospace`;
+          ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.fillText(`${fv(b.rem,unit)} waste`,curX+remainW/2,by+bh/2);
+        }
+      }
+      ctx.restore();
+      // Bar border
+      ctx.beginPath();ctx.roundRect?ctx.roundRect(bx,by,bw,bh,5):ctx.rect(bx,by,bw,bh);
+      ctx.strokeStyle=isDark?'rgba(42,48,69,.9)':'rgba(200,210,230,.9)';ctx.lineWidth=1;ctx.stroke();
+      // Bar number label (on hi-res only for watermark)
+      if(S>1){
+        ctx.fillStyle=isDark?'rgba(107,116,148,.6)':'rgba(80,90,120,.5)';
+        ctx.font=`bold 10px DM Mono,monospace`;ctx.textAlign='left';ctx.textBaseline='top';
+        ctx.fillText(`BAR #${i+1}  ·  ${sLen} ${unit}  ·  CutOpt`,bx+2,2);
+      }
+    });
+  });
 }
 
 // ════════ 2D ENGINE ════════
@@ -587,19 +888,63 @@ function run2d(){
 }
 
 // ════════ CANVAS RENDERER ════════
+let _drawnCanvases=[];
+function dlSheet(idx){
+  const cv=_drawnCanvases[idx];if(!cv)return;
+  const a=document.createElement('a');
+  a.download=`sheet-${idx+1}.png`;
+  a.href=cv.toDataURL('image/png');
+  a.click();
+  toast(`⬇ Sheet #${idx+1} downloaded`);
+}
+function dlAllSheets(){
+  if(!_drawnCanvases.length){toast('⚠ No sheets to download',true);return}
+  _drawnCanvases.forEach((cv,i)=>{
+    setTimeout(()=>{
+      const a=document.createElement('a');
+      a.download=`sheet-${i+1}.png`;
+      a.href=cv.toDataURL('image/png');
+      a.click();
+    },i*200);
+  });
+  toast(`⬇ Downloading ${_drawnCanvases.length} sheet image(s)…`);
+}
 function drawSheets(bins,SW,SH,usW,usH,margin,unit){
+  _drawnCanvases=[];
   const con=document.getElementById('shviz');con.innerHTML='';
   const DW=Math.min((con.offsetWidth||680),900);
   const isDark=document.documentElement.getAttribute('data-theme')!=='light';
+  // Use high-res canvas for download (2× scale for crisp PNG)
+  const HR=2;
   bins.forEach((bin,si)=>{
     const sc=DW/SW,cw=Math.round(SW*sc),ch=Math.round(SH*sc);
     const wrap=document.createElement('div');wrap.className='sheet-wrap';
+    // Label row with download button
     const lbl=document.createElement('div');lbl.className='sheet-lbl';
-    lbl.innerHTML=`<span>Sheet #${si+1}  <small style="color:var(--text-dim)">[${SW}×${SH} ${unit}]</small></span><span>${bin.pl.length} pieces · ${((bin.used()/(usW*usH))*100).toFixed(1)}% used</span>`;
+    const info=document.createElement('span');
+    info.innerHTML=`Sheet #${si+1}&nbsp;&nbsp;<small style="color:var(--text-dim)">[${SW}×${SH} ${unit}]</small>`;
+    const meta=document.createElement('span');
+    meta.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap';
+    meta.innerHTML=`<span>${bin.pl.length} pieces · ${((bin.used()/(usW*usH))*100).toFixed(1)}% used</span>`;
+    const dlBtn=document.createElement('button');
+    dlBtn.className='btn-dl';
+    dlBtn.innerHTML='⬇ PNG';
+    dlBtn.title=`Download Sheet #${si+1} as PNG`;
+    dlBtn.onclick=()=>dlSheet(si);
+    meta.appendChild(dlBtn);
+    lbl.appendChild(info);lbl.appendChild(meta);
     const cWrap=document.createElement('div');cWrap.className='sheet-cv-wrap';
+    // Display canvas (screen resolution)
     const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;cv.style.width='100%';
+    // Hi-res offscreen canvas for download
+    const hcv=document.createElement('canvas');hcv.width=cw*HR;hcv.height=ch*HR;
+    _drawnCanvases.push(hcv);
     cWrap.appendChild(cv);wrap.appendChild(lbl);wrap.appendChild(cWrap);con.appendChild(wrap);
-    const ctx=cv.getContext('2d');
+    // Draw on both canvases
+    [cv,hcv].forEach((target,ti)=>{
+    const S=ti===0?1:HR;
+    const ctx=target.getContext('2d');
+    if(ti===1)ctx.scale(S,S);
     // BG
     ctx.fillStyle=isDark?'#1e2330':'#e8eaf2';ctx.fillRect(0,0,cw,ch);
     // Hatch pattern (waste)
@@ -648,14 +993,427 @@ function drawSheets(bins,SW,SH,usW,usH,margin,unit){
     ctx.fillStyle=isDark?'rgba(107,116,148,.85)':'rgba(80,90,120,.8)';ctx.font='10px DM Mono,monospace';
     ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText(`${SW} ${unit}`,5,ch-4);
     ctx.save();ctx.translate(12,ch-5);ctx.rotate(-Math.PI/2);ctx.fillText(`${SH} ${unit}`,0,0);ctx.restore();
+    // Sheet number watermark on hi-res canvas
+    if(ti===1){
+      ctx.save();ctx.globalAlpha=.12;ctx.font=`bold ${Math.min(cw,ch)*.18}px Syne,sans-serif`;
+      ctx.fillStyle=isDark?'#fff':'#000';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(`#${si+1}`,cw/2,ch/2);ctx.restore();
+    }
+    }); // end [cv,hcv].forEach
+  }); // end bins.forEach
+}
+
+// ════════ PAPER MODE ════════
+const PAPER_DB = {
+  'iso-a': [
+    {n:'A0',  w:841,  h:1189},{n:'A1',  w:594,  h:841},
+    {n:'A2',  w:420,  h:594}, {n:'A3',  w:297,  h:420},
+    {n:'A4',  w:210,  h:297}, {n:'A5',  w:148,  h:210},
+    {n:'A6',  w:105,  h:148}, {n:'A7',  w:74,   h:105},
+    {n:'A8',  w:52,   h:74},  {n:'A9',  w:37,   h:52},
+    {n:'A10', w:26,   h:37},  {n:'2A0', w:1189, h:1682},
+    {n:'4A0', w:1682, h:2378},
+  ],
+  'iso-b': [
+    {n:'B0',  w:1000, h:1414},{n:'B1',  w:707,  h:1000},
+    {n:'B2',  w:500,  h:707}, {n:'B3',  w:353,  h:500},
+    {n:'B4',  w:250,  h:353}, {n:'B5',  w:176,  h:250},
+    {n:'B6',  w:125,  h:176}, {n:'B7',  w:88,   h:125},
+    {n:'B8',  w:62,   h:88},  {n:'B9',  w:44,   h:62},
+    {n:'B10', w:31,   h:44},
+  ],
+  'iso-c': [
+    {n:'C0',  w:917,  h:1297},{n:'C1',  w:648,  h:917},
+    {n:'C2',  w:458,  h:648}, {n:'C3',  w:324,  h:458},
+    {n:'C4',  w:229,  h:324}, {n:'C5',  w:162,  h:229},
+    {n:'C6',  w:114,  h:162}, {n:'C7',  w:81,   h:114},
+    {n:'C8',  w:57,   h:81},  {n:'C9',  w:40,   h:57},
+    {n:'C10', w:28,   h:40},
+  ],
+  'us': [
+    {n:'Letter',        w:216, h:279},  {n:'Legal',         w:216, h:356},
+    {n:'Tabloid/B',     w:279, h:432},  {n:'Ledger',        w:432, h:279},
+    {n:'Executive',     w:184, h:267},  {n:'Statement',     w:140, h:216},
+    {n:'Government Letter', w:203, h:267},{n:'Half Letter',  w:140, h:216},
+    {n:'ANSI A',        w:216, h:279},  {n:'ANSI B',        w:279, h:432},
+    {n:'ANSI C',        w:432, h:559},  {n:'ANSI D',        w:559, h:864},
+    {n:'ANSI E',        w:864, h:1118}, {n:'Junior Legal',  w:127, h:203},
+    {n:'Folio',         w:210, h:330},  {n:'Quarto',        w:215, h:275},
+    {n:'Super B',       w:330, h:483},
+  ],
+  'arch': [
+    {n:'Arch A', w:229, h:305}, {n:'Arch B', w:305, h:457},
+    {n:'Arch C', w:457, h:610}, {n:'Arch D', w:610, h:914},
+    {n:'Arch E', w:914, h:1219},{n:'Arch E1',w:762, h:1067},
+    {n:'Arch E2',w:660, h:965}, {n:'Arch E3',w:686, h:991},
+  ],
+  'photo': [
+    {n:'2R (2×3")',    w:51,  h:89},  {n:'3R (3×5")',    w:89,  h:127},
+    {n:'4R (4×6")',    w:102, h:152}, {n:'5R (5×7")',    w:127, h:178},
+    {n:'6R (6×8")',    w:152, h:203}, {n:'8R (8×10")',   w:203, h:254},
+    {n:'10R (10×12")', w:254, h:305}, {n:'11R (11×14")', w:279, h:356},
+    {n:'12R (12×15")', w:305, h:381}, {n:'S8R (8×12")',  w:203, h:305},
+    {n:'S10R (10×15")',w:254, h:381}, {n:'S12R (12×18")',w:305, h:457},
+    {n:'Wallet (2.5×3.5")',w:64,h:89},{n:'Panoramic 4×12"',w:102,h:305},
+  ],
+  'newspaper': [
+    {n:'Broadsheet',   w:597, h:749}, {n:'Berliner',     w:315, h:470},
+    {n:'Tabloid News', w:280, h:432}, {n:'Compact',      w:254, h:324},
+    {n:'Midi',         w:260, h:380}, {n:'Rhenish',      w:350, h:520},
+    {n:'Nordic',       w:400, h:572}, {n:'Rhein-Main',   w:350, h:510},
+  ],
+  'envelope': [
+    {n:'C4 Env',   w:229, h:324}, {n:'C5 Env',   w:162, h:229},
+    {n:'C6 Env',   w:114, h:162}, {n:'DL Env',   w:110, h:220},
+    {n:'#10 Env',  w:105, h:241}, {n:'#9 Env',   w:98,  h:225},
+    {n:'#6¾ Env',  w:92,  h:165}, {n:'A2 Env',   w:111, h:146},
+    {n:'A6 Env',   w:121, h:165}, {n:'A7 Env',   w:133, h:184},
+    {n:'A9 Env',   w:146, h:222}, {n:'Monarch',  w:98,  h:190},
+    {n:'Square 6"',w:152, h:152}, {n:'Square 5"',w:127, h:127},
+  ],
+  'book': [
+    {n:'Mass Market',    w:108, h:175}, {n:'Trade (6×9)',     w:152, h:229},
+    {n:'Trade (5.5×8.5)',w:140, h:216}, {n:'Digest (5×8)',    w:127, h:203},
+    {n:'Royal 8vo',      w:156, h:234}, {n:'Crown 8vo',       w:136, h:216},
+    {n:'Demy 8vo',       w:141, h:222}, {n:'Medium 8vo',      w:146, h:222},
+    {n:'Large Crown',    w:156, h:234}, {n:'Children\'s 8×8', w:203, h:203},
+    {n:'Picture Book',   w:216, h:279}, {n:'Coffee Table',    w:279, h:356},
+    {n:'Pocketbook',     w:108, h:175}, {n:'Chapbook',        w:140, h:216},
+  ],
+};
+
+let paperPieces=[], paperColors={}, paperCI=0;
+let parentPaperW=594, parentPaperH=841, parentPaperName='A1';
+let parentOrient='portrait';
+let selectedParentFamily='iso-a', selectedPieceFamily='iso-a';
+let selectedPieceSizeBtn=null, selectedPieceSizeData=null;
+let _paperCanvases=[];
+
+// Init paper mode
+function initPaper(){
+  showFamily('iso-a', document.querySelector('#pfamilyTabs .pftab'));
+  showPieceFamily('iso-a', document.querySelector('#pieceFamilyTabs .pftab'));
+}
+
+function showFamily(family, el){
+  selectedParentFamily=family;
+  document.querySelectorAll('#pfamilyTabs .pftab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const grid=document.getElementById('parentSizeGrid');
+  const custGrp=document.getElementById('customParentGroup');
+  if(family==='custom'){grid.innerHTML='';custGrp.style.display='';return}
+  custGrp.style.display='none';
+  const sizes=PAPER_DB[family]||[];
+  grid.innerHTML=sizes.map(s=>`
+    <button class="psz-btn" onclick="selectParentSize(${s.w},${s.h},'${s.n}',this)">
+      <span class="psz-name">${s.n}</span>
+      <span class="psz-dim">${s.w}×${s.h}</span>
+    </button>`).join('');
+  // Auto-select first
+  if(sizes.length){
+    const first=grid.querySelector('.psz-btn');
+    if(first){first.classList.add('active');selectParentSize(sizes[0].w,sizes[0].h,sizes[0].n,first)}
+  }
+}
+
+function selectParentSize(w,h,name,el){
+  parentPaperW=w; parentPaperH=h; parentPaperName=name;
+  document.querySelectorAll('#parentSizeGrid .psz-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  updateParentDisplay();
+}
+
+function setParentOrient(o,el){
+  parentOrient=o;
+  document.getElementById('porP').classList.toggle('active',o==='portrait');
+  document.getElementById('porL').classList.toggle('active',o==='landscape');
+  updateParentDisplay();
+}
+
+function updateParentDisplay(){
+  let w=parentPaperW, h=parentPaperH;
+  // Custom parent override
+  const custW=parseFloat(document.getElementById('custParentW').value);
+  const custH=parseFloat(document.getElementById('custParentH').value);
+  if(selectedParentFamily==='custom'&&custW&&custH){w=custW;h=custH;parentPaperName='Custom'}
+  const [dw,dh] = parentOrient==='portrait' ? [Math.min(w,h),Math.max(w,h)] : [Math.max(w,h),Math.min(w,h)];
+  document.getElementById('parentSizeDisplay').textContent=`${parentPaperName} — ${dw} × ${dh} mm`;
+}
+
+function getParentDims(){
+  let w=parentPaperW, h=parentPaperH;
+  const custW=parseFloat(document.getElementById('custParentW').value);
+  const custH=parseFloat(document.getElementById('custParentH').value);
+  if(selectedParentFamily==='custom'&&custW&&custH){w=custW;h=custH}
+  return parentOrient==='portrait' ? [Math.min(w,h),Math.max(w,h)] : [Math.max(w,h),Math.min(w,h)];
+}
+
+// Piece family
+function showPieceFamily(family, el){
+  selectedPieceFamily=family;
+  document.querySelectorAll('#pieceFamilyTabs .pftab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const grid=document.getElementById('pieceSizeGrid');
+  const sizes=PAPER_DB[family]||[];
+  grid.innerHTML=sizes.map(s=>`
+    <button class="psz-btn" onclick="selectPieceSize(${s.w},${s.h},'${s.n}',this)">
+      <span class="psz-name">${s.n}</span>
+      <span class="psz-dim">${s.w}×${s.h}</span>
+    </button>`).join('');
+  selectedPieceSizeBtn=null; selectedPieceSizeData=null;
+}
+
+function selectPieceSize(w,h,name,el){
+  document.querySelectorAll('#pieceSizeGrid .psz-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  selectedPieceSizeData={w,h,name};selectedPieceSizeBtn=el;
+}
+
+function addNamedPiece(){
+  if(!selectedPieceSizeData){toast('⚠ Select a paper size first',true);return}
+  const qty=parseInt(document.getElementById('namedPieceQty').value)||1;
+  const{w,h,name}=selectedPieceSizeData;
+  addPPaper(w,h,name,qty);
+  toast(`Added ${qty}× ${name} (${w}×${h} mm)`);
+}
+
+// Paper piece management
+function addPPaper(w='',h='',label='',qty=1){
+  paperPieces.push({id:Date.now()+Math.random(),w,h,label,qty});
+  rndPaper();
+}
+function remPPaper(id){paperPieces=paperPieces.filter(p=>p.id!==id);rndPaper()}
+function clearPPaper(){paperPieces=[];paperColors={};paperCI=0;rndPaper()}
+function rndPaper(){
+  document.getElementById('paperPieceCount').textContent=paperPieces.length;
+  const list=document.getElementById('paperPieceList');
+  const clist=document.getElementById('listPaper');
+  if(!paperPieces.length){
+    list.innerHTML='<div class="empty-s"><div class="ei" style="font-size:1.8rem">📄</div><p>No pieces added yet</p></div>';
+    clist.innerHTML='';return;
+  }
+  // Summary list (always visible)
+  list.innerHTML=paperPieces.map(p=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:6px;background:var(--surface2);margin-bottom:4px;font-family:var(--mono);font-size:.76rem">
+      <span style="display:flex;align-items:center;gap:6px">
+        <span style="width:8px;height:8px;border-radius:2px;background:${paperColors[p.label||p.w+'×'+p.h]||'var(--border)'};display:inline-block;flex-shrink:0"></span>
+        <b>${p.label||'Unnamed'}</b> ${p.w}×${p.h} mm
+      </span>
+      <span style="display:flex;align-items:center;gap:8px;color:var(--text-muted)">
+        ×${p.qty}
+        <button class="btn-del" style="width:24px;height:24px;font-size:.75rem" onclick="remPPaper(${p.id})">✕</button>
+      </span>
+    </div>`).join('');
+  // Custom tab list
+  clist.innerHTML=paperPieces.map((p,i)=>`
+    <div class="pr-paper">
+      <input type="number" min="1" placeholder="W mm" value="${p.w}" oninput="paperPieces[${i}].w=parseFloat(this.value)||''">
+      <input type="number" min="1" placeholder="H mm" value="${p.h}" oninput="paperPieces[${i}].h=parseFloat(this.value)||''">
+      <input type="text" placeholder="Label" value="${p.label}" oninput="paperPieces[${i}].label=this.value">
+      <button class="btn-del" onclick="remPPaper(${p.id})">✕</button>
+    </div>`).join('');
+}
+
+// Tabs
+function swTabPaper(n,el){
+  ['named','custom','bulk'].forEach(id=>document.getElementById('tPaper'+id.charAt(0).toUpperCase()+id.slice(1)).style.display='none');
+  document.getElementById('tPaper'+n.charAt(0).toUpperCase()+n.slice(1)).style.display='';
+  document.querySelectorAll('#secPaper .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
+}
+
+// Bulk import
+function parseBulkPaper(){
+  const lines=document.getElementById('bulkPaper').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  let a=0;
+  lines.forEach(l=>{const p=l.split(',').map(s=>s.trim());const w=parseFloat(p[0]),h=parseFloat(p[1]);if(!isNaN(w)&&!isNaN(h)&&w>0&&h>0){addPPaper(w,h,p[2]||`${w}×${h}`,parseInt(p[3])||1);a++}});
+  toast(`Imported ${a} piece type(s)`);
+  swTabPaper('custom',document.querySelectorAll('#secPaper .tab')[1]);
+}
+function exBulkPaper(){
+  document.getElementById('bulkPaper').value=`210, 297, A4, 10\n148, 210, A5, 20\n105, 148, A6, 30\n74, 105, A7, 40`;
+  toast('Example loaded — click Parse & Import');
+}
+
+// ── PAPER OPTIMIZE ──
+function runPaper(){
+  const[SW,SH]=getParentDims();
+  const kerf=parseFloat(document.getElementById('paperKerf').value)||0;
+  const maxS=parseInt(document.getElementById('paperSheetCount').value)||5;
+  const margin=parseFloat(document.getElementById('paperMargin').value)||0;
+  const allowRot=document.getElementById('paperRotate').value==='1';
+  const algo=document.getElementById('paperAlgo').value;
+  if(!SW||!SH){toast('⚠ Set parent sheet size',true);return}
+  const usW=SW-margin*2, usH=SH-margin*2;
+  let items=[];
+  for(const p of paperPieces){
+    let w=parseFloat(p.w),h=parseFloat(p.h);const q=parseInt(p.qty)||1;
+    if(!w||!h)continue;
+    const lbl=p.label||`${w}×${h}`;
+    if((w>usW||h>usH)&&(!allowRot||(h>usW||w>usH))){toast(`⚠ "${lbl}" too large for the parent sheet!`,true);return}
+    for(let i=0;i<q;i++)items.push({w,h,lbl,ow:w,oh:h});
+  }
+  if(!items.length){toast('⚠ Add at least one piece',true);return}
+  items.sort((a,b)=>(b.w*b.h)-(a.w*a.h));
+  paperColors={};paperCI=0;
+  [...new Set(items.map(i=>i.lbl))].forEach(l=>{paperColors[l]=PAL[paperCI++%PAL.length]});
+  const mkBin=()=>algo==='guillotine'?new GBin(usW,usH,kerf):algo==='maxrects'?new MRBin(usW,usH,kerf):new ShBin(usW,usH,kerf);
+  let bins=[],unplaced=[];
+  for(const item of items){
+    let placed=false;
+    for(const b of bins){if(b.ins(item.w,item.h,item.lbl,allowRot)){placed=true;break}}
+    if(!placed){
+      if(bins.length>=maxS){unplaced.push(item);continue}
+      const b=mkBin();if(b.ins(item.w,item.h,item.lbl,allowRot))bins.push(b);else unplaced.push(item);
+    }
+  }
+  if(unplaced.length)toast(`⚠ ${unplaced.length} piece(s) unplaced. Add more sheets.`,true);
+  const shArea=SW*SH,totalArea=bins.length*shArea,usedArea=bins.reduce((s,b)=>s+b.used(),0);
+  const eff=((usedArea/totalArea)*100).toFixed(1);
+  const placed=items.length-unplaced.length;
+  document.getElementById('sgPaper').innerHTML=`
+    <div class="stat-box"><div class="stat-value">${bins.length}</div><div class="stat-label">Sheets Used</div></div>
+    <div class="stat-box"><div class="stat-value">${eff}%</div><div class="stat-label">Efficiency</div></div>
+    <div class="stat-box"><div class="stat-value">${placed}/${items.length}</div><div class="stat-label">Placed / Total</div></div>
+    <div class="stat-box"><div class="stat-value">${SW}×${SH}</div><div class="stat-label">Sheet Size mm</div></div>
+    <div class="stat-box"><div class="stat-value">${fa(totalArea-usedArea,'mm')}</div><div class="stat-label">Waste Area</div></div>
+    <div class="stat-box"><div class="stat-value">${unplaced.length}</div><div class="stat-label">Unplaced</div></div>`;
+  document.getElementById('epPaper').textContent=eff+'%';
+  setTimeout(()=>{document.getElementById('efPaper').style.width=eff+'%'},80);
+  drawPaperSheets(bins,SW,SH,usW,usH,margin);
+  const ulbls=[...new Set(items.map(i=>i.lbl))];
+  document.getElementById('legPaper').innerHTML=ulbls.map(l=>`<div class="lgnd"><div class="ldot" style="background:${paperColors[l]}"></div>${l}</div>`).join('');
+  // Summary
+  const sm={};
+  bins.forEach((b,bi)=>b.pl.forEach(p=>{
+    if(!sm[p.lbl])sm[p.lbl]={ow:0,oh:0,qty:0,sheets:new Set(),rots:0};
+    sm[p.lbl].qty++;sm[p.lbl].sheets.add(bi+1);
+    if(p.rotated)sm[p.lbl].rots++;
+    sm[p.lbl].ow=p.rotated?p.h:p.w;sm[p.lbl].oh=p.rotated?p.w:p.h;
+  }));
+  document.getElementById('sumPaper').innerHTML=
+    Object.entries(sm).map(([l,d])=>`<tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${paperColors[l]};margin-right:6px"></span>${l}</td><td>${d.ow}×${d.oh} mm</td><td>${d.qty}</td><td>${[...d.sheets].join(', ')}</td><td>${d.rots>0?`<span class="badge bw">↻ ${d.rots}×</span>`:'—'}</td><td><span class="badge">✓ Placed</span></td></tr>`).join('')
+    +unplaced.map(p=>`<tr><td>${p.lbl}</td><td>${p.w}×${p.h} mm</td><td>1</td><td>—</td><td>—</td><td><span class="badge br">✗ Unplaced</span></td></tr>`).join('');
+  rndPaper(); // refresh colors in piece list
+  document.getElementById('resPaper').style.display='';
+  document.getElementById('resPaper').scrollIntoView({behavior:'smooth',block:'start'});
+  toast(`✓ Done! ${bins.length} sheet(s) — ${eff}% efficiency`);
+}
+
+// ── PAPER CANVAS RENDERER ──
+function drawPaperSheets(bins,SW,SH,usW,usH,margin){
+  _paperCanvases=[];
+  const con=document.getElementById('shvizPaper');con.innerHTML='';
+  const DW=Math.min((con.offsetWidth||680),900);
+  const isDark=document.documentElement.getAttribute('data-theme')!=='light';
+  const HR=2;
+  bins.forEach((bin,si)=>{
+    const sc=DW/SW,cw=Math.round(SW*sc),ch=Math.round(SH*sc);
+    const wrap=document.createElement('div');wrap.className='sheet-wrap';
+    const lbl=document.createElement('div');lbl.className='sheet-lbl';
+    lbl.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:5px';
+    const info=document.createElement('span');
+    info.innerHTML=`Sheet #${si+1}&nbsp;&nbsp;<small style="color:var(--text-dim)">[${SW}×${SH} mm · ${parentPaperName}]</small>`;
+    const meta=document.createElement('span');
+    meta.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap';
+    meta.innerHTML=`<span>${bin.pl.length} pieces · ${((bin.used()/(usW*usH))*100).toFixed(1)}% used</span>`;
+    const dlBtn=document.createElement('button');
+    dlBtn.className='btn-dl';dlBtn.innerHTML='⬇ PNG';dlBtn.title=`Download Sheet #${si+1}`;
+    dlBtn.onclick=(()=>{const idx=si;return()=>dlPaperSheet(idx)})();
+    meta.appendChild(dlBtn);lbl.appendChild(info);lbl.appendChild(meta);
+    const cWrap=document.createElement('div');cWrap.className='sheet-cv-wrap';
+    const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;cv.style.width='100%';
+    const hcv=document.createElement('canvas');hcv.width=cw*HR;hcv.height=ch*HR;
+    _paperCanvases.push(hcv);
+    cWrap.appendChild(cv);wrap.appendChild(lbl);wrap.appendChild(cWrap);con.appendChild(wrap);
+    [[cv,1],[hcv,HR]].forEach(([target,S])=>{
+      const ctx=target.getContext('2d');if(S>1)ctx.scale(S,S);
+      // Paper-white background
+      ctx.fillStyle=isDark?'#23272f':'#f8f8f0';ctx.fillRect(0,0,cw,ch);
+      // Subtle paper texture grid lines
+      ctx.strokeStyle=isDark?'rgba(255,255,255,.03)':'rgba(0,0,0,.04)';ctx.lineWidth=.5;
+      for(let x=0;x<cw;x+=Math.max(8,cw/30)){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,ch);ctx.stroke()}
+      for(let y=0;y<ch;y+=Math.max(8,ch/30)){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(cw,y);ctx.stroke()}
+      // Hatch waste
+      const hc=document.createElement('canvas');hc.width=10;hc.height=10;
+      const hx=hc.getContext('2d');hx.strokeStyle='rgba(200,150,0,.5)';hx.lineWidth=1;
+      hx.beginPath();hx.moveTo(0,10);hx.lineTo(10,0);hx.stroke();
+      const pat=ctx.createPattern(hc,'repeat');
+      ctx.save();ctx.globalAlpha=.2;ctx.fillStyle=pat;
+      ctx.fillRect(margin*sc,margin*sc,usW*sc,usH*sc);ctx.restore();
+      // Margin
+      if(margin>0){
+        ctx.save();ctx.strokeStyle='rgba(255,200,77,.5)';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);
+        ctx.strokeRect(margin*sc,margin*sc,usW*sc,usH*sc);ctx.setLineDash([]);ctx.restore();
+      }
+      // Pieces
+      bin.pl.forEach(p=>{
+        const px=(margin+p.x)*sc,py=(margin+p.y)*sc,pw=p.w*sc,ph=p.h*sc;
+        const col=paperColors[p.lbl]||'#888';
+        ctx.save();ctx.globalAlpha=.85;ctx.fillStyle=col;
+        ctx.beginPath();if(ctx.roundRect)ctx.roundRect(px,py,pw,ph,2);else ctx.rect(px,py,pw,ph);ctx.fill();
+        ctx.globalAlpha=1;
+        // Paper shadow effect
+        ctx.shadowColor='rgba(0,0,0,.15)';ctx.shadowBlur=3;ctx.shadowOffsetX=1;ctx.shadowOffsetY=1;
+        ctx.strokeStyle='rgba(0,0,0,.25)';ctx.lineWidth=1;ctx.stroke();ctx.shadowColor='transparent';
+        // Inner white border (paper look)
+        ctx.strokeStyle='rgba(255,255,255,.4)';ctx.lineWidth=1;
+        ctx.strokeRect(px+1.5,py+1.5,pw-3,ph-3);
+        // Label
+        const fs=Math.max(7,Math.min(pw,ph)*.16);
+        if(pw>26&&ph>18){
+          ctx.fillStyle='rgba(0,0,0,.72)';ctx.font=`bold ${fs}px DM Mono,monospace`;
+          ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.beginPath();ctx.rect(px+2,py+2,pw-4,ph-4);ctx.clip();
+          ctx.fillText(p.lbl,px+pw/2,py+ph/2-(fs*.4));
+          ctx.font=`${fs*.82}px DM Mono,monospace`;ctx.fillStyle='rgba(0,0,0,.52)';
+          ctx.fillText(`${p.w}×${p.h}mm`,px+pw/2,py+ph/2+(fs*.65));
+        }
+        if(p.rotated&&pw>16&&ph>16){
+          ctx.font=`${Math.max(8,fs*.85)}px sans-serif`;ctx.textAlign='right';ctx.textBaseline='top';
+          ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillText('↻',px+pw-3,py+3);
+        }
+        ctx.restore();
+      });
+      // Sheet border (crisp paper edge)
+      ctx.strokeStyle=isDark?'rgba(0,229,176,.4)':'rgba(100,150,200,.6)';ctx.lineWidth=2;ctx.strokeRect(1,1,cw-2,ch-2);
+      // Corner fold effect
+      const fc=16;ctx.fillStyle=isDark?'rgba(0,0,0,.4)':'rgba(180,180,170,.6)';
+      ctx.beginPath();ctx.moveTo(cw-fc,0);ctx.lineTo(cw,fc);ctx.lineTo(cw,0);ctx.fill();
+      ctx.strokeStyle=isDark?'rgba(255,255,255,.1)':'rgba(0,0,0,.1)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(cw-fc,0);ctx.lineTo(cw-fc,fc);ctx.lineTo(cw,fc);ctx.stroke();
+      // Dimensions
+      ctx.fillStyle=isDark?'rgba(107,116,148,.8)':'rgba(80,90,120,.7)';ctx.font='9px DM Mono,monospace';
+      ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText(`${SW}mm`,5,ch-3);
+      ctx.save();ctx.translate(11,ch-4);ctx.rotate(-Math.PI/2);ctx.fillText(`${SH}mm`,0,0);ctx.restore();
+      if(S>1){
+        ctx.save();ctx.globalAlpha=.1;ctx.font=`bold ${Math.min(cw,ch)*.16}px Syne,sans-serif`;
+        ctx.fillStyle=isDark?'#fff':'#000';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(`#${si+1}`,cw/2,ch/2);ctx.restore();
+      }
+    });
   });
 }
 
-// ════════ HELPERS ════════
+function dlPaperSheet(idx){
+  const cv=_paperCanvases[idx];if(!cv)return;
+  const a=document.createElement('a');a.download=`paper-sheet-${idx+1}.png`;a.href=cv.toDataURL('image/png');a.click();
+  toast(`⬇ Sheet #${idx+1} downloaded`);
+}
+function dlAllPaper(){
+  if(!_paperCanvases.length){toast('⚠ No sheets to download',true);return}
+  _paperCanvases.forEach((cv,i)=>setTimeout(()=>{const a=document.createElement('a');a.download=`paper-sheet-${i+1}.png`;a.href=cv.toDataURL('image/png');a.click()},i*200));
+  toast(`⬇ Downloading ${_paperCanvases.length} sheet(s)…`);
+}
+function copyPaper(){
+  const r=document.querySelectorAll('#sumPaper tr');let t=`CutOpt Paper Report\nParent Sheet: ${parentPaperName} (${parentPaperW}×${parentPaperH}mm)\n\n=== PIECES ===\n`;
+  r.forEach(r=>{t+=[...r.querySelectorAll('td')].map(c=>c.innerText.trim()).join(' | ')+'\n'});
+  navigator.clipboard.writeText(t).then(()=>toast('Copied!'));
+}
+
 function fv(v,u){return`${Number(v).toFixed(1)} ${u||'mm'}`}
 function fa(v,u){return v>=1000000?`${(v/1000000).toFixed(2)} ${u}²`:`${Math.round(v)} ${u}²`}
 function toast(msg,err=false){const t=document.getElementById('toast');t.textContent=msg;t.style.borderLeftColor=err?'var(--accent2)':'var(--accent)';t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3400)}
-function resetAll(){if(!confirm('Reset everything?'))return;p1=[];p2=[];c1={};c2={};ci1=0;ci2=0;rnd1d();rnd2d();document.getElementById('res1d').style.display='none';document.getElementById('res2d').style.display='none';toast('Reset complete')}
+function resetAll(){if(!confirm('Reset everything?'))return;p1=[];p2=[];paperPieces=[];c1={};c2={};paperColors={};ci1=0;ci2=0;paperCI=0;rnd1d();rnd2d();rndPaper();document.getElementById('res1d').style.display='none';document.getElementById('res2d').style.display='none';document.getElementById('resPaper').style.display='none';toast('Reset complete')}
 function copy1d(){const r=document.querySelectorAll('#sum1d tr');let t=`CutOpt 1D Report\nMaterial: ${mat1}\n\n=== PIECES ===\n`;r.forEach(r=>{t+=[...r.querySelectorAll('td')].map(c=>c.innerText.trim()).join(' | ')+'\n'});navigator.clipboard.writeText(t).then(()=>toast('Copied!'))}
 function copy2d(){const r=document.querySelectorAll('#sum2d tr');let t=`CutOpt 2D Report\nMaterial: ${mat2}\n\n=== PIECES ===\n`;r.forEach(r=>{t+=[...r.querySelectorAll('td')].map(c=>c.innerText.trim()).join(' | ')+'\n'});navigator.clipboard.writeText(t).then(()=>toast('Copied!'))}
 </script>
