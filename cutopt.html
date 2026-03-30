@@ -371,6 +371,13 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
           <button class="pftab" onclick="showFamily('newspaper',this)">Newspaper</button>
           <button class="pftab" onclick="showFamily('envelope',this)">Envelope</button>
           <button class="pftab" onclick="showFamily('book',this)">Book</button>
+          <button class="pftab" onclick="showFamily('plano-offset',this)">🖨 Plano Offset</button>
+          <button class="pftab" onclick="showFamily('plano-bc',this)">🪪 Plano BC</button>
+          <button class="pftab" onclick="showFamily('plano-sticker',this)">🏷 Stiker/Vinyl</button>
+          <button class="pftab" onclick="showFamily('plano-inkjet',this)">🖼 Inkjet/WF</button>
+          <button class="pftab" onclick="showFamily('plano-digital',this)">💻 Digital Press</button>
+          <button class="pftab" onclick="showFamily('plano-packaging',this)">📦 Packaging</button>
+          <button class="pftab" onclick="showFamily('art-paper',this)">✨ Art Paper</button>
           <button class="pftab" onclick="showFamily('custom',this)">Custom</button>
         </div>
         <div class="paper-size-grid" id="parentSizeGrid"></div>
@@ -443,6 +450,13 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
             <button class="pftab" onclick="showPieceFamily('newspaper',this)">News</button>
             <button class="pftab" onclick="showPieceFamily('envelope',this)">Env</button>
             <button class="pftab" onclick="showPieceFamily('book',this)">Book</button>
+            <button class="pftab" onclick="showPieceFamily('plano-offset',this)">🖨 Offset</button>
+            <button class="pftab" onclick="showPieceFamily('plano-bc',this)">🪪 BC</button>
+            <button class="pftab" onclick="showPieceFamily('plano-sticker',this)">🏷 Stiker</button>
+            <button class="pftab" onclick="showPieceFamily('plano-inkjet',this)">🖼 Inkjet</button>
+            <button class="pftab" onclick="showPieceFamily('plano-digital',this)">💻 Digital</button>
+            <button class="pftab" onclick="showPieceFamily('plano-packaging',this)">📦 Packaging</button>
+            <button class="pftab" onclick="showPieceFamily('art-paper',this)">✨ Art Paper</button>
           </div>
           <div class="paper-size-grid" id="pieceSizeGrid" style="margin-top:8px"></div>
         </div>
@@ -989,10 +1003,10 @@ function drawSheets(bins,SW,SH,usW,usH,margin,unit){
     });
     // Sheet border
     ctx.strokeStyle=isDark?'rgba(0,229,176,.45)':'rgba(0,160,110,.5)';ctx.lineWidth=2;ctx.strokeRect(1,1,cw-2,ch-2);
-    // Dimension labels
+    // Dimension labels — width along bottom, height along left side (no overlap)
     ctx.fillStyle=isDark?'rgba(107,116,148,.85)':'rgba(80,90,120,.8)';ctx.font='10px DM Mono,monospace';
-    ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText(`${SW} ${unit}`,5,ch-4);
-    ctx.save();ctx.translate(12,ch-5);ctx.rotate(-Math.PI/2);ctx.fillText(`${SH} ${unit}`,0,0);ctx.restore();
+    ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(`${SW} ${unit}`,cw/2,ch-3);
+    ctx.save();ctx.translate(10,ch/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(`${SH} ${unit}`,0,0);ctx.restore();
     // Sheet number watermark on hi-res canvas
     if(ti===1){
       ctx.save();ctx.globalAlpha=.12;ctx.font=`bold ${Math.min(cw,ch)*.18}px Syne,sans-serif`;
@@ -1079,6 +1093,198 @@ const PAPER_DB = {
     {n:'Large Crown',    w:156, h:234}, {n:'Children\'s 8×8', w:203, h:203},
     {n:'Picture Book',   w:216, h:279}, {n:'Coffee Table',    w:279, h:356},
     {n:'Pocketbook',     w:108, h:175}, {n:'Chapbook',        w:140, h:216},
+  ],
+
+  // ── PLANO / PRINTING INDUSTRY ──
+  'plano-offset': [
+    // Standar plano offset umum di percetakan Indonesia & internasional
+    {n:'Plano Folio',     w:650,  h:1000},
+    {n:'Plano Double',    w:700,  h:1000},
+    {n:'Plano SRA0',      w:900,  h:1280},
+    {n:'Plano SRA1',      w:640,  h:900},
+    {n:'Plano SRA2',      w:450,  h:640},
+    {n:'Plano SRA3',      w:320,  h:450},
+    {n:'Plano SRA4',      w:225,  h:320},
+    {n:'RA0',             w:860,  h:1220},
+    {n:'RA1',             w:610,  h:860},
+    {n:'RA2',             w:430,  h:610},
+    {n:'RA3',             w:305,  h:430},
+    {n:'Plano 65×100',    w:650,  h:1000},
+    {n:'Plano 72×102',    w:720,  h:1020},
+    {n:'Plano 79×109',    w:790,  h:1090},
+    {n:'Plano 84×119',    w:840,  h:1190},
+    {n:'Plano 90×128',    w:900,  h:1280},
+    {n:'Plano 100×140',   w:1000, h:1400},
+    {n:'Plano 110×150',   w:1100, h:1500},
+    {n:'Heidelberg 52',   w:370,  h:520},
+    {n:'Heidelberg 74',   w:520,  h:740},
+    {n:'Heidelberg SM102',w:720,  h:1020},
+    {n:'Komori L40',      w:585,  h:750},
+    {n:'Komori LS840',    w:595,  h:840},
+    {n:'Ryobi 524',       w:364,  h:514},
+    {n:'Ryobi 755',       w:530,  h:750},
+    {n:'Ryobi 924',       w:640,  h:900},
+  ],
+
+  'plano-bc': [
+    // Plano khusus kartu nama & kartu cetak percetakan Indonesia
+    {n:'Plano BC 61×86',  w:610,  h:860},   // ← umum di Indonesia (RA1)
+    {n:'Plano BC Std',    w:655,  h:1000},
+    {n:'Plano BC 65×100', w:650,  h:1000},
+    {n:'Plano BC 70×100', w:700,  h:1000},
+    {n:'Plano BC 66×96',  w:660,  h:960},
+    {n:'Plano BC 52×74',  w:520,  h:740},   // Heidelberg 74 — umum BC offset
+    {n:'Plano BC 54×78',  w:540,  h:780},
+    {n:'Plano BC 60×90',  w:600,  h:900},
+    {n:'Plano BC 64×90',  w:640,  h:900},
+    {n:'BC Kartu Nama',   w:90,   h:55},
+    {n:'BC Eropa',        w:85,   h:55},
+    {n:'BC US',           w:89,   h:51},
+    {n:'BC Jepang',       w:91,   h:55},
+    {n:'BC Square',       w:60,   h:60},
+    {n:'BC Mini',         w:70,   h:40},
+    {n:'BC Landscape 9×5',w:90,   h:50},
+    {n:'Kartu Undangan',  w:148,  h:105},
+    {n:'Kartu Pos',       w:148,  h:105},
+    {n:'Flyer A5',        w:148,  h:210},
+    {n:'Flyer A6',        w:105,  h:148},
+    {n:'Brosur DL',       w:99,   h:210},
+    {n:'Stiker Name Tag', w:85,   h:55},
+    {n:'Label 60×40',     w:60,   h:40},
+    {n:'Label 100×50',    w:100,  h:50},
+    {n:'Label 100×150',   w:100,  h:150},
+  ],
+
+  'plano-sticker': [
+    // Plano stiker & vinyl umum di percetakan
+    {n:'Plano Stiker Std',  w:790,  h:1090},
+    {n:'Plano Stiker 65×90',w:650,  h:900},
+    {n:'Vinyl Roll 914',    w:914,  h:1000},
+    {n:'Vinyl Roll 1270',   w:1270, h:1000},
+    {n:'Vinyl Roll 1524',   w:1524, h:1000},
+    {n:'Vinyl 90×120',      w:900,  h:1200},
+    {n:'Vinyl 100×150',     w:1000, h:1500},
+    {n:'Stiker A3+',        w:329,  h:483},
+    {n:'Stiker A3',         w:297,  h:420},
+    {n:'Stiker A4',         w:210,  h:297},
+    {n:'Stiker A5',         w:148,  h:210},
+    {n:'Stiker Letter',     w:216,  h:279},
+    {n:'Stiker Label 1" ',  w:25,   h:25},
+    {n:'Stiker Label 2"',   w:51,   h:51},
+    {n:'Stiker Label 3"',   w:76,   h:76},
+    {n:'Stiker Circle 50',  w:50,   h:50},
+    {n:'Stiker Circle 80',  w:80,   h:80},
+    {n:'Stiker Circle 100', w:100,  h:100},
+    {n:'Stiker Oval 70×45', w:70,   h:45},
+    {n:'Stiker Oval 90×60', w:90,   h:60},
+    {n:'Floor Stiker',      w:300,  h:300},
+    {n:'Stiker Dinding',    w:500,  h:500},
+    {n:'Bumperstiker',      w:290,  h:75},
+  ],
+
+  'plano-inkjet': [
+    // Plano & roll untuk digital inkjet / wide-format
+    {n:'A3+  (Super B)',    w:329,  h:483},
+    {n:'A2+ (Super A2)',    w:431,  h:648},
+    {n:'B1 Inkjet',         w:707,  h:1000},
+    {n:'B0 Inkjet',         w:1000, h:1414},
+    {n:'Canon iPF 24"',     w:610,  h:1000},
+    {n:'Canon iPF 36"',     w:914,  h:1000},
+    {n:'Canon iPF 44"',     w:1118, h:1000},
+    {n:'Epson SC 24"',      w:610,  h:1000},
+    {n:'Epson SC 44"',      w:1118, h:1000},
+    {n:'HP DesignJet 24"',  w:610,  h:1000},
+    {n:'HP DesignJet 36"',  w:914,  h:1000},
+    {n:'HP DesignJet 42"',  w:1067, h:1000},
+    {n:'Poster 50×70',      w:500,  h:700},
+    {n:'Poster 60×90',      w:600,  h:900},
+    {n:'Poster 70×100',     w:700,  h:1000},
+    {n:'Banner 80×120',     w:800,  h:1200},
+    {n:'Banner 100×150',    w:1000, h:1500},
+    {n:'Roll 1×5m',         w:1000, h:5000},
+    {n:'Roll 1.27×5m',      w:1270, h:5000},
+  ],
+
+  'plano-digital': [
+    // Format khusus mesin digital offset (Indigo, Docucolor, Versant, dll)
+    {n:'B2 Digital',        w:500,  h:700},
+    {n:'SRA3 Digital',      w:320,  h:450},
+    {n:'SRA2 Digital',      w:450,  h:640},
+    {n:'HP Indigo 7K',      w:320,  h:460},
+    {n:'HP Indigo 10K',     w:480,  h:660},
+    {n:'HP Indigo 12K',     w:500,  h:740},
+    {n:'Xerox Versant',     w:364,  h:520},
+    {n:'Konica C14000',     w:330,  h:487},
+    {n:'Ricoh C9210',       w:330,  h:487},
+    {n:'Canon V900',        w:364,  h:514},
+    {n:'Iridesse 6C',       w:330,  h:488},
+  ],
+
+  'plano-packaging': [
+    // Plano untuk kemasan / packaging
+    {n:'Duplex 65×100',     w:650,  h:1000},
+    {n:'Duplex 72×102',     w:720,  h:1020},
+    {n:'Duplex 79×109',     w:790,  h:1090},
+    {n:'Ivory 65×100',      w:650,  h:1000},
+    {n:'Ivory 70×100',      w:700,  h:1000},
+    {n:'Ivory 79×109',      w:790,  h:1090},
+    {n:'Art Carton 65×100', w:650,  h:1000},
+    {n:'Corrugated B-Flute',w:800,  h:1200},
+    {n:'Corrugated E-Flute',w:800,  h:1200},
+    {n:'Corrugated C-Flute',w:900,  h:1200},
+    {n:'Microflutte',       w:650,  h:1000},
+    {n:'Karton Box A4',     w:210,  h:297},
+    {n:'Karton Box A3',     w:297,  h:420},
+    {n:'Kotak Pizza 30cm',  w:310,  h:310},
+    {n:'Kotak Pizza 40cm',  w:410,  h:410},
+    {n:'Shrink Wrap',       w:300,  h:400},
+    {n:'Blister Pack',      w:150,  h:200},
+  ],
+
+  'art-paper': [
+    // ── Plano Art Paper / Coated — umum di percetakan Indonesia ──
+    // Ukuran plano standar
+    {n:'Art Paper 61×86',   w:610,  h:860},   // paling umum di Indonesia
+    {n:'Art Paper 65×100',  w:650,  h:1000},
+    {n:'Art Paper 70×100',  w:700,  h:1000},
+    {n:'Art Paper 72×102',  w:720,  h:1020},
+    {n:'Art Paper 79×109',  w:790,  h:1090},
+    {n:'Art Paper 90×120',  w:900,  h:1200},
+    {n:'Art Paper SRA1',    w:640,  h:900},
+    {n:'Art Paper SRA2',    w:450,  h:640},
+    {n:'Art Paper SRA3',    w:320,  h:450},
+    {n:'Art Paper RA1',     w:610,  h:860},
+    {n:'Art Paper RA2',     w:430,  h:610},
+    // Art Carton (lebih tebal, 190–400 gsm)
+    {n:'Art Carton 61×86',  w:610,  h:860},
+    {n:'Art Carton 65×100', w:650,  h:1000},
+    {n:'Art Carton 70×100', w:700,  h:1000},
+    {n:'Art Carton 79×109', w:790,  h:1090},
+    // Matt Coated / Doff
+    {n:'Matt Coat 61×86',   w:610,  h:860},
+    {n:'Matt Coat 65×100',  w:650,  h:1000},
+    {n:'Matt Coat 70×100',  w:700,  h:1000},
+    {n:'Matt Coat 72×102',  w:720,  h:1020},
+    // Cast Coated / High Gloss
+    {n:'Cast Coat 61×86',   w:610,  h:860},
+    {n:'Cast Coat 65×100',  w:650,  h:1000},
+    // Silk / Satin Coated
+    {n:'Silk Coat 61×86',   w:610,  h:860},
+    {n:'Silk Coat 65×100',  w:650,  h:1000},
+    // C2S / C1S Board
+    {n:'C2S 61×86',         w:610,  h:860},
+    {n:'C2S 65×100',        w:650,  h:1000},
+    {n:'C1S 65×100',        w:650,  h:1000},
+    // Ukuran hasil potong siap pakai
+    {n:'Art Paper A3+',     w:329,  h:483},
+    {n:'Art Paper A3',      w:297,  h:420},
+    {n:'Art Paper A4',      w:210,  h:297},
+    {n:'Art Paper A5',      w:148,  h:210},
+    {n:'Art Paper F4',      w:210,  h:330},
+    {n:'Art Paper Letter',  w:216,  h:279},
+    {n:'Art Carton A3',     w:297,  h:420},
+    {n:'Art Carton A4',     w:210,  h:297},
+    {n:'Art Carton A5',     w:148,  h:210},
   ],
 };
 
@@ -1381,10 +1587,10 @@ function drawPaperSheets(bins,SW,SH,usW,usH,margin){
       ctx.beginPath();ctx.moveTo(cw-fc,0);ctx.lineTo(cw,fc);ctx.lineTo(cw,0);ctx.fill();
       ctx.strokeStyle=isDark?'rgba(255,255,255,.1)':'rgba(0,0,0,.1)';ctx.lineWidth=1;
       ctx.beginPath();ctx.moveTo(cw-fc,0);ctx.lineTo(cw-fc,fc);ctx.lineTo(cw,fc);ctx.stroke();
-      // Dimensions
+      // Dimensions — width centered on bottom edge, height centered on left edge
       ctx.fillStyle=isDark?'rgba(107,116,148,.8)':'rgba(80,90,120,.7)';ctx.font='9px DM Mono,monospace';
-      ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText(`${SW}mm`,5,ch-3);
-      ctx.save();ctx.translate(11,ch-4);ctx.rotate(-Math.PI/2);ctx.fillText(`${SH}mm`,0,0);ctx.restore();
+      ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(`${SW}mm`,cw/2,ch-3);
+      ctx.save();ctx.translate(10,ch/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(`${SH}mm`,0,0);ctx.restore();
       if(S>1){
         ctx.save();ctx.globalAlpha=.1;ctx.font=`bold ${Math.min(cw,ch)*.16}px Syne,sans-serif`;
         ctx.fillStyle=isDark?'#fff':'#000';ctx.textAlign='center';ctx.textBaseline='middle';
