@@ -127,8 +127,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .paper-family-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
 .pftab{padding:4px 12px;border-radius:99px;font-size:.7rem;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);font-family:var(--sans);transition:all .18s}
 .pftab.active{background:var(--accent);color:#0d0f14;border-color:var(--accent)}
-.ph-paper{display:grid;grid-template-columns:1fr 1fr 1fr 36px;gap:6px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:7px;padding:0 2px}
-.pr-paper{display:grid;grid-template-columns:1fr 1fr 1fr 36px;gap:6px;align-items:center;margin-bottom:7px;animation:si .2s ease}
+.ph-paper{display:grid;grid-template-columns:1fr 1fr 1.6fr 0.7fr 36px;gap:6px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:7px;padding:0 2px}
+.pr-paper{display:grid;grid-template-columns:1fr 1fr 1.6fr 0.7fr 36px;gap:6px;align-items:center;margin-bottom:7px;animation:si .2s ease}
 .pr-paper input,.pr-paper select{padding:6px 8px;font-size:.8rem}
 .orient-tog{display:flex;gap:4px}
 .orient-btn{flex:1;padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;font-size:.7rem;font-weight:700;font-family:var(--sans);transition:all .18s;text-align:center}
@@ -471,7 +471,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 
       <!-- Custom sizes tab -->
       <div id="tPaperCustom" style="display:none">
-        <div class="ph-paper"><span>W (mm)</span><span>H (mm)</span><span>Label / Qty</span><span></span></div>
+        <div class="ph-paper"><span>W (mm)</span><span>H (mm)</span><span>Label</span><span>Qty</span><span></span></div>
         <div id="listPaper"></div>
         <div class="arow">
           <button class="btn btn-s btn-sm" onclick="addPPaper()">+ Add</button>
@@ -1416,6 +1416,7 @@ function rndPaper(){
       <input type="number" min="1" placeholder="W mm" value="${p.w}" oninput="paperPieces[${i}].w=parseFloat(this.value)||''">
       <input type="number" min="1" placeholder="H mm" value="${p.h}" oninput="paperPieces[${i}].h=parseFloat(this.value)||''">
       <input type="text" placeholder="Label" value="${p.label}" oninput="paperPieces[${i}].label=this.value">
+      <input type="number" min="1" max="9999" placeholder="1" value="${p.qty}" oninput="paperPieces[${i}].qty=parseInt(this.value)||1" style="text-align:center">
       <button class="btn-del" onclick="remPPaper(${p.id})">✕</button>
     </div>`).join('');
 }
