@@ -244,8 +244,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
       <div style="margin-top:20px"><div class="cpt">Cut Layout Visualization</div><div class="cpcon" id="viz1d"></div><div class="legend" id="leg1d"></div></div>
       <div style="margin-top:20px"><div class="cpt">Piece Summary</div><div style="overflow-x:auto"><table class="stbl"><thead><tr><th>Label</th><th>Length</th><th>Qty</th><th>Bar(s)</th><th>Status</th></tr></thead><tbody id="sum1d"></tbody></table></div></div>
       <div class="arow" style="margin-top:16px">
-        <button class="btn btn-s btn-sm" onclick="dlAllBars('png')">⬇ PNG All</button>
-        <button class="btn btn-s btn-sm" onclick="dlAllBars('svg')">⬇ SVG All</button>
+        <button class="btn btn-s btn-sm" onclick="dlAllBars()">⬇ Download All Bars</button>
         <button class="btn btn-s btn-sm" onclick="copy1d()">📋 Copy Report</button>
         <button class="btn btn-s btn-sm" onclick="window.print()">🖨 Print</button>
         <button class="btn btn-d btn-sm" onclick="document.getElementById('res1d').style.display='none'">✕ Close</button>
@@ -662,159 +661,80 @@ function run1d(){
 }
 
 // ════════ 1D BAR CANVAS RENDERER ════════
-let _barCanvases=[], _barSVGData=[];
-
-function dlBar(idx, fmt='png'){
-  if(fmt==='svg'){
-    const svg=_barSVGData[idx];if(!svg)return;
-    const a=document.createElement('a');
-    a.download=`bar-${idx+1}.svg`;
-    a.href='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
-    a.click();toast(`⬇ Bar #${idx+1} SVG downloaded`);return;
-  }
+let _barCanvases=[];
+function dlBar(idx){
   const cv=_barCanvases[idx];if(!cv)return;
   const a=document.createElement('a');
   a.download=`bar-${idx+1}.png`;
   a.href=cv.toDataURL('image/png');
-  a.click();toast(`⬇ Bar #${idx+1} PNG downloaded`);
+  a.click();
+  toast(`⬇ Bar #${idx+1} downloaded`);
 }
-function dlAllBars(fmt='png'){
-  const store=fmt==='svg'?_barSVGData:_barCanvases;
-  if(!store.length){toast('⚠ No bars to download',true);return}
-  store.forEach((_,i)=>setTimeout(()=>dlBar(i,fmt),i*180));
-  toast(`⬇ Downloading ${store.length} bar(s) as ${fmt.toUpperCase()}…`);
-}
-
-function buildBarSVG(b, idx, sLen, kerf, trim, unit, isDark, matName){
-  const bg     = isDark ? '#1e2330' : '#e8eaf2';
-  const barBg  = isDark ? '#161a23' : '#d8dcea';
-  const txtC   = isDark ? '#6b7494' : '#5a6080';
-  const hdrBg  = isDark ? '#0d0f14' : '#d0d4e8';
-  const hdrTxt = isDark ? '#e8eaf2' : '#1a1e2e';
-  const accentC= isDark ? '#00e5b0' : '#007a5a';
-  const wasteCl= isDark ? 'rgba(255,92,92,0.5)' : 'rgba(200,60,60,0.4)';
-
-  // SVG coordinate system: width = sLen (actual units), bar height = fixed
-  const BH   = Math.max(12, sLen * 0.025);  // bar height in same units as sLen
-  const PAD  = BH * 0.28;                   // padding around bar
-  const HDR  = BH * 0.7;                    // header strip height
-  const fs   = Math.max(1.5, BH * 0.22);    // font size for segment labels
-  const totalW = sLen + PAD * 2;
-  const totalH = HDR + PAD + BH + PAD;
-
-  const effPct = b.cuts.length > 0
-    ? (((sLen - b.rem - (b.cuts.length-1)*kerf - trim) / sLen)*100).toFixed(1)
-    : '0.0';
-
-  // Hatch pattern for waste
-  const hatchId = `bh_${idx}`;
-  const hatch = `<defs>
-    <pattern id="${hatchId}" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-      <line x1="0" y1="0" x2="0" y2="3" stroke="${wasteCl}" stroke-width="0.8"/>
-    </pattern>
-  </defs>`;
-
-  // Background
-  let svg = `${hatch}
-  <rect width="${totalW}" height="${totalH}" fill="${bg}"/>`;
-
-  // Header bar
-  svg += `
-  <rect width="${totalW}" height="${HDR}" fill="${hdrBg}"/>
-  <rect y="${HDR-0.4}" width="${totalW}" height="0.4" fill="${accentC}" opacity="0.6"/>
-  <text x="${HDR*0.4}" y="${HDR*0.66}" font-family="'Syne','DM Mono',monospace" font-size="${HDR*0.42}" font-weight="bold" fill="${accentC}">CutOpt</text>
-  <text x="${HDR*2.0}" y="${HDR*0.66}" font-family="'Syne','DM Mono',monospace" font-size="${HDR*0.42}" font-weight="bold" fill="${hdrTxt}">Bar #${idx+1}</text>
-  <text x="${HDR*2.0}" y="${HDR*0.9}" font-family="'DM Mono',monospace" font-size="${HDR*0.3}" fill="${txtC}">${matName?matName+'  ·  ':''}${sLen} ${unit}  ·  ${b.cuts.length} cuts  ·  waste: ${fv(b.rem,unit)}</text>`;
-
-  // Bar background
-  const bx = PAD, by = HDR + PAD, bw = sLen, bh = BH;
-  svg += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" fill="${barBg}" rx="1.5"/>`;
-
-  // End trim
-  if(trim > 0){
-    svg += `<rect x="${bx}" y="${by}" width="${trim}" height="${bh}" fill="rgba(255,200,77,0.18)" rx="1.5"/>`;
-  }
-
-  // Segments
-  let curX = bx + trim;
-  b.cuts.forEach((cut, ci) => {
-    const kerfW = (ci > 0 && kerf > 0) ? kerf : 0;
-    // Kerf gap
-    if(kerfW > 0){
-      svg += `<rect x="${curX}" y="${by}" width="${kerfW}" height="${bh}" fill="${isDark?'rgba(255,255,255,0.12)':'rgba(0,0,0,0.08)'}"/>`;
-      curX += kerfW;
-    }
-    const segW = cut.len;
-    const col  = c1[cut.label] || '#888888';
-    // Clip path for label
-    const clipId = `bc_${idx}_${ci}`;
-    svg += `<clipPath id="${clipId}"><rect x="${curX+0.3}" y="${by+0.5}" width="${segW-0.6}" height="${bh-1}"/></clipPath>`;
-    svg += `<rect x="${curX}" y="${by+0.5}" width="${segW}" height="${bh-1}" fill="${col}" fill-opacity="0.92" rx="0.8"/>`;
-    // Labels inside segment
-    if(segW > fs * 3){
-      svg += `<text clip-path="url(#${clipId})" x="${curX+segW/2}" y="${by+bh/2-fs*0.35}" font-family="'DM Mono',monospace" font-size="${fs}" font-weight="bold" fill="rgba(0,0,0,0.72)" text-anchor="middle" dominant-baseline="middle">${escSvg(cut.label)}</text>`;
-      svg += `<text clip-path="url(#${clipId})" x="${curX+segW/2}" y="${by+bh/2+fs*0.72}" font-family="'DM Mono',monospace" font-size="${(fs*0.8).toFixed(2)}" fill="rgba(0,0,0,0.5)" text-anchor="middle" dominant-baseline="middle">${cut.len} ${unit}</text>`;
-    }
-    curX += segW;
+function dlAllBars(){
+  if(!_barCanvases.length){toast('⚠ No bars to download',true);return}
+  _barCanvases.forEach((cv,i)=>{
+    setTimeout(()=>{
+      const a=document.createElement('a');
+      a.download=`bar-${i+1}.png`;
+      a.href=cv.toDataURL('image/png');
+      a.click();
+    },i*180);
   });
-
-  // Waste area
-  const wasteW = (bx + bw) - curX;
-  if(wasteW > 0.5){
-    svg += `<rect x="${curX}" y="${by}" width="${wasteW}" height="${bh}" fill="url(#${hatchId})" fill-opacity="0.35"/>`;
-    if(wasteW > fs * 5){
-      svg += `<text x="${curX+wasteW/2}" y="${by+bh/2}" font-family="'DM Mono',monospace" font-size="${Math.min(fs, wasteW*0.08)}" fill="${isDark?'rgba(255,92,92,0.85)':'rgba(200,50,50,0.8)'}" text-anchor="middle" dominant-baseline="middle">${fv(b.rem,unit)} waste</text>`;
-    }
-  }
-
-  // Bar border
-  svg += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" fill="none" stroke="${isDark?'rgba(42,48,69,0.9)':'rgba(180,190,210,0.9)'}" stroke-width="0.5" rx="1.5"/>`;
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalW} ${totalH}" width="${totalW}${unit}" height="${totalH}${unit}">
-  <title>CutOpt Bar #${idx+1} — ${sLen} ${unit}</title>
-  ${svg}
-</svg>`;
+  toast(`⬇ Downloading ${_barCanvases.length} bar image(s)…`);
 }
-
-function draw1dBars(bins, sLen, kerf, trim, unit){
-  _barCanvases=[];_barSVGData=[];
+function draw1dBars(bins,sLen,kerf,trim,unit){
+  _barCanvases=[];
   const con=document.getElementById('viz1d');con.innerHTML='';
   const isDark=document.documentElement.getAttribute('data-theme')!=='light';
   const DW=Math.min((con.offsetWidth||680),900);
-  const BAR_H=52, PAD=12, HR=2;
+  const BAR_H=52, PAD=12, HR=2; // HR = hi-res multiplier for download
   bins.forEach((b,i)=>{
+    // Wrapper
     const wrap=document.createElement('div');wrap.className='sbw';wrap.style.cssText='margin-bottom:14px';
+    // Label row
     const lbl=document.createElement('div');lbl.className='slbl';
     lbl.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:5px';
     const info=document.createElement('span');info.textContent=`Bar #${i+1}`;
     const meta=document.createElement('span');
-    meta.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap';
+    meta.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap';
     const metaText=document.createElement('span');
     metaText.textContent=`${b.cuts.length} cuts · waste: ${fv(b.rem,unit)}`;
-    const dlPng=document.createElement('button');dlPng.className='btn-dl';dlPng.innerHTML='⬇ PNG';dlPng.onclick=()=>dlBar(i,'png');
-    const dlSvg=document.createElement('button');dlSvg.className='btn-dl';dlSvg.innerHTML='⬇ SVG';dlSvg.onclick=()=>dlBar(i,'svg');
-    meta.appendChild(metaText);meta.appendChild(dlPng);meta.appendChild(dlSvg);
+    const dlBtn=document.createElement('button');
+    dlBtn.className='btn-dl';dlBtn.innerHTML='⬇ PNG';dlBtn.title=`Download Bar #${i+1} as PNG`;
+    dlBtn.onclick=()=>dlBar(i);
+    meta.appendChild(metaText);meta.appendChild(dlBtn);
     lbl.appendChild(info);lbl.appendChild(meta);
+    // Display canvas
     const cw=DW, ch=BAR_H+PAD*2;
     const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;cv.style.cssText=`width:100%;border-radius:6px;display:block;border:1px solid var(--border)`;
+    // Hi-res canvas for download
     const hcv=document.createElement('canvas');hcv.width=cw*HR;hcv.height=ch*HR;
     _barCanvases.push(hcv);
     wrap.appendChild(lbl);wrap.appendChild(cv);con.appendChild(wrap);
+    // Draw on both
     [[cv,1],[hcv,HR]].forEach(([target,S])=>{
       const ctx=target.getContext('2d');
       if(S>1)ctx.scale(S,S);
       const W=cw, H=ch;
+      // BG
       ctx.fillStyle=isDark?'#1e2330':'#e8eaf2';ctx.fillRect(0,0,W,H);
+      // Bar area
       const bx=PAD,by=PAD,bw=W-PAD*2,bh=BAR_H;
+      // Hatch for waste background
       const hc=document.createElement('canvas');hc.width=8;hc.height=8;
       const hx=hc.getContext('2d');hx.strokeStyle=isDark?'rgba(255,92,92,.5)':'rgba(200,60,60,.4)';
       hx.lineWidth=1;hx.beginPath();hx.moveTo(0,8);hx.lineTo(8,0);hx.stroke();
       const pat=ctx.createPattern(hc,'repeat');
       ctx.save();ctx.beginPath();ctx.roundRect?ctx.roundRect(bx,by,bw,bh,5):ctx.rect(bx,by,bw,bh);
       ctx.clip();ctx.fillStyle=isDark?'#161a23':'#d8dcea';ctx.fillRect(bx,by,bw,bh);
+      // Draw end trim
       let curX=bx;
-      if(trim>0){const tw=(trim/sLen)*bw;ctx.fillStyle='rgba(255,200,77,.18)';ctx.fillRect(curX,by,tw,bh);curX+=tw;}
+      if(trim>0){
+        const tw=(trim/sLen)*bw;
+        ctx.fillStyle='rgba(255,200,77,.18)';ctx.fillRect(curX,by,tw,bh);
+        curX+=tw;
+      }
+      // Draw cuts
       b.cuts.forEach((cut,ci)=>{
         const kerfPx=(ci>0&&kerf>0)?(kerf/sLen)*bw:0;
         curX+=kerfPx;
@@ -823,19 +743,27 @@ function draw1dBars(bins, sLen, kerf, trim, unit){
         ctx.globalAlpha=.92;ctx.fillStyle=col;
         ctx.fillRect(curX,by+1,segW-0.5,bh-2);
         ctx.globalAlpha=1;
-        if(ci>0&&kerf>0){ctx.fillStyle=isDark?'rgba(255,255,255,.15)':'rgba(0,0,0,.1)';ctx.fillRect(curX-kerfPx,by,kerfPx,bh);}
+        // Kerf gap line before this piece
+        if(ci>0&&kerf>0){
+          ctx.fillStyle=isDark?'rgba(255,255,255,.15)':'rgba(0,0,0,.1)';
+          ctx.fillRect(curX-kerfPx,by,kerfPx,bh);
+        }
+        // Label
         const fs=Math.max(8,Math.min(segW*.14,13));
         if(segW>28){
           ctx.save();ctx.fillStyle='rgba(0,0,0,.7)';
-          ctx.font=`bold ${fs}px DM Mono,monospace`;ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.font=`bold ${fs}px DM Mono,monospace`;
+          ctx.textAlign='center';ctx.textBaseline='middle';
           ctx.beginPath();ctx.rect(curX,by+1,segW-1,bh-2);ctx.clip();
           ctx.fillText(cut.label,curX+segW/2,by+bh/2-(fs*.38));
-          ctx.font=`${fs*.82}px DM Mono,monospace`;ctx.fillStyle='rgba(0,0,0,.55)';
+          ctx.font=`${fs*.82}px DM Mono,monospace`;
+          ctx.fillStyle='rgba(0,0,0,.55)';
           ctx.fillText(`${cut.len}`,curX+segW/2,by+bh/2+(fs*.65));
           ctx.restore();
         }
         curX+=segW;
       });
+      // Waste area
       const remainW=bw-(curX-bx);
       if(remainW>2){
         ctx.globalAlpha=.28;ctx.fillStyle=pat;ctx.fillRect(curX,by,remainW,bh);ctx.globalAlpha=1;
@@ -847,16 +775,16 @@ function draw1dBars(bins, sLen, kerf, trim, unit){
         }
       }
       ctx.restore();
+      // Bar border
       ctx.beginPath();ctx.roundRect?ctx.roundRect(bx,by,bw,bh,5):ctx.rect(bx,by,bw,bh);
       ctx.strokeStyle=isDark?'rgba(42,48,69,.9)':'rgba(200,210,230,.9)';ctx.lineWidth=1;ctx.stroke();
+      // Bar number label (on hi-res only for watermark)
       if(S>1){
         ctx.fillStyle=isDark?'rgba(107,116,148,.6)':'rgba(80,90,120,.5)';
         ctx.font=`bold 10px DM Mono,monospace`;ctx.textAlign='left';ctx.textBaseline='top';
         ctx.fillText(`BAR #${i+1}  ·  ${sLen} ${unit}  ·  CutOpt`,bx+2,2);
       }
     });
-    // Generate SVG for this bar
-    _barSVGData.push(buildBarSVG(b, i, sLen, kerf, trim, unit, isDark, mat1));
   });
 }
 
@@ -1091,7 +1019,7 @@ function run2d(){
     <div class="stat-box"><div class="stat-value">${unplaced.length}</div><div class="stat-label">Unplaced</div></div>`;
   document.getElementById('ep2d').textContent=eff+'%';
   setTimeout(()=>{document.getElementById('ef2d').style.width=eff+'%'},80);
-  drawSheets(bins,SW,SH,usW,usH,margin,unit,mat2);
+  drawSheets(bins,SW,SH,usW,usH,margin,unit);
   // Legend
   const ulbls=[...new Set(items.map(i=>i.lbl))];
   document.getElementById('leg2d').innerHTML=ulbls.map(l=>`<div class="lgnd"><div class="ldot" style="background:${c2[l]}"></div>${l}</div>`).join('');
@@ -1131,18 +1059,18 @@ function dlAllSheets(fmt='png'){
   store.forEach((_,i)=>setTimeout(()=>dlSheet(i,fmt),i*200));
   toast(`⬇ Downloading ${store.length} sheet(s) as ${fmt.toUpperCase()}…`);
 }
-function drawSheets(bins,SW,SH,usW,usH,margin,unit,sheetName=''){
+function drawSheets(bins,SW,SH,usW,usH,margin,unit){
   _drawnCanvases=[];_sheetSVGData=[];
   const con=document.getElementById('shviz');con.innerHTML='';
   const DW=Math.min((con.offsetWidth||680),900);
   const isDark=document.documentElement.getAttribute('data-theme')!=='light';
-  const HR=2, HDR_PX=32;
+  const HR=2;
   bins.forEach((bin,si)=>{
-    const sc=DW/SW,cw=Math.round(SW*sc),ch=Math.round(SH*sc),totalCH=ch+HDR_PX;
+    const sc=DW/SW,cw=Math.round(SW*sc),ch=Math.round(SH*sc);
     const wrap=document.createElement('div');wrap.className='sheet-wrap';
     const lbl=document.createElement('div');lbl.className='sheet-lbl';
     const info=document.createElement('span');
-    info.innerHTML=`Sheet #${si+1}&nbsp;&nbsp;<small style="color:var(--text-dim)">[${sheetName?sheetName+' · ':''}${SW}×${SH} ${unit}]</small>`;
+    info.innerHTML=`Sheet #${si+1}&nbsp;&nbsp;<small style="color:var(--text-dim)">[${SW}×${SH} ${unit}]</small>`;
     const meta=document.createElement('span');
     meta.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap';
     meta.innerHTML=`<span>${bin.pl.length} pieces · ${((bin.used()/(usW*usH))*100).toFixed(1)}% used</span>`;
@@ -1151,27 +1079,17 @@ function drawSheets(bins,SW,SH,usW,usH,margin,unit,sheetName=''){
     meta.appendChild(dlPng);meta.appendChild(dlSvg);
     lbl.appendChild(info);lbl.appendChild(meta);
     const cWrap=document.createElement('div');cWrap.className='sheet-cv-wrap';
-    const cv=document.createElement('canvas');cv.width=cw;cv.height=totalCH;cv.style.width='100%';
-    const hcv=document.createElement('canvas');hcv.width=cw*HR;hcv.height=totalCH*HR;
+    // Display canvas (screen resolution)
+    const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;cv.style.width='100%';
+    // Hi-res offscreen canvas for download
+    const hcv=document.createElement('canvas');hcv.width=cw*HR;hcv.height=ch*HR;
     _drawnCanvases.push(hcv);
     cWrap.appendChild(cv);wrap.appendChild(lbl);wrap.appendChild(cWrap);con.appendChild(wrap);
+    // Draw on both canvases
     [cv,hcv].forEach((target,ti)=>{
     const S=ti===0?1:HR;
     const ctx=target.getContext('2d');
     if(ti===1)ctx.scale(S,S);
-    const effPct=((bin.used()/(usW*usH))*100).toFixed(1);
-    // ── Header bar ──
-    ctx.fillStyle=isDark?'#0d0f14':'#d0d4e8';ctx.fillRect(0,0,cw,HDR_PX);
-    ctx.fillStyle=isDark?'rgba(0,229,176,.55)':'rgba(0,122,90,.45)';ctx.fillRect(0,HDR_PX-1.5,cw,1.5);
-    ctx.fillStyle='#00e5b0';ctx.font=`bold ${HDR_PX*.38}px Syne,sans-serif`;ctx.textAlign='left';ctx.textBaseline='middle';
-    ctx.fillText('CutOpt',HDR_PX*.3,HDR_PX*.38);
-    ctx.fillStyle=isDark?'#e8eaf2':'#1a1e2e';ctx.font=`bold ${HDR_PX*.38}px Syne,sans-serif`;
-    ctx.fillText(`Sheet #${si+1}`,HDR_PX*2.6,HDR_PX*.38);
-    const nameStr=sheetName?`${sheetName}  ·  `:'';
-    ctx.fillStyle=isDark?'rgba(107,116,148,.9)':'rgba(80,90,120,.85)';ctx.font=`${HDR_PX*.27}px DM Mono,monospace`;
-    ctx.fillText(`${nameStr}${SW}×${SH} ${unit}  ·  ${bin.pl.length} pcs  ·  ${effPct}% used`,HDR_PX*2.6,HDR_PX*.78);
-    // ── Sheet content ──
-    ctx.save();ctx.translate(0,HDR_PX);
     // BG
     ctx.fillStyle=isDark?'#1e2330':'#e8eaf2';ctx.fillRect(0,0,cw,ch);
     // Hatch pattern (waste)
@@ -1197,6 +1115,7 @@ function drawSheets(bins,SW,SH,usW,usH,margin,unit,sheetName=''){
       if(ctx.roundRect)ctx.roundRect(px,py,pw,ph,2);else ctx.rect(px,py,pw,ph);
       ctx.fill();
       ctx.globalAlpha=1;ctx.strokeStyle=isDark?'rgba(0,0,0,.4)':'rgba(0,0,0,.15)';ctx.lineWidth=1;ctx.stroke();
+      // Label
       const fs=Math.max(7.5,Math.min(pw,ph)*.17);
       if(pw>24&&ph>16){
         ctx.fillStyle='rgba(0,0,0,.68)';ctx.font=`bold ${fs}px DM Mono,monospace`;
@@ -1206,6 +1125,7 @@ function drawSheets(bins,SW,SH,usW,usH,margin,unit,sheetName=''){
         ctx.font=`${fs*.82}px DM Mono,monospace`;
         ctx.fillText(`${p.w}×${p.h}`,px+pw/2,py+ph/2+(fs*.68));
       }
+      // Rotation indicator
       if(p.rotated&&pw>18&&ph>18){
         ctx.font=`${Math.max(8,fs*.9)}px sans-serif`;ctx.textAlign='right';ctx.textBaseline='top';
         ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillText('↻',px+pw-3,py+3);
@@ -1214,56 +1134,50 @@ function drawSheets(bins,SW,SH,usW,usH,margin,unit,sheetName=''){
     });
     // Sheet border
     ctx.strokeStyle=isDark?'rgba(0,229,176,.45)':'rgba(0,160,110,.5)';ctx.lineWidth=2;ctx.strokeRect(1,1,cw-2,ch-2);
-    // Dimension labels
+    // Dimension labels — width along bottom, height along left side (no overlap)
     ctx.fillStyle=isDark?'rgba(107,116,148,.85)':'rgba(80,90,120,.8)';ctx.font='10px DM Mono,monospace';
     ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(`${SW} ${unit}`,cw/2,ch-3);
     ctx.save();ctx.translate(10,ch/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(`${SH} ${unit}`,0,0);ctx.restore();
+    // Sheet number watermark on hi-res canvas
     if(ti===1){
       ctx.save();ctx.globalAlpha=.12;ctx.font=`bold ${Math.min(cw,ch)*.18}px Syne,sans-serif`;
       ctx.fillStyle=isDark?'#fff':'#000';ctx.textAlign='center';ctx.textBaseline='middle';
       ctx.fillText(`#${si+1}`,cw/2,ch/2);ctx.restore();
     }
-    ctx.restore(); // end translate(0,HDR_PX)
     }); // end [cv,hcv].forEach
-    _sheetSVGData.push(buildSheetSVG(bin,SW,SH,usW,usH,margin,unit,si,c2,isDark,'Sheet',sheetName));
+    // Generate SVG for this sheet
+    _sheetSVGData.push(buildSheetSVG(bin,SW,SH,usW,usH,margin,unit,si,c2,isDark));
   }); // end bins.forEach
 }
 
 // ════════ SHARED SVG BUILDER ════════
-function buildSheetSVG(bin, SW, SH, usW, usH, margin, unit, idx, colorMap, isDark, titlePrefix='Sheet', sheetName=''){
-  const bg    = isDark ? '#1e2330' : '#f4f4ee';
-  const bdr   = isDark ? '#00e5b0' : '#3a8c6a';
-  const txtC  = isDark ? '#6b7494' : '#5a6080';
-  const hdrBg = isDark ? '#0d0f14' : '#d8dcea';
-  const hdrTxt= isDark ? '#e8eaf2' : '#1a1e2e';
-  const accentC = isDark ? '#00e5b0' : '#007a5a';
+function buildSheetSVG(bin, SW, SH, usW, usH, margin, unit, idx, colorMap, isDark, titlePrefix='Sheet'){
+  const bg   = isDark ? '#1e2330' : '#f4f4ee';
+  const bdr  = isDark ? '#00e5b0' : '#3a8c6a';
+  const txtC = isDark ? '#6b7494' : '#5a6080';
+  const wasteFill = isDark ? 'rgba(255,92,92,0.18)' : 'rgba(200,60,60,0.12)';
+  const kerfColor= isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)';
 
-  // Header bar height (mm, proportional to sheet height)
-  const HDR    = Math.max(8, SH * 0.045);
-  const totalH = SH + HDR;
-
-  // Dimension label padding — must be defined BEFORE use below
-  const dimFs    = Math.max(3, Math.min(SW, SH) * 0.018);
-  const dimPad   = dimFs * 2.2;
-  const totalW   = SW + dimPad;
-  const totalViewH = totalH + dimPad;
-
-  // SVG coordinate space = actual mm. Sheet content starts at x=dimPad, y=HDR
+  // SVG coordinate space = actual mm (viewBox = 0 0 SW SH)
   let pieces='', labels='';
   bin.pl.forEach(p=>{
     const col = colorMap[p.lbl] || '#888888';
-    const rx=dimPad+margin+p.x, ry=HDR+margin+p.y, rw=p.w, rh=p.h;
+    const rx=margin+p.x, ry=margin+p.y, rw=p.w, rh=p.h;
+    // piece rect
     pieces+=`<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" fill="${col}" fill-opacity="0.88" stroke="rgba(0,0,0,0.3)" stroke-width="0.4" rx="0.8"/>`;
+    // rotation badge
     if(p.rotated) pieces+=`<text x="${rx+rw-1.5}" y="${ry+3.5}" font-family="monospace" font-size="3" fill="rgba(0,0,0,0.5)" text-anchor="end">↻</text>`;
+    // label text — clipped inside piece
     const fs=Math.max(2.5, Math.min(rw,rh)*0.14);
     if(rw>10 && rh>7){
-      const clipId=`cl_${idx}_${rx}_${ry}`.replace(/[.\-]/g,'_');
+      const clipId=`cl_${idx}_${rx}_${ry}`.replace(/\./g,'_');
       pieces+=`<clipPath id="${clipId}"><rect x="${rx+0.5}" y="${ry+0.5}" width="${rw-1}" height="${rh-1}"/></clipPath>`;
       labels+=`<text clip-path="url(#${clipId})" x="${rx+rw/2}" y="${ry+rh/2-fs*0.3}" font-family="'DM Mono',monospace" font-size="${fs}" font-weight="bold" fill="rgba(0,0,0,0.7)" text-anchor="middle" dominant-baseline="middle">${escSvg(p.lbl)}</text>`;
       labels+=`<text clip-path="url(#${clipId})" x="${rx+rw/2}" y="${ry+rh/2+fs*0.9}" font-family="'DM Mono',monospace" font-size="${(fs*0.8).toFixed(1)}" fill="rgba(0,0,0,0.5)" text-anchor="middle" dominant-baseline="middle">${p.w}×${p.h}${unit}</text>`;
     }
   });
 
+  // Waste hatch pattern
   const hatchId=`hatch_${idx}`;
   const hatch=`<defs>
     <pattern id="${hatchId}" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -1271,45 +1185,32 @@ function buildSheetSVG(bin, SW, SH, usW, usH, margin, unit, idx, colorMap, isDar
     </pattern>
   </defs>`;
 
+  // Margin dashed border
   const marginRect = margin>0
-    ? `<rect x="${dimPad+margin}" y="${HDR+margin}" width="${usW}" height="${usH}" fill="none" stroke="rgba(255,200,77,0.5)" stroke-width="0.8" stroke-dasharray="3,2"/>`
+    ? `<rect x="${margin}" y="${margin}" width="${usW}" height="${usH}" fill="none" stroke="rgba(255,200,77,0.5)" stroke-width="0.8" stroke-dasharray="3,2"/>`
     : '';
 
-  // Dimension labels — in dedicated margin strips outside the sheet border
-  const dimW=`<text x="${dimPad + SW/2}" y="${totalH + dimPad*0.72}" font-family="'DM Mono',monospace" font-size="${dimFs}" fill="${txtC}" text-anchor="middle" dominant-baseline="auto">${SW} ${unit}</text>`;
-  const dimHX = dimPad * 0.45;
-  const dimHY = HDR + SH/2;
-  const dimH=`<text x="${dimHX}" y="${dimHY}" font-family="'DM Mono',monospace" font-size="${dimFs}" fill="${txtC}" text-anchor="middle" dominant-baseline="auto" transform="rotate(-90,${dimHX},${dimHY})">${SH} ${unit}</text>`;
-
-  // Header bar content
-  const hdrFs   = HDR * 0.38;
-  const subFs   = HDR * 0.28;
-  const effPct  = ((bin.used()/(usW*usH))*100).toFixed(1);
-  const nameLabel = sheetName ? escSvg(sheetName) : `${SW}×${SH} ${unit}`;
+  // Dimension labels
+  const dimW=`<text x="${SW/2}" y="${SH-1}" font-family="'DM Mono',monospace" font-size="4" fill="${txtC}" text-anchor="middle">${SW} ${unit}</text>`;
+  const dimH=`<text x="3" y="${SH/2}" font-family="'DM Mono',monospace" font-size="4" fill="${txtC}" text-anchor="middle" transform="rotate(-90,3,${SH/2})">${SH} ${unit}</text>`;
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalW} ${totalViewH}" width="${totalW}mm" height="${totalViewH}mm">
-  <title>CutOpt ${escSvg(titlePrefix)} #${idx+1} — ${nameLabel} ${SW}×${SH}${unit}</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SW} ${SH}" width="${SW}mm" height="${SH}mm">
+  <title>CutOpt ${escSvg(titlePrefix)} #${idx+1} — ${SW}×${SH}${unit}</title>
   ${hatch}
-  <!-- Sheet background -->
-  <rect x="${dimPad}" y="${HDR}" width="${SW}" height="${SH}" fill="${bg}"/>
+  <!-- Background -->
+  <rect width="${SW}" height="${SH}" fill="${bg}"/>
   <!-- Waste hatch -->
-  <rect x="${dimPad+margin}" y="${HDR+margin}" width="${usW}" height="${usH}" fill="url(#${hatchId})" fill-opacity="0.5"/>
+  <rect x="${margin}" y="${margin}" width="${usW}" height="${usH}" fill="url(#${hatchId})" fill-opacity="0.5"/>
   ${marginRect}
   <!-- Pieces -->
   ${pieces}
   <!-- Labels -->
   ${labels}
-  <!-- Sheet border -->
-  <rect x="${dimPad+0.5}" y="${HDR+0.5}" width="${SW-1}" height="${SH-1}" fill="none" stroke="${bdr}" stroke-width="1.2" opacity="0.7"/>
+  <!-- Border -->
+  <rect x="0.5" y="0.5" width="${SW-1}" height="${SH-1}" fill="none" stroke="${bdr}" stroke-width="1.2" opacity="0.7"/>
   <!-- Dimensions -->
   ${dimW}${dimH}
-  <!-- Header bar -->
-  <rect x="${dimPad}" width="${SW}" height="${HDR}" fill="${hdrBg}"/>
-  <rect x="${dimPad}" width="${SW}" height="0.6" y="${HDR-0.6}" fill="${accentC}" opacity="0.6"/>
-  <text x="${dimPad+HDR*0.55}" y="${HDR*0.62}" font-family="'Syne','DM Mono',monospace" font-size="${hdrFs}" font-weight="bold" fill="${accentC}">CutOpt</text>
-  <text x="${dimPad+HDR*2.2}" y="${HDR*0.62}" font-family="'Syne','DM Mono',monospace" font-size="${hdrFs}" font-weight="bold" fill="${hdrTxt}">${escSvg(titlePrefix)} #${idx+1}</text>
-  <text x="${dimPad+HDR*2.2}" y="${HDR*0.9}" font-family="'DM Mono',monospace" font-size="${subFs}" fill="${txtC}">${nameLabel}  ·  ${SW}×${SH} ${unit}  ·  ${bin.pl.length} pcs  ·  ${effPct}% used</text>
 </svg>`;
 }
 function escSvg(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
@@ -1816,14 +1717,14 @@ function drawPaperSheets(bins,SW,SH,usW,usH,margin){
   const con=document.getElementById('shvizPaper');con.innerHTML='';
   const DW=Math.min((con.offsetWidth||680),900);
   const isDark=document.documentElement.getAttribute('data-theme')!=='light';
-  const HR=2, HDR_PX=32;
+  const HR=2;
   bins.forEach((bin,si)=>{
-    const sc=DW/SW,cw=Math.round(SW*sc),ch=Math.round(SH*sc),totalCH=ch+HDR_PX;
+    const sc=DW/SW,cw=Math.round(SW*sc),ch=Math.round(SH*sc);
     const wrap=document.createElement('div');wrap.className='sheet-wrap';
     const lbl=document.createElement('div');lbl.className='sheet-lbl';
     lbl.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:5px';
     const info=document.createElement('span');
-    info.innerHTML=`Sheet #${si+1}&nbsp;&nbsp;<small style="color:var(--text-dim)">[${parentPaperName} · ${SW}×${SH} mm]</small>`;
+    info.innerHTML=`Sheet #${si+1}&nbsp;&nbsp;<small style="color:var(--text-dim)">[${SW}×${SH} mm · ${parentPaperName}]</small>`;
     const meta=document.createElement('span');
     meta.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap';
     meta.innerHTML=`<span>${bin.pl.length} pieces · ${((bin.used()/(usW*usH))*100).toFixed(1)}% used</span>`;
@@ -1833,24 +1734,12 @@ function drawPaperSheets(bins,SW,SH,usW,usH,margin){
     dlSvg.onclick=(()=>{const idx=si;return()=>dlPaperSheet(idx,'svg')})();
     meta.appendChild(dlPng);meta.appendChild(dlSvg);lbl.appendChild(info);lbl.appendChild(meta);
     const cWrap=document.createElement('div');cWrap.className='sheet-cv-wrap';
-    const cv=document.createElement('canvas');cv.width=cw;cv.height=totalCH;cv.style.width='100%';
-    const hcv=document.createElement('canvas');hcv.width=cw*HR;hcv.height=totalCH*HR;
+    const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;cv.style.width='100%';
+    const hcv=document.createElement('canvas');hcv.width=cw*HR;hcv.height=ch*HR;
     _paperCanvases.push(hcv);
     cWrap.appendChild(cv);wrap.appendChild(lbl);wrap.appendChild(cWrap);con.appendChild(wrap);
     [[cv,1],[hcv,HR]].forEach(([target,S])=>{
       const ctx=target.getContext('2d');if(S>1)ctx.scale(S,S);
-      const effPct=((bin.used()/(usW*usH))*100).toFixed(1);
-      // ── Header bar ──
-      ctx.fillStyle=isDark?'#0d0f14':'#d0d4e8';ctx.fillRect(0,0,cw,HDR_PX);
-      ctx.fillStyle=isDark?'rgba(0,229,176,.55)':'rgba(0,122,90,.45)';ctx.fillRect(0,HDR_PX-1.5,cw,1.5);
-      ctx.fillStyle='#00e5b0';ctx.font=`bold ${HDR_PX*.38}px Syne,sans-serif`;ctx.textAlign='left';ctx.textBaseline='middle';
-      ctx.fillText('CutOpt',HDR_PX*.3,HDR_PX*.38);
-      ctx.fillStyle=isDark?'#e8eaf2':'#1a1e2e';ctx.font=`bold ${HDR_PX*.38}px Syne,sans-serif`;
-      ctx.fillText(`Sheet #${si+1}`,HDR_PX*2.6,HDR_PX*.38);
-      ctx.fillStyle=isDark?'rgba(107,116,148,.9)':'rgba(80,90,120,.85)';ctx.font=`${HDR_PX*.27}px DM Mono,monospace`;
-      ctx.fillText(`${parentPaperName}  ·  ${SW}×${SH} mm  ·  ${bin.pl.length} pcs  ·  ${effPct}% used`,HDR_PX*2.6,HDR_PX*.78);
-      // ── Sheet content ──
-      ctx.save();ctx.translate(0,HDR_PX);
       // Paper-white background
       ctx.fillStyle=isDark?'#23272f':'#f8f8f0';ctx.fillRect(0,0,cw,ch);
       // Subtle paper texture grid lines
@@ -1876,10 +1765,13 @@ function drawPaperSheets(bins,SW,SH,usW,usH,margin){
         ctx.save();ctx.globalAlpha=.85;ctx.fillStyle=col;
         ctx.beginPath();if(ctx.roundRect)ctx.roundRect(px,py,pw,ph,2);else ctx.rect(px,py,pw,ph);ctx.fill();
         ctx.globalAlpha=1;
+        // Paper shadow effect
         ctx.shadowColor='rgba(0,0,0,.15)';ctx.shadowBlur=3;ctx.shadowOffsetX=1;ctx.shadowOffsetY=1;
         ctx.strokeStyle='rgba(0,0,0,.25)';ctx.lineWidth=1;ctx.stroke();ctx.shadowColor='transparent';
+        // Inner white border (paper look)
         ctx.strokeStyle='rgba(255,255,255,.4)';ctx.lineWidth=1;
         ctx.strokeRect(px+1.5,py+1.5,pw-3,ph-3);
+        // Label
         const fs=Math.max(7,Math.min(pw,ph)*.16);
         if(pw>26&&ph>18){
           ctx.fillStyle='rgba(0,0,0,.72)';ctx.font=`bold ${fs}px DM Mono,monospace`;
@@ -1895,14 +1787,14 @@ function drawPaperSheets(bins,SW,SH,usW,usH,margin){
         }
         ctx.restore();
       });
-      // Sheet border
+      // Sheet border (crisp paper edge)
       ctx.strokeStyle=isDark?'rgba(0,229,176,.4)':'rgba(100,150,200,.6)';ctx.lineWidth=2;ctx.strokeRect(1,1,cw-2,ch-2);
       // Corner fold effect
       const fc=16;ctx.fillStyle=isDark?'rgba(0,0,0,.4)':'rgba(180,180,170,.6)';
       ctx.beginPath();ctx.moveTo(cw-fc,0);ctx.lineTo(cw,fc);ctx.lineTo(cw,0);ctx.fill();
       ctx.strokeStyle=isDark?'rgba(255,255,255,.1)':'rgba(0,0,0,.1)';ctx.lineWidth=1;
       ctx.beginPath();ctx.moveTo(cw-fc,0);ctx.lineTo(cw-fc,fc);ctx.lineTo(cw,fc);ctx.stroke();
-      // Dimensions
+      // Dimensions — width centered on bottom edge, height centered on left edge
       ctx.fillStyle=isDark?'rgba(107,116,148,.8)':'rgba(80,90,120,.7)';ctx.font='9px DM Mono,monospace';
       ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(`${SW}mm`,cw/2,ch-3);
       ctx.save();ctx.translate(10,ch/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(`${SH}mm`,0,0);ctx.restore();
@@ -1911,10 +1803,9 @@ function drawPaperSheets(bins,SW,SH,usW,usH,margin){
         ctx.fillStyle=isDark?'#fff':'#000';ctx.textAlign='center';ctx.textBaseline='middle';
         ctx.fillText(`#${si+1}`,cw/2,ch/2);ctx.restore();
       }
-      ctx.restore(); // end translate(0,HDR_PX)
     });
     // Generate SVG for this paper sheet
-    _paperSVGData.push(buildSheetSVG(bin,SW,SH,usW,usH,margin,'mm',si,paperColors,isDark,'Paper Sheet',parentPaperName));
+    _paperSVGData.push(buildSheetSVG(bin,SW,SH,usW,usH,margin,'mm',si,paperColors,isDark,'Paper Sheet'));
   });
 }
 
