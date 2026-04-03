@@ -195,7 +195,84 @@
         .shortcut { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; gap: 40px;}  
         .key { background: #333; padding: 2px 6px; border-radius: 3px; color: #fff; font-family: monospace;}  
   
-        .hidden { opacity: 0; pointer-events: none; }  
+        .hidden { opacity: 0; pointer-events: none; }
+
+        /* Drag & Drop Overlays */
+        .drop-zone {
+            position: absolute;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .drop-zone.left  { left: 0; }
+        .drop-zone.right { right: 0; left: auto; }
+
+        .drop-zone.active {
+            opacity: 1;
+            pointer-events: none;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(2px);
+        }
+
+        .drop-zone-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            color: rgba(255,255,255,0.7);
+        }
+
+        .drop-zone-inner svg {
+            width: 48px;
+            height: 48px;
+            fill: rgba(255,255,255,0.5);
+        }
+
+        .drop-zone-inner span {
+            font-size: 12px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.5);
+        }
+
+        /* Full-screen drag hint (before split) */
+        #drag-hint {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 49;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            display: flex;
+        }
+
+        #drag-hint.visible { opacity: 1; }
+
+        .drag-hint-half {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px dashed rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.03);
+        }
+
+        .drag-hint-half-inner {
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.25);
+        }
     </style>  
 </head>  
 <body>  
@@ -216,6 +293,26 @@
   
         <!-- Slider Line -->  
         <div id="slider-line"></div>
+
+        <!-- Drag & Drop hint overlay (shown while dragging over window) -->
+        <div id="drag-hint">
+            <div class="drag-hint-half"><div class="drag-hint-half-inner">Drop → Media 1</div></div>
+            <div class="drag-hint-half"><div class="drag-hint-half-inner">Drop → Media 2</div></div>
+        </div>
+
+        <!-- Per-side drop zones (shown when hovering over that half) -->
+        <div class="drop-zone left" id="drop-left">
+            <div class="drop-zone-inner">
+                <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zm-8 2V5h2v6h1.17L12 13.17 9.83 11H11zm-6 7h14v2H5z"/></svg>
+                <span>Media 1</span>
+            </div>
+        </div>
+        <div class="drop-zone right" id="drop-right">
+            <div class="drop-zone-inner">
+                <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zm-8 2V5h2v6h1.17L12 13.17 9.83 11H11zm-6 7h14v2H5z"/></svg>
+                <span>Media 2</span>
+            </div>
+        </div>
 
         <!-- Size Badges -->
         <div class="size-badge" id="badge-left"></div>
@@ -291,7 +388,9 @@
         <div class="shortcut"><span>Load Local Left</span> <span class="key">1</span></div>  
         <div class="shortcut"><span>Load Local Right</span> <span class="key">2</span></div>  
         <div class="shortcut"><span>Load URL Left</span> <span class="key">U</span></div>  
-        <div class="shortcut"><span>Load URL Right</span> <span class="key">I</span></div>  
+        <div class="shortcut"><span>Load URL Right</span> <span class="key">I</span></div>
+        <div class="shortcut"><span>Drag & Drop Left half</span> <span>→ Media 1</span></div>
+        <div class="shortcut"><span>Drag & Drop Right half</span> <span>→ Media 2</span></div>
         <div class="shortcut"><span>Toggle UI</span> <span class="key">H</span></div>  
     </div>  
   
@@ -702,6 +801,71 @@
                 helpModal.classList.remove('visible');  
             }  
         });  
+        // ── Drag & Drop ────────────────────────────────────────────────────────
+
+        const dragHint   = document.getElementById('drag-hint');
+        const dropLeft   = document.getElementById('drop-left');
+        const dropRight  = document.getElementById('drop-right');
+
+        let dragDepth = 0; // track enters/leaves to avoid flicker
+
+        function isDragFile(e) {
+            return e.dataTransfer && e.dataTransfer.types &&
+                   (e.dataTransfer.types.includes('Files') || e.dataTransfer.types.includes('application/x-moz-file'));
+        }
+
+        function getSideFromX(clientX) {
+            return clientX < window.innerWidth / 2 ? 'left' : 'right';
+        }
+
+        window.addEventListener('dragenter', (e) => {
+            if (!isDragFile(e)) return;
+            e.preventDefault();
+            dragDepth++;
+            if (dragDepth === 1) dragHint.classList.add('visible');
+        });
+
+        window.addEventListener('dragleave', (e) => {
+            if (!isDragFile(e)) return;
+            dragDepth--;
+            if (dragDepth <= 0) {
+                dragDepth = 0;
+                dragHint.classList.remove('visible');
+                dropLeft.classList.remove('active');
+                dropRight.classList.remove('active');
+            }
+        });
+
+        window.addEventListener('dragover', (e) => {
+            if (!isDragFile(e)) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+
+            const side = getSideFromX(e.clientX);
+            if (side === 'left') {
+                dropLeft.classList.add('active');
+                dropRight.classList.remove('active');
+            } else {
+                dropRight.classList.add('active');
+                dropLeft.classList.remove('active');
+            }
+        });
+
+        window.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dragDepth = 0;
+            dragHint.classList.remove('visible');
+            dropLeft.classList.remove('active');
+            dropRight.classList.remove('active');
+
+            const file = e.dataTransfer.files[0];
+            if (!file) return;
+
+            const side = getSideFromX(e.clientX);
+            const url  = URL.createObjectURL(file);
+            setMedia(side, url, file.type.startsWith('video/'));
+        });
+
     </script>  
 </body>  
 </html>
