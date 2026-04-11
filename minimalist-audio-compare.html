@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimalist Audio Compare</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --ui-bg: rgba(14, 14, 14, 0.88);
+      --ui-border: #2a2a2a;
+      --ui-hover: #fff;
+      --ui-hover-text: #000;
+      --text: #888;
+      --text-bright: #ccc;
+      --accent-l: #3ecfff;
+      --accent-r: #ff6b3e;
+      --canvas-bg: #0e0e0e;
+    }
+    *, *::before, *::after { box-sizing: border-box; user-select: none; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg);
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      overflow: hidden;
+      color: var(--text);
+    }
+
+    #app {
+      position: relative;
+      width: 100vw; height: 100vh;
+      display: flex; flex-direction: column;
+    }
+
+    /* ── Canvas area ── */
+    #canvas-area {
+      position: relative;
+      flex: 1; min-height: 0; overflow: hidden;
+    }
+
+    /* ─── SPLIT layout ─── */
+    #canvas-area.layout-split { display: flex; }
+    #canvas-area.layout-split .side-canvas-wrap { position: relative; flex: 1; overflow: hidden; }
+    #canvas-area.layout-split #divider {
+      position: absolute; top: 0; bottom: 0; left: 50%;
+      width: 1px; transform: translateX(-50%);
+      background: rgba(255,255,255,0.15);
+      z-index: 20; pointer-events: none;
+    }
+    #canvas-area.layout-split #divider::after,
+    #canvas-area.layout-split #divider::before { display: none; }
+
+    /* ─── OVERLAY layout ─── */
+    #canvas-area.layout-overlay { display: block; cursor: col-resize; }
+    #canvas-area.layout-overlay.spec-pan { cursor: grab; }
+    #canvas-area.waveform-mode { cursor: crosshair; }
+    #canvas-area.layout-overlay .side-canvas-wrap {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+    }
+    #canvas-area.layout-overlay #wrap-right {
+      /* Clips the left side, showing only the right side of Audio 2 */
+      clip-path: inset(0 0 0 50%); z-index: 2;
+    }
+    #canvas-area.layout-overlay #divider {
+      position: absolute; top: 0; bottom: 0; left: 50%;
+      width: 1px; transform: translateX(-50%);
+      background: rgba(255,255,255,0.9);
+      z-index: 30; pointer-events: none;
+      box-shadow: 0 0 10px rgba(0,0,0,0.9);
+    }
+    
+    /* ───
+    #canvas-area.layout-overlay #divider::after {
+      content: '';
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 28px; height: 28px; border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.6);
+    }
+    #canvas-area.layout-overlay #divider::before {
+      content: '◀▶';
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 7px; color: #777; z-index: 31;
+      pointer-events: none; letter-spacing: -2px;
+    }
+    ─── */
+
+    /* ─── TOP-BOTTOM layout ─── */
+    #canvas-area.layout-topbottom { display: flex; flex-direction: column; }
+    #canvas-area.layout-topbottom .side-canvas-wrap { position: relative; flex: 1; min-height: 0; width: 100%; overflow: hidden; }
+    #canvas-area.layout-topbottom #divider {
+      position: absolute; left: 0; right: 0; top: 50%;
+      height: 1px; width: 100%;
+      transform: translateY(-50%);
+      background: rgba(255,255,255,0.15);
+      z-index: 20; pointer-events: none;
+      /* Remove any flex-item sizing inherited from split mode */
+      flex: none;
+    }
+
+    /* canvas fills wrapper */
+    .side-canvas-wrap {
+      background: var(--canvas-bg);
+      display: flex; align-items: center; justify-content: center;
+      min-height: 0;
+    }
+    .side-canvas-wrap canvas {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    }
+
+    /* Drop overlay */
+    .drop-overlay {
+      position: absolute; inset: 0; z-index: 30;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none; opacity: 0; transition: opacity 0.15s;
+      border: 1px dashed rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04); backdrop-filter: blur(2px);
+    }
+    .drop-overlay.active { opacity: 1; }
+    .drop-overlay-inner {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      color: rgba(255,255,255,0.45); font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    }
+    .drop-overlay-inner svg { width: 36px; height: 36px; fill: rgba(255,255,255,0.3); }
+
+    /* Placeholder */
+    .placeholder-msg {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 10px; pointer-events: none;
+      color: #333; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+    }
+    .placeholder-msg svg { width: 40px; height: 40px; fill: #2a2a2a; }
+
+    /* ── Transport ── */
+    #transport {
+      position: relative; height: 52px;
+      border-top: 1px solid var(--ui-border);
+      display: flex; align-items: center;
+      background: var(--ui-bg); flex-shrink: 0; z-index: 25;
+    }
+    #scrub-track { flex: 1; height: 100%; position: relative; cursor: pointer; }
+    #scrub-fill { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: rgba(255,255,255,0.04); pointer-events: none; }
+    #scrub-head { position: absolute; top: 0; height: 100%; width: 1px; background: rgba(255,255,255,0.6); left: 0%; pointer-events: none; }
+    #time-display {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      font-size: 11px; letter-spacing: 1px; color: var(--text); pointer-events: none;
+    }
+    
+    .btn-transport {
+      width: 52px; height: 52px; flex-shrink: 0;
+      border-right: 1px solid var(--ui-border);
+      border-left: none; border-top: none; border-bottom: none; border-radius: 0;
+    }
+    .btn-transport svg { width: 22px; height: 22px; }
+    .btn-transport.active { background: rgba(255,255,255,0.12); color: #fff; border-color: rgba(255,255,255,0.2); }
+
+    #vol-area {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 14px; border-left: 1px solid var(--ui-border); height: 100%; flex-shrink: 0;
+    }
+    #vol-area label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: #444; }
+
+    #play-target-group {
+      display: flex; align-items: stretch; flex-shrink: 0;
+      border-right: 1px solid var(--ui-border);
+      height: 100%;
+    }
+    .btn-play-target {
+      width: 38px; height: 100%;
+      background: transparent; border: none; border-right: 1px solid var(--ui-border);
+      color: #444; cursor: pointer; font-family: inherit;
+      font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+      transition: all 0.12s; display: flex; align-items: center; justify-content: center;
+    }
+    .btn-play-target:last-child { border-right: none; }
+    .btn-play-target:hover { background: rgba(255,255,255,0.06); color: #aaa; }
+    .btn-play-target.active { background: rgba(255,255,255,0.08); color: #fff; }
+    
+    input[type=range] {
+      -webkit-appearance: none; width: 80px; height: 2px;
+      background: #222; outline: none; cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 4px; height: 16px; border-radius: 0; background: #fff; cursor: pointer;
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 4px; height: 16px; border-radius: 0; background: #fff; cursor: pointer; border: none;
+    }
+
+    /* ── UI panels ── */
+    .ui-panel { position: absolute; z-index: 40; display: flex; flex-direction: column; gap: 5px; }
+    #panel-modes  { top: 18px; left: 18px; }
+    #panel-left   { bottom: 70px; left: 18px; align-items: flex-start; }
+    #panel-right  { bottom: 70px; right: 18px; align-items: flex-end; }
+    #panel-global { top: 18px; right: 18px; flex-direction: row; gap: 6px; }
+
+    button {
+      background: var(--ui-bg); border: 1px solid var(--ui-border);
+      color: var(--text); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.12s ease; backdrop-filter: blur(6px); font-family: inherit;
+    }
+    button:hover { background: var(--ui-hover); color: var(--ui-hover-text); border-color: var(--ui-hover); }
+    button svg { width: 18px; height: 18px; fill: currentColor; flex-shrink: 0; }
+    .btn-icon { width: 40px; height: 40px; border-radius: 0; }
+
+    .btn-mode {
+      height: 34px; padding: 0 12px;
+      font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase;
+      border-radius: 0; gap: 8px; justify-content: flex-start; white-space: nowrap;
+    }
+    .btn-mode svg { width: 14px; height: 14px; }
+    .btn-mode.active { background: var(--ui-hover); color: var(--ui-hover-text); border-color: var(--ui-hover); }
+
+    .panel-divider { height: 1px; background: var(--ui-border); margin: 3px 0; }
+
+    .mode-group {
+      display: flex; flex-direction: column; gap: 4px;
+      padding-left: 18px; border-left: 1px solid var(--ui-border); margin-left: 4px;
+    }
+    .btn-submode {
+      height: 28px; padding: 0 10px;
+      font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+      border-radius: 0; gap: 7px; justify-content: flex-start; white-space: nowrap;
+      color: #555; border-color: transparent; background: transparent;
+    }
+    .btn-submode:hover { background: rgba(255,255,255,0.06); color: var(--text-bright); border-color: var(--ui-border); }
+    .btn-submode.active { color: var(--text-bright); background: rgba(255,255,255,0.08); border-color: var(--ui-border); }
+
+    .filename-panel {
+      font-size: 10px; color: var(--text-bright);
+      max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-bottom: 6px;
+    }
+
+    .spinner { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; z-index: 15; }
+    .spinner.active { display: flex; }
+    .spin-ring { width: 32px; height: 32px; border: 2px solid #222; border-top-color: #666; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #help-modal {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      background: var(--ui-bg); border: 1px solid var(--ui-border);
+      padding: 28px 32px; z-index: 100; backdrop-filter: blur(12px);
+      display: none; min-width: 340px; box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+    }
+    #help-modal.visible { display: block; }
+    #help-modal h2 { font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: #fff; font-weight: 400; margin-bottom: 22px; }
+    .shortcut { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 11px; gap: 40px; }
+    .key { background: #1e1e1e; padding: 2px 7px; border: 1px solid #333; color: #ccc; font-family: inherit; font-size: 10px; }
+    .hidden { opacity: 0 !important; pointer-events: none !important; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <div id="canvas-area" class="layout-split">
+    <!-- Left -->
+    <div class="side-canvas-wrap" id="wrap-left">
+      <div class="placeholder-msg" id="ph-left">
+        <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+        <span>Drop audio or click load</span>
+      </div>
+      <canvas id="cv-left"></canvas>
+      <div class="spinner" id="sp-left"><div class="spin-ring"></div></div>
+      <div class="drop-overlay" id="drop-left">
+        <div class="drop-overlay-inner">
+          <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zm-8 2V5h2v6h1.17L12 13.17 9.83 11H11zm-6 7h14v2H5z"/></svg>
+          <span>Audio 1</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="divider"></div>
+
+    <!-- Right -->
+    <div class="side-canvas-wrap" id="wrap-right">
+      <div class="placeholder-msg" id="ph-right">
+        <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+        <span>Drop audio or click load</span>
+      </div>
+      <canvas id="cv-right"></canvas>
+      <div class="spinner" id="sp-right"><div class="spin-ring"></div></div>
+      <div class="drop-overlay" id="drop-right">
+        <div class="drop-overlay-inner">
+          <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zm-8 2V5h2v6h1.17L12 13.17 9.83 11H11zm-6 7h14v2H5z"/></svg>
+          <span>Audio 2</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transport -->
+  <div id="transport">
+    <button class="btn-transport" id="btn-play" title="Play/Pause (Space)">
+      <svg id="ico-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      <svg id="ico-pause" viewBox="0 0 24 24" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+    </button>
+    <button class="btn-transport" id="btn-stop" title="Stop">
+      <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+    </button>
+    <button class="btn-transport" id="btn-repeat" onclick="toggleRepeat()" title="Repeat (R)">
+      <svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+    </button>
+    <!-- Play target selector -->
+    <div id="play-target-group">
+      <button class="btn-play-target" id="btn-play-left"  onclick="setPlayTarget('left')"  title="Play Audio 1 only" style="color:var(--accent-l)">1</button>
+      <button class="btn-play-target active" id="btn-play-both" onclick="setPlayTarget('both')"  title="Play both">1+2</button>
+      <button class="btn-play-target" id="btn-play-right" onclick="setPlayTarget('right')" title="Play Audio 2 only" style="color:var(--accent-r)">2</button>
+    </div>
+    <div id="scrub-track">
+      <div id="scrub-fill"></div>
+      <div id="scrub-head"></div>
+      <div id="time-display">0:00 / 0:00</div>
+    </div>
+    <div id="vol-area">
+      <label>Vol</label>
+      <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.8">
+    </div>
+  </div>
+
+  <!-- Mode panel -->
+  <div class="ui-panel" id="panel-modes">
+    <button class="btn-icon" id="btn-toggle-modes" onclick="toggleModeButtons()" title="Toggle Mode Buttons (M)">
+      <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+    </button>
+    <div id="mode-buttons-wrapper" style="display: flex; flex-direction: column; gap: 5px;">
+      <button class="btn-mode active" id="btn-waveform" onclick="setVizMode('waveform')">
+        <svg viewBox="0 0 24 24"><path d="M3 12h2l2-6 2 12 2-9 2 6 2-3h6v-2h-7l-1.5 3-2-6-2 9-2-12-2 6H3z"/></svg>
+        Waveform
+      </button>
+      <button class="btn-mode" id="btn-spectrogram" onclick="setVizMode('spectrogram')">
+        <svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+        Spectrogram
+      </button>
+      <div class="mode-group" id="spec-submodes" style="display:none">
+        <button class="btn-submode active" id="sub-linear" onclick="setSpecScale('linear')">Linear freq</button>
+        <button class="btn-submode" id="sub-log" onclick="setSpecScale('log')">Log freq</button>
+        <button class="btn-submode" id="sub-mel" onclick="setSpecScale('mel')">Mel scale</button>
+        <div style="height:1px;background:var(--ui-border);margin:3px 0"></div>
+        <div style="display:flex;gap:4px;padding-left:0">
+          <button class="btn-submode" id="btn-spec-zoom-in" onclick="specZoomIn()" title="Zoom In freq (scroll up)" style="flex:1;justify-content:center;padding:0 6px">＋</button>
+          <button class="btn-submode" id="btn-spec-zoom-out" onclick="specZoomOut()" title="Zoom Out freq (scroll down)" style="flex:1;justify-content:center;padding:0 6px">－</button>
+          <button class="btn-submode" id="btn-spec-zoom-reset" onclick="specZoomReset()" title="Reset zoom" style="flex:1;justify-content:center;padding:0 6px">Reset</button>
+        </div>
+        <button class="btn-submode" onclick="showGoToFreq()" title="Go to specific frequency" style="justify-content:center">Go to Freq…</button>
+      </div>
+      <button class="btn-mode" id="btn-spectrum" onclick="setVizMode('spectrum')">
+        <svg viewBox="0 0 24 24"><path d="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z"/></svg>
+        Spectrum
+      </button>
+      <button class="btn-mode" id="btn-stereo" onclick="setVizMode('stereo')">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/></svg>
+        Stereo Field
+      </button>
+
+      <div class="panel-divider"></div>
+
+      <button class="btn-mode active" id="btn-layout-split" onclick="setLayout('split')">
+        <svg viewBox="0 0 24 24"><path d="M3 3h8v18H3zm10 0h8v18h-8z"/></svg>
+        Side by Side
+      </button>
+      <button class="btn-mode" id="btn-layout-topbottom" onclick="setLayout('topbottom')">
+        <svg viewBox="0 0 24 24"><path d="M3 3h18v8H3zm0 10h18v8H3z"/></svg>
+        Top / Bottom
+      </button>
+      <button class="btn-mode" id="btn-layout-overlay" onclick="setLayout('overlay')">
+        <svg viewBox="0 0 24 24"><path d="M2 3h20v18H2zm9 1v16h2V4z"/></svg>
+        Overlay Slider
+      </button>
+    </div>
+  </div>
+
+  <!-- Left controls -->
+  <div class="ui-panel" id="panel-left">
+    <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--accent-l);margin-bottom:2px">Audio 1</div>
+    <div class="filename-panel" id="name-left">—</div>
+    <div style="display:flex;gap:6px">
+      <button class="btn-icon" onclick="loadLocal('left')" title="Load File (1)">
+        <svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Right controls -->
+  <div class="ui-panel" id="panel-right">
+    <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--accent-r);margin-bottom:2px;text-align:right">Audio 2</div>
+    <div class="filename-panel" id="name-right" style="text-align:right">—</div>
+    <div style="display:flex;gap:6px;justify-content:flex-end">
+      <button class="btn-icon" onclick="loadLocal('right')" title="Load File (2)">
+        <svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Global -->
+  <div class="ui-panel" id="panel-global">
+    <button class="btn-icon" id="btn-stretch" onclick="toggleStretch(event)" title="Toggle stretch: align both tracks to same duration">
+      <svg viewBox="0 0 24 24"><path d="M3 12h3.5L8 9l2.5 7L13 8l2 6 1.5-3H21v-2h-5.5L14 12l-2-6-2.5 8L7 7 5.5 10H3z"/></svg>
+    </button>
+    <button class="btn-icon" onclick="toggleFullscreen()" title="Fullscreen (F)">
+      <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+    </button>
+    <button class="btn-icon" onclick="toggleHelp(event)" title="Help (H)">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
+    </button>
+  </div>
+
+  <div id="help-modal">
+    <h2>Audio Compare</h2>
+    <div class="shortcut"><span>Play / Pause</span><span class="key">Space</span></div>
+    <div class="shortcut"><span>Repeat</span><span class="key">R</span></div>
+    <div class="shortcut"><span>Load Left</span><span class="key">1</span></div>
+    <div class="shortcut"><span>Load Right</span><span class="key">2</span></div>
+    <div class="shortcut"><span>Toggle Modes</span><span class="key">M</span></div>
+    <div class="shortcut"><span>Waveform</span><span class="key">W</span></div>
+    <div class="shortcut"><span>Spectrogram</span><span class="key">S</span></div>
+    <div class="shortcut"><span>Spectrum</span><span class="key">X</span></div>
+    <div class="shortcut"><span>Stereo Field</span><span class="key">E</span></div>
+    <div class="shortcut"><span>Side by Side</span><span class="key">B</span></div>
+    <div class="shortcut"><span>Top / Bottom</span><span class="key">T</span></div>
+    <div class="shortcut"><span>Overlay Slider</span><span class="key">O</span></div>
+    <div class="shortcut"><span>Stretch align durations</span><span class="key">Z</span></div>
+    <div class="shortcut"><span>Click waveform / spec</span><span>seek to time</span></div>
+    <div class="shortcut"><span>Spec zoom in / out</span><span><span class="key">+</span> / <span class="key">-</span></span></div>
+    <div class="shortcut"><span>Spec zoom reset</span><span class="key">0</span></div>
+    <div class="shortcut"><span>Spec freq zoom</span><span>scroll ↕</span></div>
+    <div class="shortcut"><span>Spec time zoom</span><span>shift+scroll / scroll ↔</span></div>
+    <div class="shortcut"><span>Spec pan</span><span>drag</span></div>
+    <div class="shortcut"><span>Spec pinch zoom</span><span>2-finger pinch</span></div>
+    <div class="shortcut"><span>Go to frequency</span><span class="key">G</span></div>
+    <div class="shortcut"><span>Fullscreen</span><span class="key">F</span></div>
+    <div class="shortcut"><span>Toggle UI</span><span class="key">Tab</span></div>
+    <div class="shortcut"><span>Drag &amp; drop file</span><span>→ either half</span></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+let vizMode    = 'waveform';
+let specScale  = 'linear';
+let layoutMode = 'split';
+let splitPos   = 0.5;   // overlay slider 0-1
+let stretchMode = false; // stretch shorter audio to match longer duration visually
+let repeatMode  = false; // loop playback
+
+// Spectrogram viewport: all four axes support zoom + pan
+let specFreqMin  = 0;     // Hz – bottom of visible freq range
+let specFreqMax  = null;  // Hz – top (null = nyquist, resolved lazily)
+let specTimeMin  = 0;     // 0..1 normalized time – left edge
+let specTimeMax  = 1;     // 0..1 normalized time – right edge
+
+// Pan/zoom interaction state
+let specPan = { active:false, startX:0, startY:0, startFMin:0, startFMax:0, startTMin:0, startTMax:0 };
+let specPinch = { active:false, lastDist:0 };
+// "Go to freq" popup state
+let freqInputVisible = false;
+
+const sides = ['left','right'];
+const audio = {};
+let masterPlaying = false, masterTime = 0, masterStartedAt = 0, animFrame = null;
+let playTarget = 'both'; // 'both' | 'left' | 'right'
+let spectrogramRowCache = { left: null, right: null };
+
+const cv    = { left: document.getElementById('cv-left'),  right: document.getElementById('cv-right') };
+const ctx2d = { left: cv.left.getContext('2d'),             right: cv.right.getContext('2d') };
+const canvasArea = document.getElementById('canvas-area');
+const divider    = document.getElementById('divider');
+const wrapRight  = document.getElementById('wrap-right');
+
+// ═══════════════════════════════════════════════════
+//  AUDIO
+// ═══════════════════════════════════════════════════
+let sharedAudioCtx = null;
+function getAudioCtx() {
+  if (!sharedAudioCtx) sharedAudioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  return sharedAudioCtx;
+}
+
+function loadLocal(side) {
+  const inp = document.createElement('input');
+  inp.type='file'; inp.accept='audio/*';
+  inp.onchange = e => { const f=e.target.files[0]; if(f) loadFile(side,f); };
+  inp.click();
+}
+
+async function loadFile(side, file) {
+  showSpinner(side, true);
+  document.getElementById(`ph-${side}`).style.display = 'none';
+  // Stop and detach any currently playing source for this side before replacing it
+  if(audio[side]?.source){
+    try{ audio[side].source.onended=null; audio[side].source.stop(); }catch(e){}
+    audio[side].source=null; audio[side].analyser=null;
+  }
+  const buf = await file.arrayBuffer();
+  const actx = getAudioCtx();
+  const buffer = await actx.decodeAudioData(buf);
+  audio[side] = { buffer, duration: buffer.duration, pcm: extractPCM(buffer), analyser:null, source:null, gainNode:null };
+  spectrogramRowCache[side] = null;
+  buildSpectrogram(side);
+  document.getElementById(`name-${side}`).textContent = file.name;
+  document.getElementById(`name-${side}`).title = file.name;
+  showSpinner(side, false);
+  renderFrame(); updateTimeDisplay();
+  if (masterPlaying) { stopAll(); startAll(); }
+}
+
+function extractPCM(buffer) {
+  const len=buffer.length, out=new Float32Array(len);
+  for(let c=0;c<buffer.numberOfChannels;c++){
+    const ch=buffer.getChannelData(c);
+    for(let i=0;i<len;i++) out[i]+=ch[i];
+  }
+  const s=1/buffer.numberOfChannels;
+  for(let i=0;i<len;i++) out[i]*=s;
+  return out;
+}
+
+function startAll() {
+  const actx=getAudioCtx();
+  if(actx.state==='suspended') actx.resume();
+  masterStartedAt=actx.currentTime-masterTime;
+  for(const side of sides){
+    if(!audio[side]) continue;
+    const vol=parseFloat(document.getElementById('vol-slider').value);
+    const gain=actx.createGain();
+    // Mute sides not selected by playTarget
+    gain.gain.value=(playTarget==='both'||playTarget===side)?vol:0;
+    gain.connect(actx.destination);
+    const analyser=actx.createAnalyser(); analyser.fftSize=2048; analyser.smoothingTimeConstant=0.8; gain.connect(analyser);
+    const src=actx.createBufferSource(); src.buffer=audio[side].buffer; src.connect(gain);
+    src.start(0, masterTime % audio[side].duration);
+    src.onended = ()=>{
+      if(!masterPlaying||!audio[side]||src!==audio[side].source) return;
+      const otherSide=side==='left'?'right':'left';
+      const otherDone=!audio[otherSide]||getCurrentTime()>=audio[otherSide].duration-0.05;
+      if(otherDone){
+        if(repeatMode){
+          // Stop all sources without letting stopAll capture current time
+          for(const s of sides){ if(!audio[s]?.source) continue; try{audio[s].source.stop();}catch(e){} audio[s].source=null; audio[s].analyser=null; }
+          masterPlaying=false;
+          masterTime=0;
+          updateScrub(0); updateTimeDisplay();
+          startAll();
+        } else {
+          masterPlaying=false; togglePlayUI(false); masterTime=0; updateScrub(0); updateTimeDisplay();
+        }
+      }
+    };
+    audio[side].source=src; audio[side].gainNode=gain; audio[side].analyser=analyser;
+  }
+  masterPlaying=true; togglePlayUI(true); scheduleFrame();
+}
+
+function stopAll() {
+  const actx=getAudioCtx(); masterTime=actx.currentTime-masterStartedAt;
+  for(const side of sides){ if(!audio[side]?.source) continue; try{audio[side].source.stop();}catch(e){} audio[side].source=null; audio[side].analyser=null; }
+  masterPlaying=false; togglePlayUI(false);
+}
+
+function togglePlay() { if(masterPlaying) stopAll(); else startAll(); }
+function setPlayTarget(t){
+  playTarget=t;
+  document.getElementById('btn-play-left').classList.toggle('active',  t==='left');
+  document.getElementById('btn-play-right').classList.toggle('active', t==='right');
+  document.getElementById('btn-play-both').classList.toggle('active',  t==='both');
+  // Apply gain change live without restarting
+  const vol=parseFloat(document.getElementById('vol-slider').value);
+  for(const side of sides){
+    if(!audio[side]?.gainNode) continue;
+    audio[side].gainNode.gain.value=(t==='both'||t===side)?vol:0;
+  }
+}
+function toggleRepeat(){
+  repeatMode=!repeatMode;
+  document.getElementById('btn-repeat').classList.toggle('active', repeatMode);
+}
+function stopPlayback() {
+  if(masterPlaying) stopAll();
+  masterTime = 0;
+  updateScrub(0);
+  updateTimeDisplay();
+  renderFrame();
+}
+function togglePlayUI(p) { document.getElementById('ico-play').style.display=p?'none':''; document.getElementById('ico-pause').style.display=p?'':'none'; }
+function getCurrentTime() { return masterPlaying ? getAudioCtx().currentTime-masterStartedAt : masterTime; }
+function seekTo(t) { const was=masterPlaying; if(was) stopAll(); masterTime=t; updateScrub(t); updateTimeDisplay(); if(was) startAll(); }
+function toggleModeButtons() {
+  const w = document.getElementById('mode-buttons-wrapper');
+  w.style.display = w.style.display === 'none' ? 'flex' : 'none';
+}
+
+// ═══════════════════════════════════════════════════
+//  RENDER LOOP
+// ═══════════════════════════════════════════════════
+function scheduleFrame() { if(animFrame) cancelAnimationFrame(animFrame); animFrame=requestAnimationFrame(renderLoop); }
+function renderLoop() { if(!masterPlaying) return; const t=getCurrentTime(); updateScrub(t); updateTimeDisplay(); renderFrame(); animFrame=requestAnimationFrame(renderLoop); }
+
+function renderFrame() {
+  resizeCanvases();
+  const t=getCurrentTime();
+
+  if(layoutMode==='overlay') {
+    // Both canvases full-size; right clipped by clip-path
+    for(const side of sides){
+      const c=cv[side], g=ctx2d[side];
+      g.clearRect(0,0,c.width,c.height); drawBg(g,c.width,c.height);
+      if(audio[side]) drawViz(g,c,side,t);
+    }
+    const pct=(splitPos*100).toFixed(2);
+    wrapRight.style.clipPath=`inset(0 0 0 ${pct}%)`;
+    divider.style.left=`${pct}%`; divider.style.top=''; divider.style.width=''; divider.style.height='';
+  } else if(layoutMode==='topbottom') {
+    wrapRight.style.clipPath='';
+    divider.style.left='0'; divider.style.top='50%'; divider.style.width='100%'; divider.style.height='1px';
+    for(const side of sides){
+      const c=cv[side], g=ctx2d[side];
+      g.clearRect(0,0,c.width,c.height); drawBg(g,c.width,c.height);
+      if(audio[side]) drawViz(g,c,side,t);
+    }
+  } else {
+    wrapRight.style.clipPath=''; divider.style.left='50%'; divider.style.top=''; divider.style.width=''; divider.style.height='';
+    for(const side of sides){
+      const c=cv[side], g=ctx2d[side];
+      g.clearRect(0,0,c.width,c.height); drawBg(g,c.width,c.height);
+      if(audio[side]) drawViz(g,c,side,t);
+    }
+  }
+}
+
+function drawViz(g,c,side,t) {
+  if     (vizMode==='waveform')    drawWaveform(g,c,side,t);
+  else if(vizMode==='spectrogram') drawSpectrogramView(g,c,side,t);
+  else if(vizMode==='spectrum')    drawSpectrum(g,c,side);
+  else if(vizMode==='stereo')      drawStereoField(g,c,side);
+}
+
+function resizeCanvases() {
+  for(const side of sides){
+    const wrap=document.getElementById(`wrap-${side}`);
+    const w=wrap.clientWidth, h=wrap.clientHeight;
+    if(cv[side].width!==w||cv[side].height!==h){
+      cv[side].width=w; cv[side].height=h;
+      spectrogramRowCache[side]=null;
+      if(audio[side]) buildSpectrogram(side);
+    }
+  }
+}
+
+const ACCENT={left:'#3ecfff',right:'#ff6b3e'};
+function drawBg(g,w,h){ g.fillStyle='#0e0e0e'; g.fillRect(0,0,w,h); }
+
+// ── WAVEFORM ──────────────────────────────────────
+function drawWaveform(g,c,side,t) {
+  const pcm=audio[side].pcm, dur=audio[side].duration;
+  const dispDur=stretchMode ? maxDuration() : dur;
+  const w=c.width, h=c.height, mid=h/2, accent=ACCENT[side];
+  // In stretch mode, map pcm samples across the full display duration
+  const total=pcm.length, spp=total/w;
+
+  g.strokeStyle='#1e1e1e'; g.lineWidth=1;
+  g.beginPath(); g.moveTo(0,mid); g.lineTo(w,mid); g.stroke();
+  g.strokeStyle='#141414';
+  for(let i=1;i<8;i++){ const y=(h/8)*i; g.beginPath(); g.moveTo(0,y); g.lineTo(w,y); g.stroke(); }
+
+  const rg=g.createLinearGradient(0,0,0,h);
+  rg.addColorStop(0,'rgba(0,0,0,0)'); rg.addColorStop(0.5,accent+'22'); rg.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=rg; g.beginPath();
+  for(let px=0;px<w;px++){
+    const s0=Math.floor(px*spp), s1=Math.min(Math.floor((px+1)*spp),total-1);
+    let rms=0; for(let s=s0;s<=s1;s++) rms+=pcm[s]*pcm[s];
+    rms=Math.sqrt(rms/(s1-s0+1)); const py=rms*mid*0.92;
+    px===0?g.moveTo(px,mid-py):g.lineTo(px,mid-py);
+  }
+  for(let px=w-1;px>=0;px--){
+    const s0=Math.floor(px*spp), s1=Math.min(Math.floor((px+1)*spp),total-1);
+    let rms=0; for(let s=s0;s<=s1;s++) rms+=pcm[s]*pcm[s];
+    rms=Math.sqrt(rms/(s1-s0+1)); g.lineTo(px,mid+rms*mid*0.92);
+  }
+  g.closePath(); g.fill();
+
+  g.strokeStyle=accent; g.lineWidth=1;
+  for(const sign of [1,-1]){
+    g.beginPath();
+    for(let px=0;px<w;px++){
+      const s0=Math.floor(px*spp), s1=Math.min(Math.floor((px+1)*spp),total-1);
+      let pk=0; for(let s=s0;s<=s1;s++) pk=Math.max(pk,Math.abs(pcm[s]));
+      px===0?g.moveTo(px,mid-sign*pk*mid*0.92):g.lineTo(px,mid-sign*pk*mid*0.92);
+    }
+    g.stroke();
+  }
+
+  // In stretch mode the waveform fills the full canvas width already (spp maps all samples),
+  // so just draw a dim region after the audio ends if it's shorter than maxDuration
+  if(stretchMode && dur < dispDur) {
+    const endPx=(dur/dispDur)*w;
+    g.fillStyle='rgba(0,0,0,0.45)'; g.fillRect(endPx,0,w-endPx,h);
+    g.strokeStyle='rgba(255,255,255,0.15)'; g.lineWidth=1;
+    g.beginPath(); g.moveTo(endPx,0); g.lineTo(endPx,h); g.stroke();
+  }
+
+  const playPx=(t/dispDur)*w;
+  g.fillStyle='rgba(255,255,255,0.04)'; g.fillRect(0,0,playPx,h);
+  g.strokeStyle='rgba(255,255,255,0.7)'; g.lineWidth=1;
+  g.beginPath(); g.moveTo(playPx,0); g.lineTo(playPx,h); g.stroke();
+
+  g.fillStyle='#444'; g.font='9px SF Mono,monospace'; g.textBaseline='top';
+  const steps=Math.min(8,Math.floor(dispDur)), stepSec=dispDur/steps;
+  for(let i=0;i<=steps;i++){
+    const sec=i*stepSec, x=(sec/dispDur)*w;
+    if(i>0&&i<steps){ g.strokeStyle='#1a1a1a'; g.lineWidth=1; g.beginPath(); g.moveTo(x,0); g.lineTo(x,h); g.stroke(); }
+    g.fillText(fmt(sec),x+3,5);
+  }
+}
+
+function fmt(s){ const m=Math.floor(s/60),ss=Math.floor(s%60); return `${m}:${ss.toString().padStart(2,'0')}`; }
+
+// ── SPECTROGRAM ───────────────────────────────────
+function buildSpectrogram(side) {
+  const buf=audio[side]?.buffer; if(!buf) return;
+  const W=cv[side].width||document.getElementById(`wrap-${side}`).clientWidth;
+  const H=cv[side].height||document.getElementById(`wrap-${side}`).clientHeight;
+  if(!W||!H) return;
+
+  // Use large FFT for better frequency resolution (like Audacity's default 2048-32768)
+  const FFT=4096, pcmMono=audio[side].pcm, freqBins=FFT/2;
+  const nyq=buf.sampleRate/2;
+  const fMin=specFreqMin||0;
+  const fMax=Math.min(specFreqMax||nyq, nyq);
+
+  // Hann window
+  const win=new Float32Array(FFT);
+  for(let i=0;i<FFT;i++) win[i]=0.5*(1-Math.cos(2*Math.PI*i/(FFT-1)));
+
+  const off=document.createElement('canvas'); off.width=W; off.height=H;
+  const og=off.getContext('2d'); const imgData=og.createImageData(W,H); const px=imgData.data;
+
+  // Map canvas row → frequency (Hz) respecting zoom window
+  function row2freq(row){
+    const norm=1-(row/H); // 0=bottom, 1=top
+    const fLow=fMin, fHigh=fMax;
+    if(specScale==='log'){
+      const logLow=Math.log10(Math.max(fLow,1)), logHigh=Math.log10(Math.max(fHigh,1));
+      return Math.pow(10, logLow + norm*(logHigh-logLow));
+    }
+    if(specScale==='mel'){
+      const mLow=2595*Math.log10(1+fLow/700), mHigh=2595*Math.log10(1+fHigh/700);
+      return 700*(Math.pow(10,(mLow+norm*(mHigh-mLow))/2595)-1);
+    }
+    return fLow + norm*(fHigh-fLow);
+  }
+
+  // Frequency → fractional bin index (allows interpolation)
+  function freq2bin(f){ return (f/nyq)*freqBins; }
+
+  const re=new Float32Array(FFT), im=new Float32Array(FFT);
+  function fft(frame){
+    for(let i=0;i<FFT;i++){re[i]=frame[i]*win[i];im[i]=0;}
+    let j=0;
+    for(let i=1;i<FFT;i++){let bit=FFT>>1;for(;j&bit;bit>>=1)j^=bit;j^=bit;if(i<j){[re[i],re[j]]=[re[j],re[i]];[im[i],im[j]]=[im[j],im[i]];}}
+    for(let len=2;len<=FFT;len*=2){
+      const ang=-2*Math.PI/len, wR=Math.cos(ang), wI=Math.sin(ang);
+      for(let i=0;i<FFT;i+=len){let cR=1,cI=0;
+        for(let k=0;k<len/2;k++){
+          const uR=re[i+k],uI=im[i+k],vR=re[i+k+len/2]*cR-im[i+k+len/2]*cI,vI=re[i+k+len/2]*cI+im[i+k+len/2]*cR;
+          re[i+k]=uR+vR;im[i+k]=uI+vI;re[i+k+len/2]=uR-vR;im[i+k+len/2]=uI-vI;
+          const nR=cR*wR-cI*wI;cI=cR*wI+cI*wR;cR=nR;
+        }
+      }
+    }
+  }
+
+  function m2c(mag){
+    const stops=[[0,[8,8,32]],[0.2,[20,60,130]],[0.4,[30,150,140]],[0.6,[80,200,100]],[0.8,[220,200,50]],[1,[255,80,30]]];
+    for(let i=1;i<stops.length;i++){ if(mag<=stops[i][0]){ const t=(mag-stops[i-1][0])/(stops[i][0]-stops[i-1][0]),a=stops[i-1][1],b=stops[i][1]; return[Math.round(a[0]+(b[0]-a[0])*t),Math.round(a[1]+(b[1]-a[1])*t),Math.round(a[2]+(b[2]-a[2])*t)]; } }
+    return[255,80,30];
+  }
+
+  const frame=new Float32Array(FFT);
+  const mags=new Float32Array(freqBins);
+  // dB range matching Audacity defaults
+  const dbMin=-100, dbMax=0;
+  // Time zoom: only render the portion specZoomStart..specZoomEnd of the file
+  const tStart=specTimeMin, tEnd=specTimeMax;
+  // In stretch mode, map columns across maxDuration so both sides share the same time axis
+  const dispDur=stretchMode ? maxDuration() : buf.duration;
+  const ownDur=buf.duration;
+
+  for(let col=0;col<W;col++){
+    // Map col to sample position within the zoomed time window
+    const tNorm=tStart+(col/W)*(tEnd-tStart);
+    // tNorm is 0-1 of dispDur; convert to position within actual audio samples
+    const tActual=tNorm*(dispDur/ownDur); // may exceed 1.0 if this audio is shorter
+    if(tActual>1.0){
+      // Beyond end of this audio — fill with silence color
+      for(let row=0;row<H;row++){ const idx=(row*W+col)*4; const[r,g2,b2]=m2c(0); px[idx]=r;px[idx+1]=g2;px[idx+2]=b2;px[idx+3]=200; }
+      continue;
+    }
+    const s0=Math.max(0,Math.floor(tActual*(buf.length-FFT)));
+    for(let i=0;i<FFT;i++) frame[i]=pcmMono[s0+i]||0;
+    fft(frame);
+    // Compute magnitudes in dB with per-bin normalization (1/FFT)
+    for(let b=0;b<freqBins;b++){
+      const mag=Math.sqrt(re[b]*re[b]+im[b]*im[b])/(FFT*0.5); // 0.5 = hann window correction
+      mags[b]=20*Math.log10(Math.max(mag,1e-10));
+    }
+    for(let row=0;row<H;row++){
+      const freq=row2freq(row);
+      if(freq<0||freq>nyq){ const idx=(row*W+col)*4; px[idx]=8;px[idx+1]=8;px[idx+2]=32;px[idx+3]=255; continue; }
+      // Linear interpolation between adjacent bins for smooth high-freq rendering
+      const bf=freq2bin(freq);
+      const b0=Math.min(Math.floor(bf),freqBins-2);
+      const b1=b0+1;
+      const t=bf-b0;
+      const db=mags[b0]*(1-t)+mags[b1]*t;
+      const norm=Math.max(0,Math.min(1,(db-dbMin)/(dbMax-dbMin)));
+      const [r,g,b2]=m2c(norm); const idx=(row*W+col)*4;
+      px[idx]=r;px[idx+1]=g;px[idx+2]=b2;px[idx+3]=255;
+    }
+  }
+  og.putImageData(imgData,0,0);
+  spectrogramRowCache[side]=off;
+}
+
+function drawSpectrogramView(g,c,side,t){
+  const w=c.width,h=c.height,cache=spectrogramRowCache[side];
+  if(!cache||cache.width!==w||cache.height!==h){ buildSpectrogram(side); g.fillStyle='#1a1a1a';g.fillRect(0,0,w,h);g.fillStyle='#444';g.font='10px monospace';g.fillText('Building…',10,h/2); return; }
+  g.drawImage(cache,0,0);
+  const dur=audio[side].duration;
+  const dispDur=stretchMode ? maxDuration() : dur;
+  // Map playhead within time zoom window
+  const tNorm=t/dispDur;
+  const zTRange=specTimeMax-specTimeMin;
+  const playFrac=Math.max(0,Math.min(1,(tNorm-specTimeMin)/zTRange));
+  const playPx=playFrac*w;
+  g.fillStyle='rgba(0,0,0,0.35)'; g.fillRect(playPx,0,w-playPx,h);
+  g.strokeStyle='rgba(255,255,255,0.8)'; g.lineWidth=1; g.beginPath(); g.moveTo(playPx,0); g.lineTo(playPx,h); g.stroke();
+
+  const nyq=audio[side].buffer.sampleRate/2;
+  const fMin=specFreqMin||0, fMax=Math.min(specFreqMax||nyq,nyq);
+
+  // Frequency grid labels
+  g.fillStyle='rgba(255,255,255,0.35)'; g.font='9px monospace'; g.textBaseline='middle';
+  const allLabels=specScale==='log'?[20,50,100,200,500,1000,2000,5000,10000,20000,40000]:[0,500,1000,2000,4000,6000,8000,10000,12000,16000,20000,24000,32000,44100];
+  const labels=allLabels.filter(f=>f>=fMin&&f<=fMax);
+  for(const freq of labels){
+    if(freq>nyq) continue;
+    let norm;
+    if(specScale==='log'){
+      const logLow=Math.log10(Math.max(fMin,1)),logHigh=Math.log10(Math.max(fMax,1));
+      norm=(Math.log10(Math.max(freq,1))-logLow)/(logHigh-logLow);
+    } else if(specScale==='mel'){
+      const mLow=2595*Math.log10(1+fMin/700),mHigh=2595*Math.log10(1+fMax/700);
+      norm=(2595*Math.log10(1+freq/700)-mLow)/(mHigh-mLow);
+    } else {
+      norm=(freq-fMin)/(fMax-fMin);
+    }
+    const y=h*(1-norm);
+    if(y<5||y>h-5) continue;
+    g.fillText(freq>=1000?`${freq/1000}k`:freq,4,y);
+    g.strokeStyle='rgba(255,255,255,0.08)'; g.lineWidth=0.5; g.beginPath(); g.moveTo(0,y); g.lineTo(w,y); g.stroke();
+  }
+
+  // Time grid labels (show absolute time within the visible window)
+  const visStart=specTimeMin*dispDur, visEnd=specTimeMax*dispDur, visDur=visEnd-visStart;
+  const timeStep=niceStep(visDur,6);
+  g.fillStyle='rgba(255,255,255,0.3)'; g.font='8px monospace'; g.textBaseline='top';
+  for(let ts=Math.ceil(visStart/timeStep)*timeStep; ts<=visEnd+0.001; ts+=timeStep){
+    const x=((ts-visStart)/visDur)*w;
+    if(x<0||x>w) continue;
+    g.strokeStyle='rgba(255,255,255,0.06)'; g.lineWidth=0.5; g.beginPath(); g.moveTo(x,0); g.lineTo(x,h); g.stroke();
+    g.fillText(fmt(ts),x+2,3);
+  }
+
+  // Minimap: show a small overview rectangle when zoomed
+  const isZoomed=(specTimeMin>0.001||specTimeMax<0.999||(specFreqMin>1)||((specFreqMax||nyq)<nyq-1));
+  if(isZoomed){
+    const mW=Math.min(120,w*0.2), mH=40, mX=w-mW-6, mY=h-mH-6;
+    g.fillStyle='rgba(0,0,0,0.55)'; g.fillRect(mX,mY,mW,mH);
+    g.strokeStyle='rgba(255,255,255,0.15)'; g.lineWidth=0.5; g.strokeRect(mX,mY,mW,mH);
+    // highlight viewport rect
+    const rx=mX+specTimeMin*mW, rw=(specTimeMax-specTimeMin)*mW;
+    const ryFrac=(specFreqMax||nyq)/nyq, ryFrac2=specFreqMin/nyq;
+    const ry=mY+(1-ryFrac)*mH, rh=(ryFrac-ryFrac2)*mH;
+    g.fillStyle='rgba(255,255,255,0.12)'; g.fillRect(rx,ry,rw,rh);
+    g.strokeStyle='rgba(255,255,255,0.5)'; g.lineWidth=1; g.strokeRect(rx,ry,rw,rh);
+    g.fillStyle='rgba(255,255,255,0.25)'; g.font='7px monospace'; g.textBaseline='bottom';
+    g.fillText('overview',mX+3,mY-1);
+  }
+}
+
+function niceStep(range,targetSteps){
+  const raw=range/targetSteps;
+  const mag=Math.pow(10,Math.floor(Math.log10(raw)));
+  const norm=raw/mag;
+  let nice=norm<1.5?1:norm<3?2:norm<7?5:10;
+  return nice*mag;
+}
+
+// ── SPECTRUM ──────────────────────────────────────
+function drawSpectrum(g,c,side){
+  const w=c.width,h=c.height,accent=ACCENT[side];
+  const buf=audio[side]?.buffer;
+  g.strokeStyle='#161616'; g.lineWidth=1;
+  for(let i=1;i<6;i++){ const y=(h/6)*i; g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke(); }
+
+  // Build frequency data — prefer live analyser, fall back to static FFT from PCM
+  const FFT=2048;
+  let fftData; // Uint8Array or Float32Array mapped to 0-255
+  const analyser=audio[side]?.analyser;
+  if(analyser){
+    fftData=new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(fftData);
+  } else if(buf){
+    // Static FFT: read a window of PCM centred on current playhead
+    const pcm=audio[side].pcm;
+    const t=getCurrentTime();
+    const sr=buf.sampleRate;
+    const centre=Math.floor(Math.min(t,buf.duration-FFT/sr)*sr);
+    const s0=Math.max(0,centre);
+    // Hann window + FFT
+    const re=new Float32Array(FFT), im=new Float32Array(FFT);
+    for(let i=0;i<FFT;i++){
+      const w2=0.5*(1-Math.cos(2*Math.PI*i/(FFT-1)));
+      re[i]=(pcm[s0+i]||0)*w2; im[i]=0;
+    }
+    // In-place Cooley-Tukey
+    let j=0;
+    for(let i=1;i<FFT;i++){let bit=FFT>>1;for(;j&bit;bit>>=1)j^=bit;j^=bit;if(i<j){[re[i],re[j]]=[re[j],re[i]];[im[i],im[j]]=[im[j],im[i]];}}
+    for(let len=2;len<=FFT;len*=2){
+      const ang=-2*Math.PI/len,wR=Math.cos(ang),wI=Math.sin(ang);
+      for(let i=0;i<FFT;i+=len){let cR=1,cI=0;
+        for(let k=0;k<len/2;k++){
+          const uR=re[i+k],uI=im[i+k],vR=re[i+k+len/2]*cR-im[i+k+len/2]*cI,vI=re[i+k+len/2]*cI+im[i+k+len/2]*cR;
+          re[i+k]=uR+vR;im[i+k]=uI+vI;re[i+k+len/2]=uR-vR;im[i+k+len/2]=uI-vI;
+          const nR=cR*wR-cI*wI;cI=cR*wI+cI*wR;cR=nR;
+        }
+      }
+    }
+    const bins=FFT/2;
+    fftData=new Uint8Array(bins);
+    const dbMin=-100,dbMax=0;
+    for(let b=0;b<bins;b++){
+      const mag=Math.sqrt(re[b]*re[b]+im[b]*im[b])/(FFT*0.5);
+      const db=20*Math.log10(Math.max(mag,1e-10));
+      fftData[b]=Math.round(Math.max(0,Math.min(1,(db-dbMin)/(dbMax-dbMin)))*255);
+    }
+  } else {
+    return; // nothing loaded
+  }
+
+  const barW=w/fftData.length;
+  const grad=g.createLinearGradient(0,h,0,0);
+  grad.addColorStop(0,accent+'cc'); grad.addColorStop(0.6,accent+'88'); grad.addColorStop(1,'#ffffff44');
+  g.fillStyle=grad;
+  for(let i=0;i<fftData.length;i++){ const bH=(fftData[i]/255)*h; g.fillRect(i*barW,h-bH,Math.max(barW-0.5,1),bH); }
+  const sr=buf.sampleRate;
+  g.fillStyle='#444'; g.font='9px monospace'; g.textBaseline='bottom';
+  for(const f of [100,500,1000,2000,5000,10000,20000]){
+    const x=(f/(sr/2))*w; if(x>w) continue;
+    g.fillText(f>=1000?`${f/1000}k`:f,x+2,h-4);
+    g.strokeStyle='#222'; g.lineWidth=0.5; g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke();
+  }
+}
+
+// ── STEREO FIELD ──────────────────────────────────
+function drawStereoField(g,c,side){
+  const w=c.width,h=c.height,buf=audio[side]?.buffer; if(!buf) return;
+  const cx=w/2,cy=h/2,radius=Math.min(cx,cy)*0.85,accent=ACCENT[side];
+  g.strokeStyle='#1e1e1e'; g.lineWidth=1; g.beginPath(); g.arc(cx,cy,radius,0,Math.PI*2); g.stroke();
+  g.strokeStyle='#1a1a1a';
+  g.beginPath();g.moveTo(cx-radius,cy);g.lineTo(cx+radius,cy);g.stroke();
+  g.beginPath();g.moveTo(cx,cy-radius);g.lineTo(cx,cy+radius);g.stroke();
+  const d=radius*Math.SQRT1_2;
+  g.beginPath();g.moveTo(cx-d,cy-d);g.lineTo(cx+d,cy+d);g.stroke();
+  g.beginPath();g.moveTo(cx-d,cy+d);g.lineTo(cx+d,cy-d);g.stroke();
+  g.fillStyle='#333';g.font='9px monospace';g.textAlign='center';
+  g.fillText('L',cx-radius-10,cy+3);g.fillText('R',cx+radius+10,cy+3);g.fillText('M',cx,cy-radius-5);g.fillText('S',cx,cy+radius+12);g.textAlign='left';
+  let L,R;
+  const analyser=audio[side]?.analyser;
+  if(analyser&&buf.numberOfChannels>=2){const t0=Math.floor(getCurrentTime()*buf.sampleRate),len=Math.min(1024,buf.length-t0);L=buf.getChannelData(0).subarray(t0,t0+len);R=buf.getChannelData(1).subarray(t0,t0+len);}
+  else if(analyser){const td=new Float32Array(analyser.fftSize);analyser.getFloatTimeDomainData(td);L=td;R=td;}
+  else{const len=Math.min(2048,buf.length);L=buf.getChannelData(0).subarray(0,len);R=(buf.numberOfChannels>=2?buf.getChannelData(1):buf.getChannelData(0)).subarray(0,len);}
+  const count=Math.min(L.length,R.length,1024);
+  g.strokeStyle=accent+'aa';g.lineWidth=0.8;g.beginPath();
+  for(let i=0;i<count;i++){const l=L[i],r=R[i];const gx=cx+((l-r)/Math.SQRT2)*radius,gy=cy-((l+r)/Math.SQRT2)*radius;i===0?g.moveTo(gx,gy):g.lineTo(gx,gy);}
+  g.stroke();
+  g.fillStyle=accent+'44';
+  for(let i=0;i<count;i+=4){const gx=cx+((L[i]-R[i])/Math.SQRT2)*radius,gy=cy-((L[i]+R[i])/Math.SQRT2)*radius;g.beginPath();g.arc(gx,gy,1.2,0,Math.PI*2);g.fill();}
+}
+
+// ═══════════════════════════════════════════════════
+//  VIZ / LAYOUT MODE SWITCHING
+// ═══════════════════════════════════════════════════
+function setVizMode(mode) {
+  vizMode=mode;
+  document.querySelectorAll('.btn-mode').forEach(b=>b.classList.remove('active'));
+  document.getElementById(`btn-${mode}`).classList.add('active');
+  document.getElementById(`btn-layout-${layoutMode}`).classList.add('active');
+  document.getElementById('spec-submodes').style.display=mode==='spectrogram'?'flex':'none';
+  // Show crosshair cursor on waveform and spectrogram (both support click-to-seek)
+  canvasArea.style.cursor=(mode==='spectrogram'||mode==='waveform')?'crosshair':'';
+  if(!masterPlaying) renderFrame();
+}
+
+function setSpecScale(scale) {
+  specScale=scale;
+  specFreqMin=0; specFreqMax=null; // reset zoom on scale change
+  document.querySelectorAll('.btn-submode').forEach(b=>b.classList.remove('active'));
+  document.getElementById(`sub-${scale}`).classList.add('active');
+  spectrogramRowCache.left=null; spectrogramRowCache.right=null;
+  renderFrame();
+}
+
+// ── SPECTROGRAM ZOOM & PAN ───────────────────────
+function getActiveNyq(){
+  for(const s of sides) if(audio[s]) return audio[s].buffer.sampleRate/2;
+  return 22050;
+}
+function getActiveDur(){
+  for(const s of sides) if(audio[s]) return audio[s].duration;
+  return 1;
+}
+
+function clampViewport(){
+  const nyq=getActiveNyq();
+  if(specFreqMax===null) specFreqMax=nyq;
+  const fRange=specFreqMax-specFreqMin;
+  if(specFreqMin<0){ specFreqMax-=specFreqMin; specFreqMin=0; }
+  if(specFreqMax>nyq){ specFreqMin-=(specFreqMax-nyq); specFreqMax=nyq; }
+  specFreqMin=Math.max(0,specFreqMin);
+  specFreqMax=Math.min(nyq,specFreqMax);
+  specTimeMin=Math.max(0,specTimeMin);
+  specTimeMax=Math.min(1,specTimeMax);
+  if(specTimeMax-specTimeMin<0.001) specTimeMax=specTimeMin+0.001;
+  if(specFreqMax-specFreqMin<50) specFreqMin=Math.max(0,specFreqMax-50);
+}
+
+function specZoomFreq(factor, fFocal){
+  const nyq=getActiveNyq();
+  const fMin=specFreqMin||0, fMax=specFreqMax||nyq;
+  if(fFocal===undefined) fFocal=(fMin+fMax)/2;
+  const newRange=Math.min(nyq,Math.max(100,(fMax-fMin)*factor));
+  const frac=(fFocal-fMin)/(fMax-fMin);
+  specFreqMin=fFocal-frac*newRange;
+  specFreqMax=fFocal+(1-frac)*newRange;
+  clampViewport(); invalidateSpecCache(); updateZoomButtons();
+}
+
+function specZoomTime(factor, tFocal){
+  const tMin=specTimeMin, tMax=specTimeMax;
+  if(tFocal===undefined) tFocal=(tMin+tMax)/2;
+  const newRange=Math.min(1,Math.max(0.005,(tMax-tMin)*factor));
+  const frac=(tFocal-tMin)/(tMax-tMin);
+  specTimeMin=tFocal-frac*newRange;
+  specTimeMax=tFocal+(1-frac)*newRange;
+  clampViewport(); invalidateSpecCache(); updateZoomButtons();
+}
+
+function specZoomIn(){ specZoomFreq(0.5); }
+function specZoomOut(){ specZoomFreq(2.0); }
+
+function specZoomReset(){
+  specFreqMin=0; specFreqMax=null;
+  specTimeMin=0; specTimeMax=1;
+  invalidateSpecCache(); updateZoomButtons();
+}
+
+function invalidateSpecCache(){
+  spectrogramRowCache.left=null; spectrogramRowCache.right=null;
+  renderFrame();
+}
+
+function updateZoomButtons(){
+  const nyq=getActiveNyq();
+  const isDefault=(specFreqMin<1&&(specFreqMax===null||specFreqMax>=nyq-1)&&specTimeMin<0.001&&specTimeMax>0.999);
+  document.getElementById('btn-spec-zoom-reset')?.classList.toggle('active',!isDefault);
+}
+
+// "Go to frequency" popup
+function showGoToFreq(){
+  let popup=document.getElementById('goto-freq-popup');
+  if(!popup){
+    popup=document.createElement('div');
+    popup.id='goto-freq-popup';
+    popup.style.cssText='position:absolute;bottom:70px;left:50%;transform:translateX(-50%);z-index:200;background:rgba(14,14,14,0.97);border:1px solid #333;padding:12px 16px;display:flex;flex-direction:column;gap:8px;min-width:240px;backdrop-filter:blur(8px)';
+    popup.innerHTML=`
+      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#666;margin-bottom:2px">Go to Frequency</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input id="goto-freq-input" type="number" placeholder="e.g. 1000" min="0" max="48000"
+          style="flex:1;background:#111;border:1px solid #333;color:#ccc;font-family:inherit;font-size:12px;padding:5px 8px;outline:none;width:100px">
+        <span style="font-size:10px;color:#555">Hz</span>
+        <button onclick="applyGoToFreq()" style="height:28px;padding:0 12px;font-size:9px;letter-spacing:1px;text-transform:uppercase;background:#222;border:1px solid #444;color:#aaa;cursor:pointer;white-space:nowrap">Go</button>
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        ${[20,50,100,200,500,1000,2000,4000,8000,12000,16000,20000].map(f=>`<button onclick="goToFreqPreset(${f})" style="height:22px;padding:0 7px;font-size:8px;background:#1a1a1a;border:1px solid #2a2a2a;color:#666;cursor:pointer;white-space:nowrap">${f>=1000?f/1000+'k':f}</button>`).join('')}
+      </div>
+      <div style="font-size:8px;color:#444;margin-top:2px">Centers the view on the given frequency</div>
+    `;
+    document.getElementById('app').appendChild(popup);
+    popup.querySelector('#goto-freq-input').addEventListener('keydown',e=>{if(e.key==='Enter')applyGoToFreq();if(e.key==='Escape')closeGoToFreq();});
+    document.addEventListener('keydown',outsideEsc);
+  }
+  popup.style.display='flex';
+  freqInputVisible=true;
+  setTimeout(()=>popup.querySelector('#goto-freq-input').focus(),50);
+}
+
+function outsideEsc(e){ if(e.key==='Escape'&&freqInputVisible) closeGoToFreq(); }
+
+function closeGoToFreq(){
+  const p=document.getElementById('goto-freq-popup');
+  if(p) p.style.display='none';
+  freqInputVisible=false;
+}
+
+function applyGoToFreq(){
+  const val=parseFloat(document.getElementById('goto-freq-input').value);
+  if(isNaN(val)||val<0) return;
+  centerOnFreq(val);
+  closeGoToFreq();
+}
+
+function goToFreqPreset(f){
+  document.getElementById('goto-freq-input').value=f;
+  centerOnFreq(f);
+  closeGoToFreq();
+}
+
+function centerOnFreq(f){
+  const nyq=getActiveNyq();
+  const fMin=specFreqMin||0, fMax=specFreqMax||nyq;
+  const halfRange=(fMax-fMin)/2;
+  specFreqMin=Math.max(0,f-halfRange);
+  specFreqMax=Math.min(nyq,f+halfRange);
+  clampViewport(); invalidateSpecCache(); updateZoomButtons();
+}
+
+// ── CANVAS MOUSE / TOUCH EVENTS ────────────────────
+
+// Tooltip: show freq+time under cursor
+let tooltipEl=null;
+function getOrCreateTooltip(){
+  if(!tooltipEl){
+    tooltipEl=document.createElement('div');
+    tooltipEl.style.cssText='position:fixed;pointer-events:none;z-index:300;background:rgba(0,0,0,0.8);border:1px solid #333;padding:4px 8px;font-size:9px;color:#aaa;font-family:monospace;letter-spacing:1px;white-space:nowrap;display:none';
+    document.body.appendChild(tooltipEl);
+  }
+  return tooltipEl;
+}
+
+function canvasXYtoFreqTime(e,rect){
+  const nyq=getActiveNyq();
+  const xFrac=(e.clientX-rect.left)/rect.width;
+  const yFrac=1-(e.clientY-rect.top)/rect.height;
+  const fMin=specFreqMin||0, fMax=specFreqMax||nyq;
+  const dur=getActiveDur();
+  let freq;
+  if(specScale==='log'){
+    const logLow=Math.log10(Math.max(fMin,1)),logHigh=Math.log10(Math.max(fMax,1));
+    freq=Math.pow(10,logLow+yFrac*(logHigh-logLow));
+  } else if(specScale==='mel'){
+    const mLow=2595*Math.log10(1+fMin/700),mHigh=2595*Math.log10(1+fMax/700);
+    freq=700*(Math.pow(10,(mLow+yFrac*(mHigh-mLow))/2595)-1);
+  } else {
+    freq=fMin+yFrac*(fMax-fMin);
+  }
+  const t=(specTimeMin+(xFrac)*(specTimeMax-specTimeMin))*dur;
+  return {freq:Math.max(0,Math.min(nyq,freq)), t:Math.max(0,Math.min(dur,t))};
+}
+
+// Mouse events on canvas area
+// ── SPECTROGRAM MOUSE / TOUCH INTERACTIONS ────────
+// Pan starts only on direct canvas click (not transport, not UI panels)
+
+// Track mousedown position to distinguish click vs drag
+let canvasMouseDownX=0, canvasMouseDownY=0, canvasMouseDragged=false, canvasMouseDownOnCanvas=false;
+
+canvasArea.addEventListener('mousedown',(e)=>{
+  if(e.button!==0) return;
+  // Only treat as a canvas interaction if the target is the canvas itself or its wrapper (not a button/panel)
+  const tgt=e.target;
+  canvasMouseDownOnCanvas=(tgt.tagName==='CANVAS'||tgt.classList.contains('side-canvas-wrap')||tgt.id==='canvas-area'||tgt.id==='divider');
+  canvasMouseDownX=e.clientX; canvasMouseDownY=e.clientY; canvasMouseDragged=false;
+
+  if(vizMode==='spectrogram') {
+    // Only pan in split/topbottom layout; overlay layout uses mousemove for divider
+    if(layoutMode==='overlay') return;
+    e.preventDefault();
+    const nyq=getActiveNyq();
+    specPan.active=true;
+    specPan.startX=e.clientX; specPan.startY=e.clientY;
+    specPan.startFMin=specFreqMin||0;
+    specPan.startFMax=specFreqMax||nyq;
+    specPan.startTMin=specTimeMin;
+    specPan.startTMax=specTimeMax;
+    canvasArea.style.cursor='grabbing';
+  }
+});
+
+window.addEventListener('mousemove',(e)=>{
+  // Mark as dragged if moved > 4px from mousedown point
+  if(Math.abs(e.clientX-canvasMouseDownX)>4||Math.abs(e.clientY-canvasMouseDownY)>4) canvasMouseDragged=true;
+
+  // Tooltip (spectrogram only, when not panning)
+  if(vizMode==='spectrogram'&&!specPan.active){
+    const tt=getOrCreateTooltip();
+    const rect=canvasArea.getBoundingClientRect();
+    if(e.clientX>=rect.left&&e.clientX<=rect.right&&e.clientY>=rect.top&&e.clientY<=rect.bottom){
+      const {freq,t}=canvasXYtoFreqTime(e,rect);
+      const fLabel=freq>=1000?`${(freq/1000).toFixed(2)}kHz`:`${Math.round(freq)}Hz`;
+      tt.textContent=`${fLabel}  |  ${fmt(t)}`;
+      tt.style.display='block';
+      tt.style.left=(e.clientX+14)+'px';
+      tt.style.top=(e.clientY-24)+'px';
+    } else {
+      tt.style.display='none';
+    }
+  }
+
+  // Overlay divider drag (all viz modes)
+  if(layoutMode==='overlay'&&!specPan.active){
+    const rect=canvasArea.getBoundingClientRect();
+    if(e.clientX>=rect.left&&e.clientX<=rect.right&&e.clientY>=rect.top&&e.clientY<=rect.bottom){
+      splitPos=Math.max(0.0,Math.min(1.0,(e.clientX-rect.left)/rect.width));
+      renderFrame();
+    }
+  }
+
+  // Spectrogram pan
+  if(!specPan.active) return;
+  const rect=canvasArea.getBoundingClientRect();
+  const freqRange=specPan.startFMax-specPan.startFMin;
+  const timeRange=specPan.startTMax-specPan.startTMin;
+  const dx=(e.clientX-specPan.startX)/rect.width;
+  const dy=(e.clientY-specPan.startY)/rect.height;
+  specFreqMin=specPan.startFMin+(-dy*freqRange);
+  specFreqMax=specPan.startFMax+(-dy*freqRange);
+  specTimeMin=specPan.startTMin+(-dx*timeRange);
+  specTimeMax=specPan.startTMax+(-dx*timeRange);
+  clampViewport(); invalidateSpecCache(); updateZoomButtons();
+});
+
+window.addEventListener('mouseup',(e)=>{
+  if(specPan.active){
+    specPan.active=false;
+    canvasArea.style.cursor=(vizMode==='spectrogram'||vizMode==='waveform')?'crosshair':'';
+  }
+  // Click-to-seek: fired on canvas area when no drag occurred and mousedown was on the canvas
+  if(!canvasMouseDragged && canvasMouseDownOnCanvas && e.button===0) {
+    const areaRect=canvasArea.getBoundingClientRect();
+    if(e.clientX>=areaRect.left&&e.clientX<=areaRect.right&&e.clientY>=areaRect.top&&e.clientY<=areaRect.bottom){
+      if(vizMode==='waveform'||vizMode==='spectrogram') {
+        // Determine which pane was clicked and use that pane's own rect for accurate mapping
+        let paneRect;
+        if(layoutMode==='overlay'||layoutMode==='topbottom'){
+          // Both panes are full-size (overlay) or stacked (topbottom) — use full canvas area
+          paneRect=areaRect;
+        } else {
+          // split: two side-by-side panes — pick the one under the cursor
+          const wrapL=document.getElementById('wrap-left').getBoundingClientRect();
+          const wrapR=document.getElementById('wrap-right').getBoundingClientRect();
+          paneRect=e.clientX<=wrapL.right ? wrapL : wrapR;
+        }
+        const xFrac=Math.max(0,Math.min(1,(e.clientX-paneRect.left)/paneRect.width));
+        let seekTime;
+        if(vizMode==='spectrogram'){
+          seekTime=(specTimeMin+xFrac*(specTimeMax-specTimeMin))*maxDuration();
+        } else {
+          seekTime=xFrac*maxDuration();
+        }
+        seekTo(Math.max(0,Math.min(maxDuration(),seekTime)));
+      }
+    }
+  }
+  canvasMouseDragged=false;
+});
+
+canvasArea.addEventListener('mouseleave',()=>{
+  const tt=getOrCreateTooltip(); if(tt) tt.style.display='none';
+});
+
+// Scroll wheel: vertical = freq zoom, horizontal/shift = time zoom
+canvasArea.addEventListener('wheel',(e)=>{
+  if(vizMode!=='spectrogram') return;
+  e.preventDefault();
+  const rect=canvasArea.getBoundingClientRect();
+  const {freq}=canvasXYtoFreqTime(e,rect);
+  const tNorm=specTimeMin+((e.clientX-rect.left)/rect.width)*(specTimeMax-specTimeMin);
+
+  const absX=Math.abs(e.deltaX), absY=Math.abs(e.deltaY);
+  // Trackpad horizontal scroll or shift+scroll = time zoom
+  if(e.shiftKey||(absX>absY&&absX>2)){
+    const val=e.shiftKey?e.deltaY:e.deltaX;
+    specZoomTime(val>0?1.25:0.8, tNorm);
+  } else if(absY>0){
+    specZoomFreq(e.deltaY>0?1.25:0.8, freq);
+  }
+},{passive:false});
+
+// Touch events: 1-finger pan, 2-finger pinch-zoom
+canvasArea.addEventListener('touchstart',(e)=>{
+  if(vizMode!=='spectrogram') return;
+  if(e.touches.length===1){
+    const nyq=getActiveNyq();
+    specPan.active=true;
+    specPan.startX=e.touches[0].clientX; specPan.startY=e.touches[0].clientY;
+    specPan.startFMin=specFreqMin||0; specPan.startFMax=specFreqMax||nyq;
+    specPan.startTMin=specTimeMin; specPan.startTMax=specTimeMax;
+  } else if(e.touches.length===2){
+    specPan.active=false;
+    specPinch.active=true;
+    specPinch.lastDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+  }
+},{passive:true});
+
+canvasArea.addEventListener('touchmove',(e)=>{
+  if(vizMode!=='spectrogram'){
+    // Overlay divider touch drag
+    if(layoutMode==='overlay'){
+      e.preventDefault();
+      const rect=canvasArea.getBoundingClientRect();
+      splitPos=Math.max(0.01,Math.min(0.99,(e.touches[0].clientX-rect.left)/rect.width));
+      renderFrame();
+    }
+    return;
+  }
+  e.preventDefault();
+  if(e.touches.length===1&&specPan.active){
+    const rect=canvasArea.getBoundingClientRect();
+    const freqRange=specPan.startFMax-specPan.startFMin;
+    const timeRange=specPan.startTMax-specPan.startTMin;
+    const dx=(e.touches[0].clientX-specPan.startX)/rect.width;
+    const dy=(e.touches[0].clientY-specPan.startY)/rect.height;
+    specFreqMin=specPan.startFMin+(-dy*freqRange);
+    specFreqMax=specPan.startFMax+(-dy*freqRange);
+    specTimeMin=specPan.startTMin+(-dx*timeRange);
+    specTimeMax=specPan.startTMax+(-dx*timeRange);
+    clampViewport(); invalidateSpecCache(); updateZoomButtons();
+  } else if(e.touches.length===2&&specPinch.active){
+    const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    const factor=specPinch.lastDist/dist;
+    const cx=(e.touches[0].clientX+e.touches[1].clientX)/2;
+    const cy=(e.touches[0].clientY+e.touches[1].clientY)/2;
+    const rect=canvasArea.getBoundingClientRect();
+    const {freq}=canvasXYtoFreqTime({clientX:cx,clientY:cy},rect);
+    const tNorm=specTimeMin+((cx-rect.left)/rect.width)*(specTimeMax-specTimeMin);
+    specZoomFreq(factor,freq);
+    specZoomTime(factor,tNorm);
+    specPinch.lastDist=dist;
+  }
+},{passive:false});
+
+canvasArea.addEventListener('touchend',()=>{
+  specPan.active=false; specPinch.active=false;
+});
+
+function toggleStretch(e){
+  if(e) e.stopPropagation();
+  stretchMode=!stretchMode;
+  document.getElementById('btn-stretch').classList.toggle('active', stretchMode);
+  spectrogramRowCache.left=null; spectrogramRowCache.right=null;
+  renderFrame();
+}
+
+function setLayout(mode) {
+  layoutMode=mode;
+  canvasArea.classList.remove('layout-split','layout-overlay','layout-topbottom');
+  canvasArea.classList.add(`layout-${mode}`);
+  document.getElementById('btn-layout-split').classList.toggle('active',     mode==='split');
+  document.getElementById('btn-layout-topbottom').classList.toggle('active', mode==='topbottom');
+  document.getElementById('btn-layout-overlay').classList.toggle('active',   mode==='overlay');
+  if(mode==='split'||mode==='topbottom'){ wrapRight.style.clipPath=''; splitPos=0.5; divider.style.left='50%'; divider.style.top=''; divider.style.width=''; divider.style.height=''; }
+  spectrogramRowCache.left=null; spectrogramRowCache.right=null;
+  renderFrame();
+}
+
+// ═══════════════════════════════════════════════════
+//  SCRUB BAR
+// ═══════════════════════════════════════════════════
+const scrubTrack=document.getElementById('scrub-track');
+const scrubFill=document.getElementById('scrub-fill');
+const scrubHead=document.getElementById('scrub-head');
+const timeDisp=document.getElementById('time-display');
+let scrubbing=false;
+
+scrubTrack.addEventListener('mousedown',(e)=>{scrubbing=true;doScrub(e);});
+window.addEventListener('mousemove',(e)=>{if(scrubbing)doScrub(e);});
+window.addEventListener('mouseup',()=>{scrubbing=false;});
+
+function doScrub(e){
+  const rect=scrubTrack.getBoundingClientRect();
+  seekTo(Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width))*maxDuration());
+}
+function maxDuration(){let d=0;for(const s of sides)if(audio[s])d=Math.max(d,audio[s].duration);return d||0;}
+function updateScrub(t){const p=maxDuration()>0?(t/maxDuration())*100:0;scrubFill.style.width=`${p}%`;scrubHead.style.left=`${p}%`;}
+function updateTimeDisplay(){timeDisp.textContent=`${fmt(getCurrentTime())} / ${fmt(maxDuration())}`;}
+
+// ═══════════════════════════════════════════════════
+//  VOLUME / DRAG-DROP / KEYBOARD
+// ═══════════════════════════════════════════════════
+document.getElementById('vol-slider').addEventListener('input',(e)=>{
+  const v=parseFloat(e.target.value);
+  for(const s of sides) if(audio[s]?.gainNode)
+    audio[s].gainNode.gain.value=(playTarget==='both'||playTarget===s)?v:0;
+});
+
+let dragDepth=0;
+function isADrag(e){return e.dataTransfer?.types?.some(t=>t==='Files'||t==='application/x-moz-file');}
+function sideFromX(x){return x<window.innerWidth/2?'left':'right';}
+
+window.addEventListener('dragenter',(e)=>{if(!isADrag(e))return;e.preventDefault();dragDepth++;});
+window.addEventListener('dragleave',(e)=>{if(!isADrag(e))return;dragDepth--;if(dragDepth<=0){dragDepth=0;document.getElementById('drop-left').classList.remove('active');document.getElementById('drop-right').classList.remove('active');}});
+window.addEventListener('dragover',(e)=>{if(!isADrag(e))return;e.preventDefault();e.dataTransfer.dropEffect='copy';const s=sideFromX(e.clientX);document.getElementById('drop-left').classList.toggle('active',s==='left');document.getElementById('drop-right').classList.toggle('active',s==='right');});
+window.addEventListener('drop',(e)=>{e.preventDefault();dragDepth=0;document.getElementById('drop-left').classList.remove('active');document.getElementById('drop-right').classList.remove('active');const f=e.dataTransfer.files[0];if(!f||!f.type.startsWith('audio/'))return;loadFile(sideFromX(e.clientX),f);});
+
+document.getElementById('btn-play').addEventListener('click',togglePlay);
+document.getElementById('btn-stop').addEventListener('click',stopPlayback);
+
+window.addEventListener('keydown',(e)=>{
+  if(e.ctrlKey||e.altKey||e.metaKey)return;
+  // Don't fire shortcuts when typing in an input/textarea
+  const tag=document.activeElement?.tagName;
+  if(tag==='INPUT'||tag==='TEXTAREA'||document.activeElement?.isContentEditable)return;
+  const k=e.key.toLowerCase();
+  switch(k){
+    case ' ':e.preventDefault();togglePlay();break;
+    case 'r':toggleRepeat();break;
+    case '1':loadLocal('left');break; case '2':loadLocal('right');break;
+    case 'm':toggleModeButtons();break;
+    case 'w':setVizMode('waveform');break; case 's':setVizMode('spectrogram');break;
+    case 'x':setVizMode('spectrum');break; case 'e':setVizMode('stereo');break;
+    case 'b':setLayout('split');break; case 't':setLayout('topbottom');break; case 'o':setLayout('overlay');break;
+    case 'z':toggleStretch();break;
+    case 'f':toggleFullscreen();break; case 'h':toggleHelp();break;
+    case '+':case '=':if(vizMode==='spectrogram')specZoomIn();break;
+    case '-':if(vizMode==='spectrogram')specZoomOut();break;
+    case '0':if(vizMode==='spectrogram')specZoomReset();break;
+    case 'g':if(vizMode==='spectrogram'){if(freqInputVisible)closeGoToFreq();else showGoToFreq();}break;
+    case 'escape':document.getElementById('help-modal').classList.remove('visible');break;
+    case 'tab':e.preventDefault();document.querySelectorAll('.ui-panel').forEach(p=>p.classList.toggle('hidden'));break;
+  }
+});
+
+function showSpinner(side,on){document.getElementById(`sp-${side}`).classList.toggle('active',on);}
+function toggleFullscreen(){if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();else document.exitFullscreen?.();}
+function toggleHelp(e){if(e)e.stopPropagation();document.getElementById('help-modal').classList.toggle('visible');}
+document.addEventListener('click',(e)=>{const m=document.getElementById('help-modal');if(m.classList.contains('visible')&&!m.contains(e.target))m.classList.remove('visible');});
+window.addEventListener('resize',()=>{spectrogramRowCache.left=null;spectrogramRowCache.right=null;renderFrame();});
+requestAnimationFrame(()=>{resizeCanvases();renderFrame();});
+</script>
+</body>
+</html>
