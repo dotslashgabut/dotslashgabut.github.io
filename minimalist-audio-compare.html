@@ -1026,6 +1026,8 @@ function setVizMode(mode) {
   document.getElementById(`btn-${mode}`).classList.add('active');
   document.getElementById(`btn-layout-${layoutMode}`).classList.add('active');
   document.getElementById('spec-submodes').style.display=mode==='spectrogram'?'flex':'none';
+  // Hide freq|time tooltip when leaving spectrogram mode (e.g. via keyboard shortcut)
+  if(mode!=='spectrogram' && tooltipEl) tooltipEl.style.display='none';
   // Show crosshair cursor on waveform and spectrogram (both support click-to-seek)
   canvasArea.style.cursor=(mode==='spectrogram'||mode==='waveform')?'crosshair':'';
   if(!masterPlaying) renderFrame();
