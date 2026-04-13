@@ -155,6 +155,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
     <button class="mode-btn active" id="btn1D" onclick="setMode('1d')">📏 1D Linear</button>
     <button class="mode-btn" id="btn2D" onclick="setMode('2d')">▦ 2D Sheet</button>
     <button class="mode-btn" id="btnPaper" onclick="setMode('paper')">📄 Paper</button>
+    <button class="mode-btn" id="btnSplit" onclick="setMode('split')">✂️ Split</button>
   </div>
 </div>
 
@@ -531,6 +532,116 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
   </div>
 </div>
 
+<!-- ══════════════ SPLIT SECTION ══════════════ -->
+<div id="secSplit" style="display:none">
+  <div class="grid">
+    <!-- LEFT: Source paper -->
+    <div><div class="card">
+      <div class="card-title">Source Sheet (Stock)</div>
+      <div class="form-group">
+        <label>Paper Family</label>
+        <div class="paper-family-tabs" id="splitFamilyTabs">
+          <button class="pftab active" onclick="splitShowFamily('iso-a',this)">ISO A</button>
+          <button class="pftab" onclick="splitShowFamily('iso-b',this)">ISO B</button>
+          <button class="pftab" onclick="splitShowFamily('iso-c',this)">ISO C</button>
+          <button class="pftab" onclick="splitShowFamily('us',this)">US/ANSI</button>
+          <button class="pftab" onclick="splitShowFamily('arch',this)">Arch</button>
+          <button class="pftab" onclick="splitShowFamily('photo',this)">Photo</button>
+          <button class="pftab" onclick="splitShowFamily('plano-offset',this)">🖨 Offset</button>
+          <button class="pftab" onclick="splitShowFamily('plano-bc',this)">🪪 BC</button>
+          <button class="pftab" onclick="splitShowFamily('plano-sticker',this)">🏷 Stiker</button>
+          <button class="pftab" onclick="splitShowFamily('plano-digital',this)">💻 Digital</button>
+          <button class="pftab" onclick="splitShowFamily('plano-packaging',this)">📦 Packaging</button>
+          <button class="pftab" onclick="splitShowFamily('art-paper',this)">✨ Art Paper</button>
+          <button class="pftab" onclick="splitShowFamily('custom',this)">Custom</button>
+        </div>
+        <div class="paper-size-grid" id="splitSourceGrid"></div>
+      </div>
+      <div class="form-group" id="splitCustomGroup" style="display:none">
+        <label>Custom Size (mm)</label>
+        <div class="input-row">
+          <input type="number" id="splitCustW" placeholder="Width mm" min="1" oninput="updateSplitSourceDisplay()">
+          <input type="number" id="splitCustH" placeholder="Height mm" min="1" oninput="updateSplitSourceDisplay()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Sheet Orientation</label>
+        <div class="orient-tog">
+          <button class="orient-btn active" id="splitOrP" onclick="setSplitOrient('portrait',this)">◻ Portrait</button>
+          <button class="orient-btn" id="splitOrL" onclick="setSplitOrient('landscape',this)">▭ Landscape</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Selected Sheet</label>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-family:var(--mono);font-size:.9rem">
+          <span id="splitSourceDisplay" style="color:var(--accent)">A1 — 594 × 841 mm</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Blade Kerf (mm)</label>
+        <input type="number" id="splitKerf" value="0" min="0" step="0.5">
+      </div>
+      <div class="ibox"><span class="iicon">ℹ</span>Select a source sheet size, then specify how many cut pieces you want from a single source sheet.</div>
+    </div></div>
+
+    <!-- RIGHT: Split settings -->
+    <div><div class="card">
+      <div class="card-title">Cut Parameters</div>
+      <div class="form-group">
+        <label>Number of Cut Pieces (from 1 source sheet)</label>
+        <input type="number" id="splitCount" value="4" min="2" max="200" style="font-size:1.1rem;padding:12px 14px">
+        <div class="material-chips" style="margin-top:8px" id="splitPresetChips">
+          <button class="chip" onclick="setSplitCount(2)">2</button>
+          <button class="chip" onclick="setSplitCount(4)">4</button>
+          <button class="chip" onclick="setSplitCount(6)">6</button>
+          <button class="chip" onclick="setSplitCount(8)">8</button>
+          <button class="chip" onclick="setSplitCount(9)">9</button>
+          <button class="chip" onclick="setSplitCount(12)">12</button>
+          <button class="chip" onclick="setSplitCount(16)">16</button>
+          <button class="chip" onclick="setSplitCount(18)">18</button>
+          <button class="chip" onclick="setSplitCount(24)">24</button>
+          <button class="chip" onclick="setSplitCount(32)">32</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Max Variants to Show</label>
+        <select id="splitMaxVar">
+          <option value="4">4 variants</option>
+          <option value="6" selected>6 variants</option>
+          <option value="8">8 variants</option>
+          <option value="12">12 variants</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Sort Variants By</label>
+        <select id="splitSortBy">
+          <option value="eff">Highest Efficiency</option>
+          <option value="waste">Least Waste</option>
+          <option value="ratio">Most Proportional Ratio</option>
+        </select>
+      </div>
+      <div class="ibox" style="margin-bottom:14px"><span class="iicon">✂️</span>The calculator finds all valid row × column combinations that produce the target number of pieces, then displays the best layout variants on canvas.</div>
+      <button class="btn btn-p btn-full" onclick="runSplit()" style="font-size:1rem;padding:14px">✂️ Calculate Cut Variants</button>
+    </div></div>
+  </div>
+
+  <!-- SPLIT RESULTS -->
+  <div class="results-section" id="resSplit" style="display:none">
+    <div class="card" style="animation-delay:.1s">
+      <div class="card-title">Cut Layout Variants</div>
+      <div id="splitSummaryBar" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:16px;font-family:var(--mono);font-size:.85rem;display:flex;flex-wrap:wrap;gap:16px;align-items:center"></div>
+      <div class="cpt">Cut Layouts (Choose the Best Fit)</div>
+      <div id="splitVariantsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:10px"></div>
+      <div class="arow" style="margin-top:18px">
+        <button class="btn btn-s btn-sm" onclick="dlAllSplitLayouts('png')">⬇ PNG All</button>
+        <button class="btn btn-s btn-sm" onclick="dlAllSplitLayouts('svg')">⬇ SVG All</button>
+        <button class="btn btn-s btn-sm" onclick="copySplitReport()">📋 Copy Report</button>
+        <button class="btn btn-d btn-sm" onclick="document.getElementById('resSplit').style.display='none'">✕ Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </div><!-- /container -->
 <div class="toast" id="toast"></div>
 
@@ -546,6 +657,7 @@ window.onload=()=>{
   addP2d(600,400,'Door Panel',2);addP2d(300,200,'Shelf Board',6);addP2d(500,300,'Side Panel',4);addP2d(200,200,'Base Plate',3);
   updateU2d();
   initPaper();
+  initSplit();
 };
 
 // ════════ THEME ════════
@@ -557,9 +669,11 @@ function setMode(m){
   document.getElementById('sec1d').style.display=m==='1d'?'':'none';
   document.getElementById('sec2d').style.display=m==='2d'?'':'none';
   document.getElementById('secPaper').style.display=m==='paper'?'':'none';
+  document.getElementById('secSplit').style.display=m==='split'?'':'none';
   document.getElementById('btn1D').classList.toggle('active',m==='1d');
   document.getElementById('btn2D').classList.toggle('active',m==='2d');
   document.getElementById('btnPaper').classList.toggle('active',m==='paper');
+  document.getElementById('btnSplit').classList.toggle('active',m==='split');
 }
 
 // ════════ MATERIAL ════════
@@ -1945,7 +2059,355 @@ function copyPaper(){
 function fv(v,u){return`${Number(v).toFixed(1)} ${u||'mm'}`}
 function fa(v,u){return v>=1000000?`${(v/1000000).toFixed(2)} ${u}²`:`${Math.round(v)} ${u}²`}
 function toast(msg,err=false){const t=document.getElementById('toast');t.textContent=msg;t.style.borderLeftColor=err?'var(--accent2)':'var(--accent)';t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3400)}
-function resetAll(){if(!confirm('Reset everything?'))return;p1=[];p2=[];paperPieces=[];c1={};c2={};paperColors={};ci1=0;ci2=0;paperCI=0;rnd1d();rnd2d();rndPaper();document.getElementById('res1d').style.display='none';document.getElementById('res2d').style.display='none';document.getElementById('resPaper').style.display='none';toast('Reset complete')}
+function resetAll(){if(!confirm('Reset everything?'))return;p1=[];p2=[];paperPieces=[];c1={};c2={};paperColors={};ci1=0;ci2=0;paperCI=0;rnd1d();rnd2d();rndPaper();document.getElementById('res1d').style.display='none';document.getElementById('res2d').style.display='none';document.getElementById('resPaper').style.display='none';document.getElementById('resSplit').style.display='none';toast('Reset complete')}
+
+// ════════ SPLIT MODE ════════
+let splitSourceW=594, splitSourceH=841, splitSourceName='A1', splitOrient='portrait';
+let _splitCanvases=[], _splitSVGData=[];
+
+function initSplit(){
+  splitShowFamily('iso-a', document.querySelector('#splitFamilyTabs .pftab'));
+}
+function splitShowFamily(family, el){
+  document.querySelectorAll('#splitFamilyTabs .pftab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const grid=document.getElementById('splitSourceGrid');
+  const custGrp=document.getElementById('splitCustomGroup');
+  if(family==='custom'){grid.innerHTML='';custGrp.style.display='';return}
+  custGrp.style.display='none';
+  const sizes=PAPER_DB[family]||[];
+  grid.innerHTML=sizes.map(s=>`<button class="psz-btn" onclick="selectSplitSource(${s.w},${s.h},'${s.n}',this)"><span class="psz-name">${s.n}</span><span class="psz-dim">${s.w}×${s.h}</span></button>`).join('');
+  if(sizes.length){const first=grid.querySelector('.psz-btn');if(first){first.classList.add('active');selectSplitSource(sizes[0].w,sizes[0].h,sizes[0].n,first)}}
+}
+function selectSplitSource(w,h,name,el){
+  document.querySelectorAll('#splitSourceGrid .psz-btn').forEach(b=>b.classList.remove('active'));
+  if(el)el.classList.add('active');
+  splitSourceName=name;
+  const isL=splitOrient==='landscape';
+  splitSourceW=isL?Math.max(w,h):Math.min(w,h);
+  splitSourceH=isL?Math.min(w,h):Math.max(w,h);
+  updateSplitSourceDisplay();
+}
+function setSplitOrient(o, el){
+  splitOrient=o;
+  document.getElementById('splitOrP').classList.toggle('active',o==='portrait');
+  document.getElementById('splitOrL').classList.toggle('active',o==='landscape');
+  // Re-select currently active btn
+  const active=document.querySelector('#splitSourceGrid .psz-btn.active');
+  if(active){const dim=active.querySelector('.psz-dim').textContent.split('×');selectSplitSource(parseFloat(dim[0]),parseFloat(dim[1]),active.querySelector('.psz-name').textContent,active)}
+  updateSplitSourceDisplay();
+}
+function updateSplitSourceDisplay(){
+  const wc=parseFloat(document.getElementById('splitCustW').value);
+  const hc=parseFloat(document.getElementById('splitCustH').value);
+  if(wc>0&&hc>0){const isL=splitOrient==='landscape';splitSourceW=isL?Math.max(wc,hc):Math.min(wc,hc);splitSourceH=isL?Math.min(wc,hc):Math.max(wc,hc);splitSourceName='Custom'}
+  document.getElementById('splitSourceDisplay').textContent=`${splitSourceName} — ${splitSourceW} × ${splitSourceH} mm`;
+}
+function setSplitCount(n){
+  document.getElementById('splitCount').value=n;
+}
+
+function runSplit(){
+  const targetCount=parseInt(document.getElementById('splitCount').value)||0;
+  const kerf=parseFloat(document.getElementById('splitKerf').value)||0;
+  const maxVar=parseInt(document.getElementById('splitMaxVar').value)||6;
+  const sortBy=document.getElementById('splitSortBy').value;
+  const SW=splitSourceW, SH=splitSourceH;
+
+  if(!SW||!SH){toast('⚠ Select a source sheet size!',true);return}
+  if(targetCount<2){toast('⚠ Minimum cut count is 2',true);return}
+  if(targetCount>SW*SH){toast('⚠ Cut count too large for this sheet size',true);return}
+
+  // Find all valid row×col combinations that yield >= targetCount pieces
+  const variants=[];
+  for(let cols=1;cols<=targetCount;cols++){
+    for(let rows=1;rows<=targetCount;rows++){
+      const n=cols*rows;
+      if(n!==targetCount)continue;
+      const pw=(SW-(cols-1)*kerf)/cols;
+      const ph=(SH-(rows-1)*kerf)/rows;
+      if(pw<1||ph<1)continue;
+      const usedArea=pw*ph*n;
+      const totalArea=SW*SH;
+      const wasteArea=totalArea-usedArea-(cols-1)*kerf*SH-(rows-1)*kerf*SW+(cols-1)*(rows-1)*kerf*kerf;
+      const eff=(usedArea/totalArea)*100;
+      const waste=totalArea-usedArea;
+      const ratio=Math.max(pw/ph,ph/pw);
+      variants.push({cols,rows,pw:Math.round(pw*10)/10,ph:Math.round(ph*10)/10,eff:Math.round(eff*10)/10,waste:Math.round(waste),ratio:Math.round(ratio*100)/100});
+    }
+  }
+
+  if(!variants.length){toast('⚠ No valid cut variants found for this count',true);return}
+
+  // Sort
+  if(sortBy==='eff')variants.sort((a,b)=>b.eff-a.eff);
+  else if(sortBy==='waste')variants.sort((a,b)=>a.waste-b.waste);
+  else variants.sort((a,b)=>a.ratio-b.ratio);
+
+  const display=variants.slice(0,maxVar);
+
+  // Summary bar
+  document.getElementById('splitSummaryBar').innerHTML=`
+    <span>📄 <strong>${splitSourceName}</strong> ${SW}×${SH} mm</span>
+    <span>✂️ Target: <strong>${targetCount}</strong> pieces</span>
+    <span>📐 ${display.length} variants found</span>
+    <span style="color:var(--accent)">⚡ Best efficiency: ${display[0]?display[0].eff:0}%</span>
+  `;
+
+  // Draw variants
+  const grid=document.getElementById('splitVariantsGrid');
+  grid.innerHTML='';
+  _splitCanvases=[];_splitSVGData=[];
+
+  display.forEach((v,idx)=>{
+    const isDark=document.documentElement.getAttribute('data-theme')!=='light';
+    const CARD_W=Math.min((grid.offsetWidth||600)/Math.min(display.length,3),320);
+    const sc=Math.min(CARD_W/SW, 220/SH);
+    const cw=Math.round(SW*sc), ch=Math.round(SH*sc);
+    const HDR=28;
+
+    const wrap=document.createElement('div');
+    wrap.style.cssText='border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface);transition:border-color .2s;cursor:pointer';
+    wrap.onmouseenter=()=>wrap.style.borderColor='var(--accent)';
+    wrap.onmouseleave=()=>wrap.style.borderColor='var(--border)';
+
+    // Info header
+    const info=document.createElement('div');
+    info.style.cssText='padding:10px 14px;border-bottom:1px solid var(--border)';
+    const effColor=v.eff>=99?'var(--accent)':v.eff>=95?'#ffc94d':'var(--text)';
+    info.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <span style="font-weight:800;font-size:.88rem">${v.cols} × ${v.rows} pieces</span>
+        <span style="font-family:var(--mono);font-size:.85rem;font-weight:700;color:${effColor}">${v.eff}%</span>
+      </div>
+      <div style="font-family:var(--mono);font-size:.73rem;color:var(--text-muted)">
+        Each piece size: <strong style="color:var(--text)">${v.pw} × ${v.ph} mm</strong>
+      </div>
+      <div style="font-family:var(--mono);font-size:.7rem;color:var(--text-dim);margin-top:3px">
+        Waste: ${v.waste} mm² · Ratio: ${v.ratio}
+      </div>
+    `;
+    if(idx===0){
+      const badge=document.createElement('span');
+      badge.style.cssText='background:var(--accent);color:#0d0f14;font-size:.62rem;font-weight:800;padding:2px 8px;border-radius:99px;margin-left:6px;vertical-align:middle;font-family:var(--sans)';
+      badge.textContent='BEST';
+      info.querySelector('span').appendChild(badge);
+    }
+
+    const cvWrap=document.createElement('div');cvWrap.style.cssText='background:var(--surface2);position:relative;overflow:hidden';
+
+    const cv=document.createElement('canvas');cv.width=cw;cv.height=ch+HDR;cv.style.cssText='display:block;width:100%;height:auto';
+    const hcv=document.createElement('canvas');hcv.width=cw*2;hcv.height=(ch+HDR)*2;
+    _splitCanvases.push(hcv);
+
+    // Draw both canvases
+    [cv,hcv].forEach((target,ti)=>{
+      const S=ti===0?1:2;
+      const ctx=target.getContext('2d');
+      if(ti===1)ctx.scale(S,S);
+
+      // Header
+      ctx.fillStyle=isDark?'#0d0f14':'#d0d4e8';
+      ctx.fillRect(0,0,cw,HDR);
+      ctx.fillStyle='#00e5b0';ctx.font=`bold ${HDR*.36}px Syne,sans-serif`;ctx.textAlign='left';ctx.textBaseline='middle';
+      ctx.fillText('CutOpt',HDR*.25,HDR*.45);
+      ctx.fillStyle=isDark?'#e8eaf2':'#1a1e2e';ctx.font=`bold ${HDR*.34}px Syne,sans-serif`;
+      ctx.fillText(`${v.cols}×${v.rows} — ${targetCount} pieces`,HDR*2.2,HDR*.45);
+      ctx.fillStyle=isDark?'rgba(107,116,148,.85)':'rgba(80,90,120,.8)';ctx.font=`${HDR*.25}px DM Mono,monospace`;
+      ctx.fillText(`${v.pw}×${v.ph}mm · eff ${v.eff}%`,HDR*.25,HDR*.82);
+      ctx.fillStyle=isDark?'rgba(0,229,176,.5)':'rgba(0,122,90,.4)';
+      ctx.fillRect(0,HDR-1.5,cw,1.5);
+
+      ctx.save();ctx.translate(0,HDR);
+
+      // BG
+      ctx.fillStyle=isDark?'#1e2330':'#e8eaf2';ctx.fillRect(0,0,cw,ch);
+
+      // Draw cut pieces grid
+      const colors=['#4fc3f7','#81c784','#ffb74d','#f06292','#ba68c8','#4dd0e1','#aed581','#ff8a65'];
+      let pieceIdx=0;
+      for(let r=0;r<v.rows;r++){
+        for(let c=0;c<v.cols;c++){
+          const px=(c*(v.pw+kerf))*sc;
+          const py=(r*(v.ph+kerf))*sc;
+          const pw=v.pw*sc, ph=v.ph*sc;
+          const col=colors[pieceIdx%colors.length];
+          pieceIdx++;
+          ctx.save();ctx.globalAlpha=.82;ctx.fillStyle=col;
+          ctx.beginPath();if(ctx.roundRect)ctx.roundRect(px,py,pw,ph,2);else ctx.rect(px,py,pw,ph);ctx.fill();
+          ctx.globalAlpha=1;ctx.strokeStyle='rgba(0,0,0,.22)';ctx.lineWidth=.8;ctx.stroke();
+          // Labels
+          const fs=Math.max(6,Math.min(pw,ph)*.14);
+          if(pw>22&&ph>14){
+            ctx.fillStyle='rgba(0,0,0,.68)';ctx.font=`bold ${fs}px DM Mono,monospace`;
+            ctx.textAlign='center';ctx.textBaseline='middle';
+            ctx.beginPath();ctx.rect(px+1,py+1,pw-2,ph-2);ctx.clip();
+            ctx.fillText(`${v.pw}×${v.ph}`,px+pw/2,py+ph/2);
+          }
+          ctx.restore();
+          // Kerf gap (vertical)
+          if(kerf>0&&c<v.cols-1){
+            ctx.save();ctx.fillStyle=isDark?'rgba(255,200,77,.35)':'rgba(180,140,0,.25)';
+            ctx.fillRect(px+pw,py,kerf*sc,ph);ctx.restore();
+          }
+        }
+        // Kerf gap (horizontal)
+        if(kerf>0&&r<v.rows-1){
+          for(let c=0;c<v.cols;c++){
+            const px=(c*(v.pw+kerf))*sc;
+            const py=(r*(v.ph+kerf)+v.ph)*sc;
+            ctx.save();ctx.fillStyle=isDark?'rgba(255,200,77,.35)':'rgba(180,140,0,.25)';
+            ctx.fillRect(px,py,v.pw*sc,kerf*sc);ctx.restore();
+          }
+        }
+      }
+
+      // Sheet border
+      ctx.strokeStyle=isDark?'rgba(0,229,176,.5)':'rgba(0,150,100,.5)';ctx.lineWidth=2;ctx.strokeRect(1,1,cw-2,ch-2);
+
+      // Dimension labels
+      ctx.fillStyle=isDark?'rgba(107,116,148,.8)':'rgba(80,90,120,.7)';ctx.font='8px DM Mono,monospace';
+      ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(`${SW}mm`,cw/2,ch-2);
+      ctx.save();ctx.translate(8,ch/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(`${SH}mm`,0,0);ctx.restore();
+
+      ctx.restore();
+    });
+
+    // Build SVG for this variant
+    const svgStr=buildSplitSVG(v, SW, SH, kerf, targetCount, isDark);
+    _splitSVGData.push(svgStr);
+
+    const dlBtn=document.createElement('button');
+    dlBtn.className='btn-dl';dlBtn.innerHTML='⬇ PNG';
+    dlBtn.style.cssText='position:absolute;bottom:8px;right:72px;';
+    dlBtn.onclick=()=>{
+      const a=document.createElement('a');a.download=`split-${v.cols}x${v.rows}.png`;
+      a.href=hcv.toDataURL('image/png');a.click();toast(`⬇ ${v.cols}×${v.rows} PNG downloaded`);
+    };
+
+    const dlSvgBtn=document.createElement('button');
+    dlSvgBtn.className='btn-dl';dlSvgBtn.innerHTML='⬇ SVG';
+    dlSvgBtn.style.cssText='position:absolute;bottom:8px;right:8px;';
+    dlSvgBtn.onclick=()=>{
+      const a=document.createElement('a');a.download=`split-${v.cols}x${v.rows}.svg`;
+      a.href='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgStr);
+      a.click();toast(`⬇ ${v.cols}×${v.rows} SVG downloaded`);
+    };
+
+    cvWrap.appendChild(cv);cvWrap.appendChild(dlBtn);cvWrap.appendChild(dlSvgBtn);
+    wrap.appendChild(info);wrap.appendChild(cvWrap);
+    grid.appendChild(wrap);
+  });
+
+  document.getElementById('resSplit').style.display='';
+  document.getElementById('resSplit').scrollIntoView({behavior:'smooth',block:'start'});
+  toast(`✓ ${display.length} variasi layout ditemukan!`);
+}
+
+function dlAllSplitLayouts(fmt='png'){
+  if(fmt==='svg'){
+    if(!_splitSVGData.length){toast('⚠ Tidak ada layout untuk didownload',true);return}
+    _splitSVGData.forEach((svg,i)=>setTimeout(()=>{
+      const a=document.createElement('a');a.download=`split-layout-${i+1}.svg`;
+      a.href='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);a.click();
+    },i*200));
+    toast(`⬇ Downloading ${_splitSVGData.length} SVG layout(s)…`);
+    return;
+  }
+  if(!_splitCanvases.length){toast('⚠ Tidak ada layout untuk didownload',true);return}
+  _splitCanvases.forEach((cv,i)=>setTimeout(()=>{
+    const a=document.createElement('a');a.download=`split-layout-${i+1}.png`;a.href=cv.toDataURL('image/png');a.click();
+  },i*200));
+  toast(`⬇ Downloading ${_splitCanvases.length} PNG layout(s)…`);
+}
+
+function buildSplitSVG(v, SW, SH, kerf, targetCount, isDark){
+  const bg      = isDark ? '#1e2330' : '#e8eaf2';
+  const bdr     = isDark ? '#00e5b0' : '#3a8c6a';
+  const txtC    = isDark ? '#6b7494' : '#5a6080';
+  const hdrBg   = isDark ? '#0d0f14' : '#d0d4e8';
+  const hdrTxt  = isDark ? '#e8eaf2' : '#1a1e2e';
+  const accentC = isDark ? '#00e5b0' : '#007a5a';
+  const kerfC   = isDark ? 'rgba(255,200,77,0.4)' : 'rgba(180,140,0,0.3)';
+
+  const HDR   = Math.max(8, SH * 0.055);
+  const dimFs = Math.max(3, Math.min(SW, SH) * 0.02);
+  const dimPad= dimFs * 2.4;
+  const totalW= SW + dimPad;
+  const totalH= SH + HDR + dimPad;
+
+  const colors=['#4fc3f7','#81c784','#ffb74d','#f06292','#ba68c8','#4dd0e1','#aed581','#ff8a65'];
+
+  let pieces='', labels='', kerfs='';
+  let pieceIdx=0;
+  for(let r=0;r<v.rows;r++){
+    for(let c=0;c<v.cols;c++){
+      const px=dimPad + c*(v.pw+kerf);
+      const py=HDR   + r*(v.ph+kerf);
+      const col=colors[pieceIdx%colors.length];
+      pieceIdx++;
+      pieces+=`<rect x="${px}" y="${py}" width="${v.pw}" height="${v.ph}" fill="${col}" fill-opacity="0.85" stroke="rgba(0,0,0,0.22)" stroke-width="0.5" rx="0.8"/>`;
+      const fs=Math.max(2.5, Math.min(v.pw,v.ph)*0.13);
+      if(v.pw>8&&v.ph>6){
+        const clipId=`sc_${r}_${c}`;
+        pieces+=`<clipPath id="${clipId}"><rect x="${px+0.5}" y="${py+0.5}" width="${v.pw-1}" height="${v.ph-1}"/></clipPath>`;
+        labels+=`<text clip-path="url(#${clipId})" x="${px+v.pw/2}" y="${py+v.ph/2}" font-family="'DM Mono',monospace" font-size="${fs}" font-weight="bold" fill="rgba(0,0,0,0.7)" text-anchor="middle" dominant-baseline="middle">${v.pw}×${v.ph}mm</text>`;
+      }
+      // Kerf gaps
+      if(kerf>0&&c<v.cols-1)
+        kerfs+=`<rect x="${px+v.pw}" y="${py}" width="${kerf}" height="${v.ph}" fill="${kerfC}"/>`;
+    }
+    if(kerf>0&&r<v.rows-1){
+      for(let c=0;c<v.cols;c++){
+        const px=dimPad + c*(v.pw+kerf);
+        const py=HDR   + r*(v.ph+kerf)+v.ph;
+        kerfs+=`<rect x="${px}" y="${py}" width="${v.pw}" height="${kerf}" fill="${kerfC}"/>`;
+      }
+    }
+  }
+
+  const hdrFs = HDR*0.38;
+  const subFs = HDR*0.27;
+  const effColor = v.eff>=99?accentC:v.eff>=95?'#ffc94d':hdrTxt;
+
+  const dimW=`<text x="${dimPad+SW/2}" y="${HDR+SH+dimPad*0.75}" font-family="'DM Mono',monospace" font-size="${dimFs}" fill="${txtC}" text-anchor="middle">${SW} mm</text>`;
+  const dimHx=dimPad*0.45, dimHy=HDR+SH/2;
+  const dimH=`<text x="${dimHx}" y="${dimHy}" font-family="'DM Mono',monospace" font-size="${dimFs}" fill="${txtC}" text-anchor="middle" transform="rotate(-90,${dimHx},${dimHy})">${SH} mm</text>`;
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalW} ${totalH}" width="${totalW}mm" height="${totalH}mm">
+  <title>CutOpt Split ${v.cols}×${v.rows} — ${v.pw}×${v.ph}mm × ${targetCount}pcs</title>
+  <!-- Sheet bg -->
+  <rect x="${dimPad}" y="${HDR}" width="${SW}" height="${SH}" fill="${bg}"/>
+  <!-- Pieces -->
+  ${pieces}
+  <!-- Kerfs -->
+  ${kerfs}
+  <!-- Labels -->
+  ${labels}
+  <!-- Sheet border -->
+  <rect x="${dimPad+0.5}" y="${HDR+0.5}" width="${SW-1}" height="${SH-1}" fill="none" stroke="${bdr}" stroke-width="1.2" opacity="0.7"/>
+  <!-- Dimensions -->
+  ${dimW}${dimH}
+  <!-- Header bar -->
+  <rect x="${dimPad}" y="0" width="${SW}" height="${HDR}" fill="${hdrBg}"/>
+  <rect x="${dimPad}" y="${HDR-0.6}" width="${SW}" height="0.6" fill="${accentC}" opacity="0.6"/>
+  <text x="${dimPad+HDR*0.5}" y="${HDR*0.62}" font-family="'Syne','DM Mono',monospace" font-size="${hdrFs}" font-weight="bold" fill="${accentC}">CutOpt</text>
+  <text x="${dimPad+HDR*2.2}" y="${HDR*0.62}" font-family="'Syne','DM Mono',monospace" font-size="${hdrFs}" font-weight="bold" fill="${hdrTxt}">${v.cols}×${v.rows} — ${targetCount} lembar</text>
+  <text x="${dimPad+HDR*2.2}" y="${HDR*0.9}" font-family="'DM Mono',monospace" font-size="${subFs}" fill="${txtC}">${v.pw}×${v.ph}mm per potongan</text>
+  <text x="${dimPad+SW-HDR*0.4}" y="${HDR*0.62}" font-family="'DM Mono',monospace" font-size="${hdrFs}" font-weight="bold" fill="${effColor}" text-anchor="end">${v.eff}%</text>
+</svg>`;
+}
+function copySplitReport(){
+  const SW=splitSourceW,SH=splitSourceH;
+  const n=parseInt(document.getElementById('splitCount').value)||0;
+  let t=`CutOpt Split Report\nSumber: ${splitSourceName} (${SW}×${SH}mm)\nTarget: ${n} lembar\n\n`;
+  document.querySelectorAll('#splitVariantsGrid > div').forEach((wrap,i)=>{
+    const lines=wrap.querySelectorAll('div > div');
+    t+=`Variasi ${i+1}: ${lines[0]?.textContent?.trim()||''}\n`;
+  });
+  navigator.clipboard.writeText(t).then(()=>toast('Laporan disalin!'));
+}
 function copy1d(){const r=document.querySelectorAll('#sum1d tr');let t=`CutOpt 1D Report\nMaterial: ${mat1}\n\n=== PIECES ===\n`;r.forEach(r=>{t+=[...r.querySelectorAll('td')].map(c=>c.innerText.trim()).join(' | ')+'\n'});navigator.clipboard.writeText(t).then(()=>toast('Copied!'))}
 function copy2d(){const r=document.querySelectorAll('#sum2d tr');let t=`CutOpt 2D Report\nMaterial: ${mat2}\n\n=== PIECES ===\n`;r.forEach(r=>{t+=[...r.querySelectorAll('td')].map(c=>c.innerText.trim()).join(' | ')+'\n'});navigator.clipboard.writeText(t).then(()=>toast('Copied!'))}
 </script>
