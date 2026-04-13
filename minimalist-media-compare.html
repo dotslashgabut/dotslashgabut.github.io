@@ -51,6 +51,7 @@
             align-items: center;  
             justify-content: center;  
             pointer-events: none;  
+            overflow: hidden;
         }  
   
         .layer img, .layer video {  
@@ -61,21 +62,82 @@
             will-change: transform;  
         }  
   
-        #layer-right {  
-            clip-path: inset(0 0 0 50%);  
-        }  
-  
-        /* Slider Line */  
-        #slider-line {  
-            position: absolute;  
-            top: 0; bottom: 0; left: 50%;  
-            width: 1px;  
-            background: #fff;  
-            transform: translateX(-50%);  
-            pointer-events: none;  
-            box-shadow: 0 0 8px rgba(0,0,0,0.8);  
-            z-index: 10;  
-        }  
+        #layer-right {
+            clip-path: inset(0 0 0 50%);
+        }
+
+        /* Top-bottom static split (No Slider) */
+        body.layout-tb-ns #layer-left {
+            justify-content: center;
+            align-items: center;
+        }
+        body.layout-tb-ns #layer-right {
+            justify-content: center;
+            align-items: center;
+            clip-path: none !important;
+        }
+        /* tb-ns static split sizing */
+        body.layout-tb-ns #layer-left  { height: 50%; }
+        body.layout-tb-ns #layer-right { top: 50%; height: 50%; }
+
+        /* Side-by-side layout */
+        body.layout-sbs #layer-left {
+            left: 0; width: 50%;
+            clip-path: none !important;
+            justify-content: center;
+        }
+        body.layout-sbs #layer-right {
+            left: 50%; width: 50%;
+            clip-path: none !important;
+            justify-content: center;
+        }
+
+        /* Slider Line */
+        #slider-line {
+            position: absolute;
+            top: 0; bottom: 0; left: 50%;
+            width: 1px; height: auto;
+            background: #fff;
+            transform: translateX(-50%);
+            pointer-events: none;
+            box-shadow: 0 0 8px rgba(0,0,0,0.8);
+            z-index: 10;
+            transition: none;
+        }
+
+        body.layout-tb #slider-line {
+            top: 50%; bottom: auto; left: 0; right: 0;
+            width: 100%; height: 1px;
+            transform: translateY(-50%);
+        }
+
+        body.layout-sbs #slider-line,
+        body.layout-tb-ns #slider-line {
+            display: none;
+        }
+
+        /* Divider line for side-by-side and top-bottom-ns */
+        #divider-line {
+            position: absolute;
+            pointer-events: none;
+            z-index: 10;
+            background: #333;
+            display: none;
+        }
+        body.layout-sbs #divider-line {
+            display: block;
+            top: 0; bottom: 0;
+            left: 50%; width: 1px;
+            transform: translateX(-50%);
+            box-shadow: 0 0 6px rgba(0,0,0,0.6);
+        }
+        body.layout-tb-ns #divider-line {
+            display: block;
+            left: 0; right: 0;
+            top: 50%; height: 1px;
+            transform: translateY(-50%);
+            box-shadow: 0 0 6px rgba(0,0,0,0.6);
+        }
   
         /* UI Elements */  
         .ui-container {  
@@ -89,9 +151,34 @@
         #ui-left { bottom: 20px; left: 20px; }  
         #ui-right { bottom: 20px; right: 20px; }  
         #ui-global { top: 20px; right: 20px; }
-        #ui-compare { top: 20px; left: 20px; flex-direction: column; gap: 6px; }
+        
+        #ui-menu-toggle { top: 20px; left: 20px; z-index: 30; }
 
-        #ui-compare button {
+        #top-menu-panel {
+            position: absolute;
+            top: 20px;
+            left: 72px; /* toggle width + gap */
+            display: flex;
+            gap: 8px;
+            z-index: 20;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        #top-menu-panel.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(-10px);
+        }
+
+        #top-menu-panel .ui-container {
+            position: relative; /* override absolute */
+            top: 0; left: 0; right: 0; bottom: 0;
+        }
+
+        #ui-compare { flex-direction: column; gap: 6px; }
+        #ui-layout  { flex-direction: column; gap: 6px; }
+
+        #ui-compare button, #ui-layout button {
             width: auto;
             height: 36px;
             padding: 0 12px;
@@ -103,13 +190,13 @@
             gap: 8px;
         }
 
-        #ui-compare button.active {
+        #ui-compare button.active, #ui-layout button.active {
             background: var(--ui-hover);
             color: var(--ui-hover-text);
             border-color: var(--ui-hover);
         }
 
-        #ui-compare button svg {
+        #ui-compare button svg, #ui-layout button svg {
             width: 14px;
             height: 14px;
             flex-shrink: 0;
@@ -117,7 +204,6 @@
 
         .size-badge {
             position: absolute;
-            bottom: 90px;
             background: rgba(0,0,0,0.72);
             color: #fff;
             font-size: 11px;
@@ -131,8 +217,33 @@
             display: none;
             font-family: monospace;
         }
-        #badge-left, #badge-right {
-            position: absolute;
+        #badge-left {
+            bottom: 90px;
+            left: 20px;
+            top: auto;
+            right: auto;
+        }
+        #badge-right {
+            bottom: 90px;
+            right: 20px;
+            top: auto;
+            left: auto;
+        }
+
+        body.layout-tb #badge-left,
+        body.layout-tb-ns #badge-left {
+            top: 80px;
+            bottom: auto;
+            right: 20px;
+            left: auto;
+        }
+
+        body.layout-tb #badge-right,
+        body.layout-tb-ns #badge-right {
+            bottom: 90px;
+            right: 20px;
+            top: auto;
+            left: auto;
         }
   
         .ui-label {  
@@ -215,6 +326,21 @@
         .drop-zone.left  { left: 0; }
         .drop-zone.right { right: 0; left: auto; }
 
+        body.layout-tb .drop-zone,
+        body.layout-tb-ns .drop-zone {
+            width: 100%;
+            height: 50%;
+        }
+        body.layout-tb .drop-zone.left,
+        body.layout-tb-ns .drop-zone.left  { top: 0; left: 0; }
+        body.layout-tb .drop-zone.right,
+        body.layout-tb-ns .drop-zone.right { top: 50%; left: 0; right: auto; }
+
+        body.layout-tb .drag-hint-half,
+        body.layout-tb-ns .drag-hint-half { flex-direction: column; }
+        body.layout-tb #drag-hint,
+        body.layout-tb-ns #drag-hint { flex-direction: column; }
+
         .drop-zone.active {
             opacity: 1;
             pointer-events: none;
@@ -293,6 +419,8 @@
   
         <!-- Slider Line -->  
         <div id="slider-line"></div>
+        <!-- Static Divider (SBS / TB-NS modes) -->
+        <div id="divider-line"></div>
 
         <!-- Drag & Drop hint overlay (shown while dragging over window) -->
         <div id="drag-hint">
@@ -321,24 +449,54 @@
   
     <!-- UI Overlay -->  
     <div id="ui">  
-        <!-- Compare Mode Controls -->
-        <div class="ui-container" id="ui-compare">
-            <button id="btn-height" onclick="setCompareMode('height')" title="Compare by Height">
-                <svg viewBox="0 0 24 24"><path d="M16 11h-4V3h-1v8H7l4.5 4.5L16 11zm-9 2v1h10v-1H7zm0 3v1h10v-1H7z"/></svg>
-                Match Height
+        <!-- Menu Toggle Button -->
+        <div class="ui-container" id="ui-menu-toggle">
+            <button onclick="toggleTopMenu()" title="Toggle Top Menus (M)">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
             </button>
-            <button id="btn-width" onclick="setCompareMode('width')" title="Compare by Width">
-                <svg viewBox="0 0 24 24"><path d="M13 16v-4h8v-1h-8V7l-4.5 4.5L13 16zm-2 1H4v1h7v-1zm-7-4H3v1h1v-1zm0-3H3v1h1V10z"/></svg>
-                Match Width
-            </button>
-            <button id="btn-ratio" onclick="setCompareMode('ratio')" title="Compare by Aspect Ratio">
-                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z"/></svg>
-                Match Ratio
-            </button>
-            <button id="btn-resolution" onclick="setCompareMode('resolution')" title="Compare by Real Resolution">
-                <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12zM10 9h2.5v1.5H10V12h4v-4h-4z"/></svg>
-                Real Resolution
-            </button>
+        </div>
+
+        <!-- Top Menu Panel (Compare & Layout) -->
+        <div id="top-menu-panel">
+            <!-- Compare Mode Controls -->
+            <div class="ui-container" id="ui-compare">
+                <button id="btn-height" onclick="setCompareMode('height')" title="Compare by Height">
+                    <svg viewBox="0 0 24 24"><path d="M16 11h-4V3h-1v8H7l4.5 4.5L16 11zm-9 2v1h10v-1H7zm0 3v1h10v-1H7z"/></svg>
+                    Match Height
+                </button>
+                <button id="btn-width" onclick="setCompareMode('width')" title="Compare by Width">
+                    <svg viewBox="0 0 24 24"><path d="M13 16v-4h8v-1h-8V7l-4.5 4.5L13 16zm-2 1H4v1h7v-1zm-7-4H3v1h1v-1zm0-3H3v1h1V10z"/></svg>
+                    Match Width
+                </button>
+                <button id="btn-ratio" onclick="setCompareMode('ratio')" title="Compare by Aspect Ratio">
+                    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z"/></svg>
+                    Match Ratio
+                </button>
+                <button id="btn-resolution" onclick="setCompareMode('resolution')" title="Compare by Real Resolution">
+                    <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12zM10 9h2.5v1.5H10V12h4v-4h-4z"/></svg>
+                    Real Resolution
+                </button>
+            </div>
+
+            <!-- Layout Mode Controls -->
+            <div class="ui-container" id="ui-layout">
+                <button id="btn-layout-lr" onclick="setLayoutMode('lr')" title="Default: Left | Right (slider)" class="active">
+                    <svg viewBox="0 0 24 24"><path d="M3 5v14h18V5H3zm8 12H5V7h6v10zm8 0h-6V7h6v10zm-7-5h2v-2h-2v2zm0 3h2v-2h-2v2zm0-6h2V7h-2v2z"/></svg>
+                    L | R Slider
+                </button>
+                <button id="btn-layout-sbs" onclick="setLayoutMode('sbs')" title="Side by Side (no slider)">
+                    <svg viewBox="0 0 24 24"><path d="M3 5v14h18V5H3zm8 12H5V7h6v10zm8 0h-6V7h6v10z"/></svg>
+                    Side by Side
+                </button>
+                <button id="btn-layout-tb" onclick="setLayoutMode('tb')" title="Top / Bottom (with slider)">
+                    <svg viewBox="0 0 24 24"><path d="M3 5v14h18V5H3zm16 6H5V7h14v4zm0 6H5v-4h14v4zm-7-3h2v-2h-2v2zm-4 0h2v-2H8v2zm8 0h2v-2h-2v2z"/></svg>
+                    T / B Slider
+                </button>
+                <button id="btn-layout-tb-ns" onclick="setLayoutMode('tb-ns')" title="Top / Bottom (no slider)">
+                    <svg viewBox="0 0 24 24"><path d="M3 5v14h18V5H3zm16 6H5V7h14v4zm0 6H5v-4h14v4z"/></svg>
+                    T / B Split
+                </button>
+            </div>
         </div>
 
         <!-- Global Controls -->  
@@ -391,8 +549,13 @@
         <div class="shortcut"><span>Load URL Right</span> <span class="key">I</span></div>
         <div class="shortcut"><span>Drag & Drop Left half</span> <span>→ Media 1</span></div>
         <div class="shortcut"><span>Drag & Drop Right half</span> <span>→ Media 2</span></div>
-        <div class="shortcut"><span>Toggle UI</span> <span class="key">Tab</span></div>  
-    </div>  
+        <div class="shortcut"><span>Toggle Top Menus</span> <span class="key">M</span></div>
+        <div class="shortcut"><span>Toggle All UI</span> <span class="key">Tab</span></div>
+        <div class="shortcut"><span>Layout: L|R Slider</span> <span class="key">Q</span></div>
+        <div class="shortcut"><span>Layout: Side by Side</span> <span class="key">W</span></div>
+        <div class="shortcut"><span>Layout: T/B Slider</span> <span class="key">E</span></div>
+        <div class="shortcut"><span>Layout: T/B Split</span> <span class="key">T</span></div>
+    </div>
   
     <script>  
         // State  
@@ -406,6 +569,7 @@
 
         // Compare Mode State
         let compareMode = null; // null | 'height' | 'width' | 'ratio' | 'resolution'
+        let layoutMode = 'lr'; // 'lr' | 'sbs' | 'tb' | 'tb-ns'
         let mediaDims = { left: null, right: null }; // { w, h } natural dimensions
   
         // DOM Elements  
@@ -422,17 +586,28 @@
         const badgeRight = document.getElementById('badge-right');
   
         // Functions: View Logic  
-        function updateSplit() {  
-            layerRight.style.clipPath = `inset(0 0 0 ${splitPos}%)`;  
-            sliderLine.style.left = `${splitPos}%`;
-            // Keep badges inside their respective halves, hugging the slider line
-            const sliderPx = (splitPos / 100) * window.innerWidth;
-            const gap = 10;
-            badgeLeft.style.left   = '';
-            badgeLeft.style.right  = `${window.innerWidth - sliderPx + gap}px`;
-            badgeRight.style.right = '';
-            badgeRight.style.left  = `${sliderPx + gap}px`;
-        }  
+        function updateSplit() {
+            if (layoutMode === 'lr') {
+                layerRight.style.clipPath = `inset(0 0 0 ${splitPos}%)`;
+                layerRight.style.top      = '';
+                layerRight.style.height   = '';
+                document.getElementById('layer-left').style.height = '';
+                sliderLine.style.left = `${splitPos}%`;
+                sliderLine.style.top  = '';
+            } else if (layoutMode === 'tb') {
+                // Apply an overlay crop for top-bottom slider logic just like left/right
+                layerRight.style.clipPath = `inset(${splitPos}% 0 0 0)`;
+                layerRight.style.top      = '';
+                layerRight.style.height   = '';
+                document.getElementById('layer-left').style.height = '';
+                sliderLine.style.top  = `${splitPos}%`;
+                sliderLine.style.left = '';
+            } else {
+                layerRight.style.clipPath = '';
+                sliderLine.style.left = '';
+                sliderLine.style.top  = '';
+            }
+        }
   
         function updateTransform() {  
             const transform = `scale(${zoom}) translate(${panX}px, ${panY}px)`;  
@@ -442,13 +617,14 @@
             videoRight.style.transform = transform;  
         }  
   
-        function resetView() {  
-            zoom = 1;  
-            panX = 0;  
+        function resetView() {
+            zoom = 1;
+            panX = 0;
             panY = 0;
-            // Also reset compare mode overrides
+            splitPos = 50;
             clearCompareSizing();
-            updateTransform();  
+            updateSplit();
+            updateTransform();
         }
 
         // ── Compare Mode Functions ──────────────────────────────────────────
@@ -567,6 +743,46 @@
             badgeRight.style.display = 'block';
         }
 
+        function setLayoutMode(mode) {
+            layoutMode = mode;
+            splitPos = 50;
+
+            // Update button active states
+            document.querySelectorAll('#ui-layout button').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-layout-${mode}`).classList.add('active');
+
+            // Remove all layout classes
+            document.body.classList.remove('layout-sbs', 'layout-tb', 'layout-tb-ns');
+
+            const layerLeft  = document.getElementById('layer-left');
+            const layerRight = document.getElementById('layer-right');
+
+            // Reset any inline styles set by tb/lr mode
+            layerLeft.style.height  = '';
+            layerRight.style.top    = '';
+            layerRight.style.height = '';
+            layerRight.style.clipPath = '';
+
+            if (mode === 'lr') {
+                // Default: restore clip-path slider behaviour
+                sliderLine.classList.remove('horizontal');
+            } else if (mode === 'sbs') {
+                document.body.classList.add('layout-sbs');
+                sliderLine.classList.remove('horizontal');
+            } else if (mode === 'tb') {
+                document.body.classList.add('layout-tb');
+                sliderLine.classList.add('horizontal');
+            } else if (mode === 'tb-ns') {
+                document.body.classList.add('layout-tb-ns');
+                sliderLine.classList.remove('horizontal');
+            }
+
+            updateSplit();
+
+            // Re-apply compare sizing if active
+            if (compareMode) applyCompareSizing();
+        }
+
         function setCompareMode(mode) {
             if (compareMode === mode) {
                 // Toggle off
@@ -583,6 +799,10 @@
             mediaDims.left  = getNaturalDims('left');
             mediaDims.right = getNaturalDims('right');
             applyCompareSizing();
+        }
+
+        function toggleTopMenu() {
+            document.getElementById('top-menu-panel').classList.toggle('hidden');
         }
 
         function onMediaLoaded(side) {
@@ -661,18 +881,22 @@
         }  
   
         // Event Listeners: Mouse Interaction  
-        app.addEventListener('mousemove', (e) => {  
-            if (!isDragging) {  
-                // Move slider to follow cursor  
-                splitPos = (e.clientX / window.innerWidth) * 100;  
-                updateSplit();  
-            } else {  
-                // Pan images  
-                panX = initialPanX + (e.clientX - startX) / zoom;  
-                panY = initialPanY + (e.clientY - startY) / zoom;  
-                updateTransform();  
-            }  
-        });  
+        app.addEventListener('mousemove', (e) => {
+            if (!isDragging) {
+                // Move slider to follow cursor
+                if (layoutMode === 'tb') {
+                    splitPos = (e.clientY / window.innerHeight) * 100;
+                } else if (layoutMode === 'lr') {
+                    splitPos = (e.clientX / window.innerWidth) * 100;
+                }
+                updateSplit();
+            } else {
+                // Pan images
+                panX = initialPanX + (e.clientX - startX) / zoom;
+                panY = initialPanY + (e.clientY - startY) / zoom;
+                updateTransform();
+            }
+        });
   
         app.addEventListener('mousedown', (e) => {  
             if (e.button !== 0) return; // Only left click  
@@ -695,7 +919,11 @@
 
         app.addEventListener('touchstart', (e) => {
             if (e.touches.length === 1) {
-                splitPos = (e.touches[0].clientX / window.innerWidth) * 100;
+                if (layoutMode === 'tb') {
+                    splitPos = (e.touches[0].clientY / window.innerHeight) * 100;
+                } else if (layoutMode === 'lr') {
+                    splitPos = (e.touches[0].clientX / window.innerWidth) * 100;
+                }
                 updateSplit();
             } else if (e.touches.length === 2) {
                 isDragging = true;
@@ -709,7 +937,11 @@
             if (e.cancelable) e.preventDefault(); // Prevent scrolling on touch
             
             if (e.touches.length === 1 && !isDragging) {
-                splitPos = (e.touches[0].clientX / window.innerWidth) * 100;
+                if (layoutMode === 'tb') {
+                    splitPos = (e.touches[0].clientY / window.innerHeight) * 100;
+                } else if (layoutMode === 'lr') {
+                    splitPos = (e.touches[0].clientX / window.innerWidth) * 100;
+                }
                 updateSplit();
             } else if (e.touches.length === 2) {
                 const t1 = e.touches[0], t2 = e.touches[1];
@@ -721,8 +953,19 @@
                     const newZoom = Math.max(0.1, Math.min(zoom * zoomDelta, 50));
                     
                     const rect = app.getBoundingClientRect();
-                    const centerX = currentCenter.x - rect.left - rect.width / 2;
-                    const centerY = currentCenter.y - rect.top - rect.height / 2;
+                    
+                    let vCenterX = rect.width / 2;
+                    let vCenterY = rect.height / 2;
+
+                    // Calculate zoom relative to the active viewport's center
+                    if (layoutMode === 'sbs') {
+                        vCenterX = (currentCenter.x - rect.left) < rect.width / 2 ? rect.width / 4 : rect.width * 3 / 4;
+                    } else if (layoutMode === 'tb-ns') {
+                        vCenterY = (currentCenter.y - rect.top) < rect.height / 2 ? rect.height / 4 : rect.height * 3 / 4;
+                    }
+
+                    const centerX = currentCenter.x - rect.left - vCenterX;
+                    const centerY = currentCenter.y - rect.top - vCenterY;
                     
                     panX += (centerX / newZoom) - (centerX / zoom);
                     panY += (centerY / newZoom) - (centerY / zoom);
@@ -760,8 +1003,19 @@
   
             // Math to zoom directly towards mouse cursor  
             const rect = app.getBoundingClientRect();  
-            const mouseX = e.clientX - rect.left - rect.width / 2;  
-            const mouseY = e.clientY - rect.top - rect.height / 2;  
+            
+            let vCenterX = rect.width / 2;
+            let vCenterY = rect.height / 2;
+
+            // Calculate zoom relative to the active viewport's center
+            if (layoutMode === 'sbs') {
+                vCenterX = (e.clientX - rect.left) < rect.width / 2 ? rect.width / 4 : rect.width * 3 / 4;
+            } else if (layoutMode === 'tb-ns') {
+                vCenterY = (e.clientY - rect.top) < rect.height / 2 ? rect.height / 4 : rect.height * 3 / 4;
+            }
+
+            const mouseX = e.clientX - rect.left - vCenterX;  
+            const mouseY = e.clientY - rect.top - vCenterY;  
   
             // Fixed Math: Added scaled components instead of subtracting them to maintain focus position
             panX += (mouseX / newZoom) - (mouseX / zoom);  
@@ -780,18 +1034,23 @@
             const key = e.key.toLowerCase();  
               
             switch(key) {  
-                case 'r': resetView(); break;  
+                case 'r': resetView(); break;
                 case 'f': toggleFullscreen(); break;
-                case '1': loadLocal('left'); break;  
-                case '2': loadLocal('right'); break;  
-                case 'u': loadURL('left'); break;  
-                case 'i': loadURL('right'); break;  
-                case 'h': toggleHelp(); break;  
-                case 'escape': helpModal.classList.remove('visible'); break;  
-                case 'tab':   
-                    e.preventDefault();  
-                    ui.classList.toggle('hidden');   
-                    break;  
+                case '1': loadLocal('left'); break;
+                case '2': loadLocal('right'); break;
+                case 'u': loadURL('left'); break;
+                case 'i': loadURL('right'); break;
+                case 'h': toggleHelp(); break;
+                case 'm': toggleTopMenu(); break;
+                case 'q': setLayoutMode('lr'); break;
+                case 'w': setLayoutMode('sbs'); break;
+                case 'e': setLayoutMode('tb'); break;
+                case 't': setLayoutMode('tb-ns'); break;
+                case 'escape': helpModal.classList.remove('visible'); break;
+                case 'tab':
+                    e.preventDefault();
+                    ui.classList.toggle('hidden');
+                    break;
             }  
         });  
   
@@ -814,9 +1073,14 @@
                    (e.dataTransfer.types.includes('Files') || e.dataTransfer.types.includes('application/x-moz-file'));
         }
 
-        function getSideFromX(clientX) {
+        function getSideFromPoint(clientX, clientY) {
+            if (layoutMode === 'tb' || layoutMode === 'tb-ns') {
+                return clientY < window.innerHeight / 2 ? 'left' : 'right';
+            }
             return clientX < window.innerWidth / 2 ? 'left' : 'right';
         }
+        // Keep backward compat alias
+        function getSideFromX(clientX) { return getSideFromPoint(clientX, 0); }
 
         window.addEventListener('dragenter', (e) => {
             if (!isDragFile(e)) return;
@@ -841,7 +1105,7 @@
             e.preventDefault();
             e.dataTransfer.dropEffect = 'copy';
 
-            const side = getSideFromX(e.clientX);
+            const side = getSideFromPoint(e.clientX, e.clientY);
             if (side === 'left') {
                 dropLeft.classList.add('active');
                 dropRight.classList.remove('active');
@@ -861,7 +1125,7 @@
             const file = e.dataTransfer.files[0];
             if (!file) return;
 
-            const side = getSideFromX(e.clientX);
+            const side = getSideFromPoint(e.clientX, e.clientY);
             const url  = URL.createObjectURL(file);
             setMedia(side, url, file.type.startsWith('video/'));
         });

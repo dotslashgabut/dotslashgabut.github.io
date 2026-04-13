@@ -246,6 +246,7 @@
       background: var(--ui-bg); border: 1px solid var(--ui-border);
       padding: 28px 32px; z-index: 100; backdrop-filter: blur(12px);
       display: none; min-width: 340px; box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+      max-height: 90vh; overflow-y: auto;
     }
     #help-modal.visible { display: block; }
     #help-modal h2 { font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: #fff; font-weight: 400; margin-bottom: 22px; }
@@ -295,11 +296,11 @@
 
   <!-- Transport -->
   <div id="transport">
-    <button class="btn-transport" id="btn-play" title="Play/Pause (Space)">
+    <button class="btn-transport" id="btn-play" title="Play/Pause (Space / C)">
       <svg id="ico-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
       <svg id="ico-pause" viewBox="0 0 24 24" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
     </button>
-    <button class="btn-transport" id="btn-stop" title="Stop">
+    <button class="btn-transport" id="btn-stop" title="Stop (V)">
       <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
     </button>
     <button class="btn-transport" id="btn-repeat" onclick="toggleRepeat()" title="Repeat (R)">
@@ -307,9 +308,9 @@
     </button>
     <!-- Play target selector -->
     <div id="play-target-group">
-      <button class="btn-play-target" id="btn-play-left"  onclick="setPlayTarget('left')"  title="Play Audio 1 only" style="color:var(--accent-l)">1</button>
-      <button class="btn-play-target active" id="btn-play-both" onclick="setPlayTarget('both')"  title="Play both">1+2</button>
-      <button class="btn-play-target" id="btn-play-right" onclick="setPlayTarget('right')" title="Play Audio 2 only" style="color:var(--accent-r)">2</button>
+      <button class="btn-play-target" id="btn-play-left"  onclick="setPlayTarget('left')"  title="Play Audio 1 only (Y)" style="color:var(--accent-l)">1</button>
+      <button class="btn-play-target active" id="btn-play-both" onclick="setPlayTarget('both')"  title="Play both (U)">1+2</button>
+      <button class="btn-play-target" id="btn-play-right" onclick="setPlayTarget('right')" title="Play Audio 2 only (I)" style="color:var(--accent-r)">2</button>
     </div>
     <div id="scrub-track">
       <div id="scrub-fill"></div>
@@ -411,8 +412,12 @@
 
   <div id="help-modal">
     <h2>Audio Compare</h2>
-    <div class="shortcut"><span>Play / Pause</span><span class="key">Space</span></div>
+    <div class="shortcut"><span>Play / Pause</span><span><span class="key">Space</span> / <span class="key">C</span></span></div>
+    <div class="shortcut"><span>Stop</span><span class="key">V</span></div>
     <div class="shortcut"><span>Repeat</span><span class="key">R</span></div>
+    <div class="shortcut"><span>Play target: Audio 1</span><span class="key">Y</span></div>
+    <div class="shortcut"><span>Play target: Both</span><span class="key">U</span></div>
+    <div class="shortcut"><span>Play target: Audio 2</span><span class="key">I</span></div>
     <div class="shortcut"><span>Load Left</span><span class="key">1</span></div>
     <div class="shortcut"><span>Load Right</span><span class="key">2</span></div>
     <div class="shortcut"><span>Toggle Modes</span><span class="key">M</span></div>
@@ -431,9 +436,10 @@
     <div class="shortcut"><span>Spec time zoom</span><span>shift+scroll / scroll ↔</span></div>
     <div class="shortcut"><span>Spec pan</span><span>drag</span></div>
     <div class="shortcut"><span>Spec pinch zoom</span><span>2-finger pinch</span></div>
-    <div class="shortcut"><span>Go to frequency</span><span class="key">G</span></div>
+    <div class="shortcut"><span>Go to freq (toggle)</span><span class="key">G</span></div>
     <div class="shortcut"><span>Fullscreen</span><span class="key">F</span></div>
     <div class="shortcut"><span>Toggle UI</span><span class="key">Tab</span></div>
+    <div class="shortcut"><span>Help</span><span class="key">H</span></div>
     <div class="shortcut"><span>Drag &amp; drop file</span><span>→ either half</span></div>
   </div>
 </div>
@@ -1103,15 +1109,16 @@ function showGoToFreq(){
       <div style="font-size:8px;color:#444;margin-top:2px">Centers the view on the given frequency</div>
     `;
     document.getElementById('app').appendChild(popup);
-    popup.querySelector('#goto-freq-input').addEventListener('keydown',e=>{if(e.key==='Enter')applyGoToFreq();if(e.key==='Escape')closeGoToFreq();});
-    document.addEventListener('keydown',outsideEsc);
+    popup.querySelector('#goto-freq-input').addEventListener('keydown',e=>{
+      if(e.key==='Enter'){applyGoToFreq();}
+      if(e.key==='Escape'){closeGoToFreq();}
+      if(e.key.toLowerCase()==='g'){e.preventDefault();closeGoToFreq();}
+    });
   }
   popup.style.display='flex';
   freqInputVisible=true;
   setTimeout(()=>popup.querySelector('#goto-freq-input').focus(),50);
 }
-
-function outsideEsc(e){ if(e.key==='Escape'&&freqInputVisible) closeGoToFreq(); }
 
 function closeGoToFreq(){
   const p=document.getElementById('goto-freq-popup');
@@ -1424,14 +1431,24 @@ document.getElementById('btn-stop').addEventListener('click',stopPlayback);
 
 window.addEventListener('keydown',(e)=>{
   if(e.ctrlKey||e.altKey||e.metaKey)return;
-  // Don't fire shortcuts when typing in an input/textarea
+  const k=e.key.toLowerCase();
+  // G toggles Go-to-Freq popup — works even when input is focused
+  if(k==='g'&&vizMode==='spectrogram'){
+    e.preventDefault();
+    if(freqInputVisible)closeGoToFreq();else showGoToFreq();
+    return;
+  }
+  // Don't fire other shortcuts when typing in an input/textarea
   const tag=document.activeElement?.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA'||document.activeElement?.isContentEditable)return;
-  const k=e.key.toLowerCase();
   switch(k){
-    case ' ':e.preventDefault();togglePlay();break;
+    case ' ':case 'c':e.preventDefault();togglePlay();break;
+    case 'v':stopPlayback();break;
     case 'r':toggleRepeat();break;
     case '1':loadLocal('left');break; case '2':loadLocal('right');break;
+    case 'y':setPlayTarget('left');break;
+    case 'u':setPlayTarget('both');break;
+    case 'i':setPlayTarget('right');break;
     case 'm':toggleModeButtons();break;
     case 'w':setVizMode('waveform');break; case 's':setVizMode('spectrogram');break;
     case 'x':setVizMode('spectrum');break; case 'e':setVizMode('stereo');break;
@@ -1441,7 +1458,6 @@ window.addEventListener('keydown',(e)=>{
     case '+':case '=':if(vizMode==='spectrogram')specZoomIn();break;
     case '-':if(vizMode==='spectrogram')specZoomOut();break;
     case '0':if(vizMode==='spectrogram')specZoomReset();break;
-    case 'g':if(vizMode==='spectrogram'){if(freqInputVisible)closeGoToFreq();else showGoToFreq();}break;
     case 'escape':document.getElementById('help-modal').classList.remove('visible');break;
     case 'tab':e.preventDefault();document.querySelectorAll('.ui-panel').forEach(p=>p.classList.toggle('hidden'));break;
   }
