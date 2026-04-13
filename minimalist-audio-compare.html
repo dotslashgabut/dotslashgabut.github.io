@@ -415,6 +415,10 @@
     <div class="shortcut"><span>Play / Pause</span><span><span class="key">Space</span> / <span class="key">C</span></span></div>
     <div class="shortcut"><span>Stop</span><span class="key">V</span></div>
     <div class="shortcut"><span>Repeat</span><span class="key">R</span></div>
+    <div class="shortcut"><span>Seek forward 5s</span><span class="key">→</span></div>
+    <div class="shortcut"><span>Seek backward 5s</span><span class="key">←</span></div>
+    <div class="shortcut"><span>Mute toggle</span><span class="key">N</span></div>
+    <div class="shortcut"><span>Volume up / down</span><span><span class="key">Ctrl+↑</span> / <span class="key">Ctrl+↓</span></span></div>
     <div class="shortcut"><span>Play target: Audio 1</span><span class="key">Y</span></div>
     <div class="shortcut"><span>Play target: Both</span><span class="key">U</span></div>
     <div class="shortcut"><span>Play target: Audio 2</span><span class="key">I</span></div>
@@ -585,6 +589,19 @@ function setPlayTarget(t){
 function toggleRepeat(){
   repeatMode=!repeatMode;
   document.getElementById('btn-repeat').classList.toggle('active', repeatMode);
+}
+let muteState = false;
+let mutePreVolume = 0.8;
+function toggleMute(){
+  const slider=document.getElementById('vol-slider');
+  muteState=!muteState;
+  if(muteState){
+    mutePreVolume=parseFloat(slider.value)||0.8;
+    slider.value=0;
+  } else {
+    slider.value=mutePreVolume;
+  }
+  slider.dispatchEvent(new Event('input'));
 }
 function stopPlayback() {
   if(masterPlaying) stopAll();
@@ -1430,7 +1447,20 @@ document.getElementById('btn-play').addEventListener('click',togglePlay);
 document.getElementById('btn-stop').addEventListener('click',stopPlayback);
 
 window.addEventListener('keydown',(e)=>{
-  if(e.ctrlKey||e.altKey||e.metaKey)return;
+  // Ctrl+ArrowUp / Ctrl+ArrowDown — volume up/down (works everywhere)
+  if(e.ctrlKey&&!e.altKey&&!e.metaKey){
+    if(e.key==='ArrowUp'||e.key==='ArrowDown'){
+      e.preventDefault();
+      const slider=document.getElementById('vol-slider');
+      const step=0.05;
+      const newVal=Math.max(0,Math.min(1,parseFloat(slider.value)+(e.key==='ArrowUp'?step:-step)));
+      slider.value=newVal;
+      slider.dispatchEvent(new Event('input'));
+      return;
+    }
+  }
+  if(e.altKey||e.metaKey)return;
+  if(e.ctrlKey)return;
   const k=e.key.toLowerCase();
   // G toggles Go-to-Freq popup — works even when input is focused
   if(k==='g'&&vizMode==='spectrogram'){
@@ -1441,10 +1471,19 @@ window.addEventListener('keydown',(e)=>{
   // Don't fire other shortcuts when typing in an input/textarea
   const tag=document.activeElement?.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA'||document.activeElement?.isContentEditable)return;
+  // Arrow keys — seek forward/backward 5 seconds
+  if(e.key==='ArrowRight'||e.key==='ArrowLeft'){
+    e.preventDefault();
+    const seekStep=5;
+    const newT=Math.max(0,Math.min(maxDuration(),getCurrentTime()+(e.key==='ArrowRight'?seekStep:-seekStep)));
+    seekTo(newT);
+    return;
+  }
   switch(k){
     case ' ':case 'c':e.preventDefault();togglePlay();break;
     case 'v':stopPlayback();break;
     case 'r':toggleRepeat();break;
+    case 'n':toggleMute();break;
     case '1':loadLocal('left');break; case '2':loadLocal('right');break;
     case 'y':setPlayTarget('left');break;
     case 'u':setPlayTarget('both');break;
