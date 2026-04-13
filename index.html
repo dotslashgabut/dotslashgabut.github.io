@@ -60,7 +60,7 @@
 
         header {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 8px;
         }
 
         h1 {
@@ -212,6 +212,137 @@
             <a href="#web-tools" class="jump-button">Jump to Web Tools</a>
         </header>
     </div>
+
+    <!-- Highlight Section -->
+    <style>
+        .highlight-section {
+            padding: 10px 20px 20px;
+        }
+
+        .highlight-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .highlight-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .highlight-label span {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #aaa;
+        }
+
+        .highlight-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #444;
+        }
+
+        .highlight-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .highlight-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .highlight-card {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            background-color: var(--card-background);
+            transition: transform 0.2s, background-color 0.3s;
+            text-decoration: none;
+            display: block;
+        }
+
+        .highlight-card:hover {
+            transform: translateY(-4px);
+            background-color: var(--hover-color);
+        }
+
+        .highlight-thumb {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.3s;
+        }
+
+        .highlight-card:hover .highlight-thumb {
+            transform: scale(1.05);
+        }
+
+        .highlight-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: #e8a000;
+            color: #111;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 3px 7px;
+            border-radius: 4px;
+        }
+
+        .highlight-info {
+            padding: 10px 12px 12px;
+        }
+
+        .highlight-info h3 {
+            font-size: 0.88rem;
+            color: var(--primary-color);
+            font-weight: 600;
+            margin: 0;
+            text-align: center;
+        }
+    </style>
+
+    <div class="highlight-section">
+        <div class="highlight-container">
+            <div class="highlight-label">
+                <span>✦ Highlighted Tools</span>
+            </div>
+            <div class="highlight-grid">
+                <a class="highlight-card" href="alpha-extractor.html" target="_blank">
+                    <img class="highlight-thumb" src="img/alpha-extractor.jpg" alt="Alpha Extractor">
+                    <span class="highlight-badge">New</span>
+                    <div class="highlight-info">
+                        <h3>Alpha Extractor</h3>
+                    </div>
+                </a>
+                <a class="highlight-card" href="minimalist-media-compare.html" target="_blank">
+                    <img class="highlight-thumb" src="img/minimalist-media-compare.jpg" alt="Minimalist Media Compare">
+                    <span class="highlight-badge">New</span>
+                    <div class="highlight-info">
+                        <h3>Minimalist Media Compare</h3>
+                    </div>
+                </a>
+                <a class="highlight-card" href="minimalist-audio-compare.html" target="_blank">
+                    <img class="highlight-thumb" src="img/minimalist-audio-compare.jpg" alt="Minimalist Audio Compare">
+                    <span class="highlight-badge">New</span>
+                    <div class="highlight-info">
+                        <h3>Minimalist Audio Compare</h3>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+    <!-- End Highlight Section -->
 
     <style>
         .repo-section {
