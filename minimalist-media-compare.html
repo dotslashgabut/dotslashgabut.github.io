@@ -836,6 +836,33 @@
             mediaDims.left = mediaDims.right;
             mediaDims.right = tempDims;
 
+            // Swap UI Text Labels ("Media 1" / "Media 2")
+            const labelLeft = document.querySelector('#ui-left .ui-label');
+            const labelRight = document.querySelector('#ui-right .ui-label');
+            if (labelLeft && labelRight) {
+                const tempLabel = labelLeft.textContent;
+                labelLeft.textContent = labelRight.textContent;
+                labelRight.textContent = tempLabel;
+            }
+
+            // Swap Drop Zone Info Labels
+            const dropSpanLeft = document.querySelector('#drop-left span');
+            const dropSpanRight = document.querySelector('#drop-right span');
+            if (dropSpanLeft && dropSpanRight) {
+                const tempSpan = dropSpanLeft.textContent;
+                dropSpanLeft.textContent = dropSpanRight.textContent;
+                dropSpanRight.textContent = tempSpan;
+            }
+            
+            // Swap Fullscreen Drag Hint Info
+            const hintLeft = document.querySelectorAll('.drag-hint-half-inner')[0];
+            const hintRight = document.querySelectorAll('.drag-hint-half-inner')[1];
+            if (hintLeft && hintRight) {
+                const tempHint = hintLeft.textContent;
+                hintLeft.textContent = hintRight.textContent;
+                hintRight.textContent = tempHint;
+            }
+
             // Re-apply compare sizing logic if active
             if (compareMode) applyCompareSizing();
         }
@@ -911,7 +938,8 @@
         }  
   
         function loadURL(side) {  
-            const url = prompt(`Enter image or video URL for ${side === 'left' ? 'Media 1' : 'Media 2'}:`);  
+            const labelName = document.querySelector(`#ui-${side} .ui-label`).textContent;
+            const url = prompt(`Enter image or video URL for ${labelName}:`);  
             if (url) {  
                 // Basic check for common video extensions in the URL
                 const isVideo = url.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i) !== null;
