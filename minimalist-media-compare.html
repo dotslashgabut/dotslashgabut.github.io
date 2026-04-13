@@ -501,6 +501,9 @@
 
         <!-- Global Controls -->  
         <div class="ui-container" id="ui-global">  
+            <button onclick="swapMedia()" title="Swap Media (S)">
+                <svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
+            </button>
             <button onclick="toggleFullscreen()" title="Toggle Fullscreen (F)">
                 <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
             </button>
@@ -543,6 +546,7 @@
         <div class="shortcut"><span>Zoom</span> <span>Scroll / Pinch</span></div>  
         <div class="shortcut"><span>Reset View</span> <span class="key">R</span></div>  
         <div class="shortcut"><span>Toggle Fullscreen</span> <span class="key">F</span></div>
+        <div class="shortcut"><span>Swap Media</span> <span class="key">S</span></div>
         <div class="shortcut"><span>Load Local Left</span> <span class="key">1</span></div>  
         <div class="shortcut"><span>Load Local Right</span> <span class="key">2</span></div>  
         <div class="shortcut"><span>Load URL Left</span> <span class="key">U</span></div>  
@@ -801,6 +805,41 @@
             applyCompareSizing();
         }
 
+        function swapMedia() {
+            // Swap Img src
+            const tempImgSrc = imgLeft.src;
+            imgLeft.src = imgRight.src;
+            imgRight.src = tempImgSrc;
+
+            // Swap Video src
+            const tempVidSrc = videoLeft.src;
+            videoLeft.src = videoRight.src;
+            videoRight.src = tempVidSrc;
+
+            // Swap Display states (Img)
+            const tempImgDisplay = imgLeft.style.display;
+            imgLeft.style.display = imgRight.style.display;
+            imgRight.style.display = tempImgDisplay;
+
+            // Swap Display states (Video)
+            const tempVidDisplay = videoLeft.style.display;
+            videoLeft.style.display = videoRight.style.display;
+            videoRight.style.display = tempVidDisplay;
+
+            // Swap Video Current Time
+            const tempVidTime = videoLeft.currentTime;
+            videoLeft.currentTime = videoRight.currentTime;
+            videoRight.currentTime = tempVidTime;
+
+            // Swap Dimensions (cached)
+            const tempDims = mediaDims.left;
+            mediaDims.left = mediaDims.right;
+            mediaDims.right = tempDims;
+
+            // Re-apply compare sizing logic if active
+            if (compareMode) applyCompareSizing();
+        }
+
         function toggleTopMenu() {
             document.getElementById('top-menu-panel').classList.toggle('hidden');
         }
@@ -1036,6 +1075,7 @@
             switch(key) {  
                 case 'r': resetView(); break;
                 case 'f': toggleFullscreen(); break;
+                case 's': swapMedia(); break;
                 case '1': loadLocal('left'); break;
                 case '2': loadLocal('right'); break;
                 case 'u': loadURL('left'); break;
