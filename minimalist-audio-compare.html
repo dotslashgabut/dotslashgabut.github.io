@@ -583,6 +583,11 @@ function extractPCM(buffer) {
 function startAll() {
   const actx=getAudioCtx();
   if(actx.state==='suspended') actx.resume();
+  // If A/B loop is active and playhead is outside the region, snap to A
+  if(abLoopMode && abA !== null && abB !== null) {
+    const lo=Math.min(abA,abB), hi=Math.max(abA,abB);
+    if(masterTime < lo || masterTime >= hi) masterTime=lo;
+  }
   masterStartedAt=actx.currentTime-masterTime;
   for(const side of sides){
     if(!audio[side]) continue;
