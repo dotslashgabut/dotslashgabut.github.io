@@ -163,6 +163,34 @@
     }
     #vol-area label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: #444; }
 
+    #ab-group {
+      display: flex; align-items: stretch; flex-shrink: 0;
+      border-right: 1px solid var(--ui-border); height: 100%;
+    }
+    .btn-ab {
+      height: 100%; padding: 0 10px; min-width: 36px;
+      background: transparent; border: none; border-right: 1px solid var(--ui-border);
+      color: #444; cursor: pointer; font-family: inherit;
+      font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+      transition: all 0.12s; display: flex; align-items: center; justify-content: center; gap: 3px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .btn-ab:last-child { border-right: none; }
+    .btn-ab:hover { background: rgba(255,255,255,0.06); color: #aaa; }
+    .btn-ab.active { background: rgba(255,255,255,0.08); color: #fff; }
+    .btn-ab.set-a.active { color: #f0c040; }
+    .btn-ab.set-b.active { color: #60d0a0; }
+    .btn-ab.ab-loop.active { color: #fff; background: rgba(255,255,255,0.1); }
+    #ab-marker-a, #ab-marker-b {
+      position: absolute; top: 0; height: 100%; width: 1px; pointer-events: none; z-index: 5;
+    }
+    #ab-marker-a { background: #f0c040; display: none; }
+    #ab-marker-b { background: #60d0a0; display: none; }
+    #ab-region {
+      position: absolute; top: 0; height: 100%; pointer-events: none; z-index: 4;
+      background: rgba(255,220,80,0.07); display: none;
+    }
+
     #play-target-group {
       display: flex; align-items: stretch; flex-shrink: 0;
       border-right: 1px solid var(--ui-border);
@@ -313,8 +341,18 @@
       <button class="btn-play-target active" id="btn-play-both" onclick="setPlayTarget('both')"  title="Play both (U)">1+2</button>
       <button class="btn-play-target" id="btn-play-right" onclick="setPlayTarget('right')" title="Play Audio 2 only (I)" style="color:var(--accent-r)">2</button>
     </div>
+    <!-- A/B loop controls -->
+    <div id="ab-group">
+      <button class="btn-ab set-a" id="btn-ab-a" onclick="abSetA()" title="Set A point (A key)">A</button>
+      <button class="btn-ab set-b" id="btn-ab-b" onclick="abSetB()" title="Set B point (B key)">B</button>
+      <button class="btn-ab ab-loop" id="btn-ab-loop" onclick="abToggleLoop()" title="Toggle A→B loop (L key)">A↔B</button>
+      <button class="btn-ab" id="btn-ab-clear" onclick="abClear()" title="Clear A/B points (P key)">CLR</button>
+    </div>
     <div id="scrub-track">
       <div id="scrub-fill"></div>
+      <div id="ab-region"></div>
+      <div id="ab-marker-a"></div>
+      <div id="ab-marker-b"></div>
       <div id="scrub-head"></div>
       <div id="time-display">0:00 / 0:00</div>
     </div>
@@ -361,7 +399,7 @@
 
       <div class="panel-divider"></div>
 
-      <button class="btn-mode active" id="btn-layout-split" onclick="setLayout('split')">
+      <button class="btn-mode active" id="btn-layout-split" onclick="setLayout('split')" title="Side by Side (G)">
         <svg viewBox="0 0 24 24"><path d="M3 3h8v18H3zm10 0h8v18h-8z"/></svg>
         Side by Side
       </button>
@@ -430,10 +468,14 @@
     <div class="shortcut"><span>Spectrogram</span><span class="key">S</span></div>
     <div class="shortcut"><span>Spectrum</span><span class="key">X</span></div>
     <div class="shortcut"><span>Stereo Field</span><span class="key">E</span></div>
-    <div class="shortcut"><span>Side by Side</span><span class="key">B</span></div>
+    <div class="shortcut"><span>Side by Side</span><span class="key">G</span></div>
     <div class="shortcut"><span>Top / Bottom</span><span class="key">T</span></div>
     <div class="shortcut"><span>Overlay Slider</span><span class="key">O</span></div>
     <div class="shortcut"><span>Stretch align durations</span><span class="key">Z</span></div>
+    <div class="shortcut"><span>Set A point</span><span class="key">A</span></div>
+    <div class="shortcut"><span>Set B point</span><span class="key">B</span></div>
+    <div class="shortcut"><span>Toggle A↔B loop</span><span class="key">L</span></div>
+    <div class="shortcut"><span>Clear A/B points</span><span class="key">P</span></div>
     <div class="shortcut"><span>Click waveform / spec</span><span>seek to time</span></div>
     <div class="shortcut"><span>Spec zoom in / out</span><span><span class="key">+</span> / <span class="key">-</span></span></div>
     <div class="shortcut"><span>Spec zoom reset</span><span class="key">0</span></div>
@@ -460,6 +502,11 @@ let layoutMode = 'split';
 let splitPos   = 0.5;   // overlay slider 0-1
 let stretchMode = false; // stretch shorter audio to match longer duration visually
 let repeatMode  = false; // loop playback
+
+// A/B loop state
+let abA = null;   // seconds or null
+let abB = null;   // seconds or null
+let abLoopMode = false;
 
 // Spectrogram viewport: all four axes support zoom + pan
 let specFreqMin  = 0;     // Hz – bottom of visible freq range
@@ -621,10 +668,78 @@ function toggleModeButtons() {
 }
 
 // ═══════════════════════════════════════════════════
+//  A/B LOOP
+// ═══════════════════════════════════════════════════
+function abUpdateUI() {
+  const dur = maxDuration() || 1;
+  const mA = document.getElementById('ab-marker-a');
+  const mB = document.getElementById('ab-marker-b');
+  const reg = document.getElementById('ab-region');
+  if (abA !== null) {
+    mA.style.left = (abA / dur * 100) + '%';
+    mA.style.display = 'block';
+  } else {
+    mA.style.display = 'none';
+  }
+  if (abB !== null) {
+    mB.style.left = (abB / dur * 100) + '%';
+    mB.style.display = 'block';
+  } else {
+    mB.style.display = 'none';
+  }
+  if (abA !== null && abB !== null) {
+    const lo = Math.min(abA, abB) / dur * 100;
+    const hi = Math.max(abA, abB) / dur * 100;
+    reg.style.left = lo + '%';
+    reg.style.width = (hi - lo) + '%';
+    reg.style.display = 'block';
+  } else {
+    reg.style.display = 'none';
+  }
+  document.getElementById('btn-ab-a').classList.toggle('active', abA !== null);
+  document.getElementById('btn-ab-b').classList.toggle('active', abB !== null);
+  document.getElementById('btn-ab-loop').classList.toggle('active', abLoopMode);
+}
+
+function abSetA() {
+  abA = getCurrentTime();
+  // If A is placed after B, nudge B to stay ahead
+  if (abB !== null && abA >= abB) abB = null;
+  abUpdateUI();
+}
+
+function abSetB() {
+  abB = getCurrentTime();
+  // If B is placed before A, nudge A back
+  if (abA !== null && abB <= abA) abA = null;
+  abUpdateUI();
+}
+
+function abToggleLoop() {
+  abLoopMode = !abLoopMode;
+  abUpdateUI();
+}
+
+function abClear() {
+  abA = null; abB = null; abLoopMode = false;
+  abUpdateUI();
+}
+
+// Called each render tick to enforce A/B loop
+function abTick(t) {
+  if (!abLoopMode || abA === null || abB === null) return;
+  const lo = Math.min(abA, abB);
+  const hi = Math.max(abA, abB);
+  if (t >= hi) {
+    seekTo(lo);
+  }
+}
+
+// ═══════════════════════════════════════════════════
 //  RENDER LOOP
 // ═══════════════════════════════════════════════════
 function scheduleFrame() { if(animFrame) cancelAnimationFrame(animFrame); animFrame=requestAnimationFrame(renderLoop); }
-function renderLoop() { if(!masterPlaying) return; const t=getCurrentTime(); updateScrub(t); updateTimeDisplay(); renderFrame(); animFrame=requestAnimationFrame(renderLoop); }
+function renderLoop() { if(!masterPlaying) return; const t=getCurrentTime(); abTick(t); updateScrub(t); updateTimeDisplay(); renderFrame(); animFrame=requestAnimationFrame(renderLoop); }
 
 function renderFrame() {
   resizeCanvases();
@@ -1426,7 +1541,7 @@ function doScrub(e){
   seekTo(Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width))*maxDuration());
 }
 function maxDuration(){let d=0;for(const s of sides)if(audio[s])d=Math.max(d,audio[s].duration);return d||0;}
-function updateScrub(t){const p=maxDuration()>0?(t/maxDuration())*100:0;scrubFill.style.width=`${p}%`;scrubHead.style.left=`${p}%`;}
+function updateScrub(t){const p=maxDuration()>0?(t/maxDuration())*100:0;scrubFill.style.width=`${p}%`;scrubHead.style.left=`${p}%`;abUpdateUI();}
 function updateTimeDisplay(){timeDisp.textContent=`${fmt(getCurrentTime())} / ${fmt(maxDuration())}`;}
 
 // ═══════════════════════════════════════════════════
@@ -1495,8 +1610,12 @@ window.addEventListener('keydown',(e)=>{
     case 'm':toggleModeButtons();break;
     case 'w':setVizMode('waveform');break; case 's':setVizMode('spectrogram');break;
     case 'x':setVizMode('spectrum');break; case 'e':setVizMode('stereo');break;
-    case 'b':setLayout('split');break; case 't':setLayout('topbottom');break; case 'o':setLayout('overlay');break;
+    case 'g':setLayout('split');break; case 't':setLayout('topbottom');break; case 'o':setLayout('overlay');break;
     case 'z':toggleStretch();break;
+    case 'a':abSetA();break;
+    case 'b':abSetB();break;
+    case 'l':abToggleLoop();break;
+    case 'p':abClear();break;
     case 'f':toggleFullscreen();break; case 'h':toggleHelp();break;
     case '+':case '=':if(vizMode==='spectrogram')specZoomIn();break;
     case '-':if(vizMode==='spectrogram')specZoomOut();break;
