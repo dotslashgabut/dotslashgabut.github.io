@@ -439,6 +439,7 @@
     <div class="shortcut"><span>Spec zoom reset</span><span class="key">0</span></div>
     <div class="shortcut"><span>Spec freq zoom</span><span>scroll ↕</span></div>
     <div class="shortcut"><span>Spec time zoom</span><span>shift+scroll / scroll ↔</span></div>
+    <div class="shortcut"><span>Spec time zoom in / out</span><span><span class="key">9</span> / <span class="key">8</span></span></div>
     <div class="shortcut"><span>Spec pan</span><span>drag</span></div>
     <div class="shortcut"><span>Spec pinch zoom</span><span>2-finger pinch</span></div>
     <div class="shortcut"><span>Go to freq (toggle)</span><span class="key">G</span></div>
@@ -1500,6 +1501,8 @@ window.addEventListener('keydown',(e)=>{
     case '+':case '=':if(vizMode==='spectrogram')specZoomIn();break;
     case '-':if(vizMode==='spectrogram')specZoomOut();break;
     case '0':if(vizMode==='spectrogram')specZoomReset();break;
+    case '8':if(vizMode==='spectrogram'){const tMid8=(specTimeMin+specTimeMax)/2;specZoomTime(1.25,tMid8);updateZoomButtons();}break;
+    case '9':if(vizMode==='spectrogram'){const tMid9=(specTimeMin+specTimeMax)/2;specZoomTime(0.8,tMid9);updateZoomButtons();}break;
     case 'escape':document.getElementById('help-modal').classList.remove('visible');break;
     case 'tab':e.preventDefault();document.querySelectorAll('.ui-panel').forEach(p=>p.classList.toggle('hidden'));break;
   }
