@@ -460,19 +460,19 @@
         <div id="top-menu-panel">
             <!-- Compare Mode Controls -->
             <div class="ui-container" id="ui-compare">
-                <button id="btn-height" onclick="setCompareMode('height')" title="Compare by Height">
+                <button id="btn-height" onclick="setCompareMode('height')" title="Match Height (Z)">
                     <svg viewBox="0 0 24 24"><path d="M16 11h-4V3h-1v8H7l4.5 4.5L16 11zm-9 2v1h10v-1H7zm0 3v1h10v-1H7z"/></svg>
                     Match Height
                 </button>
-                <button id="btn-width" onclick="setCompareMode('width')" title="Compare by Width">
+                <button id="btn-width" onclick="setCompareMode('width')" title="Match Width (X)">
                     <svg viewBox="0 0 24 24"><path d="M13 16v-4h8v-1h-8V7l-4.5 4.5L13 16zm-2 1H4v1h7v-1zm-7-4H3v1h1v-1zm0-3H3v1h1V10z"/></svg>
                     Match Width
                 </button>
-                <button id="btn-ratio" onclick="setCompareMode('ratio')" title="Compare by Aspect Ratio">
+                <button id="btn-ratio" onclick="setCompareMode('ratio')" title="Match Ratio (C)">
                     <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z"/></svg>
                     Match Ratio
                 </button>
-                <button id="btn-resolution" onclick="setCompareMode('resolution')" title="Compare by Real Resolution">
+                <button id="btn-resolution" onclick="setCompareMode('resolution')" title="Real Resolution (V)">
                     <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12zM10 9h2.5v1.5H10V12h4v-4h-4z"/></svg>
                     Real Resolution
                 </button>
@@ -559,6 +559,10 @@
         <div class="shortcut"><span>Layout: Side by Side</span> <span class="key">W</span></div>
         <div class="shortcut"><span>Layout: T/B Slider</span> <span class="key">E</span></div>
         <div class="shortcut"><span>Layout: T/B Split</span> <span class="key">T</span></div>
+        <div class="shortcut"><span>Match Height</span> <span class="key">Z</span></div>
+        <div class="shortcut"><span>Match Width</span> <span class="key">X</span></div>
+        <div class="shortcut"><span>Match Ratio</span> <span class="key">C</span></div>
+        <div class="shortcut"><span>Real Resolution</span> <span class="key">V</span></div>
     </div>
   
     <script>  
@@ -1114,6 +1118,10 @@
                 case 'w': setLayoutMode('sbs'); break;
                 case 'e': setLayoutMode('tb'); break;
                 case 't': setLayoutMode('tb-ns'); break;
+                case 'z': setCompareMode('height'); break;
+                case 'x': setCompareMode('width'); break;
+                case 'c': setCompareMode('ratio'); break;
+                case 'v': setCompareMode('resolution'); break;
                 case 'escape': helpModal.classList.remove('visible'); break;
                 case 'tab':
                     e.preventDefault();
