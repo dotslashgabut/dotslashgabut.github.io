@@ -1334,13 +1334,21 @@
             </svg>
             <span class="lt-label">Overlay</span>
           </div>
-          <!-- Picture-in-Picture -->
+          <!-- Picture-in-Picture (A1 Big) -->
           <div class="layout-thumb" id="exp-lay-pip" onclick="expSetLayout('pip')">
             <svg viewBox="0 0 36 24">
               <rect x="1" y="1" width="34" height="22" fill="none" stroke="#3ecfff" stroke-width="1" />
               <rect x="19" y="13" width="15" height="9" fill="none" stroke="#ff6b3e" stroke-width="1" />
             </svg>
-            <span class="lt-label">PiP</span>
+            <span class="lt-label">PiP A1</span>
+          </div>
+          <!-- Picture-in-Picture (A2 Big) -->
+          <div class="layout-thumb" id="exp-lay-pip2" onclick="expSetLayout('pip2')">
+            <svg viewBox="0 0 36 24">
+              <rect x="1" y="1" width="34" height="22" fill="none" stroke="#ff6b3e" stroke-width="1" />
+              <rect x="19" y="13" width="15" height="9" fill="none" stroke="#3ecfff" stroke-width="1" />
+            </svg>
+            <span class="lt-label">PiP A2</span>
           </div>
         </div>
       </div>
@@ -2601,7 +2609,7 @@
 
     function expSetLayout(l) {
       expLayout = l;
-      ['split', 'topbottom', 'overlay', 'pip'].forEach(x => {
+      ['split', 'topbottom', 'overlay', 'pip', 'pip2'].forEach(x => {
         const el = document.getElementById(`exp-lay-${x}`);
         if (el) el.classList.toggle('active', x === l);
       });
@@ -2721,6 +2729,24 @@
           offCtx.fillRect(px + 6, py + 6, Math.min(pipName.length * 7 + 16, 200), 18);
           offCtx.fillStyle = '#ff6b3e'; offCtx.font = '9px SF Mono,monospace'; offCtx.textBaseline = 'middle';
           offCtx.fillText(pipName.length > 2 ? pipName : 'Audio 2', px + 12, py + 15);
+        } else if (layout === 'pip2') {
+          // Main = right full, inset = left bottom-right quarter
+          expRenderSide(offCtx, w, h, 'right', t, expViz, 0, 0, w, h);
+          expDrawLabel(offCtx, w, h, 'right', 'pip2');
+          const pw = Math.floor(w * 0.38), ph = Math.floor(h * 0.38);
+          const px = w - pw - 16, py = h - ph - 16;
+          offCtx.fillStyle = '#000'; offCtx.fillRect(px - 1, py - 1, pw + 2, ph + 2);
+          offCtx.save(); offCtx.beginPath(); offCtx.rect(px, py, pw, ph); offCtx.clip();
+          offCtx.translate(px, py);
+          expRenderSide(offCtx, w, h, 'left', t, expViz, 0, 0, pw, ph);
+          offCtx.restore();
+          offCtx.strokeStyle = '#3ecfff'; offCtx.lineWidth = 1; offCtx.strokeRect(px, py, pw, ph);
+          // PiP label
+          offCtx.fillStyle = 'rgba(0,0,0,0.55)';
+          const pipName = document.getElementById('name-left').textContent;
+          offCtx.fillRect(px + 6, py + 6, Math.min(pipName.length * 7 + 16, 200), 18);
+          offCtx.fillStyle = '#3ecfff'; offCtx.font = '9px SF Mono,monospace'; offCtx.textBaseline = 'middle';
+          offCtx.fillText(pipName.length > 2 ? pipName : 'Audio 1', px + 12, py + 15);
         }
       }
     }
