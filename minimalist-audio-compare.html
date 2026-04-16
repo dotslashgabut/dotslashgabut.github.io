@@ -2255,6 +2255,7 @@
 
     // "Go to frequency" popup
     function showGoToFreq() {
+      if (tooltipEl) tooltipEl.style.display = 'none';
       let popup = document.getElementById('goto-freq-popup');
       if (!popup) {
         popup = document.createElement('div');
@@ -2378,13 +2379,19 @@
       }
     });
 
+    function isModalOpen() {
+      return document.getElementById('help-modal').classList.contains('visible') ||
+             document.getElementById('export-modal').classList.contains('visible') ||
+             (document.getElementById('goto-freq-popup') && document.getElementById('goto-freq-popup').style.display !== 'none');
+    }
+
     window.addEventListener('mousemove', (e) => {
       // Mark as dragged if moved > 4px from mousedown point
       if (Math.abs(e.clientX - canvasMouseDownX) > 4 || Math.abs(e.clientY - canvasMouseDownY) > 4) canvasMouseDragged = true;
 
       // Tooltip (spectrogram only, when not panning)
-      if (vizMode === 'spectrogram' && !specPan.active) {
-        const tt = getOrCreateTooltip();
+      const tt = getOrCreateTooltip();
+      if (!isModalOpen() && vizMode === 'spectrogram' && !specPan.active) {
         const rect = canvasArea.getBoundingClientRect();
         if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
           const { freq, t } = canvasXYtoFreqTime(e, rect);
@@ -2396,6 +2403,8 @@
         } else {
           tt.style.display = 'none';
         }
+      } else if (tt) {
+        tt.style.display = 'none';
       }
 
       // Overlay divider drag (all viz modes)
@@ -2675,7 +2684,13 @@
 
     function showSpinner(side, on) { document.getElementById(`sp-${side}`).classList.toggle('active', on); }
     function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }
-    function toggleHelp(e) { if (e) e.stopPropagation(); document.getElementById('help-modal').classList.toggle('visible'); }
+    function toggleHelp(e) { 
+      if (e) e.stopPropagation(); 
+      const m = document.getElementById('help-modal');
+      const showing = !m.classList.contains('visible');
+      if (showing && tooltipEl) tooltipEl.style.display = 'none';
+      m.classList.toggle('visible'); 
+    }
     document.addEventListener('click', (e) => { const m = document.getElementById('help-modal'); if (m.classList.contains('visible') && !m.contains(e.target)) m.classList.remove('visible'); });
     window.addEventListener('resize', () => { spectrogramRowCache.left = null; spectrogramRowCache.right = null; renderFrame(); });
     requestAnimationFrame(() => { resizeCanvases(); renderFrame(); });
@@ -2693,6 +2708,7 @@
     let expCancelled = false;
 
     function openExportModal() {
+      if (tooltipEl) tooltipEl.style.display = 'none';
       document.getElementById('export-modal').classList.add('visible');
       expSyncUI();
     }
