@@ -2128,9 +2128,21 @@
       g.fillText('L', cx - radius - 10, cy + 3); g.fillText('R', cx + radius + 10, cy + 3); g.fillText('M', cx, cy - radius - 5); g.fillText('S', cx, cy + radius + 12); g.textAlign = 'left';
       let L, R;
       const analyser = audio[side]?.analyser;
-      if (analyser && buf.numberOfChannels >= 2) { const t0 = Math.floor(getCurrentTime() * buf.sampleRate), len = Math.min(1024, buf.length - t0); L = buf.getChannelData(0).subarray(t0, t0 + len); R = buf.getChannelData(1).subarray(t0, t0 + len); }
-      else if (analyser) { const td = new Float32Array(analyser.fftSize); analyser.getFloatTimeDomainData(td); L = td; R = td; }
-      else { const len = Math.min(2048, buf.length); L = buf.getChannelData(0).subarray(0, len); R = (buf.numberOfChannels >= 2 ? buf.getChannelData(1) : buf.getChannelData(0)).subarray(0, len); }
+      if (analyser) {
+        const t0 = Math.floor(getCurrentTime() * buf.sampleRate);
+        const len = Math.max(0, Math.min(1024, buf.length - t0));
+        if (len > 0) {
+          L = buf.getChannelData(0).subarray(t0, t0 + len);
+          R = (buf.numberOfChannels >= 2) ? buf.getChannelData(1).subarray(t0, t0 + len) : L;
+        } else {
+          // If seeking past end or file ended
+          L = new Float32Array(1024); R = new Float32Array(1024);
+        }
+      } else {
+        const len = Math.min(2048, buf.length);
+        L = buf.getChannelData(0).subarray(0, len);
+        R = (buf.numberOfChannels >= 2 ? buf.getChannelData(1) : buf.getChannelData(0)).subarray(0, len);
+      }
       const count = Math.min(L.length, R.length, 1024);
       g.strokeStyle = accent + 'aa'; g.lineWidth = 0.8; g.beginPath();
       for (let i = 0; i < count; i++) { const l = L[i], r = R[i]; const gx = cx + ((l - r) / Math.SQRT2) * radius, gy = cy - ((l + r) / Math.SQRT2) * radius; i === 0 ? g.moveTo(gx, gy) : g.lineTo(gx, gy); }
