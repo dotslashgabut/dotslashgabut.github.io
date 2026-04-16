@@ -598,6 +598,39 @@
       margin-left: 4px;
     }
 
+    .btn-mode-row {
+      display: flex;
+      gap: 0;
+    }
+
+    .btn-mode-row .btn-mode {
+      flex: 1;
+    }
+
+    .btn-mode-toggle {
+      width: 28px;
+      height: 34px;
+      flex-shrink: 0;
+      border-left: none;
+      border-radius: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      font-size: 8px;
+      color: #444;
+    }
+
+    .btn-mode-toggle:hover {
+      background: var(--ui-hover);
+      color: var(--ui-hover-text);
+    }
+
+    .btn-mode-toggle.open {
+      background: rgba(255,255,255,0.08);
+      color: #aaa;
+    }
+
     .btn-submode {
       height: 28px;
       padding: 0 10px;
@@ -977,6 +1010,39 @@
     .layout-thumb.active .lt-label {
       color: #888;
     }
+
+    /* ─── FOCUS layouts ─── */
+    #canvas-area.layout-focus1,
+    #canvas-area.layout-focus2 {
+      display: flex;
+    }
+
+    #canvas-area.layout-focus1 .side-canvas-wrap,
+    #canvas-area.layout-focus2 .side-canvas-wrap {
+      position: relative;
+      overflow: hidden;
+    }
+
+    #canvas-area.layout-focus1 #wrap-left {
+      flex: 1;
+    }
+
+    #canvas-area.layout-focus1 #wrap-right {
+      display: none;
+    }
+
+    #canvas-area.layout-focus2 #wrap-left {
+      display: none;
+    }
+
+    #canvas-area.layout-focus2 #wrap-right {
+      flex: 1;
+    }
+
+    #canvas-area.layout-focus1 #divider,
+    #canvas-area.layout-focus2 #divider {
+      display: none;
+    }
   </style>
 </head>
 
@@ -1096,12 +1162,15 @@
           </svg>
           Waveform
         </button>
-        <button class="btn-mode" id="btn-spectrogram" onclick="setVizMode('spectrogram')">
-          <svg viewBox="0 0 24 24">
-            <path d="M7 2v11h3v9l7-12h-4l4-8z" />
-          </svg>
-          Spectrogram
-        </button>
+        <div class="btn-mode-row">
+          <button class="btn-mode" id="btn-spectrogram" onclick="setVizMode('spectrogram')">
+            <svg viewBox="0 0 24 24">
+              <path d="M7 2v11h3v9l7-12h-4l4-8z" />
+            </svg>
+            Spectrogram
+          </button>
+          <button class="btn-mode-toggle" id="btn-spec-dropdown" onclick="toggleSpecDropdown(event)" title="Spectrogram options">&#9660;</button>
+        </div>
         <div class="mode-group" id="spec-submodes" style="display:none">
           <button class="btn-submode active" id="sub-linear" onclick="setSpecScale('linear')">Linear freq</button>
           <button class="btn-submode" id="sub-log" onclick="setSpecScale('log')">Log freq</button>
@@ -1151,6 +1220,18 @@
             <path d="M2 3h20v18H2zm9 1v16h2V4z" />
           </svg>
           Overlay Slider
+        </button>
+        <button class="btn-mode" id="btn-layout-focus1" onclick="setLayout('focus1')">
+          <svg viewBox="0 0 24 24">
+            <path d="M3 3h18v18H3zm2 2v14h10V5zm12 0v14h2V5z" />
+          </svg>
+          Focus Audio-1
+        </button>
+        <button class="btn-mode" id="btn-layout-focus2" onclick="setLayout('focus2')">
+          <svg viewBox="0 0 24 24">
+            <path d="M3 3h18v18H3zm2 2v14h2V5zm4 0v14h10V5z" />
+          </svg>
+          Focus Audio-2
         </button>
       </div>
     </div>
@@ -1235,6 +1316,8 @@
       <div class="shortcut"><span>Side by Side</span><span class="key">D</span></div>
       <div class="shortcut"><span>Top / Bottom</span><span class="key">T</span></div>
       <div class="shortcut"><span>Overlay Slider</span><span class="key">O</span></div>
+      <div class="shortcut"><span>Focus Audio-1</span><span><span class="key">Q</span> / <span class="key">3</span></span></div>
+      <div class="shortcut"><span>Focus Audio-2</span><span><span class="key">K</span> / <span class="key">4</span></span></div>
       <div class="shortcut"><span>Stretch align durations</span><span class="key">Z</span></div>
       <div class="shortcut"><span>Set A point</span><span class="key">A</span></div>
       <div class="shortcut"><span>Set B point</span><span class="key">B</span></div>
@@ -1677,7 +1760,14 @@
           if (audio[side]) drawViz(g, c, side, t);
         }
       } else {
-        wrapRight.style.clipPath = ''; divider.style.left = '50%'; divider.style.top = ''; divider.style.width = ''; divider.style.height = '';
+        // split / focus1 / focus2 — side-by-side canvases, no clipping needed
+        wrapRight.style.clipPath = '';
+        if (layoutMode === 'focus1' || layoutMode === 'focus2') {
+          divider.style.display = 'none';
+        } else {
+          divider.style.display = '';
+          divider.style.left = '50%'; divider.style.top = ''; divider.style.width = ''; divider.style.height = '';
+        }
         for (const side of sides) {
           const c = cv[side], g = ctx2d[side];
           g.clearRect(0, 0, c.width, c.height); drawBg(g, c.width, c.height);
@@ -1687,6 +1777,7 @@
     }
 
     function drawViz(g, c, side, t) {
+      if (!c.width || !c.height) return;
       if (vizMode === 'waveform') drawWaveform(g, c, side, t);
       else if (vizMode === 'spectrogram') drawSpectrogramView(g, c, side, t);
       else if (vizMode === 'spectrum') drawSpectrum(g, c, side);
@@ -2056,12 +2147,24 @@
       document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active'));
       document.getElementById(`btn-${mode}`).classList.add('active');
       document.getElementById(`btn-layout-${layoutMode}`).classList.add('active');
-      document.getElementById('spec-submodes').style.display = mode === 'spectrogram' ? 'flex' : 'none';
+      // spec-submodes visibility is controlled by the dropdown toggle; only hide when leaving spectrogram
+      if (mode !== 'spectrogram') { document.getElementById('spec-submodes').style.display = 'none'; document.getElementById('btn-spec-dropdown').classList.remove('open'); }
       // Hide freq|time tooltip when leaving spectrogram mode (e.g. via keyboard shortcut)
       if (mode !== 'spectrogram' && tooltipEl) tooltipEl.style.display = 'none';
       // Show crosshair cursor on waveform and spectrogram (both support click-to-seek)
       canvasArea.style.cursor = (mode === 'spectrogram' || mode === 'waveform') ? 'crosshair' : '';
       if (!masterPlaying) renderFrame();
+    }
+
+    function toggleSpecDropdown(e) {
+      if (e) e.stopPropagation();
+      const submodes = document.getElementById('spec-submodes');
+      const btn = document.getElementById('btn-spec-dropdown');
+      const isOpen = submodes.style.display !== 'none';
+      submodes.style.display = isOpen ? 'none' : 'flex';
+      btn.classList.toggle('open', !isOpen);
+      // Also activate spectrogram mode if not already
+      if (!isOpen && vizMode !== 'spectrogram') setVizMode('spectrogram');
     }
 
     function setSpecScale(scale) {
@@ -2427,12 +2530,24 @@
 
     function setLayout(mode) {
       layoutMode = mode;
-      canvasArea.classList.remove('layout-split', 'layout-overlay', 'layout-topbottom');
+      canvasArea.classList.remove('layout-split', 'layout-overlay', 'layout-topbottom', 'layout-focus1', 'layout-focus2');
       canvasArea.classList.add(`layout-${mode}`);
-      document.getElementById('btn-layout-split').classList.toggle('active', mode === 'split');
-      document.getElementById('btn-layout-topbottom').classList.toggle('active', mode === 'topbottom');
-      document.getElementById('btn-layout-overlay').classList.toggle('active', mode === 'overlay');
-      if (mode === 'split' || mode === 'topbottom') { wrapRight.style.clipPath = ''; splitPos = 0.5; divider.style.left = '50%'; divider.style.top = ''; divider.style.width = ''; divider.style.height = ''; }
+      ['split','topbottom','overlay','focus1','focus2'].forEach(m => {
+        const el = document.getElementById(`btn-layout-${m}`);
+        if (el) el.classList.toggle('active', m === mode);
+      });
+      if (mode === 'split' || mode === 'topbottom' || mode === 'focus1' || mode === 'focus2') {
+        wrapRight.style.clipPath = ''; splitPos = 0.5;
+        divider.style.display = (mode === 'focus1' || mode === 'focus2') ? 'none' : '';
+        divider.style.left = '50%'; divider.style.top = ''; divider.style.width = ''; divider.style.height = '';
+      } else {
+        divider.style.display = '';
+      }
+      
+      if (mode === 'focus1') setPlayTarget('left');
+      else if (mode === 'focus2') setPlayTarget('right');
+      else setPlayTarget('both');
+
       spectrogramRowCache.left = null; spectrogramRowCache.right = null;
       renderFrame();
     }
@@ -2525,6 +2640,7 @@
         case 'w': setVizMode('waveform'); break; case 's': setVizMode('spectrogram'); break;
         case 'x': setVizMode('spectrum'); break; case 'e': setVizMode('stereo'); break;
         case 'd': setLayout('split'); break; case 't': setLayout('topbottom'); break; case 'o': setLayout('overlay'); break;
+        case 'q': case '3': setLayout('focus1'); break; case 'k': case '4': setLayout('focus2'); break;
         case 'z': toggleStretch(); break;
         case 'a': abSetA(); break;
         case 'b': abSetB(); break;
@@ -2580,7 +2696,11 @@
       document.getElementById('exp-src-2').classList.toggle('active', s === '2');
       document.getElementById('exp-src-both').classList.toggle('active', s === 'both');
       document.getElementById('exp-layout-section').style.display = s === 'both' ? 'block' : 'none';
+      // Audio source section only visible when visual source is "Audio 1 + 2"
       document.getElementById('exp-audio-src-section').style.display = s === 'both' ? 'block' : 'none';
+      // Auto-select matching audio source when a single visual source is chosen
+      if (s === '1') expSetAudioSrc('1');
+      else if (s === '2') expSetAudioSrc('2');
     }
 
     function expSetAudioSrc(s) {
@@ -3095,15 +3215,17 @@
           },
           error: (e) => { showExpError('Video encoder error: ' + e.message); }
         });
-        await videoEncoder.configure({
+        const videoConfig = {
           codec: chosenVideoCodec.codec,
           width: outW,
           height: outH,
           bitrate: videoBitrate,
           framerate: fps,
           latencyMode: 'quality',
-          avc: { format: 'avc' }
-        });
+        };
+        // avc format option only applies to H.264 (MP4) — not VP8/VP9 (WebM)
+        if (expFormat === 'mp4') videoConfig.avc = { format: 'avc' };
+        await videoEncoder.configure(videoConfig);
       } catch (e) {
         showExpError('Could not configure video encoder (' + chosenVideoCodec.label + '): ' + e.message);
         return;
