@@ -2249,7 +2249,10 @@
         popup.id = 'goto-freq-popup';
         popup.style.cssText = 'position:absolute;bottom:70px;left:50%;transform:translateX(-50%);z-index:200;background:rgba(14,14,14,0.97);border:1px solid #333;padding:12px 16px;display:flex;flex-direction:column;gap:8px;min-width:240px;backdrop-filter:blur(8px)';
         popup.innerHTML = `
-      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#666;margin-bottom:2px">Go to Frequency</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+        <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#666">Go to Frequency</div>
+        <button onclick="closeGoToFreq()" style="background:none;border:none;color:#888;cursor:pointer;font-size:14px;padding:0;line-height:1" title="Close">&times;</button>
+      </div>
       <div style="display:flex;gap:6px;align-items:center">
         <input id="goto-freq-input" type="number" placeholder="e.g. 1000" min="0" max="48000"
           style="flex:1;background:#111;border:1px solid #333;color:#ccc;font-family:inherit;font-size:12px;padding:5px 8px;outline:none;width:100px">
