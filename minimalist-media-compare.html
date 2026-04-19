@@ -312,6 +312,50 @@
   
         .hidden { opacity: 0; pointer-events: none; }
 
+        /* Export Modal */
+        #export-modal {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--ui-bg);
+            border: 1px solid var(--ui-border);
+            padding: 20px 24px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            display: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            min-width: 260px;
+        }
+        #export-modal.visible { display: block; }
+        #export-modal h2 { margin: 0 0 14px 0; color: #fff; font-weight: 400; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; }
+        #export-modal .export-options { display: flex; flex-direction: column; gap: 8px; }
+        #export-modal .export-btn {
+            width: 100%; height: 40px; padding: 0 14px;
+            font-size: 11px; letter-spacing: 0.8px; text-transform: uppercase;
+            display: flex; align-items: center; gap: 10px; justify-content: flex-start;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        #export-modal .export-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+        #export-modal .export-close {
+            position: absolute; top: 10px; right: 10px;
+            width: 28px; height: 28px; border: none;
+            background: transparent; color: #555; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            padding: 0;
+        }
+        #export-modal .export-close:hover { color: #fff; background: transparent; }
+        #export-modal .export-close svg { width: 16px; height: 16px; }
+        #export-modal .export-sep {
+            border: none; border-top: 1px solid var(--ui-border); margin: 8px 0;
+        }
+        #export-modal .export-label {
+            font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase; color: #555; margin-bottom: 2px;
+        }
+        #export-progress {
+            margin-top: 10px; font-size: 11px; color: #666;
+            letter-spacing: 0.5px; text-align: center; display: none;
+        }
+
         /* Drag & Drop Overlays */
         .drop-zone {
             position: absolute;
@@ -520,7 +564,10 @@
             </button>  
             <button onclick="toggleHelp()" title="Help (H)">  
                 <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>  
-            </button>  
+            </button>
+            <button onclick="toggleExportModal()" title="Export Image (P)">
+                <svg viewBox="0 0 24 24"><path d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 14H4V7h4.05l1.83-2h4.24l1.83 2H20v12zM12 8c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z"/></svg>
+            </button>
         </div>  
   
         <!-- Left Image Controls -->  
@@ -570,6 +617,7 @@
                 <div class="shortcut-group">
                     <div class="shortcut-group-title">UI</div>
                     <div class="shortcut"><span>Fullscreen</span> <span class="key">F</span></div>
+                    <div class="shortcut"><span>Export</span> <span class="key">P</span></div>
                     <div class="shortcut"><span>Toggle Menus</span> <span class="key">M</span></div>
                     <div class="shortcut"><span>Toggle All UI</span> <span class="key">Tab</span></div>
                     <div class="shortcut"><span>Help</span> <span class="key">H</span></div>
@@ -595,6 +643,32 @@
         </div>
     </div>
   
+    <!-- Export Modal -->
+    <div id="export-modal">
+        <button class="export-close" onclick="toggleExportModal()" title="Close">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+        <h2>Export</h2>
+        <div class="export-options">
+            <div class="export-label">Current View</div>
+            <button class="export-btn" onclick="exportView('screen')" title="Export exactly what is visible on screen">
+                <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/></svg>
+                Full Screen View
+            </button>
+            <hr class="export-sep">
+            <div class="export-label">Individual Media</div>
+            <button class="export-btn" onclick="exportView('left')" title="Export Media 1 at full resolution">
+                <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                Media 1 (full res)
+            </button>
+            <button class="export-btn" onclick="exportView('right')" title="Export Media 2 at full resolution">
+                <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                Media 2 (full res)
+            </button>
+        </div>
+        <div id="export-progress">Exporting…</div>
+    </div>
+
     <script>  
         // State  
         let splitPos = 50;  
@@ -1000,13 +1074,15 @@
         // Event Listeners: Mouse Interaction  
         app.addEventListener('mousemove', (e) => {
             if (!isDragging) {
-                // Move slider to follow cursor
-                if (layoutMode === 'tb') {
-                    splitPos = (e.clientY / window.innerHeight) * 100;
-                } else if (layoutMode === 'lr') {
-                    splitPos = (e.clientX / window.innerWidth) * 100;
+                // Move slider to follow cursor — paused while export modal is open
+                if (!exportModal.classList.contains('visible')) {
+                    if (layoutMode === 'tb') {
+                        splitPos = (e.clientY / window.innerHeight) * 100;
+                    } else if (layoutMode === 'lr') {
+                        splitPos = (e.clientX / window.innerWidth) * 100;
+                    }
+                    updateSplit();
                 }
-                updateSplit();
             } else {
                 // Pan images
                 panX = initialPanX + (e.clientX - startX) / zoom;
@@ -1068,7 +1144,7 @@
                     panX = initialPanX + (e.touches[0].clientX - startX) / zoom;
                     panY = initialPanY + (e.touches[0].clientY - startY) / zoom;
                     updateTransform();
-                } else if (touchMode === 'slider') {
+                } else if (touchMode === 'slider' && !exportModal.classList.contains('visible')) {
                     if (layoutMode === 'tb') {
                         splitPos = (e.touches[0].clientY / window.innerHeight) * 100;
                     } else if (layoutMode === 'lr') {
@@ -1178,6 +1254,7 @@
                 case 'u': loadURL('left'); break;
                 case 'i': loadURL('right'); break;
                 case 'h': toggleHelp(); break;
+                case 'p': toggleExportModal(); break;
                 case 'm': toggleTopMenu(); break;
                 case 'q': setLayoutMode('lr'); break;
                 case 'w': setLayoutMode('sbs'); break;
@@ -1271,6 +1348,257 @@
             setMedia(side, url, file.type.startsWith('video/'));
         });
 
+        // ── Export Functions ────────────────────────────────────────────────
+
+        const exportModal = document.getElementById('export-modal');
+        const exportProgress = document.getElementById('export-progress');
+
+        function toggleExportModal() {
+            exportModal.classList.toggle('visible');
+            if (helpModal.classList.contains('visible')) helpModal.classList.remove('visible');
+        }
+
+        /**
+         * Draws a media element (img or video) onto a canvas context,
+         * applying the same scale/translate transform and layout clipping
+         * that the CSS applies on screen.
+         *
+         * @param {CanvasRenderingContext2D} ctx
+         * @param {HTMLImageElement|HTMLVideoElement} el   – the media element
+         * @param {object} opts
+         *   cw, ch      – canvas dimensions
+         *   clipLeft    – left clip fraction (0–1) for slider
+         *   clipTop     – top clip fraction  (0–1) for slider
+         *   clipRight   – right clip fraction (0–1) — fraction from right edge to clip
+         *   clipBottom  – bottom clip fraction (0–1)
+         *   regionX/Y/W/H – optional: only draw into a sub-region of the canvas
+         */
+        function drawMediaOnCanvas(ctx, el, opts) {
+            const {
+                cw, ch,
+                clipLeft = 0, clipTop = 0, clipRight = 0, clipBottom = 0,
+                regionX = 0, regionY = 0, regionW = cw, regionH = ch,
+            } = opts;
+
+            // Natural source dimensions
+            const sw = el instanceof HTMLVideoElement ? el.videoWidth  : el.naturalWidth;
+            const sh = el instanceof HTMLVideoElement ? el.videoHeight : el.naturalHeight;
+            if (!sw || !sh) return;
+
+            // Replicate CSS `object-fit: contain` + the zoom/pan transform.
+            // The layer's flexbox centres the image; the transform is scale+translate.
+            // Rendered (pre-transform) size via contain-fit:
+            const containerW = regionW;
+            const containerH = regionH;
+            const scaleContain = Math.min(containerW / sw, containerH / sh);
+
+            // Respect explicit width/height set by compare mode
+            let renderedW, renderedH;
+            if (el.style.width && el.style.height) {
+                renderedW = parseFloat(el.style.width);
+                renderedH = parseFloat(el.style.height);
+            } else {
+                renderedW = sw * scaleContain;
+                renderedH = sh * scaleContain;
+            }
+
+            // Centre position of the image inside its region (pre-zoom)
+            const imgX = regionX + (regionW - renderedW) / 2;
+            const imgY = regionY + (regionH - renderedH) / 2;
+
+            // Apply the zoom/pan transform (same maths as CSS transform-origin:center)
+            // CSS: scale(zoom) translate(panX, panY) applied at the container center
+            // The transform-origin is the layer center (full viewport center for all modes).
+            // CSS matrix: translate(origin) scale(zoom) translate(panX,panY) translate(-origin)
+            // So: finalPos = origin + zoom*(imgPos - origin + panOffset) where panOffset = pan*zoom... wait:
+            // CSS `scale(z) translate(px,py)` = first translate by (px,py), then scale by z, around origin.
+            // Result for a point p relative to origin: p_new = origin + z*(p - origin + [px,py])
+            // imgX/imgY are already absolute canvas coords, so relative to origin:
+            const originX = regionX + regionW / 2;
+            const originY = regionY + regionH / 2;
+
+            // Final position after zoom + pan
+            const finalX = originX + zoom * (imgX - originX + panX);
+            const finalY = originY + zoom * (imgY - originY + panY);
+            const finalW = renderedW * zoom;
+            const finalH = renderedH * zoom;
+
+            // Clipping region for the slider/layout
+            const clipX1 = regionX + clipLeft   * regionW;
+            const clipY1 = regionY + clipTop    * regionH;
+            const clipX2 = regionX + (1 - clipRight)  * regionW;
+            const clipY2 = regionY + (1 - clipBottom) * regionH;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(clipX1, clipY1, clipX2 - clipX1, clipY2 - clipY1);
+            ctx.clip();
+            ctx.drawImage(el, finalX, finalY, finalW, finalH);
+            ctx.restore();
+        }
+
+        async function exportView(mode) {
+            exportProgress.style.display = 'block';
+            exportProgress.textContent = 'Rendering…';
+
+            // Small yield to let the UI update
+            await new Promise(r => setTimeout(r, 30));
+
+            try {
+                if (mode === 'left' || mode === 'right') {
+                    await exportSingleMedia(mode);
+                } else {
+                    await exportScreenView();
+                }
+            } catch (err) {
+                console.error('Export failed:', err);
+                exportProgress.textContent = 'Export failed. See console.';
+                setTimeout(() => { exportProgress.style.display = 'none'; }, 2500);
+                return;
+            }
+
+            exportProgress.textContent = 'Done!';
+            setTimeout(() => {
+                exportProgress.style.display = 'none';
+                exportModal.classList.remove('visible');
+            }, 800);
+        }
+
+        /** Export a single media at its native resolution (ignoring zoom/pan/layout). */
+        async function exportSingleMedia(side) {
+            const img = document.getElementById(`img-${side}`);
+            const vid = document.getElementById(`video-${side}`);
+            const isVideo = vid.style.display !== 'none';
+            const el = isVideo ? vid : img;
+
+            const sw = isVideo ? el.videoWidth  : el.naturalWidth;
+            const sh = isVideo ? el.videoHeight : el.naturalHeight;
+
+            if (!sw || !sh) {
+                exportProgress.textContent = 'No media loaded on that side.';
+                setTimeout(() => { exportProgress.style.display = 'none'; }, 2000);
+                return;
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width  = sw;
+            canvas.height = sh;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(el, 0, 0, sw, sh);
+
+            triggerDownload(canvas, `media-${side}.png`);
+        }
+
+        /** Export the full screen view, replicating the current layout + zoom/pan + clip. */
+        async function exportScreenView() {
+            const cw = window.innerWidth;
+            const ch = window.innerHeight;
+
+            const canvas = document.createElement('canvas');
+            canvas.width  = cw;
+            canvas.height = ch;
+            const ctx = canvas.getContext('2d');
+
+            // Dark background
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, cw, ch);
+
+            const imgL = document.getElementById('img-left');
+            const imgR = document.getElementById('img-right');
+            const vidL = document.getElementById('video-left');
+            const vidR = document.getElementById('video-right');
+
+            const elL = vidL.style.display !== 'none' ? vidL : imgL;
+            const elR = vidR.style.display !== 'none' ? vidR : imgR;
+
+            const splitFrac = splitPos / 100; // 0-1
+
+            if (layoutMode === 'lr') {
+                // Left layer: full canvas, no clip
+                drawMediaOnCanvas(ctx, elL, { cw, ch });
+                // Right layer: clipped from splitPos% leftward
+                drawMediaOnCanvas(ctx, elR, { cw, ch, clipLeft: splitFrac });
+                // Slider line
+                ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+                ctx.lineWidth   = 1;
+                ctx.beginPath();
+                ctx.moveTo(splitFrac * cw, 0);
+                ctx.lineTo(splitFrac * cw, ch);
+                ctx.stroke();
+
+            } else if (layoutMode === 'tb') {
+                // Left (top) layer: full canvas, no clip
+                drawMediaOnCanvas(ctx, elL, { cw, ch });
+                // Right (bottom) layer: clip top portion
+                drawMediaOnCanvas(ctx, elR, { cw, ch, clipTop: splitFrac });
+                // Horizontal slider line
+                ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+                ctx.lineWidth   = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, splitFrac * ch);
+                ctx.lineTo(cw, splitFrac * ch);
+                ctx.stroke();
+
+            } else if (layoutMode === 'sbs') {
+                // Left: left half
+                drawMediaOnCanvas(ctx, elL, {
+                    cw, ch,
+                    regionX: 0, regionY: 0, regionW: cw / 2, regionH: ch,
+                });
+                // Right: right half
+                drawMediaOnCanvas(ctx, elR, {
+                    cw, ch,
+                    regionX: cw / 2, regionY: 0, regionW: cw / 2, regionH: ch,
+                });
+                // Divider line
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth   = 1;
+                ctx.beginPath();
+                ctx.moveTo(cw / 2, 0);
+                ctx.lineTo(cw / 2, ch);
+                ctx.stroke();
+
+            } else if (layoutMode === 'tb-ns') {
+                // Top: top half
+                drawMediaOnCanvas(ctx, elL, {
+                    cw, ch,
+                    regionX: 0, regionY: 0, regionW: cw, regionH: ch / 2,
+                });
+                // Bottom: bottom half
+                drawMediaOnCanvas(ctx, elR, {
+                    cw, ch,
+                    regionX: 0, regionY: ch / 2, regionW: cw, regionH: ch / 2,
+                });
+                // Divider line
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth   = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, ch / 2);
+                ctx.lineTo(cw, ch / 2);
+                ctx.stroke();
+            }
+
+            triggerDownload(canvas, 'compare-view.png');
+        }
+
+        function triggerDownload(canvas, filename) {
+            canvas.toBlob((blob) => {
+                if (!blob) { throw new Error('Canvas toBlob returned null'); }
+                const url = URL.createObjectURL(blob);
+                const a   = document.createElement('a');
+                a.href     = url;
+                a.download = filename;
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
+            }, 'image/png');
+        }
+
+        // Close export modal on backdrop click
+        app.addEventListener('click', () => {
+            if (exportModal.classList.contains('visible')) {
+                exportModal.classList.remove('visible');
+            }
+        });
+
     </script>  
-</body>  
 </html>
