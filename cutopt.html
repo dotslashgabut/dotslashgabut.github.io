@@ -1814,6 +1814,31 @@ function addPPaper(w,h,label,qty){
   rndPaper();
 }
 function remPPaper(id){paperPieces=paperPieces.filter(p=>p.id!==id);rndPaper()}
+function updPPaper(i,field,val){
+  if(!paperPieces[i])return;
+  if(field==='w'||field==='h')paperPieces[i][field]=parseFloat(val)||'';
+  else if(field==='qty')paperPieces[i][field]=parseInt(val)||1;
+  else paperPieces[i][field]=val;
+  // Refresh only the summary panel (avoid re-rendering clist which would lose focus)
+  const validPieces=paperPieces.filter(p=>parseFloat(p.w)>0&&parseFloat(p.h)>0);
+  document.getElementById('paperPieceCount').textContent=validPieces.length;
+  const list=document.getElementById('paperPieceList');
+  if(!validPieces.length){
+    list.innerHTML='<div class="empty-s"><div class="ei" style="font-size:1.8rem">📄</div><p>No pieces added yet</p></div>';
+  } else {
+    list.innerHTML=validPieces.map(p=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:6px;background:var(--surface2);margin-bottom:4px;font-family:var(--mono);font-size:.76rem">
+        <span style="display:flex;align-items:center;gap:6px">
+          <span style="width:8px;height:8px;border-radius:2px;background:${paperColors[p.label||p.w+'×'+p.h]||'var(--border)'};display:inline-block;flex-shrink:0"></span>
+          <b>${p.label||'Unnamed'}</b> ${p.w}×${p.h} mm
+        </span>
+        <span style="display:flex;align-items:center;gap:8px;color:var(--text-muted)">
+          x${p.qty}
+          <button class="btn-del" style="width:24px;height:24px;font-size:.75rem" onclick="remPPaper(${p.id})">x</button>
+        </span>
+      </div>`).join('');
+  }
+}
 function clearPPaper(){paperPieces=[];paperColors={};paperCI=0;rndPaper()}
 function rndPaper(){
   const validPieces=paperPieces.filter(p=>parseFloat(p.w)>0&&parseFloat(p.h)>0);
@@ -1839,10 +1864,10 @@ function rndPaper(){
   // Custom tab: committed rows + one fresh draft row at the bottom
   clist.innerHTML=paperPieces.map((p,i)=>`
     <div class="pr-paper">
-      <input type="number" min="1" placeholder="W mm" value="${p.w}" onchange="paperPieces[${i}].w=parseFloat(this.value)||''">
-      <input type="number" min="1" placeholder="H mm" value="${p.h}" onchange="paperPieces[${i}].h=parseFloat(this.value)||''">
-      <input type="text" placeholder="Label" value="${p.label}" onchange="paperPieces[${i}].label=this.value">
-      <input type="number" min="1" max="9999" placeholder="1" value="${p.qty}" onchange="paperPieces[${i}].qty=parseInt(this.value)||1" style="text-align:center">
+      <input type="number" min="1" placeholder="W mm" value="${p.w}" oninput="updPPaper(${i},'w',this.value)">
+      <input type="number" min="1" placeholder="H mm" value="${p.h}" oninput="updPPaper(${i},'h',this.value)">
+      <input type="text" placeholder="Label" value="${p.label}" oninput="updPPaper(${i},'label',this.value)">
+      <input type="number" min="1" max="9999" placeholder="1" value="${p.qty}" oninput="updPPaper(${i},'qty',this.value)" style="text-align:center">
       <button class="btn-del" onclick="remPPaper(${p.id})">✕</button>
     </div>`).join('')+`
   <div class="pr-paper" id="paperDraftRow">
