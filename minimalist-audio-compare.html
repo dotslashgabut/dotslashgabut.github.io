@@ -2375,6 +2375,7 @@
         specPan.startFMax = specFreqMax || nyq;
         specPan.startTMin = specTimeMin;
         specPan.startTMax = specTimeMax;
+        if (layoutMode === 'topbottom') { const wL = document.getElementById('wrap-left').getBoundingClientRect(); specPan.startPane = e.clientY <= wL.bottom ? 'left' : 'right'; } else { specPan.startPane = null; }
         canvasArea.style.cursor = 'grabbing';
       }
     });
@@ -2394,7 +2395,15 @@
       if (!isModalOpen() && vizMode === 'spectrogram' && !specPan.active) {
         const rect = canvasArea.getBoundingClientRect();
         if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
-          const { freq, t } = canvasXYtoFreqTime(e, rect);
+          // In top/bottom layout each pane is half the height, so use the pane rect
+          // the cursor is over for accurate yFrac → frequency mapping.
+          let mappingRect = rect;
+          if (layoutMode === 'topbottom') {
+            const wrapL = document.getElementById('wrap-left').getBoundingClientRect();
+            const wrapR = document.getElementById('wrap-right').getBoundingClientRect();
+            mappingRect = e.clientY <= wrapL.bottom ? wrapL : wrapR;
+          }
+          const { freq, t } = canvasXYtoFreqTime(e, mappingRect);
           const fLabel = freq >= 1000 ? `${(freq / 1000).toFixed(2)}kHz` : `${Math.round(freq)}Hz`;
           tt.textContent = `${fLabel}  |  ${fmt(t)}`;
           tt.style.display = 'block';
@@ -2418,11 +2427,17 @@
 
       // Spectrogram pan
       if (!specPan.active) return;
-      const rect = canvasArea.getBoundingClientRect();
+      // In top/bottom mode use the individual pane rect so pan sensitivity
+      // is correct for the half-height panes (not the full canvas area).
+      const panRect = layoutMode === 'topbottom'
+        ? (specPan.startPane === 'right'
+            ? document.getElementById('wrap-right').getBoundingClientRect()
+            : document.getElementById('wrap-left').getBoundingClientRect())
+        : canvasArea.getBoundingClientRect();
       const freqRange = specPan.startFMax - specPan.startFMin;
       const timeRange = specPan.startTMax - specPan.startTMin;
-      const dx = (e.clientX - specPan.startX) / rect.width;
-      const dy = (e.clientY - specPan.startY) / rect.height;
+      const dx = (e.clientX - specPan.startX) / panRect.width;
+      const dy = (e.clientY - specPan.startY) / panRect.height;
       specFreqMin = specPan.startFMin + (-dy * freqRange);
       specFreqMax = specPan.startFMax + (-dy * freqRange);
       specTimeMin = specPan.startTMin + (-dx * timeRange);
@@ -2568,9 +2583,11 @@
         divider.style.display = '';
       }
       
+      // Only auto-switch play target when not currently playing,
+      // or when entering/leaving a focus mode (which hides one side entirely).
       if (mode === 'focus1') setPlayTarget('left');
       else if (mode === 'focus2') setPlayTarget('right');
-      else setPlayTarget('both');
+      else if (!masterPlaying) setPlayTarget('both');
 
       spectrogramRowCache.left = null; spectrogramRowCache.right = null;
       renderFrame();
