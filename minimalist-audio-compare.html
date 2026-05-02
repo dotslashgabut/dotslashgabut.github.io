@@ -2400,9 +2400,12 @@
       const vuToFrac = v => Math.max(0, Math.min(1, (v - vuMin) / (vuMax - vuMin)));
       const frac0vu = vuToFrac(0), frac2vu = vuToFrac(2);
 
-      const r = Math.min(w * 0.22, h * 0.72);
-      const mL = { cx: w * 0.28, cy: h * 0.62 };
-      const mR = { cx: w * 0.72, cy: h * 0.62 };
+      const r = Math.min(w * 0.19, h * 0.65);
+      const topPad = 28;
+      const defaultCY = h * 0.62;
+      const gaugecy = Math.max(defaultCY, topPad + r * 0.82);
+      const mL = { cx: w * 0.28, cy: gaugecy };
+      const mR = { cx: w * 0.72, cy: gaugecy };
 
       function drawGauge(cx, cy, frac, label) {
         const arcStart = Math.PI * 1.1, arcEnd = Math.PI * 1.9;
