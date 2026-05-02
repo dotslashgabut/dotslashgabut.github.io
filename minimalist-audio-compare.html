@@ -1200,6 +1200,18 @@
           </svg>
           Stereo Field
         </button>
+        <button class="btn-mode" id="btn-peak" onclick="setVizMode('peak')">
+          <svg viewBox="0 0 24 24">
+            <path d="M3 3h2v18H3zm4 4h2v14H7zm4-2h2v16h-2zm4 3h2v13h-2zm4-5h2v18h-2z"/>
+          </svg>
+          Peak Meter
+        </button>
+        <button class="btn-mode" id="btn-vu" onclick="setVizMode('vu')">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2a9 9 0 0 0-9 9c0 3.03 1.5 5.71 3.8 7.35l1.2-1.63A7 7 0 0 1 5 11a7 7 0 0 1 7-7 7 7 0 0 1 7 7 7.01 7.01 0 0 1-2.99 5.72l1.2 1.63A9 9 0 0 0 21 11a9 9 0 0 0-9-9zm-1 4v6l4.25 2.52.77-1.32L13 11.2V6z"/>
+          </svg>
+          VU Meter
+        </button>
 
         <div class="panel-divider"></div>
 
@@ -1313,6 +1325,8 @@
       <div class="shortcut"><span>Spectrogram</span><span class="key">S</span></div>
       <div class="shortcut"><span>Spectrum</span><span class="key">X</span></div>
       <div class="shortcut"><span>Stereo Field</span><span class="key">E</span></div>
+      <div class="shortcut"><span>Peak Meter</span><span>click button</span></div>
+      <div class="shortcut"><span>VU Meter</span><span>click button</span></div>
       <div class="shortcut"><span>Side by Side</span><span class="key">D</span></div>
       <div class="shortcut"><span>Top / Bottom</span><span class="key">T</span></div>
       <div class="shortcut"><span>Overlay Slider</span><span class="key">O</span></div>
@@ -1375,6 +1389,8 @@
           <button class="exp-btn" id="exp-viz-spectrogram" onclick="expSetViz('spectrogram')">Spectrogram</button>
           <button class="exp-btn" id="exp-viz-spectrum" onclick="expSetViz('spectrum')">Spectrum</button>
           <button class="exp-btn" id="exp-viz-stereo" onclick="expSetViz('stereo')">Stereo Field</button>
+          <button class="exp-btn" id="exp-viz-peak" onclick="expSetViz('peak')">Peak Meter</button>
+          <button class="exp-btn" id="exp-viz-vu" onclick="expSetViz('vu')">VU Meter</button>
         </div>
       </div>
 
@@ -1782,6 +1798,9 @@
       else if (vizMode === 'spectrogram') drawSpectrogramView(g, c, side, t);
       else if (vizMode === 'spectrum') drawSpectrum(g, c, side);
       else if (vizMode === 'stereo') drawStereoField(g, c, side);
+      else if (vizMode === 'meters') drawPeakOnly(g, c, side);
+      else if (vizMode === 'peak') drawPeakOnly(g, c, side);
+      else if (vizMode === 'vu') drawVUOnly(g, c, side);
     }
 
     function resizeCanvases() {
@@ -2151,13 +2170,325 @@
       for (let i = 0; i < count; i += 4) { const gx = cx + ((L[i] - R[i]) / Math.SQRT2) * radius, gy = cy - ((L[i] + R[i]) / Math.SQRT2) * radius; g.beginPath(); g.arc(gx, gy, 1.2, 0, Math.PI * 2); g.fill(); }
     }
 
+    // ── METERS (Peak Meter + VU Meter combined) ───────
+    //
+    // PEAK METER: sample-accurate instantaneous true peak.
+    //   - Scans every sample in a ~10ms window around the playhead each frame.
+    //   - The bar shows the raw instantaneous peak with fast-attack (~2 frames)
+    //     / slow-decay (~400ms) ballistics on the bar level itself.
+    //   - A separate peak-hold line freezes at the highest peak seen, holds for
+    //     1.8s, then slowly decays. This is the classic "clip indicator" pattern.
+    //   - No RMS, no averaging — it reacts to every single sample transient.
+    //
+    // VU METER: RMS energy averaged over a real ~300ms sliding window.
+    //   - Reads a 300ms block of PCM samples from the buffer (not just one frame).
+    //   - Computes true RMS of that whole block before applying any ballistics.
+    //   - Then applies mechanical inertia: needle rises fast (~10ms) but falls
+    //     slowly (~300ms), mimicking a real VU meter's D'Arsonval movement.
+    //   - The result is a slow, weighted view of loudness — loud transients barely
+    //     move it; sustained loud passages push it high.
+
+    // ── Peak bar state: fast-attack/slow-decay on bar level + peak hold line
+    const peakBarState = {
+      left:  { barL: 0, barR: 0, holdL: 0, holdR: 0, holdTL: 0, holdTR: 0 },
+      right: { barL: 0, barR: 0, holdL: 0, holdR: 0, holdTL: 0, holdTR: 0 }
+    };
+    const PEAK_BAR_ATTACK  = 0.85;  // per-frame rise coefficient (fast)
+    const PEAK_BAR_DECAY   = 0.88;  // per-frame fall coefficient (slow ~400ms)
+    const PEAK_HOLD_MS     = 1800;  // hold time before peak line starts falling
+    const PEAK_HOLD_DECAY  = 0.992; // per-frame decay of peak hold line after hold expires
+
+    // ── VU needle state: ballistic smoothing over 300ms RMS window
+    const vuNeedle = {
+      left:  { needleL: 0, needleR: 0 },
+      right: { needleL: 0, needleR: 0 }
+    };
+    // IIR coefficients that approximate VU ballistics at 60fps:
+    // Rise: ~10ms (attack), Fall: ~300ms (release)
+    const VU_NEEDLE_ATTACK = 0.50;  // per-frame rise (fast — ~10ms at 60fps)
+    const VU_NEEDLE_DECAY  = 0.025; // per-frame fall (slow — ~300ms at 60fps)
+
+    // Return raw L/R channel data around current playhead, for a given duration in seconds
+    function getPCMWindow(side, durationSec) {
+      const buf = audio[side]?.buffer; if (!buf) return null;
+      const sr = buf.sampleRate;
+      const t = getCurrentTime();
+      // Use the playhead position; during static (non-playing) preview, read from offset 0
+      const t0 = Math.floor(Math.min(t, Math.max(0, buf.duration - durationSec)) * sr);
+      const len = Math.min(Math.ceil(durationSec * sr), buf.length - t0);
+      if (len < 4) return null;
+      const L = buf.getChannelData(0).subarray(t0, t0 + len);
+      const R = (buf.numberOfChannels >= 2 ? buf.getChannelData(1) : buf.getChannelData(0)).subarray(t0, t0 + len);
+      return { L, R };
+    }
+
+    function drawMeters(g, c, side) {
+      const w = c.width, h = c.height;
+      const splitY = Math.round(h * 0.52);
+
+      // Divider
+      g.strokeStyle = '#1e1e1e'; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(0, splitY); g.lineTo(w, splitY); g.stroke();
+
+      // Section labels
+      g.fillStyle = '#2a2a2a'; g.font = '8px monospace'; g.textBaseline = 'top'; g.textAlign = 'left';
+      g.fillText('PEAK', 6, 4);
+      g.fillText('VU', 6, splitY + 4);
+
+      g.save();
+      g.beginPath(); g.rect(0, 0, w, splitY); g.clip();
+      drawPeakSection(g, w, splitY, side);
+      g.restore();
+
+      g.save();
+      g.beginPath(); g.rect(0, splitY, w, h - splitY); g.clip();
+      g.translate(0, splitY);
+      drawVUSection(g, w, h - splitY, side);
+      g.restore();
+    }
+
+    // ── PEAK METER (full canvas) ──────────────────────────
+    function drawPeakOnly(g, c, side) {
+      const w = c.width, h = c.height;
+      g.fillStyle = '#1a1a1a'; g.font = '8px monospace'; g.textBaseline = 'top'; g.textAlign = 'left';
+      g.fillText('PEAK', 6, 4);
+      drawPeakSection(g, w, h, side);
+    }
+
+    // ── VU METER (full canvas) ────────────────────────────
+    function drawVUOnly(g, c, side) {
+      const w = c.width, h = c.height;
+      g.fillStyle = '#1a1a1a'; g.font = '8px monospace'; g.textBaseline = 'top'; g.textAlign = 'left';
+      g.fillText('VU', 6, 4);
+      drawVUSection(g, w, h, side);
+    }
+
+    function drawPeakSection(g, w, h, side) {
+      const accent = ACCENT[side];
+      const buf = audio[side]?.buffer; if (!buf) return;
+
+      // ── True instantaneous peak: scan a ~10ms window of actual samples
+      //    This is NOT RMS. We find the maximum absolute sample value — any single
+      //    sample that clips will immediately push the bar to 0 dBFS.
+      const win = getPCMWindow(side, 0.010); // 10ms window
+      let instPeakL = 0, instPeakR = 0;
+      if (win) {
+        const { L, R } = win;
+        for (let i = 0; i < L.length; i++) {
+          const al = Math.abs(L[i]), ar = Math.abs(R[i]);
+          if (al > instPeakL) instPeakL = al;
+          if (ar > instPeakR) instPeakR = ar;
+        }
+      }
+
+      // ── Apply fast-attack / slow-decay ballistics to the bar level
+      //    (the bar chases the instantaneous peak but falls slowly when signal drops)
+      const ps = peakBarState[side];
+      ps.barL = instPeakL > ps.barL
+        ? ps.barL + (instPeakL - ps.barL) * PEAK_BAR_ATTACK
+        : ps.barL * PEAK_BAR_DECAY;
+      ps.barR = instPeakR > ps.barR
+        ? ps.barR + (instPeakR - ps.barR) * PEAK_BAR_ATTACK
+        : ps.barR * PEAK_BAR_DECAY;
+
+      // ── Peak hold line: freezes at highest bar level seen, holds, then decays
+      const now = performance.now();
+      if (ps.barL >= ps.holdL) { ps.holdL = ps.barL; ps.holdTL = now; }
+      else if (now - ps.holdTL > PEAK_HOLD_MS) ps.holdL *= PEAK_HOLD_DECAY;
+      if (ps.barR >= ps.holdR) { ps.holdR = ps.barR; ps.holdTR = now; }
+      else if (now - ps.holdTR > PEAK_HOLD_MS) ps.holdR *= PEAK_HOLD_DECAY;
+
+      const toDB = v => v > 0 ? 20 * Math.log10(v) : -96;
+      const dbMin = -60, dbMax = 6;
+      const dbToFrac = db => Math.max(0, Math.min(1, (db - dbMin) / (dbMax - dbMin)));
+
+      const marginT = 18, marginB = 16, marginL = 26, marginR = 8;
+      const barGap = 6, totalW = w - marginL - marginR;
+      const barW = (totalW - barGap) / 2, barH = h - marginT - marginB;
+      const threshYellow = dbToFrac(-12), threshRed = dbToFrac(-3);
+
+      g.fillStyle = '#111'; g.fillRect(marginL, marginT, totalW, barH);
+
+      g.font = '8px monospace'; g.textBaseline = 'middle'; g.textAlign = 'right';
+      for (const db of [-60, -48, -36, -24, -18, -12, -6, 0, 6]) {
+        const frac = dbToFrac(db), y = marginT + barH * (1 - frac);
+        g.strokeStyle = db === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)';
+        g.lineWidth = db === 0 ? 1 : 0.5;
+        g.beginPath(); g.moveTo(marginL, y); g.lineTo(marginL + totalW, y); g.stroke();
+        g.fillStyle = db === 0 ? '#666' : '#2e2e2e';
+        g.fillText(db === 0 ? '0' : db, marginL - 3, y);
+      }
+
+      function drawBar(x, barFrac, holdFrac) {
+        // Segmented color bar
+        if (barFrac > 0) {
+          const segs = [
+            { from: 0,           to: threshYellow, col: accent + 'cc' },
+            { from: threshYellow, to: threshRed,   col: '#e8c840cc'  },
+            { from: threshRed,   to: 1,            col: '#ff4444cc'  }
+          ];
+          for (const s of segs) {
+            if (barFrac <= s.from) continue;
+            const yTop = marginT + barH * (1 - Math.min(barFrac, s.to));
+            const yBot = marginT + barH * (1 - s.from);
+            g.fillStyle = s.col; g.fillRect(x, yTop, barW, yBot - yTop);
+          }
+        }
+        // Peak hold line
+        if (holdFrac > 0.001) {
+          const hy = marginT + barH * (1 - holdFrac);
+          g.strokeStyle = holdFrac > threshRed ? '#ff6666' : holdFrac > threshYellow ? '#ffe060' : '#ccc';
+          g.lineWidth = 2;
+          g.beginPath(); g.moveTo(x, hy); g.lineTo(x + barW, hy); g.stroke();
+        }
+      }
+
+      const xL = marginL, xR = marginL + barW + barGap;
+      drawBar(xL, dbToFrac(toDB(ps.barL)), dbToFrac(toDB(ps.holdL)));
+      drawBar(xR, dbToFrac(toDB(ps.barR)), dbToFrac(toDB(ps.holdR)));
+
+      // Channel labels
+      g.fillStyle = '#555'; g.font = '9px monospace'; g.textBaseline = 'bottom'; g.textAlign = 'center';
+      g.fillText('L', xL + barW / 2, h - 2);
+      g.fillText('R', xR + barW / 2, h - 2);
+
+      // Live dB readout (shows bar level, not hold)
+      const dbL = toDB(ps.barL), dbR = toDB(ps.barR);
+      g.font = '9px monospace'; g.textBaseline = 'top'; g.textAlign = 'center';
+      g.fillStyle = dbL > 0 ? '#ff4444' : dbL > -6 ? '#ffe060' : '#555';
+      g.fillText(dbL > -60 ? dbL.toFixed(1) : '−∞', xL + barW / 2, marginT + 2);
+      g.fillStyle = dbR > 0 ? '#ff4444' : dbR > -6 ? '#ffe060' : '#555';
+      g.fillText(dbR > -60 ? dbR.toFixed(1) : '−∞', xR + barW / 2, marginT + 2);
+      g.textAlign = 'left';
+    }
+
+    function drawVUSection(g, w, h, side) {
+      const accent = ACCENT[side];
+      const buf = audio[side]?.buffer; if (!buf) return;
+
+      // ── True 300ms RMS: read a real 300ms block of samples from the buffer.
+      //    This is the key difference from the Peak Meter — we measure the energy
+      //    of a whole 300ms window, which heavily smooths out transients. A sharp
+      //    snare hit that would pin the peak meter barely nudges this.
+      const win = getPCMWindow(side, 0.300); // 300ms window
+      let rmsL = 0, rmsR = 0;
+      if (win) {
+        const { L, R } = win;
+        const n = Math.min(L.length, R.length);
+        for (let i = 0; i < n; i++) { rmsL += L[i] * L[i]; rmsR += R[i] * R[i]; }
+        rmsL = Math.sqrt(rmsL / n);
+        rmsR = Math.sqrt(rmsR / n);
+      }
+
+      // ── Mechanical needle ballistics: the RMS value above drives a simulated
+      //    D'Arsonval meter movement. The needle accelerates toward the target
+      //    quickly (fast attack) but overshoots slightly and falls back slowly.
+      //    This is what makes the VU needle look "heavy" and slow compared to
+      //    the instantly-reactive peak bar above.
+      const vn = vuNeedle[side];
+      vn.needleL = rmsL > vn.needleL
+        ? vn.needleL + (rmsL - vn.needleL) * VU_NEEDLE_ATTACK
+        : vn.needleL * (1 - VU_NEEDLE_DECAY);
+      vn.needleR = rmsR > vn.needleR
+        ? vn.needleR + (rmsR - vn.needleR) * VU_NEEDLE_ATTACK
+        : vn.needleR * (1 - VU_NEEDLE_DECAY);
+
+      // VU scale: 0 VU = −10 dBFS (0.316 linear), range −20 to +3 VU
+      const vuRef = 0.316;
+      const toVU = v => v > 0 ? 20 * Math.log10(v / vuRef) : -40;
+      const vuMin = -20, vuMax = 3;
+      const vuToFrac = v => Math.max(0, Math.min(1, (v - vuMin) / (vuMax - vuMin)));
+      const frac0vu = vuToFrac(0), frac2vu = vuToFrac(2);
+
+      const r = Math.min(w * 0.22, h * 0.72);
+      const mL = { cx: w * 0.28, cy: h * 0.62 };
+      const mR = { cx: w * 0.72, cy: h * 0.62 };
+
+      function drawGauge(cx, cy, frac, label) {
+        const arcStart = Math.PI * 1.1, arcEnd = Math.PI * 1.9;
+        const arcRange = arcEnd - arcStart;
+        const ang0 = arcStart + frac0vu * arcRange;
+        const ang2 = arcStart + frac2vu * arcRange;
+
+        // Track background groove
+        g.strokeStyle = '#1a1a1a'; g.lineWidth = r * 0.17;
+        g.beginPath(); g.arc(cx, cy, r * 0.82, arcStart, arcEnd); g.stroke();
+
+        // Dim zone tinting
+        g.lineWidth = r * 0.11;
+        g.strokeStyle = accent + '22'; g.beginPath(); g.arc(cx, cy, r * 0.82, arcStart, ang0); g.stroke();
+        g.strokeStyle = '#e8c84022'; g.beginPath(); g.arc(cx, cy, r * 0.82, ang0, ang2); g.stroke();
+        g.strokeStyle = '#ff444422'; g.beginPath(); g.arc(cx, cy, r * 0.82, ang2, arcEnd); g.stroke();
+
+        // Active arc filled up to needle position
+        if (frac > 0.001) {
+          const activeEnd = arcStart + frac * arcRange;
+          g.lineWidth = r * 0.13;
+          if (frac <= frac0vu) {
+            g.strokeStyle = accent + 'bb'; g.beginPath(); g.arc(cx, cy, r * 0.82, arcStart, activeEnd); g.stroke();
+          } else if (frac <= frac2vu) {
+            g.strokeStyle = accent + 'bb'; g.beginPath(); g.arc(cx, cy, r * 0.82, arcStart, ang0); g.stroke();
+            g.strokeStyle = '#e8c840bb'; g.beginPath(); g.arc(cx, cy, r * 0.82, ang0, activeEnd); g.stroke();
+          } else {
+            g.strokeStyle = accent + 'bb'; g.beginPath(); g.arc(cx, cy, r * 0.82, arcStart, ang0); g.stroke();
+            g.strokeStyle = '#e8c840bb'; g.beginPath(); g.arc(cx, cy, r * 0.82, ang0, ang2); g.stroke();
+            g.strokeStyle = '#ff4444bb'; g.beginPath(); g.arc(cx, cy, r * 0.82, ang2, activeEnd); g.stroke();
+          }
+        }
+
+        // Tick marks
+        for (const { v, major } of [
+          { v: -20, major: true }, { v: -10, major: true }, { v: -7, major: false },
+          { v: -5,  major: true }, { v: -3,  major: false }, { v: 0, major: true },
+          { v: 1,   major: false }, { v: 2,  major: false }, { v: 3, major: true }
+        ]) {
+          const ang = arcStart + vuToFrac(v) * arcRange;
+          const cos = Math.cos(ang), sin = Math.sin(ang);
+          g.strokeStyle = v >= 0 ? '#663333' : '#333';
+          g.lineWidth = major ? 1 : 0.5;
+          g.beginPath();
+          g.moveTo(cx + cos * r * 0.70, cy + sin * r * 0.70);
+          g.lineTo(cx + cos * r * (major ? 0.76 : 0.73), cy + sin * r * (major ? 0.76 : 0.73));
+          g.stroke();
+          if (major) {
+            g.fillStyle = v >= 0 ? '#663333' : '#333';
+            g.font = `${Math.max(7, Math.round(r * 0.09))}px monospace`;
+            g.textAlign = 'center'; g.textBaseline = 'middle';
+            g.fillText(v > 0 ? '+' + v : v, cx + cos * r * 0.60, cy + sin * r * 0.60);
+          }
+        }
+
+        // Needle — moves slowly, showing the weighted time-average of loudness
+        const needleAng = arcStart + frac * arcRange;
+        g.strokeStyle = '#ddd'; g.lineWidth = 1.2;
+        g.beginPath(); g.moveTo(cx, cy);
+        g.lineTo(cx + Math.cos(needleAng) * r * 0.86, cy + Math.sin(needleAng) * r * 0.86);
+        g.stroke();
+        g.fillStyle = '#777'; g.beginPath(); g.arc(cx, cy, r * 0.03, 0, Math.PI * 2); g.fill();
+
+        // Label
+        const vuVal = vuMin + frac * (vuMax - vuMin);
+        g.font = `${Math.max(7, Math.round(r * 0.10))}px monospace`;
+        g.textAlign = 'center'; g.textBaseline = 'top';
+        g.fillStyle = '#444'; g.fillText(label, cx, cy + r * 0.08);
+        g.fillStyle = frac > frac2vu ? '#ff4444' : frac > frac0vu ? '#ffe060' : '#555';
+        g.fillText(vuVal.toFixed(1) + ' VU', cx, cy + r * 0.22);
+      }
+
+      drawGauge(mL.cx, mL.cy, vuToFrac(toVU(vn.needleL)), 'L');
+      drawGauge(mR.cx, mR.cy, vuToFrac(toVU(vn.needleR)), 'R');
+      g.textAlign = 'left';
+    }
+
     // ═══════════════════════════════════════════════════
     //  VIZ / LAYOUT MODE SWITCHING
     // ═══════════════════════════════════════════════════
     function setVizMode(mode) {
       vizMode = mode;
       document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active'));
-      document.getElementById(`btn-${mode}`).classList.add('active');
+      const btnId = mode === 'meters' ? 'btn-peak' : `btn-${mode}`;
+      const modeBtn = document.getElementById(btnId) || document.getElementById(`btn-${mode}`);
+      if (modeBtn) modeBtn.classList.add('active');
       document.getElementById(`btn-layout-${layoutMode}`).classList.add('active');
       // spec-submodes visibility is controlled by the dropdown toggle; only hide when leaving spectrogram
       if (mode !== 'spectrogram') { document.getElementById('spec-submodes').style.display = 'none'; document.getElementById('btn-spec-dropdown').classList.remove('open'); }
@@ -2680,6 +3011,7 @@
         case 'm': toggleModeButtons(); break;
         case 'w': setVizMode('waveform'); break; case 's': setVizMode('spectrogram'); break;
         case 'x': setVizMode('spectrum'); break; case 'e': setVizMode('stereo'); break;
+        case 'p': abClear(); break;
         case 'd': setLayout('split'); break; case 't': setLayout('topbottom'); break; case 'o': setLayout('overlay'); break;
         case 'q': case '3': setLayout('focus1'); break; case 'k': case '4': setLayout('focus2'); break;
         case 'z': toggleStretch(); break;
@@ -2760,7 +3092,7 @@
 
     function expSetViz(v) {
       expViz = v;
-      ['waveform', 'spectrogram', 'spectrum', 'stereo'].forEach(x => {
+      ['waveform', 'spectrogram', 'spectrum', 'stereo', 'peak', 'vu'].forEach(x => {
         const el = document.getElementById(`exp-viz-${x}`);
         if (el) el.classList.toggle('active', x === v);
       });
@@ -2935,6 +3267,8 @@
         else if (viz === 'spectrogram') expDrawSpectrogramFrame(mg, mini, side, t);
         else if (viz === 'spectrum') expDrawSpectrumFrame(mg, mini, side, t);
         else if (viz === 'stereo') expDrawStereoFrame(mg, mini, side, t);
+        else if (viz === 'peak') { expDrawBg(mg, ow, oh); drawPeakSection(mg, ow, oh, side); }
+        else if (viz === 'vu') { expDrawBg(mg, ow, oh); drawVUSection(mg, ow, oh, side); }
       }
       offCtx.drawImage(mini, ox, oy);
     }
