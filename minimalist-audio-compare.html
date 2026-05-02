@@ -2772,8 +2772,8 @@
       const timeRange = specPan.startTMax - specPan.startTMin;
       const dx = (e.clientX - specPan.startX) / panRect.width;
       const dy = (e.clientY - specPan.startY) / panRect.height;
-      specFreqMin = specPan.startFMin + (-dy * freqRange);
-      specFreqMax = specPan.startFMax + (-dy * freqRange);
+      specFreqMin = specPan.startFMin + (dy * freqRange);
+      specFreqMax = specPan.startFMax + (dy * freqRange);
       specTimeMin = specPan.startTMin + (-dx * timeRange);
       specTimeMax = specPan.startTMax + (-dx * timeRange);
       clampViewport(); invalidateSpecCache(); updateZoomButtons();
@@ -2870,8 +2870,8 @@
         const timeRange = specPan.startTMax - specPan.startTMin;
         const dx = (e.touches[0].clientX - specPan.startX) / rect.width;
         const dy = (e.touches[0].clientY - specPan.startY) / rect.height;
-        specFreqMin = specPan.startFMin + (-dy * freqRange);
-        specFreqMax = specPan.startFMax + (-dy * freqRange);
+        specFreqMin = specPan.startFMin + (dy * freqRange);
+        specFreqMax = specPan.startFMax + (dy * freqRange);
         specTimeMin = specPan.startTMin + (-dx * timeRange);
         specTimeMax = specPan.startTMax + (-dx * timeRange);
         clampViewport(); invalidateSpecCache(); updateZoomButtons();
