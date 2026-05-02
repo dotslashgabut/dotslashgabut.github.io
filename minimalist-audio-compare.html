@@ -1325,8 +1325,8 @@
       <div class="shortcut"><span>Spectrogram</span><span class="key">S</span></div>
       <div class="shortcut"><span>Spectrum</span><span class="key">X</span></div>
       <div class="shortcut"><span>Stereo Field</span><span class="key">E</span></div>
-      <div class="shortcut"><span>Peak Meter</span><span>click button</span></div>
-      <div class="shortcut"><span>VU Meter</span><span>click button</span></div>
+      <div class="shortcut"><span>Peak Meter</span><span class="key">5</span></div>
+      <div class="shortcut"><span>VU Meter</span><span class="key">6</span></div>
       <div class="shortcut"><span>Side by Side</span><span class="key">D</span></div>
       <div class="shortcut"><span>Top / Bottom</span><span class="key">T</span></div>
       <div class="shortcut"><span>Overlay Slider</span><span class="key">O</span></div>
@@ -3017,6 +3017,7 @@
         case 'p': abClear(); break;
         case 'd': setLayout('split'); break; case 't': setLayout('topbottom'); break; case 'o': setLayout('overlay'); break;
         case 'q': case '3': setLayout('focus1'); break; case 'k': case '4': setLayout('focus2'); break;
+        case '5': setVizMode('peak'); break; case '6': setVizMode('vu'); break;
         case 'z': toggleStretch(); break;
         case 'a': abSetA(); break;
         case 'b': abSetB(); break;
