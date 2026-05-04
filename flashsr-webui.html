@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlashSR — Audio Super Resolution (with filename in download)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a24;
+    --border:rgba(140,120,255,.15);--border2:rgba(140,120,255,.3);
+    --accent:#7c5cfc;--accent2:#a78bfa;--accent3:#c4b5fd;
+    --text:#f0eeff;--text2:#a89fd0;--text3:#6b6488;
+    --green:#34d399;--red:#f87171;--amber:#fbbf24;
+  }
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:3rem 1rem 5rem;position:relative;overflow-x:hidden}
+  body::before{content:'';position:fixed;top:-40%;left:50%;transform:translateX(-50%);width:900px;height:600px;background:radial-gradient(ellipse at center,rgba(124,92,252,.12) 0%,transparent 70%);pointer-events:none;z-index:0}
+  .container{width:100%;max-width:720px;position:relative;z-index:1}
+  header{text-align:center;margin-bottom:3rem}
+  .badge{display:inline-flex;align-items:center;gap:6px;background:rgba(124,92,252,.1);border:1px solid var(--border2);border-radius:999px;padding:4px 14px;font-family:'Space Mono',monospace;font-size:11px;color:var(--accent3);letter-spacing:.08em;margin-bottom:1.2rem}
+  .badge-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  h1{font-family:'Space Mono',monospace;font-size:clamp(2.2rem,6vw,3.2rem);font-weight:700;letter-spacing:-.02em;line-height:1.1;margin-bottom:.8rem;background:linear-gradient(135deg,#fff 0%,var(--accent3) 60%,var(--accent) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .subtitle{color:var(--text2);font-size:1rem;font-weight:300;line-height:1.6;max-width:480px;margin:0 auto}
+  .card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.75rem;margin-bottom:1rem;transition:border-color .2s}
+  .card:hover{border-color:var(--border2)}
+  .card-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--text3);text-transform:uppercase;margin-bottom:.75rem}
+  .upload-zone{border:1.5px dashed var(--border2);border-radius:12px;padding:2.5rem 1.5rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg3)}
+  .upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:rgba(124,92,252,.04)}
+  .upload-zone.processing{pointer-events:none;opacity:.5;cursor:not-allowed}
+  .upload-icon{width:48px;height:48px;margin:0 auto 1rem;color:var(--accent2)}
+  .upload-zone p{color:var(--text2);font-size:.9rem;font-weight:300}
+  .upload-zone strong{color:var(--accent3);font-weight:500}
+  .upload-zone small{display:block;color:var(--text3);font-size:.78rem;margin-top:.4rem;font-family:'Space Mono',monospace}
+  input[type="file"]{display:none}
+  .waveform-wrap{display:none;margin-top:1.25rem}
+  .waveform-wrap.visible{display:block}
+  .waveform-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--text3);margin-bottom:6px;text-transform:uppercase}
+  canvas.waveform{width:100%;height:64px;border-radius:8px;background:var(--bg3);display:block}
+  .audio-player{display:flex;align-items:center;gap:12px;margin-top:10px}
+  .play-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border2);background:var(--bg3);color:var(--accent2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+  .play-btn:hover{border-color:var(--accent);background:rgba(124,92,252,.1);color:var(--accent3)}
+  audio{display:none}
+  .progress-wrap{flex:1;height:3px;background:var(--bg3);border-radius:99px;cursor:pointer;overflow:hidden}
+  .progress-fill{height:100%;background:var(--accent);border-radius:99px;width:0%;transition:width .1s linear}
+  .time-display{font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);min-width:70px;text-align:right}
+  .file-info{display:none;align-items:center;gap:10px;padding:10px 14px;background:var(--bg3);border-radius:10px;margin-top:1rem;border:1px solid var(--border)}
+  .file-info.visible{display:flex}
+  .file-icon{width:32px;height:32px;border-radius:8px;background:rgba(124,92,252,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent2)}
+  .file-details{flex:1;min-width:0}
+  .file-name{font-size:.85rem;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .file-meta{font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);margin-top:2px}
+  .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:1rem}
+  .stat-cell{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;text-align:center}
+  .stat-val{font-family:'Space Mono',monospace;font-size:1rem;font-weight:700;color:var(--accent3)}
+  .stat-key{font-size:11px;color:var(--text3);margin-top:2px}
+  .process-btn{width:100%;padding:.9rem;border-radius:12px;border:none;background:linear-gradient(135deg,var(--accent) 0%,#6040e0 100%);color:#fff;font-family:'Space Mono',monospace;font-size:.85rem;font-weight:700;letter-spacing:.05em;cursor:pointer;margin-top:1rem;transition:all .2s}
+  .process-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 24px rgba(124,92,252,.35)}
+  .process-btn:active:not(:disabled){transform:translateY(0)}
+  .process-btn:disabled{opacity:.5;cursor:not-allowed}
+  .cancel-btn{width:100%;padding:.6rem;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-family:'Space Mono',monospace;font-size:.75rem;cursor:pointer;margin-top:.5rem;transition:all .2s;display:none}
+  .cancel-btn.visible{display:block}
+  .cancel-btn:hover{border-color:var(--red);color:var(--red)}
+  .status-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.5rem 1.75rem;margin-bottom:1rem;display:none}
+  .status-card.visible{display:block}
+  .status-header{display:flex;align-items:center;gap:10px;margin-bottom:1rem}
+  .spinner{width:18px;height:18px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .status-text{font-size:.9rem;color:var(--text2)}
+  .log-area{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-family:'Space Mono',monospace;font-size:11px;color:var(--text3);max-height:160px;overflow-y:auto;line-height:1.8}
+  .log-line{color:var(--text3)}.log-line.ok{color:var(--green)}.log-line.info{color:var(--accent2)}.log-line.warn{color:var(--amber)}.log-line.err{color:var(--red)}
+  .prog-bar-wrap{height:4px;background:var(--bg3);border-radius:99px;margin-top:1rem;overflow:hidden}
+  .prog-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px;width:0%;transition:width .3s ease}
+  .result-card{background:var(--bg2);border:1px solid rgba(52,211,153,.2);border-radius:16px;padding:1.75rem;margin-bottom:1rem;display:none}
+  .result-card.visible{display:block}
+  .result-header{display:flex;align-items:center;gap:8px;margin-bottom:1.25rem}
+  .result-check{width:20px;height:20px;border-radius:50%;background:rgba(52,211,153,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .result-title{font-family:'Space Mono',monospace;font-size:.85rem;color:var(--green);letter-spacing:.04em}
+  .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .download-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:.75rem;border-radius:10px;border:1px solid rgba(52,211,153,.3);background:rgba(52,211,153,.07);color:var(--green);font-family:'Space Mono',monospace;font-size:.8rem;cursor:pointer;margin-top:1rem;transition:all .2s;text-decoration:none;font-weight:700}
+  .download-btn:hover{background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.5)}
+  .info-bar{background:rgba(124,92,252,.06);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:1rem;text-align:center;line-height:1.7}
+  .stereo-pill{display:inline-flex;align-items:center;gap:5px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:999px;padding:3px 10px;font-family:'Space Mono',monospace;font-size:10px;color:var(--amber);margin-left:8px;vertical-align:middle}
+  footer{text-align:center;margin-top:3rem;color:var(--text3);font-size:.78rem;font-family:'Space Mono',monospace;line-height:1.8}
+  footer a{color:var(--accent2);text-decoration:none}
+  footer a:hover{color:var(--accent3)}
+  @media(max-width:500px){.stats-row{grid-template-columns:repeat(2,1fr)}.compare-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="badge"><span class="badge-dot"></span>16 kHz → 48 kHz · in-browser · ONNX Runtime</div>
+    <h1>FlashSR</h1>
+    <p class="subtitle">Audio super-resolution running entirely in your browser.<br>No server. No upload. 500 KB ONNX model.<br>Stereo · Non-blocking Web Worker · Long audio support.</p>
+  </header>
+
+  <div class="info-bar">
+    First run downloads ~500 KB model from HuggingFace · Cached in browser for instant future runs<br>
+    Inference runs in a background Web Worker — page stays fully responsive during processing
+  </div>
+
+  <div class="card">
+    <div class="card-label">01 · Input Audio</div>
+    <div class="upload-zone" id="uploadZone">
+      <svg class="upload-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M24 4v28M14 14l10-10 10 10" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M8 32v8a4 4 0 004 4h24a4 4 0 004-4v-8" stroke-linecap="round"/>
+      </svg>
+      <p><strong>Drop audio file here</strong> or click to browse</p>
+      <small>WAV · MP3 · OGG · FLAC · M4A · Mono &amp; Stereo supported</small>
+    </div>
+    <input type="file" id="fileInput" accept="audio/*">
+
+    <div class="file-info" id="fileInfo">
+      <div class="file-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 19V6l12-3v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="15" r="3"/>
+        </svg>
+      </div>
+      <div class="file-details">
+        <div class="file-name" id="fileName">—</div>
+        <div class="file-meta" id="fileMeta">—</div>
+      </div>
+    </div>
+
+    <div class="waveform-wrap" id="inputWrap">
+      <div class="waveform-label">Waveform preview</div>
+      <canvas class="waveform" id="inputCanvas"></canvas>
+      <div class="audio-player">
+        <button class="play-btn" id="inputPlayBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
+        </button>
+        <div class="progress-wrap" id="inputProgress"><div class="progress-fill" id="inputFill"></div></div>
+        <div class="time-display" id="inputTime">0:00 / 0:00</div>
+        <audio id="inputAudio"></audio>
+      </div>
+    </div>
+
+    <div class="stats-row" id="inputStats" style="display:none">
+      <div class="stat-cell"><div class="stat-val" id="statSr">—</div><div class="stat-key">sample rate</div></div>
+      <div class="stat-cell"><div class="stat-val" id="statDur">—</div><div class="stat-key">duration</div></div>
+      <div class="stat-cell"><div class="stat-val" id="statSz">—</div><div class="stat-key">file size</div></div>
+    </div>
+
+    <button class="process-btn" id="processBtn" disabled>Load Model &amp; Enhance →</button>
+    <button class="cancel-btn" id="cancelBtn">✕ Cancel processing</button>
+  </div>
+
+  <div class="status-card" id="statusCard">
+    <div class="status-header">
+      <div class="spinner"></div>
+      <div class="status-text" id="statusText">Initializing…</div>
+    </div>
+    <div class="log-area" id="logArea"></div>
+    <div class="prog-bar-wrap"><div class="prog-bar" id="progBar"></div></div>
+  </div>
+
+  <div class="result-card" id="resultCard">
+    <div class="result-header">
+      <div class="result-check">
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6l3 3 5-5"/></svg>
+      </div>
+      <div class="result-title" id="resultTitle">Enhanced · 48 kHz</div>
+    </div>
+
+    <div class="compare-grid">
+      <div>
+        <div class="waveform-label">Original · 16 kHz</div>
+        <canvas class="waveform" id="outOrigCanvas"></canvas>
+      </div>
+      <div>
+        <div class="waveform-label">Enhanced · 48 kHz</div>
+        <canvas class="waveform" id="outNewCanvas"></canvas>
+      </div>
+    </div>
+
+    <div class="audio-player" style="margin-top:12px">
+      <button class="play-btn" id="outPlayBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
+      </button>
+      <div class="progress-wrap" id="outProgress"><div class="progress-fill" id="outFill"></div></div>
+      <div class="time-display" id="outTime">0:00 / 0:00</div>
+      <audio id="outAudio"></audio>
+    </div>
+
+    <div class="stats-row" style="margin-top:1rem">
+      <div class="stat-cell"><div class="stat-val">48 kHz</div><div class="stat-key">output rate</div></div>
+      <div class="stat-cell"><div class="stat-val" id="rStatTime">—</div><div class="stat-key">processed in</div></div>
+      <div class="stat-cell"><div class="stat-val" id="rStatRtf">—</div><div class="stat-key">realtime ×</div></div>
+    </div>
+
+    <a class="download-btn" id="downloadBtn" href="#" download="flashsr_48khz.wav">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 4v12M6 14l6 6 6-6"/><path d="M4 20h16"/></svg>
+      Download Enhanced WAV (48 kHz)
+    </a>
+  </div>
+
+  <footer>
+    <a href="https://github.com/ysharma3501/FlashSR" target="_blank">FlashSR</a> by ysharma3501 ·
+    ONNX by <a href="https://github.com/xenova" target="_blank">Xenova</a> ·
+    Runs via <a href="https://onnxruntime.ai/" target="_blank">ONNX Runtime Web</a>
+  </footer>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     WORKER SOURCE — includes volume fix + multithreading detection
+════════════════════════════════════════════════════════════════════════════ -->
+<script id="workerSrc" type="text/plain">
+// ── Constants ────────────────────────────────────────────────────────────────
+const MODEL_URL      = 'https://huggingface.co/YatharthS/FlashSR/resolve/main/onnx/model.onnx';
+const CACHE_NAME     = 'flashsr-v1';
+const TARGET_SR      = 16000;
+const OUT_SR         = 48000;
+const UPSAMPLE       = OUT_SR / TARGET_SR;
+const CHUNK_SAMPLES  = TARGET_SR * 4;
+const OVERLAP_IN     = TARGET_SR * 1;
+const OVERLAP_OUT    = OVERLAP_IN * UPSAMPLE;
+
+let ortSession = null;
+let cancelled  = false;
+
+function send(type, payload) { self.postMessage({ type, ...payload }); }
+function log(msg, cls='')   { send('log', { msg, cls }); }
+function progress(pct)      { send('progress', { pct }); }
+function status(msg)        { send('status', { msg }); }
+
+// ── Load ONNX Runtime with multithreading support (if isolated) ──────────────
+importScripts('https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/ort.min.js');
+ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/';
+
+let useThreads = false;
+let threadCount = 1;
+if (typeof self.crossOriginIsolated !== 'undefined' && self.crossOriginIsolated === true) {
+  useThreads = true;
+  threadCount = Math.min(navigator.hardwareConcurrency || 4, 4);
+  log(`⚡ Multithreading enabled: ${threadCount} threads (cross-origin isolated)`, 'ok');
+} else {
+  log('ℹ️ Multithreading unavailable – page missing COOP/COEP headers. Using 1 thread.', 'warn');
+}
+ort.env.wasm.numThreads = useThreads ? threadCount : 1;
+
+// ── Model loading ────────────────────────────────────────────────────────────
+async function loadModel() {
+  if (ortSession) { log('Using cached session', 'ok'); return ortSession; }
+  log('Checking browser cache…', 'info');
+  let buf = null;
+  if ('caches' in self) {
+    try {
+      const cache = await caches.open(CACHE_NAME);
+      const hit   = await cache.match(MODEL_URL);
+      if (hit) {
+        log('Model in cache — loading…', 'ok');
+        status('Loading model from cache…');
+        progress(30);
+        buf = await hit.arrayBuffer();
+        log('Loaded ' + fmtBytes(buf.byteLength) + ' from cache', 'ok');
+        progress(60);
+      }
+    } catch(e) { log('Cache unavailable: ' + e.message, 'warn'); }
+  }
+  if (!buf) {
+    log('Downloading from HuggingFace…', 'info');
+    status('Downloading model (~500 KB)…');
+    progress(5);
+    const res = await fetch(MODEL_URL);
+    if (!res.ok) throw new Error('Download failed: ' + res.status);
+    buf = await res.arrayBuffer();
+    log('Downloaded ' + fmtBytes(buf.byteLength), 'ok');
+    progress(50);
+    if ('caches' in self) {
+      try {
+        const cache = await caches.open(CACHE_NAME);
+        await cache.put(MODEL_URL, new Response(buf.slice(0), { headers: {'Content-Type':'application/octet-stream'} }));
+        log('Cached for future runs', 'ok');
+      } catch(e) { log('Could not cache (non-critical)', 'warn'); }
+    }
+  }
+  status('Creating ONNX session…');
+  progress(70);
+  log('Initializing ONNX Runtime…', 'info');
+  ortSession = await ort.InferenceSession.create(buf, {
+    executionProviders: ['wasm'],
+    graphOptimizationLevel: 'all',
+  });
+  log('Inputs:  ' + ortSession.inputNames.join(', '), 'ok');
+  log('Outputs: ' + ortSession.outputNames.join(', '), 'ok');
+  progress(80);
+  return ortSession;
+}
+
+// ── Fixed inference (no volume drop) ─────────────────────────────────────────
+async function runInferenceMono(session, pcm, label, pStart, pEnd) {
+  const inputName  = session.inputNames[0];
+  const outputName = session.outputNames[0];
+
+  const nChunks = Math.ceil(pcm.length / CHUNK_SAMPLES);
+  const outLen  = pcm.length * UPSAMPLE;
+  const output  = new Float32Array(outLen);
+
+  log(`${label}: ${pcm.length} smp → ${nChunks} chunk(s)`, 'info');
+
+  for (let ci = 0; ci < nChunks; ci++) {
+    if (cancelled) throw new Error('Cancelled by user');
+
+    const chunkStart = ci * CHUNK_SAMPLES;
+    const srcStart   = Math.max(0, chunkStart - OVERLAP_IN);
+    const srcEnd     = Math.min(pcm.length, chunkStart + CHUNK_SAMPLES);
+    const chunk      = pcm.slice(srcStart, srcEnd);
+
+    status(`${label}: chunk ${ci+1}/${nChunks}…`);
+    progress(pStart + ((ci + 0.5) / nChunks) * (pEnd - pStart));
+
+    const tensor  = new ort.Tensor('float32', Float32Array.from(chunk), [1, chunk.length]);
+    const result  = await session.run({ [inputName]: tensor });
+    let outChunk = result[outputName].data;
+
+    const expectedOutLen = chunk.length * UPSAMPLE;
+    if (outChunk.length !== expectedOutLen) {
+      log(`Warning: output length mismatch, truncating`, 'warn');
+      outChunk = outChunk.subarray(0, expectedOutLen);
+    }
+
+    const destStart = chunkStart * UPSAMPLE;
+
+    if (ci === 0) {
+      const copyLen = Math.min(outChunk.length, outLen - destStart);
+      output.set(outChunk.subarray(0, copyLen), destStart);
+    } else {
+      const overlapOut = OVERLAP_OUT;
+      const overlapStart = destStart - overlapOut;
+
+      // Crossfade overlapping region
+      for (let i = 0; i < overlapOut && (overlapStart + i) < outLen; i++) {
+        const t = i / overlapOut;
+        const oldVal = output[overlapStart + i];
+        const newVal = outChunk[i];
+        output[overlapStart + i] = oldVal * (1 - t) + newVal * t;
+      }
+
+      // Copy non-overlapping part
+      const nonOverlapStart = destStart;
+      const nonOverlapLen = outChunk.length - overlapOut;
+      if (nonOverlapLen > 0 && nonOverlapStart < outLen) {
+        const copyLen = Math.min(nonOverlapLen, outLen - nonOverlapStart);
+        output.set(outChunk.subarray(overlapOut, overlapOut + copyLen), nonOverlapStart);
+      }
+    }
+
+    log(`  chunk ${ci+1}/${nChunks} ✓`, '');
+    progress(pStart + ((ci + 1) / nChunks) * (pEnd - pStart));
+  }
+
+  return output;
+}
+
+function fmtBytes(b) {
+  return b < 1048576 ? (b/1024).toFixed(1)+' KB' : (b/1048576).toFixed(1)+' MB';
+}
+
+self.onmessage = async (e) => {
+  const { type } = e.data;
+  if (type === 'cancel') { cancelled = true; return; }
+  if (type === 'process') {
+    cancelled = false;
+    const { channels, sampleRate, duration } = e.data;
+    const t0 = Date.now();
+    try {
+      const session = await loadModel();
+      if (cancelled) throw new Error('Cancelled by user');
+      const isStereo = channels.length >= 2;
+      const nCh = Math.min(channels.length, 2);
+      const t1 = Date.now();
+      const enhanced = [];
+      for (let c = 0; c < nCh; c++) {
+        if (cancelled) throw new Error('Cancelled by user');
+        const label = isStereo ? (c === 0 ? 'L-channel' : 'R-channel') : 'mono';
+        const pStart = 82 + c * (14 / nCh);
+        const pEnd   = 82 + (c + 1) * (14 / nCh);
+        log(`Running FlashSR — ${label}…`, 'info');
+        const out = await runInferenceMono(session, channels[c], label, pStart, pEnd);
+        enhanced.push(out);
+        log(`${label} done: ${out.length} smp @ 48 kHz`, 'ok');
+      }
+      const inferMs = Date.now() - t1;
+      const totalMs = Date.now() - t0;
+      const rtf = (duration / (inferMs / 1000)).toFixed(0);
+      log(`Inference: ${(inferMs/1000).toFixed(2)}s  (${rtf}× realtime)`, 'ok');
+      if (isStereo) log('Stereo L+R recombined', 'ok');
+      send('done', { enhanced, inferMs, totalMs, rtf, isStereo, outSR: OUT_SR });
+    } catch(err) {
+      const msg = (err instanceof Error) ? err.message : String(err);
+      send('error', { msg: msg || 'Unknown error' });
+    }
+  }
+};
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     MAIN THREAD
+════════════════════════════════════════════════════════════════════════════ -->
+<script>
+const TARGET_SR = 16000;
+const OUT_SR    = 48000;
+
+const $ = id => document.getElementById(id);
+const PLAY_SVG  = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>`;
+const PAUSE_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
+
+let audioCtx    = null;
+let inputBuffer = null;
+let worker      = null;
+let t0Global    = 0;
+let originalFileNameWithoutExt = '';   // store base name for download
+
+function formatDur(sec) {
+  if (!sec || isNaN(sec)) return '0:00';
+  return `${Math.floor(sec/60)}:${Math.floor(sec%60).toString().padStart(2,'0')}`;
+}
+function formatSize(b) {
+  return b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB';
+}
+function log(msg, type='') {
+  const el = document.createElement('div');
+  el.className = 'log-line ' + type;
+  el.textContent = '› ' + msg;
+  $('logArea').appendChild(el);
+  $('logArea').scrollTop = $('logArea').scrollHeight;
+}
+function setProgress(pct) { $('progBar').style.width = pct + '%'; }
+function setStatus(msg)   { $('statusText').textContent = msg; }
+
+function setProcessing(on) {
+  $('processBtn').disabled = on;
+  $('cancelBtn').classList.toggle('visible', on);
+  $('uploadZone').classList.toggle('processing', on);
+  $('statusCard').classList.toggle('visible', on);
+  if (on) document.querySelector('.spinner').style.display = '';
+  else    document.querySelector('.spinner').style.display = 'none';
+}
+
+function drawWaveform(canvas, data, color='#7c5cfc') {
+  if (!canvas || !data) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth || 300, H = 64;
+  canvas.width = W*dpr; canvas.height = H*dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,W,H);
+  const step = Math.ceil(data.length/W);
+  ctx.strokeStyle=color; ctx.lineWidth=1; ctx.beginPath();
+  for(let x=0;x<W;x++){
+    let mn=1,mx=-1;
+    for(let j=0;j<step;j++){const v=data[x*step+j]||0;if(v<mn)mn=v;if(v>mx)mx=v;}
+    const y1=((1+mn)/2)*H, y2=((1+mx)/2)*H;
+    if(x===0)ctx.moveTo(x,y1);else ctx.lineTo(x,y1);
+    ctx.lineTo(x,y2);
+  }
+  ctx.stroke();
+}
+
+function setupPlayer(playBtnId, progressId, fillId, timeId, audioId) {
+  const btn=$(playBtnId),pw=$(progressId),fill=$(fillId),tEl=$(timeId),au=$(audioId);
+  btn.addEventListener('click',()=>au.paused?au.play():au.pause());
+  au.addEventListener('play',()=>btn.innerHTML=PAUSE_SVG);
+  au.addEventListener('pause',()=>btn.innerHTML=PLAY_SVG);
+  au.addEventListener('ended',()=>btn.innerHTML=PLAY_SVG);
+  au.addEventListener('timeupdate',()=>{
+    const pct=au.duration?(au.currentTime/au.duration)*100:0;
+    fill.style.width=pct+'%';
+    tEl.textContent=`${formatDur(au.currentTime)} / ${formatDur(au.duration)}`;
+  });
+  pw.addEventListener('click',e=>{
+    const r=pw.getBoundingClientRect();
+    au.currentTime=((e.clientX-r.left)/r.width)*au.duration;
+  });
+}
+setupPlayer('inputPlayBtn','inputProgress','inputFill','inputTime','inputAudio');
+setupPlayer('outPlayBtn','outProgress','outFill','outTime','outAudio');
+
+const uploadZone=$('uploadZone'), fileInput=$('fileInput');
+uploadZone.addEventListener('click',()=>{ if(!uploadZone.classList.contains('processing')) fileInput.click(); });
+uploadZone.addEventListener('dragover',e=>{e.preventDefault();if(!uploadZone.classList.contains('processing'))uploadZone.classList.add('drag-over');});
+uploadZone.addEventListener('dragleave',()=>uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop',e=>{
+  e.preventDefault(); uploadZone.classList.remove('drag-over');
+  if(!uploadZone.classList.contains('processing') && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change',e=>{if(e.target.files[0])handleFile(e.target.files[0]);});
+
+async function handleFile(file) {
+  if (!audioCtx) audioCtx = new AudioContext();
+  $('fileName').textContent = file.name;
+  $('fileInfo').classList.add('visible');
+  const ab = await file.arrayBuffer();
+  try { inputBuffer = await audioCtx.decodeAudioData(ab); }
+  catch(e) { alert('Could not decode audio. Try WAV or MP3.'); return; }
+  const sr=inputBuffer.sampleRate, dur=inputBuffer.duration, ch=inputBuffer.numberOfChannels;
+  $('statSr').textContent  = (sr/1000).toFixed(0)+' kHz';
+  $('statDur').textContent = formatDur(dur);
+  $('statSz').textContent  = formatSize(file.size);
+  $('fileMeta').textContent= `${(sr/1000).toFixed(0)} kHz · ${ch}ch · ${formatDur(dur)}`;
+  $('inputStats').style.display='grid';
+  $('inputAudio').src = URL.createObjectURL(file);
+  $('inputWrap').classList.add('visible');
+  setTimeout(()=>drawWaveform($('inputCanvas'), inputBuffer.getChannelData(0)), 50);
+  $('processBtn').disabled = false;
+  $('processBtn').textContent = 'Load Model & Enhance →';
+  $('resultCard').classList.remove('visible');
+
+  // Store original file name without extension for download
+  originalFileNameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+}
+
+async function resampleChannel(srcBuffer, channelIdx) {
+  const nSamples = Math.ceil(srcBuffer.duration * TARGET_SR);
+  const offCtx = new OfflineAudioContext(1, nSamples, TARGET_SR);
+  const mono = offCtx.createBuffer(1, srcBuffer.length, srcBuffer.sampleRate);
+  mono.copyToChannel(srcBuffer.getChannelData(channelIdx), 0);
+  const src = offCtx.createBufferSource();
+  src.buffer = mono;
+  src.connect(offCtx.destination);
+  src.start();
+  const rendered = await offCtx.startRendering();
+  return rendered.getChannelData(0).slice();
+}
+
+function encodeWAV(channels, sr) {
+  const nCh = channels.length, nSmp = channels[0].length;
+  const buf = new ArrayBuffer(44 + nSmp * nCh * 2);
+  const v = new DataView(buf);
+  const ws = (o,s)=> { for(let i=0;i<s.length;i++) v.setUint8(o+i,s.charCodeAt(i)); };
+  ws(0,'RIFF'); v.setUint32(4,36+nSmp*nCh*2,true);
+  ws(8,'WAVE'); ws(12,'fmt ');
+  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,nCh,true);
+  v.setUint32(24,sr,true); v.setUint32(28,sr*nCh*2,true);
+  v.setUint16(32,nCh*2,true); v.setUint16(34,16,true);
+  ws(36,'data'); v.setUint32(40,nSmp*nCh*2,true);
+  let off=44;
+  for(let i=0;i<nSmp;i++) for(let c=0;c<nCh;c++){
+    const s=Math.max(-1,Math.min(1,channels[c][i]));
+    v.setInt16(off, s<0?s*0x8000:s*0x7fff, true); off+=2;
+  }
+  return new Blob([buf],{type:'audio/wav'});
+}
+
+function spawnWorker() {
+  if (worker) { worker.terminate(); worker = null; }
+  const src = document.getElementById('workerSrc').textContent;
+  const blob = new Blob([src], { type: 'application/javascript' });
+  worker = new Worker(URL.createObjectURL(blob));
+  worker.onmessage = (e) => {
+    const d = e.data;
+    if (d.type === 'log')      { log(d.msg, d.cls); }
+    if (d.type === 'progress') { setProgress(d.pct); }
+    if (d.type === 'status')   { setStatus(d.msg); }
+    if (d.type === 'error')    { onWorkerError(d.msg); }
+    if (d.type === 'done')     { onWorkerDone(d); }
+  };
+  worker.onerror = (e) => {
+    onWorkerError(e.message || 'Worker crashed — check browser console');
+  };
+  return worker;
+}
+
+function onWorkerError(msg) {
+  log('Error: ' + msg, 'err');
+  setStatus('Something went wrong — see log details.');
+  setProcessing(false);
+  $('processBtn').textContent = 'Try Again →';
+  $('processBtn').disabled = false;
+}
+
+async function onWorkerDone({ enhanced, inferMs, totalMs, rtf, isStereo, outSR }) {
+  log('Encoding WAV…', 'info');
+  setProgress(98);
+
+  const wavBlob = encodeWAV(enhanced, outSR);
+  const wavUrl = URL.createObjectURL(wavBlob);
+  $('outAudio').src = wavUrl;
+  $('downloadBtn').href = wavUrl;
+
+  // Build download filename with original name
+  let suffix = isStereo ? '_stereo' : '_mono';
+  let downloadName = `${originalFileNameWithoutExt}_enhanced_48khz${suffix}.wav`;
+  // Fallback if original name is empty
+  if (!originalFileNameWithoutExt) downloadName = `flashsr_48khz${suffix}.wav`;
+  $('downloadBtn').download = downloadName;
+
+  $('rStatTime').textContent = (totalMs/1000).toFixed(1) + 's';
+  $('rStatRtf').textContent  = rtf + '×';
+
+  const dispCh = enhanced.length > 1
+    ? (() => { const m = new Float32Array(enhanced[0].length); for(let i=0;i<m.length;i++) m[i]=(enhanced[0][i]+enhanced[1][i])*0.5; return m; })()
+    : enhanced[0];
+
+  setTimeout(() => {
+    drawWaveform($('outOrigCanvas'), inputBuffer.getChannelData(0), '#6b5a8a');
+    drawWaveform($('outNewCanvas'), dispCh, '#34d399');
+  }, 50);
+
+  $('resultTitle').innerHTML = `Enhanced · 48 kHz${isStereo ? ' <span class="stereo-pill">Stereo</span>' : ''}`;
+
+  setProgress(100);
+  setProcessing(false);
+  $('statusCard').classList.remove('visible');
+  $('resultCard').classList.add('visible');
+  $('processBtn').textContent = 'Enhance Again →';
+}
+
+$('cancelBtn').addEventListener('click', () => {
+  if (worker) worker.postMessage({ type: 'cancel' });
+  log('Cancelled.', 'warn');
+  setStatus('Cancelled.');
+  setProcessing(false);
+  $('processBtn').textContent = 'Load Model & Enhance →';
+  $('processBtn').disabled = false;
+});
+
+$('processBtn').addEventListener('click', async () => {
+  if (!inputBuffer) return;
+
+  $('resultCard').classList.remove('visible');
+  $('logArea').innerHTML = '';
+  setProgress(5);
+  setStatus('Resampling audio…');
+  setProcessing(true);
+
+  t0Global = performance.now();
+
+  try {
+    const nCh = Math.min(inputBuffer.numberOfChannels, 2);
+    const pcms = [];
+    for (let c = 0; c < nCh; c++) {
+      log(`Resampling ch ${c} → 16 kHz…`, 'info');
+      const pcm = await resampleChannel(inputBuffer, c);
+      pcms.push(pcm);
+      log(`Ch ${c}: ${pcm.length} smp`, '');
+    }
+    setProgress(15);
+    log('Handing off to background worker…', 'info');
+
+    const w = spawnWorker();
+    w.postMessage(
+      { type: 'process', channels: pcms, sampleRate: TARGET_SR, duration: inputBuffer.duration },
+      pcms.map(p => p.buffer)
+    );
+  } catch(err) {
+    onWorkerError(err.message || 'Unknown error');
+  }
+});
+</script>
+</body>
+</html>
