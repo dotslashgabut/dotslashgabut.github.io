@@ -1213,6 +1213,18 @@
           VU Meter
         </button>
 
+        <!-- New Wave+Spec button -->
+        <button class="btn-mode" id="btn-wave-spec" onclick="setWaveSpectrogram()">
+          <svg viewBox="0 0 24 24">
+            <path d="M3 12h2l2-6 2 12 2-9 2 6 2-3h6v-2h-7l-1.5 3-2-6-2 9-2-12-2 6H3z" />
+            <rect x="4" y="14" width="16" height="6" fill="none" stroke="currentColor" stroke-width="1" />
+            <line x1="4" y1="17" x2="20" y2="17" stroke="currentColor" stroke-width="0.5" />
+            <line x1="10" y1="14" x2="10" y2="20" stroke="currentColor" stroke-width="0.5" />
+            <line x1="14" y1="14" x2="14" y2="20" stroke="currentColor" stroke-width="0.5" />
+          </svg>
+          Wave+Spec
+        </button>
+
         <div class="panel-divider"></div>
 
         <button class="btn-mode active" id="btn-layout-split" onclick="setLayout('split')" title="Side by Side (G)">
@@ -1325,8 +1337,10 @@
       <div class="shortcut"><span>Spectrogram</span><span class="key">S</span></div>
       <div class="shortcut"><span>Spectrum</span><span class="key">X</span></div>
       <div class="shortcut"><span>Stereo Field</span><span class="key">E</span></div>
-      <div class="shortcut"><span>Peak Meter</span><span class="key">5</span></div>
-      <div class="shortcut"><span>VU Meter</span><span class="key">6</span></div>
+      <div class="shortcut"><span>Wave+Spec Focus 1</span><span class="key">5</span></div>
+      <div class="shortcut"><span>Wave+Spec Focus 2</span><span class="key">6</span></div>
+      <div class="shortcut"><span>Peak Meter</span><span class="key">7</span></div>
+      <div class="shortcut"><span>VU Meter</span><span class="key">8</span></div>
       <div class="shortcut"><span>Side by Side</span><span class="key">D</span></div>
       <div class="shortcut"><span>Top / Bottom</span><span class="key">T</span></div>
       <div class="shortcut"><span>Overlay Slider</span><span class="key">O</span></div>
@@ -1354,6 +1368,7 @@
       <div class="shortcut"><span>Help</span><span class="key">H</span></div>
       <div class="shortcut"><span>Drag &amp; drop file</span><span>→ either half</span></div>
     </div>
+
 <div id="export-modal" onclick="if(event.target===this)closeExportModal()">
     <div id="export-panel">
       <h3>
@@ -1391,6 +1406,7 @@
           <button class="exp-btn" id="exp-viz-stereo" onclick="expSetViz('stereo')">Stereo Field</button>
           <button class="exp-btn" id="exp-viz-peak" onclick="expSetViz('peak')">Peak Meter</button>
           <button class="exp-btn" id="exp-viz-vu" onclick="expSetViz('vu')">VU Meter</button>
+          <button class="exp-btn" id="exp-viz-wave-spec" onclick="expSetViz('wave+spectrogram')">Wave+Spec</button>
         </div>
       </div>
 
@@ -1798,7 +1814,7 @@
       else if (vizMode === 'spectrogram') drawSpectrogramView(g, c, side, t);
       else if (vizMode === 'spectrum') drawSpectrum(g, c, side);
       else if (vizMode === 'stereo') drawStereoField(g, c, side);
-      else if (vizMode === 'meters') drawPeakOnly(g, c, side);
+      else if (vizMode === 'wave+spectrogram') drawWaveSpectrogram(g, c, side, t);
       else if (vizMode === 'peak') drawPeakOnly(g, c, side);
       else if (vizMode === 'vu') drawVUOnly(g, c, side);
     }
@@ -2222,31 +2238,6 @@
       return { L, R };
     }
 
-    function drawMeters(g, c, side) {
-      const w = c.width, h = c.height;
-      const splitY = Math.round(h * 0.52);
-
-      // Divider
-      g.strokeStyle = '#1e1e1e'; g.lineWidth = 1;
-      g.beginPath(); g.moveTo(0, splitY); g.lineTo(w, splitY); g.stroke();
-
-      // Section labels
-      g.fillStyle = '#2a2a2a'; g.font = '8px monospace'; g.textBaseline = 'top'; g.textAlign = 'left';
-      g.fillText('PEAK', 6, 4);
-      g.fillText('VU', 6, splitY + 4);
-
-      g.save();
-      g.beginPath(); g.rect(0, 0, w, splitY); g.clip();
-      drawPeakSection(g, w, splitY, side);
-      g.restore();
-
-      g.save();
-      g.beginPath(); g.rect(0, splitY, w, h - splitY); g.clip();
-      g.translate(0, splitY);
-      drawVUSection(g, w, h - splitY, side);
-      g.restore();
-    }
-
     // ── PEAK METER (full canvas) ──────────────────────────
     function drawPeakOnly(g, c, side) {
       const w = c.width, h = c.height;
@@ -2489,7 +2480,10 @@
     function setVizMode(mode) {
       vizMode = mode;
       document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active'));
-      const btnId = mode === 'meters' ? 'btn-peak' : `btn-${mode}`;
+      let btnId;
+      if (mode === 'meters') btnId = 'btn-peak';
+      else if (mode === 'wave+spectrogram') btnId = 'btn-wave-spec';
+      else btnId = `btn-${mode}`;
       const modeBtn = document.getElementById(btnId) || document.getElementById(`btn-${mode}`);
       if (modeBtn) modeBtn.classList.add('active');
       document.getElementById(`btn-layout-${layoutMode}`).classList.add('active');
@@ -2498,8 +2492,19 @@
       // Hide freq|time tooltip when leaving spectrogram mode (e.g. via keyboard shortcut)
       if (mode !== 'spectrogram' && tooltipEl) tooltipEl.style.display = 'none';
       // Show crosshair cursor on waveform and spectrogram (both support click-to-seek)
-      canvasArea.style.cursor = (mode === 'spectrogram' || mode === 'waveform') ? 'crosshair' : '';
+      canvasArea.style.cursor = (mode === 'spectrogram' || mode === 'waveform' || mode === 'wave+spectrogram') ? 'crosshair' : '';
       if (!masterPlaying) renderFrame();
+    }
+
+    function setWaveSpectrogram() {
+      if (vizMode === 'wave+spectrogram') {
+        setVizMode('waveform');
+        return;
+      }
+      setVizMode('wave+spectrogram');
+      if (layoutMode !== 'focus1' && layoutMode !== 'focus2') {
+        setLayout('focus1');
+      }
     }
 
     function toggleSpecDropdown(e) {
@@ -2585,6 +2590,53 @@
       const nyq = getActiveNyq();
       const isDefault = (specFreqMin < 1 && (specFreqMax === null || specFreqMax >= nyq - 1) && specTimeMin < 0.001 && specTimeMax > 0.999);
       document.getElementById('btn-spec-zoom-reset')?.classList.toggle('active', !isDefault);
+    }
+
+    // ── WAVE + SPECTROGRAM COMBINED VIEW ─────────────
+    function drawWaveSpectrogram(g, c, side, t) {
+      const w = c.width, h = c.height;
+      const halfH = Math.floor(h / 2);
+      const gap = 1;
+
+      // Top half: waveform
+      const topCanvas = document.createElement('canvas');
+      topCanvas.width = w; topCanvas.height = halfH;
+      const topCtx = topCanvas.getContext('2d');
+      drawWaveform(topCtx, topCanvas, side, t);
+      g.drawImage(topCanvas, 0, 0);
+
+      // Divider
+      g.fillStyle = 'rgba(255,255,255,0.15)';
+      g.fillRect(0, halfH, w, gap);
+
+      // Bottom half: spectrogram
+      const bottomH = h - halfH - gap;
+      if (bottomH <= 0) return;
+      let specCache = spectrogramRowCache[side];
+      if (!specCache || specCache.width !== w) {
+        buildSpectrogram(side);
+        specCache = spectrogramRowCache[side];
+      }
+      if (specCache) {
+        // Draw the full spectrogram scaled vertically into the bottom half
+        g.drawImage(specCache, 0, 0, specCache.width, specCache.height, 0, halfH + gap, w, bottomH);
+
+        // Playhead
+        const dur = audio[side].duration;
+        const dispDur = stretchMode ? maxDuration() : dur;
+        const playPx = (t / dispDur) * w;
+        g.fillStyle = 'rgba(0,0,0,0.35)';
+        g.fillRect(playPx, halfH + gap, w - playPx, bottomH);
+        g.strokeStyle = 'rgba(255,255,255,0.8)';
+        g.lineWidth = 1;
+        g.beginPath();
+        g.moveTo(playPx, halfH + gap);
+        g.lineTo(playPx, h);
+        g.stroke();
+      } else {
+        g.fillStyle = '#1a1a1a';
+        g.fillRect(0, halfH + gap, w, bottomH);
+      }
     }
 
     // "Go to frequency" popup
@@ -2782,13 +2834,13 @@
     window.addEventListener('mouseup', (e) => {
       if (specPan.active) {
         specPan.active = false;
-        canvasArea.style.cursor = (vizMode === 'spectrogram' || vizMode === 'waveform') ? 'crosshair' : '';
+        canvasArea.style.cursor = (vizMode === 'spectrogram' || vizMode === 'waveform' || mode === 'wave+spectrogram') ? 'crosshair' : '';
       }
       // Click-to-seek: fired on canvas area when no drag occurred and mousedown was on the canvas
       if (!canvasMouseDragged && canvasMouseDownOnCanvas && e.button === 0) {
         const areaRect = canvasArea.getBoundingClientRect();
         if (e.clientX >= areaRect.left && e.clientX <= areaRect.right && e.clientY >= areaRect.top && e.clientY <= areaRect.bottom) {
-          if (vizMode === 'waveform' || vizMode === 'spectrogram') {
+          if (vizMode === 'waveform' || vizMode === 'spectrogram' || vizMode === 'wave+spectrogram') {
             // Determine which pane was clicked and use that pane's own rect for accurate mapping
             let paneRect;
             if (layoutMode === 'overlay' || layoutMode === 'topbottom') {
@@ -3017,7 +3069,10 @@
         case 'p': abClear(); break;
         case 'd': setLayout('split'); break; case 't': setLayout('topbottom'); break; case 'o': setLayout('overlay'); break;
         case 'q': case '3': setLayout('focus1'); break; case 'k': case '4': setLayout('focus2'); break;
-        case '5': setVizMode('peak'); break; case '6': setVizMode('vu'); break;
+        case '5': setLayout('focus1'); setVizMode('wave+spectrogram'); break;
+        case '6': setLayout('focus2'); setVizMode('wave+spectrogram'); break;
+        case '7': setVizMode('peak'); break;
+        case '8': setVizMode('vu'); break;
         case 'z': toggleStretch(); break;
         case 'a': abSetA(); break;
         case 'b': abSetB(); break;
@@ -3096,8 +3151,9 @@
 
     function expSetViz(v) {
       expViz = v;
-      ['waveform', 'spectrogram', 'spectrum', 'stereo', 'peak', 'vu'].forEach(x => {
-        const el = document.getElementById(`exp-viz-${x}`);
+      ['waveform', 'spectrogram', 'spectrum', 'stereo', 'peak', 'vu', 'wave+spectrogram'].forEach(x => {
+        const id = x === 'wave+spectrogram' ? 'exp-viz-wave-spec' : `exp-viz-${x}`;
+        const el = document.getElementById(id);
         if (el) el.classList.toggle('active', x === v);
       });
       document.getElementById('exp-spec-opt-section').style.display = v === 'spectrogram' ? 'block' : 'none';
@@ -3155,9 +3211,6 @@
     }
 
     // Render one frame of the export canvas
-    // t = current time in seconds
-    // w, h = output resolution
-    // returns ImageBitmap or null
     function expRenderFrame(offCtx, w, h, t, srcListVisual, layout) {
       offCtx.clearRect(0, 0, w, h);
       expDrawBg(offCtx, w, h);
@@ -3256,9 +3309,7 @@
     }
 
     // Render one side's viz into arbitrary sub-rect of offCtx
-    // offCtx is already translated / clipped by caller
     function expRenderSide(offCtx, fullW, fullH, side, t, viz, ox, oy, ow, oh) {
-      // We create a mini-canvas the size of the sub-region, draw into it, then drawImage
       const mini = document.createElement('canvas');
       mini.width = ow; mini.height = oh;
       const mg = mini.getContext('2d');
@@ -3271,8 +3322,50 @@
         else if (viz === 'spectrogram') expDrawSpectrogramFrame(mg, mini, side, t);
         else if (viz === 'spectrum') expDrawSpectrumFrame(mg, mini, side, t);
         else if (viz === 'stereo') expDrawStereoFrame(mg, mini, side, t);
-        else if (viz === 'peak') { expDrawBg(mg, ow, oh); drawPeakSection(mg, ow, oh, side); }
-        else if (viz === 'vu') { expDrawBg(mg, ow, oh); drawVUSection(mg, ow, oh, side); }
+        else if (viz === 'wave+spectrogram') {
+          const halfH = Math.floor(oh / 2);
+          // Top half: waveform
+          const topCanvas = document.createElement('canvas');
+          topCanvas.width = ow; topCanvas.height = halfH;
+          const topCtx = topCanvas.getContext('2d');
+          expDrawWaveform(topCtx, topCanvas, side, t);
+          mg.drawImage(topCanvas, 0, 0);
+          // Divider
+          mg.fillStyle = 'rgba(255,255,255,0.15)';
+          mg.fillRect(0, halfH, ow, 1);
+          // Bottom half: spectrogram
+          const bottomH = oh - halfH - 1;
+          if (bottomH > 0) {
+            // Ensure spectrogram cache exists at full export resolution
+            if (!expSpecCache[side] || expSpecCache.w !== ow || expSpecCache.h !== oh) {
+              expSpecCache[side] = expBuildSpecCache(side, ow, oh);
+              expSpecCache.w = ow;
+              expSpecCache.h = oh;
+            }
+            if (expSpecCache[side]) {
+              const cache = expSpecCache[side];
+              mg.drawImage(cache, 0, 0, ow, oh, 0, halfH + 1, ow, bottomH);
+              // Playhead
+              if (audio[side]) {
+                const dur = audio[side].buffer.duration;
+                const dispDurLocal = stretchMode ? maxDuration() : dur;
+                const playPx = (t / dispDurLocal) * ow;
+                mg.fillStyle = 'rgba(0,0,0,0.35)';
+                mg.fillRect(playPx, halfH + 1, ow - playPx, bottomH);
+                mg.strokeStyle = 'rgba(255,255,255,0.8)';
+                mg.lineWidth = 1;
+                mg.beginPath();
+                mg.moveTo(playPx, halfH + 1);
+                mg.lineTo(playPx, oh);
+                mg.stroke();
+              }
+            } else {
+              mg.fillStyle = '#1a1a1a';
+              mg.fillRect(0, halfH + 1, ow, bottomH);
+            }
+          }
+        } else if (viz === 'peak') { drawPeakSection(mg, ow, oh, side); }
+        else if (viz === 'vu') { drawVUSection(mg, ow, oh, side); }
       }
       offCtx.drawImage(mini, ox, oy);
     }
@@ -3452,7 +3545,6 @@
     }
 
     // ─── Audio mux for export ───────────────────────────
-    // Render AudioBuffer to interleaved PCM Float32Array for WebCodecs AudioData
     function expGetAudioForSide(side) {
       if (!audio[side]) return null;
       return audio[side].buffer;
@@ -3529,7 +3621,7 @@
       setExpProgress(0, 'Building spectrogram cache…');
 
       // Pre-build spectrogram caches if needed
-      if (expViz === 'spectrogram') {
+      if (expViz === 'spectrogram' || expViz === 'wave+spectrogram') {
         expSpecCache.w = 0; expSpecCache.h = 0; // force rebuild at export resolution
         for (const s of srcListVisual) expSpecCache[s] = null;
       }
@@ -3542,7 +3634,6 @@
       let videoDescription = null;
 
       // ── Probe for a supported video codec ──
-      // WebM supports VP8/VP9/AV1; MP4 supports H.264/H.265
       const VIDEO_CODEC_CANDIDATES = expFormat === 'mp4'
         ? [
           { codec: 'avc1.42E01F', label: 'H.264 Baseline' },
@@ -3571,7 +3662,6 @@
       }
 
       // ── Probe for a supported audio codec ──
-      // WebM: Opus/Vorbis; MP4: AAC
       const AUDIO_CODEC_CANDIDATES = expFormat === 'mp4'
         ? ['mp4a.40.2', 'mp4a.40.5']
         : ['opus', 'vorbis'];
@@ -3609,7 +3699,6 @@
           framerate: fps,
           latencyMode: 'quality',
         };
-        // avc format option only applies to H.264 (MP4) — not VP8/VP9 (WebM)
         if (expFormat === 'mp4') videoConfig.avc = { format: 'avc' };
         await videoEncoder.configure(videoConfig);
       } catch (e) {
@@ -3685,11 +3774,8 @@
       setExpProgress(5, 'Encoding frames…');
       const layout = expSrc === 'both' ? expLayout : 'single';
       const KEYFRAME_INTERVAL = fps * 2;
-      // Max frames allowed in the encoder queue before we pause and drain.
-      // Keeping this small prevents the encoder from stalling the JS thread.
       const MAX_QUEUE_DEPTH = 8;
 
-      // Helper: wait until the encoder queue drains below MAX_QUEUE_DEPTH
       async function drainVideoQueue() {
         while (videoEncoder.encodeQueueSize > MAX_QUEUE_DEPTH) {
           await new Promise(r => setTimeout(r, 4));
@@ -3699,9 +3785,6 @@
       for (let f = 0; f < totalFrames; f++) {
         if (expCancelled) { videoEncoder.close(); audioEncoder.close(); resetExpUI(); return; }
 
-        // Backpressure: wait for the encoder to catch up before submitting more frames.
-        // This is the key fix for the "stuck at 5%" stall — without this, the encoder
-        // queue fills instantly and blocks the entire async loop indefinitely.
         await drainVideoQueue();
 
         const t = f / fps;
@@ -3715,9 +3798,8 @@
         vf.close();
 
         const pct = 5 + Math.round((f / totalFrames) * 88);
-        // Update UI every frame (cheap now that we're already yielding for backpressure)
         setExpProgress(pct, `Frame ${f + 1} / ${totalFrames}`);
-        // Yield to browser every 3 frames to keep UI responsive
+
         if (f % 3 === 0) {
           await new Promise(r => setTimeout(r, 0));
         }
@@ -3728,12 +3810,9 @@
       videoEncoder.close();
       audioEncoder.close();
 
-      // ── Mux to WebM using manual IVF/container wrapper ──
-      // Actually assemble as a proper MP4-like blob using a simple muxer
       setExpProgress(97, 'Writing file…');
       await new Promise(r => setTimeout(r, 20));
 
-      // Use mp4-muxer-style manual assembly (simplified WebM Matroska mux)
       const blob = expFormat === 'mp4'
         ? expMuxToMP4(videoChunks, audioChunks, dur, fps, outW, outH, sampleRate, chosenVideoCodec.codec, chosenAudioCodec, videoDescription)
         : expMuxToWebM(videoChunks, audioChunks, dur, fps, outW, outH, sampleRate, chosenVideoCodec.codec, chosenAudioCodec);
@@ -3790,7 +3869,6 @@
       function ebmlFixed(id, data) {
         const idBytes = (typeof id === 'number') ? encUint(id, id > 0xffffff ? 4 : id > 0xffff ? 3 : id > 0xff ? 2 : 1) : id;
         const len = data.length;
-        // Use 4-byte size always for fixed/large elements
         const sizeBytes = new Uint8Array([(len >> 24 & 0x0f) | 0x10, (len >> 16) & 0xff, (len >> 8) & 0xff, len & 0xff]);
         return concat(idBytes, sizeBytes, data);
       }
@@ -3809,37 +3887,37 @@
 
       // EBML header
       const ebmlHeader = ebml(0x1A45DFA3,
-        ebml(0x4286, new Uint8Array([0x00, 0x00, 0x00, 0x01])),  // EBMLVersion
-        ebml(0x42F7, new Uint8Array([0x00, 0x00, 0x00, 0x01])),  // EBMLReadVersion
-        ebml(0x42F2, new Uint8Array([0x00, 0x00, 0x00, 0x04])),  // EBMLMaxIDLength
-        ebml(0x42F3, new Uint8Array([0x00, 0x00, 0x00, 0x08])),  // EBMLMaxSizeLength
-        ebml(0x4282, utf8('webm')),                               // DocType
-        ebml(0x4287, new Uint8Array([0x00, 0x00, 0x00, 0x02])),  // DocTypeVersion
-        ebml(0x4285, new Uint8Array([0x00, 0x00, 0x00, 0x02]))   // DocTypeReadVersion
+        ebml(0x4286, new Uint8Array([0x00, 0x00, 0x00, 0x01])),
+        ebml(0x42F7, new Uint8Array([0x00, 0x00, 0x00, 0x01])),
+        ebml(0x42F2, new Uint8Array([0x00, 0x00, 0x00, 0x04])),
+        ebml(0x42F3, new Uint8Array([0x00, 0x00, 0x00, 0x08])),
+        ebml(0x4282, utf8('webm')),
+        ebml(0x4287, new Uint8Array([0x00, 0x00, 0x00, 0x02])),
+        ebml(0x4285, new Uint8Array([0x00, 0x00, 0x00, 0x02]))
       );
 
-      const timecodeScale = 1000000; // 1ms in nanoseconds
+      const timecodeScale = 1000000;
 
       // Tracks
       const videoTrack = ebml(0xAE,
-        ebml(0xD7, new Uint8Array([0x01])),                // TrackNumber = 1
-        ebml(0x73C5, new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01])), // TrackUID
-        ebml(0x83, new Uint8Array([0x01])),                // TrackType = video
-        ebml(0x86, utf8(videoWebmCodec)),              // CodecID
-        ebml(0xE0,                                         // Video
-          ebml(0xB0, encUint(width, 2)),                  // PixelWidth
-          ebml(0xBA, encUint(height, 2))                  // PixelHeight
+        ebml(0xD7, new Uint8Array([0x01])),
+        ebml(0x73C5, new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01])),
+        ebml(0x83, new Uint8Array([0x01])),
+        ebml(0x86, utf8(videoWebmCodec)),
+        ebml(0xE0,
+          ebml(0xB0, encUint(width, 2)),
+          ebml(0xBA, encUint(height, 2))
         )
       );
 
       const audioTrack = ebml(0xAE,
-        ebml(0xD7, new Uint8Array([0x02])),                // TrackNumber = 2
-        ebml(0x73C5, new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02])), // TrackUID
-        ebml(0x83, new Uint8Array([0x02])),                // TrackType = audio
-        ebml(0x86, utf8(audioWebmCodec)),                        // CodecID
-        ebml(0xE1,                                         // Audio
-          ebml(0xB5, float32(sampleRate)),                 // SamplingFrequency
-          ebml(0x9F, new Uint8Array([0x02]))               // Channels
+        ebml(0xD7, new Uint8Array([0x02])),
+        ebml(0x73C5, new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02])),
+        ebml(0x83, new Uint8Array([0x02])),
+        ebml(0x86, utf8(audioWebmCodec)),
+        ebml(0xE1,
+          ebml(0xB5, float32(sampleRate)),
+          ebml(0x9F, new Uint8Array([0x02]))
         )
       );
 
@@ -3848,14 +3926,13 @@
       // Info segment
       const durationMs = Math.round(durationSec * 1000);
       const segInfo = ebml(0x1549A966,
-        ebml(0x2AD7B1, encUint(timecodeScale, 4)),         // TimecodeScale
-        ebml(0x4489, float64(durationMs)),                  // Duration
-        ebml(0x4D80, utf8('AudioVizExport')),              // MuxingApp
-        ebml(0x5741, utf8('WebCodecs'))                    // WritingApp
+        ebml(0x2AD7B1, encUint(timecodeScale, 4)),
+        ebml(0x4489, float64(durationMs)),
+        ebml(0x4D80, utf8('AudioVizExport')),
+        ebml(0x5741, utf8('WebCodecs'))
       );
 
       // Build clusters from chunks
-      // Group video+audio chunks into 1-second clusters
       const CLUSTER_MS = 1000;
       const numClusters = Math.ceil(durationMs / CLUSTER_MS);
       const clusters = [];
@@ -3865,7 +3942,6 @@
         const clusterEnd = Math.min(clusterStart + CLUSTER_MS, durationMs);
         const blocks = [];
 
-        // Video blocks in this cluster
         for (const { chunk } of videoChunks) {
           const tsMs = Math.round(chunk.timestamp / 1000);
           if (tsMs < clusterStart || tsMs >= clusterEnd) continue;
@@ -3873,14 +3949,12 @@
           chunk.copyTo(data);
           const relTs = tsMs - clusterStart;
           const isKey = chunk.type === 'key';
-          // SimpleBlock: track_number | timecode (2 bytes) | flags | data
           const tsBytes = new Uint8Array(2); const tsView = new DataView(tsBytes.buffer); tsView.setInt16(0, relTs);
           const flags = isKey ? 0x80 : 0x00;
           const blockData = concat(encVint(1), tsBytes, new Uint8Array([flags]), data);
           blocks.push(ebml(isKey ? 0xA3 : 0xA3, blockData));
         }
 
-        // Audio blocks in this cluster
         for (const { chunk } of audioChunks) {
           const tsMs = Math.round(chunk.timestamp / 1000);
           if (tsMs < clusterStart || tsMs >= clusterEnd) continue;
@@ -3894,7 +3968,7 @@
 
         if (blocks.length > 0) {
           const cluster = ebml(0x1F43B675,
-            ebml(0xE7, encUint(clusterStart, 4)),           // Timecode
+            ebml(0xE7, encUint(clusterStart, 4)),
             ...blocks
           );
           clusters.push(cluster);
@@ -3903,8 +3977,8 @@
 
       const segmentBody = concat(segInfo, tracks, ...clusters);
       const segment = concat(
-        new Uint8Array([0x18, 0x53, 0x80, 0x67]),            // Segment ID
-        new Uint8Array([0x01, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]), // unknown size
+        new Uint8Array([0x18, 0x53, 0x80, 0x67]),
+        new Uint8Array([0x01, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]),
         segmentBody
       );
 
@@ -3945,10 +4019,8 @@
         return box(type, u8(version), new Uint8Array([(flags >> 16) & 0xff, (flags >> 8) & 0xff, flags & 0xff]), ...payloads);
       }
 
-      // Helper to ensure AVCC NAL format (length-prefixed)
       function toAVCC(data) {
         if (data.length > 4 && data[0] === 0 && data[1] === 0 && data[2] === 0 && data[3] === 1) {
-          // Basic block conversion if it's already a single NAL with 4-byte start code
           const len = data.length - 4;
           data[0] = (len >> 24) & 0xff;
           data[1] = (len >> 16) & 0xff;
@@ -3956,7 +4028,6 @@
           data[3] = len & 0xff;
           return data;
         }
-        // More complex Annex-B search if multiple NALs or 3nd-byte start codes
         if (data.length > 3 && data[0] === 0 && data[1] === 0 && (data[2] === 1 || (data[2] === 0 && data[3] === 1))) {
           let nals = [];
           let i = 0;
@@ -4073,5 +4144,4 @@
 
   </script>
 </body>
-
 </html>
