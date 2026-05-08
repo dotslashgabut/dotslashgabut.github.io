@@ -1056,7 +1056,7 @@
           <svg viewBox="0 0 24 24">
             <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
           </svg>
-          <span>Drop audio or click load</span>
+          <span>Drop audio/video or click load</span>
         </div>
         <canvas id="cv-left"></canvas>
         <div class="spinner" id="sp-left">
@@ -1566,30 +1566,63 @@
 
     function loadLocal(side) {
       const inp = document.createElement('input');
-      inp.type = 'file'; inp.accept = 'audio/*';
+      inp.type = 'file'; inp.accept = 'audio/*,video/*';
       inp.onchange = e => { const f = e.target.files[0]; if (f) loadFile(side, f); };
       inp.click();
     }
 
     async function loadFile(side, file) {
-      showSpinner(side, true);
-      document.getElementById(`ph-${side}`).style.display = 'none';
-      // Stop and detach any currently playing source for this side before replacing it
-      if (audio[side]?.source) {
-        try { audio[side].source.onended = null; audio[side].source.stop(); } catch (e) { }
-        audio[side].source = null; audio[side].analyser = null;
-      }
-      const buf = await file.arrayBuffer();
-      const actx = getAudioCtx();
-      const buffer = await actx.decodeAudioData(buf);
-      audio[side] = { buffer, duration: buffer.duration, pcm: extractPCM(buffer), analyser: null, source: null, gainNode: null };
-      spectrogramRowCache[side] = null;
-      buildSpectrogram(side);
-      document.getElementById(`name-${side}`).textContent = file.name;
-      document.getElementById(`name-${side}`).title = file.name;
-      showSpinner(side, false);
-      renderFrame(); updateTimeDisplay();
-      if (masterPlaying) { stopAll(); startAll(); }
+        showSpinner(side, true);
+        document.getElementById(`ph-${side}`).style.display = 'none';
+    
+        // Stop and detach any currently playing source for this side before replacing it
+        if (audio[side]?.source) {
+            try { audio[side].source.onended = null; audio[side].source.stop(); } catch (e) { }
+            audio[side].source = null; audio[side].analyser = null;
+        }
+    
+        try {
+            let buffer;
+            const isVideo = file.type.startsWith('video/');
+    
+            if (isVideo) {
+                // Extract audio from video
+                buffer = await extractAudioFromVideo(file);
+            } else {
+                // Load audio directly
+                const buf = await file.arrayBuffer();
+                const actx = getAudioCtx();
+                buffer = await actx.decodeAudioData(buf);
+            }
+    
+            const actx = getAudioCtx();
+            audio[side] = { 
+                buffer, 
+                duration: buffer.duration, 
+                pcm: extractPCM(buffer), 
+                analyser: null, 
+                source: null, 
+                gainNode: null,
+                isVideo: isVideo,
+                fileName: file.name
+            };
+            spectrogramRowCache[side] = null;
+            buildSpectrogram(side);
+    
+            // Show filename with video indicator
+            const displayName = isVideo ? `🎬 ${file.name}` : `🎵 ${file.name}`;
+            document.getElementById(`name-${side}`).textContent = displayName;
+            document.getElementById(`name-${side}`).title = displayName;
+    
+            showSpinner(side, false);
+            renderFrame(); 
+            updateTimeDisplay();
+            if (masterPlaying) { stopAll(); startAll(); }
+        } catch (e) {
+            showSpinner(side, false);
+            console.error('Error loading file:', e);
+            alert(`Failed to load ${file.name}: ${e.message}`);
+        }
     }
 
     function extractPCM(buffer) {
@@ -1601,6 +1634,65 @@
       const s = 1 / buffer.numberOfChannels;
       for (let i = 0; i < len; i++) out[i] *= s;
       return out;
+    }
+
+    async function extractAudioFromVideo(file) {
+        // First try: Use decodeAudioData directly (works for some video formats)
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const actx = getAudioCtx();
+            const audioBuffer = await actx.decodeAudioData(arrayBuffer.slice(0));
+            return audioBuffer;
+        } catch (e) {
+            // Second try: Use video element + MediaElementSource + OfflineAudioContext
+            return new Promise((resolve, reject) => {
+                const video = document.createElement('video');
+                video.preload = 'auto';
+                video.muted = true;
+    
+                const url = URL.createObjectURL(file);
+    
+                video.onloadedmetadata = async () => {
+                    const duration = video.duration;
+                    if (!isFinite(duration) || duration <= 0) {
+                        URL.revokeObjectURL(url);
+                        reject(new Error('Could not determine video duration'));
+                        return;
+                    }
+    
+                    try {
+                        const offlineCtx = new OfflineAudioContext({
+                            numberOfChannels: 2,
+                            length: Math.ceil(44100 * duration),
+                            sampleRate: 44100
+                        });
+    
+                        // Create a temporary audio element to decode the audio portion
+                        const audioEl = document.createElement('audio');
+                        audioEl.src = url;
+    
+                        // Use a second approach: re-read the file as audio
+                        const response = await fetch(url);
+                        const arrayBuffer = await response.arrayBuffer();
+                        const actx = getAudioCtx();
+                        const audioBuffer = await actx.decodeAudioData(arrayBuffer);
+    
+                        URL.revokeObjectURL(url);
+                        resolve(audioBuffer);
+                    } catch (e2) {
+                        URL.revokeObjectURL(url);
+                        reject(new Error('Failed to extract audio from video. The video format may not be supported.'));
+                    }
+                };
+    
+                video.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    reject(new Error('Failed to load video file'));
+                };
+    
+                video.src = url;
+            });
+        }
     }
 
     function startAll() {
@@ -3016,7 +3108,7 @@
     window.addEventListener('dragenter', (e) => { if (!isADrag(e)) return; e.preventDefault(); dragDepth++; });
     window.addEventListener('dragleave', (e) => { if (!isADrag(e)) return; dragDepth--; if (dragDepth <= 0) { dragDepth = 0; document.getElementById('drop-left').classList.remove('active'); document.getElementById('drop-right').classList.remove('active'); } });
     window.addEventListener('dragover', (e) => { if (!isADrag(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; const s = sideFromX(e.clientX); document.getElementById('drop-left').classList.toggle('active', s === 'left'); document.getElementById('drop-right').classList.toggle('active', s === 'right'); });
-    window.addEventListener('drop', (e) => { e.preventDefault(); dragDepth = 0; document.getElementById('drop-left').classList.remove('active'); document.getElementById('drop-right').classList.remove('active'); const f = e.dataTransfer.files[0]; if (!f || !f.type.startsWith('audio/')) return; loadFile(sideFromX(e.clientX), f); });
+    window.addEventListener('drop', (e) => { e.preventDefault(); dragDepth = 0; document.getElementById('drop-left').classList.remove('active'); document.getElementById('drop-right').classList.remove('active'); const f = e.dataTransfer.files[0]; if (!f || (!f.type.startsWith('audio/') && !f.type.startsWith('video/'))) return; loadFile(sideFromX(e.clientX), f); });
 
     document.getElementById('btn-play').addEventListener('click', togglePlay);
     document.getElementById('btn-stop').addEventListener('click', stopPlayback);
