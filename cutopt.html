@@ -155,7 +155,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
     <button class="mode-btn active" id="btn1D" onclick="setMode('1d')">📏 1D Linear</button>
     <button class="mode-btn" id="btn2D" onclick="setMode('2d')">▦ 2D Sheet</button>
     <button class="mode-btn" id="btnPaper" onclick="setMode('paper')">📄 Paper</button>
-    <button class="mode-btn" id="btnSplit" onclick="setMode('split')">✂️ Split</button>
+    <button class="mode-btn" id="btnCut1" onclick="setMode('cut1')">✂️ Cut 1 Sheet</button>
+    <button class="mode-btn" id="btnSplit" onclick="setMode('split')">🔢 Split</button>
   </div>
 </div>
 
@@ -532,6 +533,126 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
   </div>
 </div>
 
+<!-- ══════════════ CUT 1 SHEET SECTION ══════════════ -->
+<div id="secCut1" style="display:none">
+  <div class="grid">
+    <!-- LEFT: Parent Sheet (Stock) — no orientation toggle -->
+    <div><div class="card">
+      <div class="card-title">Parent Sheet (Stock)</div>
+      <div class="form-group">
+        <label>Paper Family</label>
+        <div class="paper-family-tabs" id="cut1FamilyTabs">
+          <button class="pftab active" onclick="cut1ShowFamily('iso-a',this)">ISO A</button>
+          <button class="pftab" onclick="cut1ShowFamily('iso-b',this)">ISO B</button>
+          <button class="pftab" onclick="cut1ShowFamily('iso-c',this)">ISO C</button>
+          <button class="pftab" onclick="cut1ShowFamily('us',this)">US/ANSI</button>
+          <button class="pftab" onclick="cut1ShowFamily('arch',this)">Arch</button>
+          <button class="pftab" onclick="cut1ShowFamily('photo',this)">Photo</button>
+          <button class="pftab" onclick="cut1ShowFamily('plano-offset',this)">🖨 Offset</button>
+          <button class="pftab" onclick="cut1ShowFamily('plano-bc',this)">🪪 BC</button>
+          <button class="pftab" onclick="cut1ShowFamily('plano-sticker',this)">🏷 Stiker</button>
+          <button class="pftab" onclick="cut1ShowFamily('plano-digital',this)">💻 Digital</button>
+          <button class="pftab" onclick="cut1ShowFamily('plano-packaging',this)">📦 Packaging</button>
+          <button class="pftab" onclick="cut1ShowFamily('art-paper',this)">✨ Art Paper</button>
+          <button class="pftab" onclick="cut1ShowFamily('custom',this)">Custom</button>
+        </div>
+        <div class="paper-size-grid" id="cut1SourceGrid"></div>
+      </div>
+      <div class="form-group" id="cut1CustomSrcGroup" style="display:none">
+        <label>Custom Source Size (mm)</label>
+        <div class="input-row">
+          <input type="number" id="cut1CustSrcW" placeholder="Width mm" min="1" oninput="cut1UpdateSourceDisplay()">
+          <input type="number" id="cut1CustSrcH" placeholder="Height mm" min="1" oninput="cut1UpdateSourceDisplay()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Selected Sheet</label>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-family:var(--mono);font-size:.9rem">
+          <span id="cut1SourceDisplay" style="color:var(--accent)">A1 — 594 × 841 mm</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Blade Kerf (mm)</label>
+        <input type="number" id="cut1Kerf" value="0" min="0" step="0.5">
+      </div>
+      <div class="ibox"><span class="iicon">ℹ</span>Select your stock sheet. The calculator will try all portrait &amp; landscape orientations of both the sheet and the target piece to maximise yield.</div>
+    </div></div>
+
+    <!-- RIGHT: Target Piece Size -->
+    <div><div class="card">
+      <div class="card-title">Target Piece Size</div>
+      <div class="form-group">
+        <label>Piece Paper Family</label>
+        <div class="paper-family-tabs" id="cut1PieceFamilyTabs">
+          <button class="pftab active" onclick="cut1ShowPieceFamily('iso-a',this)">ISO A</button>
+          <button class="pftab" onclick="cut1ShowPieceFamily('iso-b',this)">ISO B</button>
+          <button class="pftab" onclick="cut1ShowPieceFamily('iso-c',this)">ISO C</button>
+          <button class="pftab" onclick="cut1ShowPieceFamily('us',this)">US/ANSI</button>
+          <button class="pftab" onclick="cut1ShowPieceFamily('arch',this)">Arch</button>
+          <button class="pftab" onclick="cut1ShowPieceFamily('photo',this)">Photo</button>
+          <button class="pftab" onclick="cut1ShowPieceFamily('plano-offset',this)">🖨 Offset</button>
+          <button class="pftab" onclick="cut1ShowPieceFamily('plano-bc',this)">🪪 BC</button>
+          <button class="pftab" onclick="cut1ShowPieceFamily('plano-sticker',this)">🏷 Stiker</button>
+          <button class="pftab" onclick="cut1ShowPieceFamily('plano-digital',this)">💻 Digital</button>
+          <button class="pftab" onclick="cut1ShowPieceFamily('plano-packaging',this)">📦 Packaging</button>
+          <button class="pftab" onclick="cut1ShowPieceFamily('art-paper',this)">✨ Art Paper</button>
+          <button class="pftab" onclick="cut1ShowPieceFamily('custom',this)">Custom</button>
+        </div>
+        <div class="paper-size-grid" id="cut1PieceGrid" style="margin-top:8px"></div>
+      </div>
+      <div class="form-group" id="cut1CustomPieceGroup" style="display:none">
+        <label>Custom Piece Size (mm)</label>
+        <div class="input-row">
+          <input type="number" id="cut1CustPieceW" placeholder="Width mm" min="1" oninput="cut1UpdatePieceDisplay()">
+          <input type="number" id="cut1CustPieceH" placeholder="Height mm" min="1" oninput="cut1UpdatePieceDisplay()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Selected Piece</label>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-family:var(--mono);font-size:.9rem">
+          <span id="cut1PieceDisplay" style="color:var(--accent3)">— select a size above —</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Max Variants to Show</label>
+        <select id="cut1MaxVar">
+          <option value="4">4 variants</option>
+          <option value="6">6 variants</option>
+          <option value="8" selected>8 variants</option>
+          <option value="12">12 variants</option>
+          <option value="999">All variants</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Sort Variants By</label>
+        <select id="cut1SortBy">
+          <option value="count">Most Pieces (max yield)</option>
+          <option value="eff">Highest Efficiency %</option>
+          <option value="waste">Least Waste</option>
+        </select>
+      </div>
+      <div class="ibox" style="margin-bottom:14px"><span class="iicon">✂️</span>All portrait &amp; landscape combinations of source and piece are tested. Mixed guillotine layouts (primary grid + secondary strip) are also included for maximum yield options.</div>
+      <button class="btn btn-p btn-full" onclick="runCut1()" style="font-size:1rem;padding:14px">✂️ Calculate All Cut Variants</button>
+    </div></div>
+  </div>
+
+  <!-- CUT 1 SHEET RESULTS -->
+  <div class="results-section" id="resCut1" style="display:none">
+    <div class="card" style="animation-delay:.1s">
+      <div class="card-title">Cut Variants — 1 Sheet</div>
+      <div id="cut1SummaryBar" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:16px;font-family:var(--mono);font-size:.85rem;display:flex;flex-wrap:wrap;gap:16px;align-items:center"></div>
+      <div class="cpt">Layout Variants (Portrait, Landscape &amp; Mixed)</div>
+      <div id="cut1VariantsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:10px"></div>
+      <div class="arow" style="margin-top:18px">
+        <button class="btn btn-s btn-sm" onclick="dlAllCut1('png')">⬇ PNG All</button>
+        <button class="btn btn-s btn-sm" onclick="dlAllCut1('svg')">⬇ SVG All</button>
+        <button class="btn btn-s btn-sm" onclick="copyCut1Report()">📋 Copy Report</button>
+        <button class="btn btn-d btn-sm" onclick="document.getElementById('resCut1').style.display='none'">✕ Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════ SPLIT SECTION ══════════════ -->
 <div id="secSplit" style="display:none">
   <div class="grid">
@@ -658,6 +779,7 @@ window.onload=()=>{
   updateU2d();
   initPaper();
   initSplit();
+  initCut1();
 };
 
 // ════════ THEME ════════
@@ -669,10 +791,12 @@ function setMode(m){
   document.getElementById('sec1d').style.display=m==='1d'?'':'none';
   document.getElementById('sec2d').style.display=m==='2d'?'':'none';
   document.getElementById('secPaper').style.display=m==='paper'?'':'none';
+  document.getElementById('secCut1').style.display=m==='cut1'?'':'none';
   document.getElementById('secSplit').style.display=m==='split'?'':'none';
   document.getElementById('btn1D').classList.toggle('active',m==='1d');
   document.getElementById('btn2D').classList.toggle('active',m==='2d');
   document.getElementById('btnPaper').classList.toggle('active',m==='paper');
+  document.getElementById('btnCut1').classList.toggle('active',m==='cut1');
   document.getElementById('btnSplit').classList.toggle('active',m==='split');
 }
 
@@ -2106,7 +2230,7 @@ function copyPaper(){
 function fv(v,u){return`${Number(v).toFixed(1)} ${u||'mm'}`}
 function fa(v,u){return v>=1000000?`${(v/1000000).toFixed(2)} ${u}²`:`${Math.round(v)} ${u}²`}
 function toast(msg,err=false){const t=document.getElementById('toast');t.textContent=msg;t.style.borderLeftColor=err?'var(--accent2)':'var(--accent)';t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3400)}
-function resetAll(){if(!confirm('Reset everything?'))return;p1=[];p2=[];paperPieces=[];c1={};c2={};paperColors={};ci1=0;ci2=0;paperCI=0;rnd1d();rnd2d();rndPaper();document.getElementById('res1d').style.display='none';document.getElementById('res2d').style.display='none';document.getElementById('resPaper').style.display='none';document.getElementById('resSplit').style.display='none';toast('Reset complete')}
+function resetAll(){if(!confirm('Reset everything?'))return;p1=[];p2=[];paperPieces=[];c1={};c2={};paperColors={};ci1=0;ci2=0;paperCI=0;rnd1d();rnd2d();rndPaper();document.getElementById('res1d').style.display='none';document.getElementById('res2d').style.display='none';document.getElementById('resPaper').style.display='none';document.getElementById('resCut1').style.display='none';document.getElementById('resSplit').style.display='none';toast('Reset complete')}
 
 // ════════ SPLIT MODE ════════
 let splitSourceW=594, splitSourceH=841, splitSourceName='A1', splitOrient='portrait';
@@ -2455,8 +2579,629 @@ function copySplitReport(){
   });
   navigator.clipboard.writeText(t).then(()=>toast('Laporan disalin!'));
 }
-function copy1d(){const r=document.querySelectorAll('#sum1d tr');let t=`CutOpt 1D Report\nMaterial: ${mat1}\n\n=== PIECES ===\n`;r.forEach(r=>{t+=[...r.querySelectorAll('td')].map(c=>c.innerText.trim()).join(' | ')+'\n'});navigator.clipboard.writeText(t).then(()=>toast('Copied!'))}
+function copyCut1Report(){
+  const src=document.getElementById('cut1SourceDisplay').textContent;
+  const pce=document.getElementById('cut1PieceDisplay').textContent;
+  let t=`CutOpt Cut 1 Sheet Report\nSource: ${src}\nPiece: ${pce}\n\n`;
+  document.querySelectorAll('#cut1VariantsGrid > div').forEach((wrap,i)=>{
+    const hdr=wrap.querySelector('div');
+    t+=`Variant ${i+1}: ${hdr?hdr.innerText.replace(/\s+/g,' ').trim():''}\n`;
+  });
+  navigator.clipboard.writeText(t).then(()=>toast('Laporan disalin!'));
+}
+
+// ════════ CUT 1 SHEET MODE ════════
+let cut1SrcW=594, cut1SrcH=841, cut1SrcName='A1';
+let cut1PieceW=0, cut1PieceH=0, cut1PieceName='';
+let cut1SrcFamily='iso-a', cut1PieceFamily='iso-a';
+let _cut1Canvases=[], _cut1SVGData=[];
+
+function initCut1(){
+  cut1ShowFamily('iso-a', document.querySelector('#cut1FamilyTabs .pftab'));
+  cut1ShowPieceFamily('iso-a', document.querySelector('#cut1PieceFamilyTabs .pftab'));
+}
+
+function cut1ShowFamily(family, el){
+  cut1SrcFamily=family;
+  document.querySelectorAll('#cut1FamilyTabs .pftab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const grid=document.getElementById('cut1SourceGrid');
+  const custGrp=document.getElementById('cut1CustomSrcGroup');
+  if(family==='custom'){grid.innerHTML='';custGrp.style.display='';return}
+  custGrp.style.display='none';
+  const sizes=PAPER_DB[family]||[];
+  grid.innerHTML=sizes.map(s=>`<button class="psz-btn" onclick="cut1SelectSource(${s.w},${s.h},'${s.n}',this)"><span class="psz-name">${s.n}</span><span class="psz-dim">${s.w}×${s.h}</span></button>`).join('');
+  if(sizes.length){const first=grid.querySelector('.psz-btn');if(first){first.classList.add('active');cut1SelectSource(sizes[0].w,sizes[0].h,sizes[0].n,first)}}
+}
+
+function cut1SelectSource(w,h,name,el){
+  document.querySelectorAll('#cut1SourceGrid .psz-btn').forEach(b=>b.classList.remove('active'));
+  if(el)el.classList.add('active');
+  cut1SrcW=w; cut1SrcH=h; cut1SrcName=name;
+  cut1UpdateSourceDisplay();
+}
+
+function cut1UpdateSourceDisplay(){
+  const cw=parseFloat(document.getElementById('cut1CustSrcW').value);
+  const ch=parseFloat(document.getElementById('cut1CustSrcH').value);
+  if(cut1SrcFamily==='custom'&&cw&&ch){cut1SrcW=cw;cut1SrcH=ch;cut1SrcName='Custom'}
+  document.getElementById('cut1SourceDisplay').textContent=`${cut1SrcName} — ${cut1SrcW} × ${cut1SrcH} mm`;
+}
+
+function cut1ShowPieceFamily(family, el){
+  cut1PieceFamily=family;
+  document.querySelectorAll('#cut1PieceFamilyTabs .pftab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const custGrp=document.getElementById('cut1CustomPieceGroup');
+  const grid=document.getElementById('cut1PieceGrid');
+  if(family==='custom'){grid.innerHTML='';custGrp.style.display='';return}
+  custGrp.style.display='none';
+  const sizes=PAPER_DB[family]||[];
+  grid.innerHTML=sizes.map(s=>`<button class="psz-btn" onclick="cut1SelectPiece(${s.w},${s.h},'${s.n}',this)"><span class="psz-name">${s.n}</span><span class="psz-dim">${s.w}×${s.h}</span></button>`).join('');
+  cut1PieceW=0; cut1PieceH=0; cut1PieceName='';
+  document.getElementById('cut1PieceDisplay').textContent='— select a size above —';
+  document.getElementById('cut1PieceDisplay').style.color='var(--accent3)';
+}
+
+function cut1SelectPiece(w,h,name,el){
+  document.querySelectorAll('#cut1PieceGrid .psz-btn').forEach(b=>b.classList.remove('active'));
+  if(el)el.classList.add('active');
+  cut1PieceW=w; cut1PieceH=h; cut1PieceName=name;
+  cut1UpdatePieceDisplay();
+}
+
+function cut1UpdatePieceDisplay(){
+  const cw=parseFloat(document.getElementById('cut1CustPieceW').value);
+  const ch=parseFloat(document.getElementById('cut1CustPieceH').value);
+  if(cut1PieceFamily==='custom'&&cw&&ch){cut1PieceW=cw;cut1PieceH=ch;cut1PieceName='Custom'}
+  if(cut1PieceW&&cut1PieceH){
+    document.getElementById('cut1PieceDisplay').textContent=`${cut1PieceName} — ${cut1PieceW} × ${cut1PieceH} mm`;
+    document.getElementById('cut1PieceDisplay').style.color='var(--accent)';
+  }
+}
+
+function runCut1(){
+  const kerf=parseFloat(document.getElementById('cut1Kerf').value)||0;
+  const maxVar=parseInt(document.getElementById('cut1MaxVar').value)||8;
+  const sortBy=document.getElementById('cut1SortBy').value;
+  // Resolve custom source
+  if(cut1SrcFamily==='custom'){
+    const cw=parseFloat(document.getElementById('cut1CustSrcW').value);
+    const ch=parseFloat(document.getElementById('cut1CustSrcH').value);
+    if(cw&&ch){cut1SrcW=cw;cut1SrcH=ch;cut1SrcName='Custom';}
+  }
+  // Resolve custom piece
+  if(cut1PieceFamily==='custom'){
+    const cw=parseFloat(document.getElementById('cut1CustPieceW').value);
+    const ch=parseFloat(document.getElementById('cut1CustPieceH').value);
+    if(cw&&ch){cut1PieceW=cw;cut1PieceH=ch;cut1PieceName='Custom';}
+  }
+  if(!cut1SrcW||!cut1SrcH){toast('⚠ Select a source sheet!',true);return}
+  if(!cut1PieceW||!cut1PieceH){toast('⚠ Select a target piece size!',true);return}
+
+  const RW=cut1SrcW, RH=cut1SrcH;
+  const PW=cut1PieceW, PH=cut1PieceH;
+  const variants=[];
+
+  // Helper: simple grid fit
+  function gridFit(sw,sh,pw,ph){
+    if(pw>sw||ph>sh)return null;
+    const cols=Math.floor((sw+kerf)/(pw+kerf));
+    const rows=Math.floor((sh+kerf)/(ph+kerf));
+    if(cols<1||rows<1)return null;
+    const count=cols*rows;
+    const usedArea=pw*ph*count;
+    const totalArea=sw*sh;
+    const eff=(usedArea/totalArea)*100;
+    const waste=totalArea-usedArea;
+    return{cols,rows,count,eff:Math.round(eff*10)/10,waste:Math.round(waste),pw,ph,sw,sh};
+  }
+
+  // Helper: Row-Band layout — each horizontal strip independently picks portrait or landscape
+  // This produces layouts like the reference image: rows with different orientations
+  function rowBandFit(sw,sh,sOrient){
+    const ppw=Math.min(PW,PH), pph=Math.max(PW,PH); // portrait piece
+    const lpw=Math.max(PW,PH), lph=Math.min(PW,PH); // landscape piece
+    const opts=[];
+    const pc=Math.floor((sw+kerf)/(ppw+kerf));
+    if(pc>=1&&pph<=sh) opts.push({pw:ppw,ph:pph,cols:pc,orient:'portrait'});
+    if(lpw!==ppw||lph!==pph){const lc=Math.floor((sw+kerf)/(lpw+kerf));if(lc>=1&&lph<=sh)opts.push({pw:lpw,ph:lph,cols:lc,orient:'landscape'});}
+    if(opts.length<2)return null; // need both orientations to be meaningful
+    const minPh=Math.min(...opts.map(o=>o.ph));
+    const memo=new Map();
+    function solve(rem){
+      const key=Math.round(rem*10);
+      if(rem<minPh-0.001)return{pieces:0,bands:[]};
+      if(memo.has(key))return memo.get(key);
+      let best={pieces:0,bands:[]};
+      for(const o of opts){
+        if(o.ph>rem+0.001)continue;
+        const sub=solve(Math.max(0,rem-o.ph-kerf));
+        const tot=o.cols+sub.pieces;
+        if(tot>best.pieces){best={pieces:tot,bands:[o,...sub.bands]};}
+      }
+      memo.set(key,best);
+      return best;
+    }
+    const res=solve(sh);
+    if(res.pieces===0)return null;
+    // Only keep if truly mixed (has both orientations)
+    const hasP=res.bands.some(b=>b.orient==='portrait');
+    const hasL=res.bands.some(b=>b.orient==='landscape');
+    if(!hasP||!hasL)return null;
+    // Assign y positions
+    let y=0;
+    const bands=res.bands.map(b=>{const band={...b,y};y+=b.ph+kerf;return band;});
+    const usedArea=bands.reduce((s,b)=>s+b.cols*b.pw*b.ph,0);
+    const totalArea=sw*sh;
+    return{
+      count:res.pieces,bands,
+      eff:Math.round(usedArea/totalArea*1000)/10,
+      waste:Math.round(totalArea-usedArea),
+      sw,sh,sOrient,pw:null,ph:null,
+      rowBand:true,mixed:false,bonus:0,
+      label:`${sOrient==='portrait'?'◻':'▭'} sheet · row-band mixed (${bands.length} strips)`
+    };
+  }
+
+  // Helper: mixed guillotine (primary grid + secondary strip in leftover)
+  function mixedFit(sw,sh,pw,ph,pw2,ph2){
+    if(pw>sw||ph>sh)return null;
+    const cols=Math.floor((sw+kerf)/(pw+kerf));
+    const rows=Math.floor((sh+kerf)/(ph+kerf));
+    if(cols<1||rows<1)return null;
+    // Remaining strips
+    const usedW=cols*(pw+kerf)-kerf;
+    const usedH=rows*(ph+kerf)-kerf;
+    const remRight=sw-usedW-(kerf>0?kerf:0); // vertical strip on right
+    const remBottom=sh-usedH-(kerf>0?kerf:0); // horizontal strip on bottom
+
+    let bonus=0;
+    // Try secondary piece in right strip (full height)
+    if(remRight>=pw2&&sh>=ph2){
+      const bc=Math.floor((remRight+kerf)/(pw2+kerf));
+      const br=Math.floor((sh+kerf)/(ph2+kerf));
+      bonus+=bc*br;
+    }
+    // Try secondary piece in bottom strip (used width only)
+    if(remBottom>=ph2&&usedW>=pw2){
+      const bc=Math.floor((usedW+kerf)/(pw2+kerf));
+      const br=Math.floor((remBottom+kerf)/(ph2+kerf));
+      bonus+=bc*br;
+    }
+    if(bonus===0)return null;
+    const count=cols*rows+bonus;
+    const usedArea=cols*rows*pw*ph+bonus*pw2*ph2;
+    const eff=(usedArea/(sw*sh))*100;
+    return{cols,rows,count,bonus,eff:Math.round(eff*10)/10,waste:Math.round(sw*sh-usedArea),pw,ph,pw2,ph2,sw,sh,mixed:true};
+  }
+
+  // Source orientations (portrait and landscape; if square only one)
+  const srcVariants=[];
+  const sP={sw:Math.min(RW,RH),sh:Math.max(RW,RH),sOrient:'portrait'};
+  const sL={sw:Math.max(RW,RH),sh:Math.min(RW,RH),sOrient:'landscape'};
+  srcVariants.push(sP);
+  if(sP.sw!==sL.sw||sP.sh!==sL.sh) srcVariants.push(sL);
+
+  // Piece orientations (portrait and landscape)
+  const pieceOrients=[];
+  const pP={pw:Math.min(PW,PH),ph:Math.max(PW,PH),pOrient:'portrait',rotated:false};
+  const pL={pw:Math.max(PW,PH),ph:Math.min(PW,PH),pOrient:'landscape',rotated:true};
+  pieceOrients.push(pP);
+  if(pP.pw!==pL.pw||pP.ph!==pL.ph) pieceOrients.push(pL);
+
+  const seen=new Set();
+  function addVariant(v){
+    const key=v.rowBand
+      ?`rowband_${v.sw}x${v.sh}_${v.bands.map(b=>b.orient[0]+b.cols).join('-')}`
+      :`${v.sw}x${v.sh}_${v.pw}x${v.ph}_${v.cols}x${v.rows}_${v.bonus||0}_${v.pw2||0}x${v.ph2||0}`;
+    if(seen.has(key))return;
+    seen.add(key);
+    variants.push(v);
+  }
+
+  srcVariants.forEach(({sw,sh,sOrient})=>{
+    pieceOrients.forEach(({pw,ph,pOrient,rotated})=>{
+      // Simple grid
+      const g=gridFit(sw,sh,pw,ph);
+      if(g) addVariant({...g,sOrient,pOrient,rotated,label:`${sOrient==='portrait'?'◻ Portrait':'▭ Landscape'} sheet · piece ${pOrient}${rotated?' ↻':''}`,mixed:false,bonus:0});
+      // Mixed: primary piece in normal, secondary in remaining space (same or rotated)
+      pieceOrients.forEach(({pw:pw2,ph:ph2,pOrient:pOrient2,rotated:rot2})=>{
+        if(pw===pw2&&ph===ph2)return; // same orientation, no bonus
+        const m=mixedFit(sw,sh,pw,ph,pw2,ph2);
+        if(m) addVariant({...m,sOrient,pOrient,rotated,pOrient2,rotated2:rot2,label:`${sOrient==='portrait'?'◻':'▭'} sheet · primary ${pOrient}${rotated?' ↻':''} + secondary ${pOrient2}${rot2?' ↻':''} (mixed)`,mixed:true});
+      });
+    });
+    // Row-band: full-width strips each independently portrait or landscape
+    const rb=rowBandFit(sw,sh,sOrient);
+    if(rb) addVariant(rb);
+  });
+
+  if(!variants.length){toast('⚠ Piece is too large to fit in the source sheet!',true);return}
+
+  // Sort
+  if(sortBy==='count') variants.sort((a,b)=>b.count-a.count);
+  else if(sortBy==='eff') variants.sort((a,b)=>b.eff-a.eff);
+  else variants.sort((a,b)=>a.waste-b.waste);
+
+  const display=variants.slice(0,maxVar===999?variants.length:maxVar);
+  const best=display[0];
+
+  document.getElementById('cut1SummaryBar').innerHTML=`
+    <span>📄 <strong>${cut1SrcName}</strong> ${RW}×${RH} mm</span>
+    <span>✂️ Piece: <strong>${cut1PieceName}</strong> ${PW}×${PH} mm</span>
+    <span>📐 ${display.length} variants found (${variants.length} total)</span>
+    <span style="color:var(--accent)">⚡ Best: ${best?best.count:0} pieces · ${best?best.eff:0}% eff</span>
+  `;
+
+  const grid2=document.getElementById('cut1VariantsGrid');
+  grid2.innerHTML=''; _cut1Canvases=[]; _cut1SVGData=[];
+
+  display.forEach((v,idx)=>{
+    const isDark=document.documentElement.getAttribute('data-theme')!=='light';
+    const CARD_W=Math.min((grid2.offsetWidth||600)/Math.min(display.length,3),320);
+    const sc=Math.min(CARD_W/v.sw, 220/v.sh);
+    const cw=Math.round(v.sw*sc), ch=Math.round(v.sh*sc);
+    const HDR=32;
+
+    const wrap=document.createElement('div');
+    wrap.style.cssText='border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface);transition:border-color .2s;cursor:pointer';
+    wrap.onmouseenter=()=>wrap.style.borderColor='var(--accent)';
+    wrap.onmouseleave=()=>wrap.style.borderColor='var(--border)';
+
+    const effColor=v.eff>=99?'var(--accent)':v.eff>=90?'#ffc94d':'var(--text)';
+    const info=document.createElement('div');
+    info.style.cssText='padding:10px 14px;border-bottom:1px solid var(--border)';
+    let gridDetail, pieceDetail;
+    if(v.rowBand){
+      // Summarise each strip
+      const stripSummary=v.bands.map(b=>`${b.cols}× <span style="color:${b.orient==='portrait'?'#4fc3f7':'#81c784'}">${b.orient==='portrait'?'◻':'▭'} ${b.pw}×${b.ph}</span>`).join('&ensp;|&ensp;');
+      gridDetail=`<div style="font-family:var(--mono);font-size:.69rem;color:var(--text-muted);margin-top:3px;line-height:1.7">${stripSummary}</div>`;
+      pieceDetail=`<div style="font-family:var(--mono);font-size:.7rem;color:var(--text-muted);margin-bottom:2px">${v.label}</div>`;
+    } else {
+      gridDetail=`<div style="font-family:var(--mono);font-size:.7rem;color:var(--text-muted)">Grid: ${v.cols}×${v.rows}${v.bonus?` + ${v.bonus} bonus`:''}&nbsp;·&nbsp;Piece: <strong style="color:var(--text)">${v.pw}×${v.ph} mm</strong>${v.mixed?`&nbsp;/&nbsp;<strong style="color:var(--accent3)">${v.pw2}×${v.ph2} mm</strong>`:''}</div>`;
+      pieceDetail=`<div style="font-family:var(--mono);font-size:.7rem;color:var(--text-muted);margin-bottom:2px">${v.label}</div>`;
+    }
+    info.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-weight:800;font-size:.88rem">${v.count} pieces${v.rowBand?` <small style="font-weight:600;color:#4dd0e1;font-size:.7rem">(row-band)</small>`:v.mixed?` <small style="font-weight:600;color:var(--accent3);font-size:.7rem">(mixed)</small>`:''}</span>
+        <span style="font-family:var(--mono);font-size:.85rem;font-weight:700;color:${effColor}">${v.eff}%</span>
+      </div>
+      ${pieceDetail}${gridDetail}
+      <div style="font-family:var(--mono);font-size:.68rem;color:var(--text-dim);margin-top:2px">Waste: ${v.waste} mm²</div>
+    `;
+    if(idx===0){
+      const badge=document.createElement('span');
+      badge.style.cssText='background:var(--accent);color:#0d0f14;font-size:.62rem;font-weight:800;padding:2px 8px;border-radius:99px;margin-left:6px;vertical-align:middle;font-family:var(--sans)';
+      badge.textContent='BEST';
+      info.querySelector('span').appendChild(badge);
+    }
+
+    const cvWrap=document.createElement('div');
+    cvWrap.style.cssText='background:var(--surface2);position:relative;overflow:hidden';
+
+    const cv=document.createElement('canvas');cv.width=cw;cv.height=ch+HDR;cv.style.cssText='display:block;width:100%;height:auto';
+    const hcv=document.createElement('canvas');hcv.width=cw*2;hcv.height=(ch+HDR)*2;
+    _cut1Canvases.push(hcv);
+
+    [cv,hcv].forEach((target,ti)=>{
+      const S=ti===0?1:2;
+      const ctx=target.getContext('2d');
+      if(ti===1)ctx.scale(S,S);
+
+      // Header
+      ctx.fillStyle=isDark?'#0d0f14':'#d0d4e8';ctx.fillRect(0,0,cw,HDR);
+      ctx.fillStyle='#00e5b0';ctx.font=`bold ${HDR*.34}px Syne,sans-serif`;ctx.textAlign='left';ctx.textBaseline='middle';
+      ctx.fillText('CutOpt',HDR*.22,HDR*.38);
+      ctx.fillStyle=isDark?'#e8eaf2':'#1a1e2e';ctx.font=`bold ${HDR*.32}px Syne,sans-serif`;
+      ctx.fillText(`${v.count} pcs — ${v.eff}%`,HDR*2.2,HDR*.38);
+      ctx.fillStyle=isDark?'rgba(107,116,148,.85)':'rgba(80,90,120,.8)';ctx.font=`${HDR*.23}px DM Mono,monospace`;
+      const headerSub=v.rowBand?`${cut1SrcName} · row-band (${v.bands.length} strips)  `:` ${cut1SrcName} → ${cut1PieceName} · ${v.sOrient}`;
+      ctx.fillText(headerSub,HDR*.22,HDR*.8);
+      ctx.fillStyle=isDark?'rgba(0,229,176,.5)':'rgba(0,122,90,.4)';ctx.fillRect(0,HDR-1.5,cw,1.5);
+
+      ctx.save();ctx.translate(0,HDR);
+      ctx.fillStyle=isDark?'#1e2330':'#e8eaf2';ctx.fillRect(0,0,cw,ch);
+
+      const colors=['#4fc3f7','#81c784','#ffb74d','#f06292','#ba68c8','#4dd0e1','#aed581','#ff8a65'];
+      const altColors=['#e57373','#9575cd','#26c6da','#66bb6a','#ffa726','#ef5350','#7e57c2','#00acc1'];
+      let pieceIdx=0;
+
+      if(v.rowBand && v.bands){
+        // ── Row-band layout: each strip draws its own grid ──
+        const stripColors=[colors, altColors];
+        v.bands.forEach((band,bi)=>{
+          const by=band.y*sc;
+          const bh=band.ph*sc, bw2=band.pw*sc;
+          const palette=bi%2===0?colors:altColors;
+          for(let c=0;c<band.cols;c++){
+            const px=c*(band.pw+kerf)*sc;
+            const col=palette[c%palette.length];
+            ctx.save();ctx.globalAlpha=.83;ctx.fillStyle=col;
+            ctx.beginPath();if(ctx.roundRect)ctx.roundRect(px,by,bw2,bh,2);else ctx.rect(px,by,bw2,bh);ctx.fill();
+            ctx.globalAlpha=1;ctx.strokeStyle='rgba(0,0,0,.22)';ctx.lineWidth=.8;ctx.stroke();
+            const fs=Math.max(6,Math.min(bw2,bh)*.13);
+            if(bw2>22&&bh>14){
+              ctx.fillStyle='rgba(0,0,0,.68)';ctx.font=`bold ${fs}px DM Mono,monospace`;
+              ctx.textAlign='center';ctx.textBaseline='middle';
+              ctx.beginPath();ctx.rect(px+1,by+1,bw2-2,bh-2);ctx.clip();
+              ctx.fillText(`${band.pw}×${band.ph}`,px+bw2/2,by+bh/2-(fs*.35));
+              ctx.font=`${fs*.8}px DM Mono,monospace`;ctx.fillStyle='rgba(0,0,0,.5)';
+              ctx.fillText(band.orient==='portrait'?'◻':'▭',px+bw2/2,by+bh/2+(fs*.6));
+            }
+            ctx.restore();
+            // Kerf between cols
+            if(kerf>0&&c<band.cols-1){ctx.save();ctx.fillStyle=isDark?'rgba(255,200,77,.35)':'rgba(180,140,0,.25)';ctx.fillRect(px+bw2,by,kerf*sc,bh);ctx.restore();}
+          }
+          // Kerf band between strips
+          if(kerf>0&&bi<v.bands.length-1){
+            ctx.save();ctx.fillStyle=isDark?'rgba(255,200,77,.35)':'rgba(180,140,0,.25)';
+            ctx.fillRect(0,by+bh,v.sw*sc,kerf*sc);ctx.restore();
+          }
+          // Strip separator line
+          if(bi<v.bands.length-1){
+            ctx.save();ctx.strokeStyle='rgba(255,200,77,.7)';ctx.lineWidth=1.2;ctx.setLineDash([4,3]);
+            ctx.beginPath();ctx.moveTo(0,by+bh+(kerf>0?kerf*sc/2:0));ctx.lineTo(cw,by+bh+(kerf>0?kerf*sc/2:0));ctx.stroke();
+            ctx.setLineDash([]);ctx.restore();
+          }
+        });
+      } else {
+        // ── Regular grid + optional mixed strips ──
+        // Draw primary grid
+        for(let r=0;r<v.rows;r++){
+          for(let c=0;c<v.cols;c++){
+            const px=(c*(v.pw+kerf))*sc, py=(r*(v.ph+kerf))*sc;
+            const pw2=v.pw*sc, ph2=v.ph*sc;
+            const col=colors[pieceIdx%colors.length]; pieceIdx++;
+            ctx.save();ctx.globalAlpha=.82;ctx.fillStyle=col;
+            ctx.beginPath();if(ctx.roundRect)ctx.roundRect(px,py,pw2,ph2,2);else ctx.rect(px,py,pw2,ph2);ctx.fill();
+            ctx.globalAlpha=1;ctx.strokeStyle='rgba(0,0,0,.22)';ctx.lineWidth=.8;ctx.stroke();
+            const fs=Math.max(6,Math.min(pw2,ph2)*.13);
+            if(pw2>22&&ph2>14){
+              ctx.fillStyle='rgba(0,0,0,.68)';ctx.font=`bold ${fs}px DM Mono,monospace`;
+              ctx.textAlign='center';ctx.textBaseline='middle';
+              ctx.beginPath();ctx.rect(px+1,py+1,pw2-2,ph2-2);ctx.clip();
+              ctx.fillText(`${v.pw}×${v.ph}`,px+pw2/2,py+ph2/2);
+            }
+            ctx.restore();
+            if(kerf>0&&c<v.cols-1){ctx.save();ctx.fillStyle=isDark?'rgba(255,200,77,.35)':'rgba(180,140,0,.25)';ctx.fillRect(px+pw2,py,kerf*sc,ph2);ctx.restore();}
+          }
+          if(kerf>0&&r<v.rows-1){for(let c=0;c<v.cols;c++){const px=(c*(v.pw+kerf))*sc,py=(r*(v.ph+kerf)+v.ph)*sc;ctx.save();ctx.fillStyle=isDark?'rgba(255,200,77,.35)':'rgba(180,140,0,.25)';ctx.fillRect(px,py,v.pw*sc,kerf*sc);ctx.restore();}}
+        }
+        // Draw mixed bonus pieces in remaining strips
+        if(v.mixed&&v.pw2&&v.ph2){
+          const usedW=v.cols*(v.pw+kerf)-kerf;
+          const usedH=v.rows*(v.ph+kerf)-kerf;
+          const remRight=v.sw-usedW-(kerf>0?kerf:0);
+          const remBottom=v.sh-usedH-(kerf>0?kerf:0);
+          const offX=(usedW+(kerf>0?kerf:0))*sc;
+          const offY=(usedH+(kerf>0?kerf:0))*sc;
+          if(remRight>=v.pw2&&v.sh>=v.ph2){
+            const bc=Math.floor((remRight+kerf)/(v.pw2+kerf));
+            const br=Math.floor((v.sh+kerf)/(v.ph2+kerf));
+            for(let r=0;r<br;r++){for(let c=0;c<bc;c++){
+              const px=offX+(c*(v.pw2+kerf))*sc, py=(r*(v.ph2+kerf))*sc;
+              const bw=v.pw2*sc, bh=v.ph2*sc;
+              const col=altColors[pieceIdx%altColors.length];pieceIdx++;
+              ctx.save();ctx.globalAlpha=.78;ctx.fillStyle=col;
+              ctx.beginPath();if(ctx.roundRect)ctx.roundRect(px,py,bw,bh,2);else ctx.rect(px,py,bw,bh);ctx.fill();
+              ctx.globalAlpha=1;ctx.strokeStyle='rgba(255,255,255,.4)';ctx.lineWidth=1;ctx.stroke();
+              const fs2=Math.max(5,Math.min(bw,bh)*.13);
+              if(bw>20&&bh>12){ctx.fillStyle='rgba(0,0,0,.65)';ctx.font=`bold ${fs2}px DM Mono,monospace`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.beginPath();ctx.rect(px+1,py+1,bw-2,bh-2);ctx.clip();ctx.fillText(`${v.pw2}×${v.ph2}`,px+bw/2,py+bh/2);}
+              ctx.restore();
+            }}
+          }
+          if(remBottom>=v.ph2&&usedW>=v.pw2){
+            const bc=Math.floor((usedW+kerf)/(v.pw2+kerf));
+            const br=Math.floor((remBottom+kerf)/(v.ph2+kerf));
+            for(let r=0;r<br;r++){for(let c=0;c<bc;c++){
+              const px=(c*(v.pw2+kerf))*sc, py=offY+(r*(v.ph2+kerf))*sc;
+              const bw=v.pw2*sc, bh=v.ph2*sc;
+              const col=altColors[pieceIdx%altColors.length];pieceIdx++;
+              ctx.save();ctx.globalAlpha=.78;ctx.fillStyle=col;
+              ctx.beginPath();if(ctx.roundRect)ctx.roundRect(px,py,bw,bh,2);else ctx.rect(px,py,bw,bh);ctx.fill();
+              ctx.globalAlpha=1;ctx.strokeStyle='rgba(255,255,255,.4)';ctx.lineWidth=1;ctx.stroke();
+              const fs2=Math.max(5,Math.min(bw,bh)*.13);
+              if(bw>20&&bh>12){ctx.fillStyle='rgba(0,0,0,.65)';ctx.font=`bold ${fs2}px DM Mono,monospace`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.beginPath();ctx.rect(px+1,py+1,bw-2,bh-2);ctx.clip();ctx.fillText(`${v.pw2}×${v.ph2}`,px+bw/2,py+bh/2);}
+              ctx.restore();
+            }}
+          }
+          ctx.save();ctx.strokeStyle='rgba(255,200,77,.7)';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);
+          if(v.sw-usedW>2){ctx.beginPath();ctx.moveTo(offX,0);ctx.lineTo(offX,ch);ctx.stroke();}
+          if(v.sh-usedH>2){ctx.beginPath();ctx.moveTo(0,offY);ctx.lineTo((usedW)*sc,offY);ctx.stroke();}
+          ctx.setLineDash([]);ctx.restore();
+        }
+      } // end regular/mixed branch
+
+      // Sheet border
+      ctx.strokeStyle=isDark?'rgba(0,229,176,.5)':'rgba(0,150,100,.5)';ctx.lineWidth=2;ctx.strokeRect(1,1,cw-2,ch-2);
+      // Dimensions
+      ctx.fillStyle=isDark?'rgba(107,116,148,.8)':'rgba(80,90,120,.7)';ctx.font='8px DM Mono,monospace';
+      ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(`${v.sw}mm`,cw/2,ch-2);
+      ctx.save();ctx.translate(8,ch/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(`${v.sh}mm`,0,0);ctx.restore();
+      ctx.restore();
+    });
+
+    // Build SVG
+    const svgStr=buildCut1SVG(v,kerf,isDark);
+    _cut1SVGData.push(svgStr);
+
+    const dlBtn=document.createElement('button');dlBtn.className='btn-dl';dlBtn.innerHTML='⬇ PNG';
+    dlBtn.style.cssText='position:absolute;bottom:8px;right:72px;';
+    dlBtn.onclick=()=>{const a=document.createElement('a');a.download=`cut1-${v.count}pcs-${idx+1}.png`;a.href=hcv.toDataURL('image/png');a.click();toast(`⬇ ${v.count}pcs variant PNG downloaded`)};
+    const dlSvgBtn=document.createElement('button');dlSvgBtn.className='btn-dl';dlSvgBtn.innerHTML='⬇ SVG';
+    dlSvgBtn.style.cssText='position:absolute;bottom:8px;right:8px;';
+    dlSvgBtn.onclick=()=>{const a=document.createElement('a');a.download=`cut1-${v.count}pcs-${idx+1}.svg`;a.href='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgStr);a.click();toast(`⬇ ${v.count}pcs variant SVG downloaded`)};
+
+    cvWrap.appendChild(cv);cvWrap.appendChild(dlBtn);cvWrap.appendChild(dlSvgBtn);
+    wrap.appendChild(info);wrap.appendChild(cvWrap);
+    grid2.appendChild(wrap);
+  });
+
+  document.getElementById('resCut1').style.display='';
+  document.getElementById('resCut1').scrollIntoView({behavior:'smooth',block:'start'});
+  toast(`✓ ${display.length} variasi layout ditemukan! Best: ${best?best.count:0} pieces`);
+}
+
+function buildCut1RowBandSVG(v, kerf, isDark){
+  const bg=isDark?'#1e2330':'#e8eaf2';
+  const bdr=isDark?'#00e5b0':'#3a8c6a';
+  const txtC=isDark?'#6b7494':'#5a6080';
+  const hdrBg=isDark?'#0d0f14':'#d0d4e8';
+  const hdrTxt=isDark?'#e8eaf2':'#1a1e2e';
+  const accentC=isDark?'#00e5b0':'#007a5a';
+  const kerfC=isDark?'rgba(255,200,77,0.4)':'rgba(180,140,0,0.3)';
+  const divC='rgba(255,200,77,0.65)';
+  const SW=v.sw, SH=v.sh;
+  const HDR=Math.max(8,SH*0.055);
+  const dimFs=Math.max(3,Math.min(SW,SH)*0.02);
+  const dimPad=dimFs*2.4;
+  const totalW=SW+dimPad, totalH=SH+HDR+dimPad;
+  const colors=['#4fc3f7','#81c784','#ffb74d','#f06292','#ba68c8','#4dd0e1','#aed581','#ff8a65'];
+  const altColors=['#e57373','#9575cd','#26c6da','#66bb6a','#ffa726','#ef5350','#7e57c2','#00acc1'];
+  let pieces='', labels='', kerfs='', dividers='';
+  v.bands.forEach((band,bi)=>{
+    const byAbs=HDR+band.y;
+    const palette=bi%2===0?colors:altColors;
+    for(let c=0;c<band.cols;c++){
+      const px=dimPad+c*(band.pw+kerf);
+      const col=palette[c%palette.length];
+      pieces+=`<rect x="${px}" y="${byAbs}" width="${band.pw}" height="${band.ph}" fill="${col}" fill-opacity="0.85" stroke="rgba(0,0,0,0.22)" stroke-width="0.5" rx="0.8"/>`;
+      const fs=Math.max(2.5,Math.min(band.pw,band.ph)*0.12);
+      if(band.pw>8&&band.ph>6){
+        const cid=`rb_${bi}_${c}`;
+        pieces+=`<clipPath id="${cid}"><rect x="${px+0.5}" y="${byAbs+0.5}" width="${band.pw-1}" height="${band.ph-1}"/></clipPath>`;
+        labels+=`<text clip-path="url(#${cid})" x="${px+band.pw/2}" y="${byAbs+band.ph/2}" font-family="'DM Mono',monospace" font-size="${fs}" font-weight="bold" fill="rgba(0,0,0,0.7)" text-anchor="middle" dominant-baseline="middle">${band.pw}×${band.ph}</text>`;
+      }
+      if(kerf>0&&c<band.cols-1) kerfs+=`<rect x="${px+band.pw}" y="${byAbs}" width="${kerf}" height="${band.ph}" fill="${kerfC}"/>`;
+    }
+    // Kerf band between strips
+    if(kerf>0&&bi<v.bands.length-1) kerfs+=`<rect x="${dimPad}" y="${byAbs+band.ph}" width="${SW}" height="${kerf}" fill="${kerfC}"/>`;
+    // Divider line between strips
+    if(bi<v.bands.length-1){
+      const dy=byAbs+band.ph+(kerf>0?kerf/2:0);
+      dividers+=`<line x1="${dimPad}" y1="${dy}" x2="${dimPad+SW}" y2="${dy}" stroke="${divC}" stroke-width="0.8" stroke-dasharray="3 2"/>`;
+    }
+  });
+  const hdrFs=HDR*.38, subFs=HDR*.27;
+  const effColor=v.eff>=99?accentC:v.eff>=90?'#ffc94d':hdrTxt;
+  const stripDesc=v.bands.map(b=>`${b.cols}×${b.orient[0].toUpperCase()}`).join('+');
+  const dimW=`<text x="${dimPad+SW/2}" y="${HDR+SH+dimPad*.75}" font-family="'DM Mono',monospace" font-size="${dimFs}" fill="${txtC}" text-anchor="middle">${SW}mm</text>`;
+  const dimHx=dimPad*.45, dimHy=HDR+SH/2;
+  const dimH=`<text x="${dimHx}" y="${dimHy}" font-family="'DM Mono',monospace" font-size="${dimFs}" fill="${txtC}" text-anchor="middle" transform="rotate(-90,${dimHx},${dimHy})">${SH}mm</text>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalW} ${totalH}" width="${totalW}mm" height="${totalH}mm">
+  <title>CutOpt Row-Band ${v.count}pcs — ${cut1SrcName}→${cut1PieceName} [${stripDesc}]</title>
+  <rect x="${dimPad}" y="${HDR}" width="${SW}" height="${SH}" fill="${bg}"/>
+  ${pieces}${kerfs}${labels}${dividers}
+  <rect x="${dimPad+.5}" y="${HDR+.5}" width="${SW-1}" height="${SH-1}" fill="none" stroke="${bdr}" stroke-width="1.2" opacity="0.7"/>
+  ${dimW}${dimH}
+  <rect x="${dimPad}" y="0" width="${SW}" height="${HDR}" fill="${hdrBg}"/>
+  <rect x="${dimPad}" y="${HDR-.6}" width="${SW}" height=".6" fill="${accentC}" opacity="0.6"/>
+  <text x="${dimPad+HDR*.5}" y="${HDR*.62}" font-family="'Syne','DM Mono',monospace" font-size="${hdrFs}" font-weight="bold" fill="${accentC}">CutOpt</text>
+  <text x="${dimPad+HDR*2.2}" y="${HDR*.62}" font-family="'Syne','DM Mono',monospace" font-size="${hdrFs}" font-weight="bold" fill="${hdrTxt}">${cut1SrcName}→${cut1PieceName} · ${v.count}pcs row-band</text>
+  <text x="${dimPad+HDR*2.2}" y="${HDR*.9}" font-family="'DM Mono',monospace" font-size="${subFs}" fill="${txtC}">${stripDesc} · ${v.bands.length} strips</text>
+  <text x="${dimPad+SW-HDR*.4}" y="${HDR*.62}" font-family="'DM Mono',monospace" font-size="${hdrFs}" font-weight="bold" fill="${effColor}" text-anchor="end">${v.eff}%</text>
+</svg>`;
+}
+
+function buildCut1SVG(v, kerf, isDark){
+  if(v.rowBand) return buildCut1RowBandSVG(v, kerf, isDark);
+  const bg=isDark?'#1e2330':'#e8eaf2';
+  const bdr=isDark?'#00e5b0':'#3a8c6a';
+  const txtC=isDark?'#6b7494':'#5a6080';
+  const hdrBg=isDark?'#0d0f14':'#d0d4e8';
+  const hdrTxt=isDark?'#e8eaf2':'#1a1e2e';
+  const accentC=isDark?'#00e5b0':'#007a5a';
+  const kerfC=isDark?'rgba(255,200,77,0.4)':'rgba(180,140,0,0.3)';
+  const SW=v.sw, SH=v.sh;
+  const HDR=Math.max(8,SH*0.055);
+  const dimFs=Math.max(3,Math.min(SW,SH)*0.02);
+  const dimPad=dimFs*2.4;
+  const totalW=SW+dimPad, totalH=SH+HDR+dimPad;
+  const colors=['#4fc3f7','#81c784','#ffb74d','#f06292','#ba68c8','#4dd0e1','#aed581','#ff8a65'];
+  const altColors=['#e57373','#9575cd','#26c6da','#66bb6a','#ffa726','#ef5350','#7e57c2','#00acc1'];
+  let pieces='',labels='',kerfs='',pieceIdx=0;
+  // Primary grid
+  for(let r=0;r<v.rows;r++){
+    for(let c=0;c<v.cols;c++){
+      const px=dimPad+c*(v.pw+kerf), py=HDR+r*(v.ph+kerf);
+      const col=colors[pieceIdx%colors.length];pieceIdx++;
+      pieces+=`<rect x="${px}" y="${py}" width="${v.pw}" height="${v.ph}" fill="${col}" fill-opacity="0.85" stroke="rgba(0,0,0,0.22)" stroke-width="0.5" rx="0.8"/>`;
+      const fs=Math.max(2.5,Math.min(v.pw,v.ph)*0.13);
+      if(v.pw>8&&v.ph>6){const clipId=`sc_${r}_${c}`;pieces+=`<clipPath id="${clipId}"><rect x="${px+0.5}" y="${py+0.5}" width="${v.pw-1}" height="${v.ph-1}"/></clipPath>`;labels+=`<text clip-path="url(#${clipId})" x="${px+v.pw/2}" y="${py+v.ph/2}" font-family="'DM Mono',monospace" font-size="${fs}" font-weight="bold" fill="rgba(0,0,0,0.7)" text-anchor="middle" dominant-baseline="middle">${v.pw}×${v.ph}mm</text>`;}
+      if(kerf>0&&c<v.cols-1)kerfs+=`<rect x="${px+v.pw}" y="${py}" width="${kerf}" height="${v.ph}" fill="${kerfC}"/>`;
+    }
+    if(kerf>0&&r<v.rows-1){for(let c=0;c<v.cols;c++){const px=dimPad+c*(v.pw+kerf),py=HDR+r*(v.ph+kerf)+v.ph;kerfs+=`<rect x="${px}" y="${py}" width="${v.pw}" height="${kerf}" fill="${kerfC}"/>`;}}
+  }
+  // Mixed bonus
+  if(v.mixed&&v.pw2&&v.ph2){
+    const usedW=v.cols*(v.pw+kerf)-kerf;
+    const usedH=v.rows*(v.ph+kerf)-kerf;
+    const offX=dimPad+usedW+(kerf>0?kerf:0);
+    const offY=HDR+usedH+(kerf>0?kerf:0);
+    const remRight=SW-usedW-(kerf>0?kerf:0);
+    const remBottom=SH-usedH-(kerf>0?kerf:0);
+    if(remRight>=v.pw2&&SH>=v.ph2){
+      const bc=Math.floor((remRight+kerf)/(v.pw2+kerf));
+      const br=Math.floor((SH+kerf)/(v.ph2+kerf));
+      for(let r=0;r<br;r++){for(let c=0;c<bc;c++){
+        const px=offX+c*(v.pw2+kerf), py=HDR+r*(v.ph2+kerf);
+        const col=altColors[pieceIdx%altColors.length];pieceIdx++;
+        pieces+=`<rect x="${px}" y="${py}" width="${v.pw2}" height="${v.ph2}" fill="${col}" fill-opacity="0.78" stroke="rgba(255,255,255,0.4)" stroke-width="0.5" rx="0.8"/>`;
+        const fs=Math.max(2.5,Math.min(v.pw2,v.ph2)*0.13);
+        if(v.pw2>8&&v.ph2>6){const cid=`sc2_r${r}_c${c}`;pieces+=`<clipPath id="${cid}"><rect x="${px+0.5}" y="${py+0.5}" width="${v.pw2-1}" height="${v.ph2-1}"/></clipPath>`;labels+=`<text clip-path="url(#${cid})" x="${px+v.pw2/2}" y="${py+v.ph2/2}" font-family="'DM Mono',monospace" font-size="${fs}" font-weight="bold" fill="rgba(0,0,0,0.7)" text-anchor="middle" dominant-baseline="middle">${v.pw2}×${v.ph2}mm</text>`;}
+      }}
+      // divider line
+      pieces+=`<line x1="${offX}" y1="${HDR}" x2="${offX}" y2="${HDR+SH}" stroke="rgba(255,200,77,0.6)" stroke-width="0.8" stroke-dasharray="3 2"/>`;
+    }
+    if(remBottom>=v.ph2&&usedW>=v.pw2){
+      const bc=Math.floor((usedW+kerf)/(v.pw2+kerf));
+      const br=Math.floor((remBottom+kerf)/(v.ph2+kerf));
+      for(let r=0;r<br;r++){for(let c=0;c<bc;c++){
+        const px=dimPad+c*(v.pw2+kerf), py=offY+r*(v.ph2+kerf);
+        const col=altColors[pieceIdx%altColors.length];pieceIdx++;
+        pieces+=`<rect x="${px}" y="${py}" width="${v.pw2}" height="${v.ph2}" fill="${col}" fill-opacity="0.78" stroke="rgba(255,255,255,0.4)" stroke-width="0.5" rx="0.8"/>`;
+        const fs=Math.max(2.5,Math.min(v.pw2,v.ph2)*0.13);
+        if(v.pw2>8&&v.ph2>6){const cid=`sc3_r${r}_c${c}`;pieces+=`<clipPath id="${cid}"><rect x="${px+0.5}" y="${py+0.5}" width="${v.pw2-1}" height="${v.ph2-1}"/></clipPath>`;labels+=`<text clip-path="url(#${cid})" x="${px+v.pw2/2}" y="${py+v.ph2/2}" font-family="'DM Mono',monospace" font-size="${fs}" font-weight="bold" fill="rgba(0,0,0,0.7)" text-anchor="middle" dominant-baseline="middle">${v.pw2}×${v.ph2}mm</text>`;}
+      }}
+      pieces+=`<line x1="${dimPad}" y1="${offY}" x2="${dimPad+usedW}" y2="${offY}" stroke="rgba(255,200,77,0.6)" stroke-width="0.8" stroke-dasharray="3 2"/>`;
+    }
+  }
+  const hdrFs=HDR*.38, subFs=HDR*.27;
+  const effColor=v.eff>=99?accentC:v.eff>=90?'#ffc94d':hdrTxt;
+  const dimW=`<text x="${dimPad+SW/2}" y="${HDR+SH+dimPad*.75}" font-family="'DM Mono',monospace" font-size="${dimFs}" fill="${txtC}" text-anchor="middle">${SW} mm</text>`;
+  const dimHx=dimPad*.45, dimHy=HDR+SH/2;
+  const dimH=`<text x="${dimHx}" y="${dimHy}" font-family="'DM Mono',monospace" font-size="${dimFs}" fill="${txtC}" text-anchor="middle" transform="rotate(-90,${dimHx},${dimHy})">${SH} mm</text>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalW} ${totalH}" width="${totalW}mm" height="${totalH}mm">
+  <title>CutOpt Cut1 ${v.count}pcs — ${cut1SrcName} → ${cut1PieceName}</title>
+  <rect x="${dimPad}" y="${HDR}" width="${SW}" height="${SH}" fill="${bg}"/>
+  ${pieces}${kerfs}${labels}
+  <rect x="${dimPad+.5}" y="${HDR+.5}" width="${SW-1}" height="${SH-1}" fill="none" stroke="${bdr}" stroke-width="1.2" opacity="0.7"/>
+  ${dimW}${dimH}
+  <rect x="${dimPad}" y="0" width="${SW}" height="${HDR}" fill="${hdrBg}"/>
+  <rect x="${dimPad}" y="${HDR-.6}" width="${SW}" height=".6" fill="${accentC}" opacity="0.6"/>
+  <text x="${dimPad+HDR*.5}" y="${HDR*.62}" font-family="'Syne','DM Mono',monospace" font-size="${hdrFs}" font-weight="bold" fill="${accentC}">CutOpt</text>
+  <text x="${dimPad+HDR*2.2}" y="${HDR*.62}" font-family="'Syne','DM Mono',monospace" font-size="${hdrFs}" font-weight="bold" fill="${hdrTxt}">${cut1SrcName} → ${cut1PieceName} · ${v.count} pieces${v.mixed?' (mixed)':''}</text>
+  <text x="${dimPad+HDR*2.2}" y="${HDR*.9}" font-family="'DM Mono',monospace" font-size="${subFs}" fill="${txtC}">${v.pw}×${v.ph}mm${v.mixed?` + ${v.pw2}×${v.ph2}mm`:''} · ${v.sOrient} sheet</text>
+  <text x="${dimPad+SW-HDR*.4}" y="${HDR*.62}" font-family="'DM Mono',monospace" font-size="${hdrFs}" font-weight="bold" fill="${effColor}" text-anchor="end">${v.eff}%</text>
+</svg>`;
+}
+
+function dlAllCut1(fmt='png'){
+  const store=fmt==='svg'?_cut1SVGData:_cut1Canvases;
+  if(!store.length){toast('⚠ No layouts to download',true);return}
+  if(fmt==='svg'){
+    store.forEach((svg,i)=>setTimeout(()=>{const a=document.createElement('a');a.download=`cut1-layout-${i+1}.svg`;a.href='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);a.click()},i*200));
+  } else {
+    store.forEach((cv,i)=>setTimeout(()=>{const a=document.createElement('a');a.download=`cut1-layout-${i+1}.png`;a.href=cv.toDataURL('image/png');a.click()},i*200));
+  }
+  toast(`⬇ Downloading ${store.length} ${fmt.toUpperCase()} layout(s)…`);
+}
 function copy2d(){const r=document.querySelectorAll('#sum2d tr');let t=`CutOpt 2D Report\nMaterial: ${mat2}\n\n=== PIECES ===\n`;r.forEach(r=>{t+=[...r.querySelectorAll('td')].map(c=>c.innerText.trim()).join(' | ')+'\n'});navigator.clipboard.writeText(t).then(()=>toast('Copied!'))}
+function copy1d(){const r=document.querySelectorAll('#sum1d tr');let t=`CutOpt 1D Report\nMaterial: ${mat1}\n\n=== PIECES ===\n`;r.forEach(r=>{t+=[...r.querySelectorAll('td')].map(c=>c.innerText.trim()).join(' | ')+'\n'});navigator.clipboard.writeText(t).then(()=>toast('Copied!'))}
+
 </script>
 </body>
 </html>
