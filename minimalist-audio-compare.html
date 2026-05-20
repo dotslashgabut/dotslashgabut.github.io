@@ -1407,6 +1407,7 @@
           <button class="exp-btn" id="exp-viz-peak" onclick="expSetViz('peak')">Peak Meter</button>
           <button class="exp-btn" id="exp-viz-vu" onclick="expSetViz('vu')">VU Meter</button>
           <button class="exp-btn" id="exp-viz-wave-spec" onclick="expSetViz('wave+spectrogram')">Wave+Spec</button>
+          <button class="exp-btn" id="exp-viz-wave-spec-tall" onclick="expSetViz('wave+spectrogram-tall')">Wave+Spec (tall)</button>
         </div>
       </div>
 
@@ -3243,8 +3244,10 @@
 
     function expSetViz(v) {
       expViz = v;
-      ['waveform', 'spectrogram', 'spectrum', 'stereo', 'peak', 'vu', 'wave+spectrogram'].forEach(x => {
-        const id = x === 'wave+spectrogram' ? 'exp-viz-wave-spec' : `exp-viz-${x}`;
+      ['waveform', 'spectrogram', 'spectrum', 'stereo', 'peak', 'vu', 'wave+spectrogram', 'wave+spectrogram-tall'].forEach(x => {
+        const id = x === 'wave+spectrogram' ? 'exp-viz-wave-spec'
+                 : x === 'wave+spectrogram-tall' ? 'exp-viz-wave-spec-tall'
+                 : `exp-viz-${x}`;
         const el = document.getElementById(id);
         if (el) el.classList.toggle('active', x === v);
       });
@@ -3454,6 +3457,48 @@
             } else {
               mg.fillStyle = '#1a1a1a';
               mg.fillRect(0, halfH + 1, ow, bottomH);
+            }
+          }
+        } else if (viz === 'wave+spectrogram-tall') {
+          // 2/5 waveform on top, 3/5 spectrogram on bottom
+          const waveH = Math.floor(oh * 2 / 5);
+          const specH = oh - waveH - 1;
+          // Top 2/5: waveform
+          const topCanvas = document.createElement('canvas');
+          topCanvas.width = ow; topCanvas.height = waveH;
+          const topCtx = topCanvas.getContext('2d');
+          expDrawWaveform(topCtx, topCanvas, side, t);
+          mg.drawImage(topCanvas, 0, 0);
+          // Divider
+          mg.fillStyle = 'rgba(255,255,255,0.15)';
+          mg.fillRect(0, waveH, ow, 1);
+          // Bottom 3/5: spectrogram
+          if (specH > 0) {
+            if (!expSpecCache[side] || expSpecCache.w !== ow || expSpecCache.h !== oh) {
+              expSpecCache[side] = expBuildSpecCache(side, ow, oh);
+              expSpecCache.w = ow;
+              expSpecCache.h = oh;
+            }
+            if (expSpecCache[side]) {
+              const cache = expSpecCache[side];
+              mg.drawImage(cache, 0, 0, ow, oh, 0, waveH + 1, ow, specH);
+              // Playhead
+              if (audio[side]) {
+                const dur = audio[side].buffer.duration;
+                const dispDurLocal = stretchMode ? maxDuration() : dur;
+                const playPx = (t / dispDurLocal) * ow;
+                mg.fillStyle = 'rgba(0,0,0,0.35)';
+                mg.fillRect(playPx, waveH + 1, ow - playPx, specH);
+                mg.strokeStyle = 'rgba(255,255,255,0.8)';
+                mg.lineWidth = 1;
+                mg.beginPath();
+                mg.moveTo(playPx, waveH + 1);
+                mg.lineTo(playPx, oh);
+                mg.stroke();
+              }
+            } else {
+              mg.fillStyle = '#1a1a1a';
+              mg.fillRect(0, waveH + 1, ow, specH);
             }
           }
         } else if (viz === 'peak') { drawPeakSection(mg, ow, oh, side); }
