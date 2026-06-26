@@ -1,5 +1,5 @@
 # Daftar File .html
-Waktu Generate: 26/06/2026 20.42.10,87
+Waktu Generate: 26/06/2026 21.08.09,45
 
 https://dotslashgabut.github.io/advanced-image-comparison.html
 https://dotslashgabut.github.io/alpha-extractor-alt.html
@@ -45,12 +45,15 @@ https://dotslashgabut.github.io/minimalist-audio-compare.html
 https://dotslashgabut.github.io/minimalist-media-compare-alt.html
 https://dotslashgabut.github.io/minimalist-media-compare.html
 https://dotslashgabut.github.io/monochrome-audio-player.html
+https://dotslashgabut.github.io/netpulse.html
 https://dotslashgabut.github.io/netsim.html
 https://dotslashgabut.github.io/nettopo-alt.html
 https://dotslashgabut.github.io/nettopo.html
+https://dotslashgabut.github.io/network-calculator.html
 https://dotslashgabut.github.io/paper-cut-optimizer.html
 https://dotslashgabut.github.io/paper-cutting-optimizer.html
 https://dotslashgabut.github.io/pixel-coordinates-to-color-codes.html
+https://dotslashgabut.github.io/pixel-steganography-toolkit.html
 https://dotslashgabut.github.io/pixel_coordinates_hex_color_code_preview_image.html
 https://dotslashgabut.github.io/png-pixel-replacer-with-ascii-text-input-alt.html
 https://dotslashgabut.github.io/png-pixel-replacer-with-ascii-text-input.html

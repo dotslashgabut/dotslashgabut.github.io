@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Network Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #161920;
+    --surface2: #1e2230;
+    --border: #2a2f3d;
+    --border2: #3a4158;
+    --accent: #00e5a0;
+    --accent2: #007aff;
+    --accent3: #ff6b35;
+    --text: #e8eaf0;
+    --muted: #6b7394;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
+  .wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    width: 44px; height: 44px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .logo svg { width: 24px; height: 24px; }
+
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text);
+  }
+
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .tab {
+    flex: 1;
+    min-width: 120px;
+    padding: 0.5rem 1rem;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.15s;
+    text-align: center;
+  }
+
+  .tab:hover { color: var(--text); background: var(--surface2); }
+  .tab.active { background: var(--accent); color: #000; font-weight: 700; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  @media(max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .card-title {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .card-title::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .field { margin-bottom: 1rem; }
+
+  label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+    letter-spacing: 0.04em;
+  }
+
+  input, select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    padding: 0.6rem 0.85rem;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.15s;
+    appearance: none;
+  }
+
+  input:focus, select:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7394' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.8rem center;
+    padding-right: 2rem;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    margin-top: 0.5rem;
+  }
+
+  .btn:hover { opacity: 0.9; }
+  .btn:active { transform: scale(0.98); }
+  .btn.secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); }
+
+  .results {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-top: 1rem;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    min-height: 60px;
+  }
+
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .result-row:last-child { border-bottom: none; }
+
+  .result-key { color: var(--muted); }
+  .result-val { color: var(--accent); font-weight: 500; letter-spacing: 0.03em; }
+  .result-val.blue { color: var(--accent2); }
+  .result-val.orange { color: var(--accent3); }
+
+  .subnet-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    margin-top: 1rem;
+  }
+
+  .subnet-table th {
+    background: var(--surface2);
+    color: var(--muted);
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 0.05em;
+    font-weight: 500;
+  }
+
+  .subnet-table td {
+    padding: 0.45rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  .subnet-table tr:last-child td { border-bottom: none; }
+  .subnet-table tr:hover td { background: var(--surface2); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-family: var(--mono);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  .badge-green { background: rgba(0,229,160,0.15); color: var(--accent); }
+  .badge-blue { background: rgba(0,122,255,0.15); color: var(--accent2); }
+  .badge-orange { background: rgba(255,107,53,0.15); color: var(--accent3); }
+
+  .empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+  }
+
+  .full-card { grid-column: 1 / -1; }
+
+  .inline-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  .tip {
+    background: rgba(0,229,160,0.06);
+    border: 1px solid rgba(0,229,160,0.2);
+    border-radius: 8px;
+    padding: 0.6rem 0.85rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+    margin-top: 1rem;
+    line-height: 1.5;
+  }
+
+  .scroll-table { overflow-x: auto; }
+
+  .cidr-quick {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 6px;
+    margin-top: 0.75rem;
+  }
+
+  .cidr-chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.12s;
+    color: var(--muted);
+  }
+
+  .cidr-chip:hover { border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round">
+        <circle cx="12" cy="12" r="3"/>
+        <circle cx="4" cy="6" r="2"/>
+        <circle cx="20" cy="6" r="2"/>
+        <circle cx="4" cy="18" r="2"/>
+        <circle cx="20" cy="18" r="2"/>
+        <line x1="6" y1="6" x2="10" y2="11"/>
+        <line x1="18" y1="6" x2="14" y2="11"/>
+        <line x1="6" y1="18" x2="10" y2="13"/>
+        <line x1="18" y1="18" x2="14" y2="13"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Network <span>Calculator</span></h1>
+      <div class="subtitle">IPv4 · Subnetting · VLSM · Bandwidth · CIDR</div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('subnet')">IP / Subnet</button>
+    <button class="tab" onclick="switchTab('vlsm')">VLSM</button>
+    <button class="tab" onclick="switchTab('bandwidth')">Bandwidth</button>
+    <button class="tab" onclick="switchTab('cidr')">CIDR Table</button>
+    <button class="tab" onclick="switchTab('convert')">IP Convert</button>
+  </div>
+
+  <!-- SUBNET PANEL -->
+  <div class="panel active" id="panel-subnet">
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">IP Address &amp; Prefix</div>
+        <div class="field">
+          <label>IP Address</label>
+          <input type="text" id="ip-input" placeholder="192.168.1.0" value="192.168.1.0">
+        </div>
+        <div class="field">
+          <label>Subnet Mask / CIDR Prefix</label>
+          <div class="inline-grid">
+            <input type="text" id="mask-input" placeholder="255.255.255.0" value="255.255.255.0" oninput="syncCidr()">
+            <input type="number" id="cidr-input" placeholder="/24" min="0" max="32" value="24" oninput="syncMask()">
+          </div>
+        </div>
+        <div class="field">
+          <label>Quick CIDR</label>
+          <div class="cidr-quick">
+            <div class="cidr-chip" onclick="setPrefix(8)">/8</div>
+            <div class="cidr-chip" onclick="setPrefix(16)">/16</div>
+            <div class="cidr-chip" onclick="setPrefix(24)">/24</div>
+            <div class="cidr-chip" onclick="setPrefix(25)">/25</div>
+            <div class="cidr-chip" onclick="setPrefix(26)">/26</div>
+            <div class="cidr-chip" onclick="setPrefix(27)">/27</div>
+            <div class="cidr-chip" onclick="setPrefix(28)">/28</div>
+            <div class="cidr-chip" onclick="setPrefix(30)">/30</div>
+          </div>
+        </div>
+        <button class="btn" onclick="calcSubnet()">Calculate</button>
+        <button class="btn secondary" onclick="clearSubnet()" style="margin-top:8px">Clear</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Results</div>
+        <div class="results" id="subnet-results">
+          <div class="empty-state">Enter IP and subnet, then click Calculate</div>
+        </div>
+      </div>
+
+      <div class="card full-card">
+        <div class="card-title">Subnet Split — Divide into equal subnets</div>
+        <div class="inline-grid" style="max-width:400px">
+          <div class="field">
+            <label>Number of subnets</label>
+            <select id="split-count">
+              <option value="2">2 subnets</option>
+              <option value="4">4 subnets</option>
+              <option value="8">8 subnets</option>
+              <option value="16">16 subnets</option>
+              <option value="32">32 subnets</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <button class="btn" onclick="splitSubnet()">Split Network</button>
+          </div>
+        </div>
+        <div class="scroll-table" id="split-table"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VLSM PANEL -->
+  <div class="panel" id="panel-vlsm">
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">VLSM — Variable Length Subnet Masking</div>
+        <div class="field">
+          <label>Base Network (CIDR)</label>
+          <input type="text" id="vlsm-base" placeholder="10.0.0.0/16" value="10.0.0.0/16">
+        </div>
+        <div class="field">
+          <label>Host Requirements (one per line)</label>
+          <textarea id="vlsm-hosts" rows="6" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:0.85rem;padding:0.6rem 0.85rem;border-radius:8px;outline:none;resize:vertical;transition:border-color 0.15s" placeholder="100&#10;50&#10;30&#10;14&#10;6&#10;2">100
+50
+30
+14
+6
+2</textarea>
+        </div>
+        <button class="btn" onclick="calcVLSM()">Allocate Subnets</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Address Space</div>
+        <div class="results" id="vlsm-summary">
+          <div class="empty-state">Results appear after calculation</div>
+        </div>
+        <div class="tip" id="vlsm-tip" style="display:none"></div>
+      </div>
+
+      <div class="card full-card">
+        <div class="card-title">VLSM Allocation Table</div>
+        <div class="scroll-table" id="vlsm-table">
+          <div class="empty-state" style="padding:2rem">Run VLSM allocation to see results</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BANDWIDTH PANEL -->
+  <div class="panel" id="panel-bandwidth">
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">Bandwidth Calculator</div>
+        <div class="field">
+          <label>Data Size</label>
+          <div class="inline-grid">
+            <input type="number" id="bw-size" placeholder="100" value="100" min="0">
+            <select id="bw-size-unit">
+              <option value="1">Bytes</option>
+              <option value="1024">KB</option>
+              <option value="1048576" selected>MB</option>
+              <option value="1073741824">GB</option>
+              <option value="1099511627776">TB</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Transfer Speed</label>
+          <div class="inline-grid">
+            <input type="number" id="bw-speed" placeholder="100" value="100" min="0">
+            <select id="bw-speed-unit">
+              <option value="1">bps</option>
+              <option value="1000">Kbps</option>
+              <option value="1000000" selected>Mbps</option>
+              <option value="1000000000">Gbps</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn" onclick="calcBandwidth()">Calculate Time</button>
+
+        <div style="margin-top:1.5rem">
+          <div class="card-title" style="margin-top:0">Unit Converter</div>
+          <div class="field">
+            <label>Value to Convert</label>
+            <div class="inline-grid">
+              <input type="number" id="unit-val" placeholder="1000" value="1000">
+              <select id="unit-from">
+                <option value="bps">bps</option>
+                <option value="Kbps">Kbps</option>
+                <option value="Mbps" selected>Mbps</option>
+                <option value="Gbps">Gbps</option>
+                <option value="Tbps">Tbps</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn secondary" onclick="convertUnits()">Convert All Units</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Transfer Time</div>
+        <div class="results" id="bw-results">
+          <div class="empty-state">Enter data size and speed, then calculate</div>
+        </div>
+
+        <div class="card-title" style="margin-top:1.5rem">Unit Conversion</div>
+        <div class="results" id="unit-results">
+          <div class="empty-state">Click Convert All Units</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CIDR TABLE PANEL -->
+  <div class="panel" id="panel-cidr">
+    <div class="card">
+      <div class="card-title">Complete CIDR Reference Table</div>
+      <div class="scroll-table" id="cidr-table-container"></div>
+    </div>
+  </div>
+
+  <!-- IP CONVERT PANEL -->
+  <div class="panel" id="panel-convert">
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">IP Address Converter</div>
+        <div class="field">
+          <label>Dotted Decimal</label>
+          <input type="text" id="conv-decimal" placeholder="192.168.1.1" oninput="convertFromDecimal()">
+        </div>
+        <div class="field">
+          <label>Binary</label>
+          <input type="text" id="conv-binary" placeholder="11000000.10101000.00000001.00000001" readonly style="font-size:0.72rem">
+        </div>
+        <div class="field">
+          <label>Hexadecimal</label>
+          <input type="text" id="conv-hex" placeholder="C0A80101" oninput="convertFromHex()">
+        </div>
+        <div class="field">
+          <label>32-bit Integer (decimal)</label>
+          <input type="number" id="conv-int" placeholder="3232235777" oninput="convertFromInt()">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">IP Class Info</div>
+        <div class="results" id="conv-class">
+          <div class="empty-state">Type an IP address to see class info</div>
+        </div>
+        <div class="card-title" style="margin-top:1.5rem">Private Range Checker</div>
+        <div class="results" id="conv-private">
+          <div class="empty-state">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+  if (name === 'cidr') buildCIDRTable();
+}
+
+function ipToInt(ip) {
+  const p = ip.split('.').map(Number);
+  return ((p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3]) >>> 0;
+}
+
+function intToIp(n) {
+  return [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join('.');
+}
+
+function prefixToMask(prefix) {
+  const mask = prefix === 0 ? 0 : (0xFFFFFFFF << (32 - prefix)) >>> 0;
+  return intToIp(mask);
+}
+
+function maskToPrefix(mask) {
+  const n = ipToInt(mask);
+  let c = 0;
+  for (let i = 31; i >= 0; i--) { if (n & (1 << i)) c++; else break; }
+  return c;
+}
+
+function syncCidr() {
+  const mask = document.getElementById('mask-input').value;
+  if (/^(\d{1,3}\.){3}\d{1,3}$/.test(mask)) {
+    document.getElementById('cidr-input').value = maskToPrefix(mask);
+  }
+}
+
+function syncMask() {
+  const prefix = parseInt(document.getElementById('cidr-input').value);
+  if (prefix >= 0 && prefix <= 32) {
+    document.getElementById('mask-input').value = prefixToMask(prefix);
+  }
+}
+
+function setPrefix(n) {
+  document.getElementById('cidr-input').value = n;
+  syncMask();
+}
+
+function row(k, v, cls = '') {
+  return `<div class="result-row"><span class="result-key">${k}</span><span class="result-val ${cls}">${v}</span></div>`;
+}
+
+function calcSubnet() {
+  const ip = document.getElementById('ip-input').value.trim();
+  const prefix = parseInt(document.getElementById('cidr-input').value);
+  if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(ip) || isNaN(prefix) || prefix < 0 || prefix > 32) {
+    document.getElementById('subnet-results').innerHTML = '<div class="empty-state" style="color:var(--accent3)">Invalid IP or prefix</div>';
+    return;
+  }
+  const ipInt = ipToInt(ip);
+  const maskInt = prefix === 0 ? 0 : (0xFFFFFFFF << (32 - prefix)) >>> 0;
+  const networkInt = (ipInt & maskInt) >>> 0;
+  const broadcastInt = (networkInt | (~maskInt >>> 0)) >>> 0;
+  const firstHost = prefix < 31 ? networkInt + 1 : networkInt;
+  const lastHost = prefix < 31 ? broadcastInt - 1 : broadcastInt;
+  const totalHosts = prefix <= 30 ? Math.pow(2, 32 - prefix) : prefix === 31 ? 2 : 1;
+  const usableHosts = prefix <= 30 ? totalHosts - 2 : totalHosts;
+  const wildcard = intToIp((~maskInt) >>> 0);
+  const ipClass = getIPClass(ip);
+  const isBinary = n => n.toString(2).padStart(8, '0');
+  const ipBin = ip.split('.').map(x => isBinary(parseInt(x))).join('.');
+
+  document.getElementById('subnet-results').innerHTML =
+    row('Network Address', intToIp(networkInt), 'blue') +
+    row('Broadcast Address', intToIp(broadcastInt), 'orange') +
+    row('Subnet Mask', prefixToMask(prefix)) +
+    row('Wildcard Mask', wildcard) +
+    row('CIDR Notation', ip.split('.').slice(0,4).join('.').replace(ip, intToIp(networkInt)) + '/' + prefix) +
+    row('First Usable Host', intToIp(firstHost)) +
+    row('Last Usable Host', intToIp(lastHost)) +
+    row('Total Addresses', totalHosts.toLocaleString()) +
+    row('Usable Hosts', usableHosts.toLocaleString()) +
+    row('IP Class', ipClass) +
+    row('IP Binary', `<span style="font-size:0.68rem">${ipBin}</span>`);
+}
+
+function clearSubnet() {
+  document.getElementById('ip-input').value = '';
+  document.getElementById('cidr-input').value = '';
+  document.getElementById('mask-input').value = '';
+  document.getElementById('subnet-results').innerHTML = '<div class="empty-state">Enter IP and subnet, then click Calculate</div>';
+  document.getElementById('split-table').innerHTML = '';
+}
+
+function splitSubnet() {
+  const ip = document.getElementById('ip-input').value.trim();
+  const prefix = parseInt(document.getElementById('cidr-input').value);
+  const count = parseInt(document.getElementById('split-count').value);
+  if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(ip) || isNaN(prefix)) return;
+
+  const bitsNeeded = Math.log2(count);
+  const newPrefix = prefix + bitsNeeded;
+  if (newPrefix > 32) {
+    document.getElementById('split-table').innerHTML = '<div class="empty-state" style="color:var(--accent3)">Not enough address space to split into ' + count + ' subnets</div>';
+    return;
+  }
+
+  const maskInt = prefix === 0 ? 0 : (0xFFFFFFFF << (32 - prefix)) >>> 0;
+  const networkInt = (ipToInt(ip) & maskInt) >>> 0;
+  const blockSize = Math.pow(2, 32 - newPrefix);
+
+  let html = '<table class="subnet-table"><thead><tr><th>#</th><th>Network</th><th>First Host</th><th>Last Host</th><th>Broadcast</th><th>Hosts</th></tr></thead><tbody>';
+  for (let i = 0; i < count; i++) {
+    const net = (networkInt + i * blockSize) >>> 0;
+    const bcast = (net + blockSize - 1) >>> 0;
+    const usable = blockSize >= 4 ? blockSize - 2 : blockSize;
+    html += `<tr>
+      <td><span class="badge badge-green">${i + 1}</span></td>
+      <td>${intToIp(net)}/${newPrefix}</td>
+      <td>${blockSize >= 4 ? intToIp(net + 1) : intToIp(net)}</td>
+      <td>${blockSize >= 4 ? intToIp(bcast - 1) : intToIp(bcast)}</td>
+      <td>${intToIp(bcast)}</td>
+      <td>${usable.toLocaleString()}</td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById('split-table').innerHTML = html;
+}
+
+function getIPClass(ip) {
+  const first = parseInt(ip.split('.')[0]);
+  if (first < 128) return 'Class A (1–126)';
+  if (first < 192) return 'Class B (128–191)';
+  if (first < 224) return 'Class C (192–223)';
+  if (first < 240) return 'Class D (Multicast)';
+  return 'Class E (Reserved)';
+}
+
+function isPrivate(ip) {
+  const n = ipToInt(ip);
+  if (n >= ipToInt('10.0.0.0') && n <= ipToInt('10.255.255.255')) return '10.0.0.0/8 — Class A Private';
+  if (n >= ipToInt('172.16.0.0') && n <= ipToInt('172.31.255.255')) return '172.16.0.0/12 — Class B Private';
+  if (n >= ipToInt('192.168.0.0') && n <= ipToInt('192.168.255.255')) return '192.168.0.0/16 — Class C Private';
+  if (n >= ipToInt('127.0.0.0') && n <= ipToInt('127.255.255.255')) return '127.0.0.0/8 — Loopback';
+  if (n >= ipToInt('169.254.0.0') && n <= ipToInt('169.254.255.255')) return '169.254.0.0/16 — Link-local';
+  return null;
+}
+
+function calcVLSM() {
+  const base = document.getElementById('vlsm-base').value.trim();
+  const [baseIP, prefixStr] = base.split('/');
+  const prefix = parseInt(prefixStr);
+  if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(baseIP) || isNaN(prefix)) return;
+
+  const hostsInput = document.getElementById('vlsm-hosts').value.trim().split('\n').map(Number).filter(n => n > 0);
+  if (!hostsInput.length) return;
+
+  const sorted = [...hostsInput].sort((a, b) => b - a);
+  const maskInt = (0xFFFFFFFF << (32 - prefix)) >>> 0;
+  const networkStart = (ipToInt(baseIP) & maskInt) >>> 0;
+  const totalAvailable = Math.pow(2, 32 - prefix);
+
+  let current = networkStart;
+  const allocs = [];
+  let totalUsed = 0;
+
+  for (const needed of sorted) {
+    const hostBits = Math.ceil(Math.log2(needed + 2));
+    const blockSize = Math.pow(2, hostBits);
+    const newPrefix = 32 - hostBits;
+    if (newPrefix < prefix) { allocs.push({ needed, error: true }); continue; }
+    const net = current;
+    const bcast = (net + blockSize - 1) >>> 0;
+    allocs.push({ needed, net, bcast, newPrefix, blockSize, usable: blockSize - 2 });
+    current = (bcast + 1) >>> 0;
+    totalUsed += blockSize;
+  }
+
+  const waste = totalAvailable - totalUsed;
+  document.getElementById('vlsm-summary').innerHTML =
+    row('Base Network', base, 'blue') +
+    row('Total Addresses', totalAvailable.toLocaleString()) +
+    row('Addresses Used', totalUsed.toLocaleString()) +
+    row('Wasted / Remaining', waste.toLocaleString(), waste > 0 ? 'orange' : '') +
+    row('Efficiency', (totalUsed / totalAvailable * 100).toFixed(1) + '%', 'blue');
+
+  document.getElementById('vlsm-tip').style.display = 'block';
+  document.getElementById('vlsm-tip').textContent = 'VLSM assigns the largest subnets first to minimize waste.';
+
+  let html = '<table class="subnet-table"><thead><tr><th>#</th><th>Hosts Needed</th><th>Network</th><th>Mask</th><th>First Host</th><th>Last Host</th><th>Broadcast</th><th>Usable</th></tr></thead><tbody>';
+  allocs.forEach((a, i) => {
+    if (a.error) {
+      html += `<tr><td>${i+1}</td><td>${a.needed}</td><td colspan="6" style="color:var(--accent3)">Not enough space</td></tr>`;
+    } else {
+      html += `<tr>
+        <td><span class="badge badge-blue">${i+1}</span></td>
+        <td>${a.needed}</td>
+        <td>${intToIp(a.net)}/${a.newPrefix}</td>
+        <td>${prefixToMask(a.newPrefix)}</td>
+        <td>${intToIp(a.net + 1)}</td>
+        <td>${intToIp(a.bcast - 1)}</td>
+        <td>${intToIp(a.bcast)}</td>
+        <td>${a.usable.toLocaleString()}</td>
+      </tr>`;
+    }
+  });
+  html += '</tbody></table>';
+  document.getElementById('vlsm-table').innerHTML = html;
+}
+
+function calcBandwidth() {
+  const size = parseFloat(document.getElementById('bw-size').value);
+  const sizeUnit = parseFloat(document.getElementById('bw-size-unit').value);
+  const speed = parseFloat(document.getElementById('bw-speed').value);
+  const speedUnit = parseFloat(document.getElementById('bw-speed-unit').value);
+  if (isNaN(size) || isNaN(speed) || speed === 0) return;
+
+  const sizeBytes = size * sizeUnit;
+  const speedBps = speed * speedUnit;
+  const seconds = (sizeBytes * 8) / speedBps;
+
+  function fmtTime(s) {
+    if (s < 60) return s.toFixed(2) + ' seconds';
+    if (s < 3600) return (s / 60).toFixed(2) + ' minutes';
+    if (s < 86400) return (s / 3600).toFixed(2) + ' hours';
+    return (s / 86400).toFixed(2) + ' days';
+  }
+
+  document.getElementById('bw-results').innerHTML =
+    row('Transfer Time', fmtTime(seconds), 'blue') +
+    row('Data Size', (sizeBytes / 1048576).toFixed(2) + ' MB') +
+    row('Speed', (speedBps / 1000000).toFixed(2) + ' Mbps') +
+    row('Total Seconds', seconds.toFixed(2) + ' s') +
+    row('Total Minutes', (seconds / 60).toFixed(2) + ' min') +
+    row('Throughput Check', (sizeBytes / seconds / 125000).toFixed(2) + ' Mbps');
+}
+
+function convertUnits() {
+  const val = parseFloat(document.getElementById('unit-val').value);
+  const fromUnit = document.getElementById('unit-from').value;
+  const units = { bps: 1, Kbps: 1e3, Mbps: 1e6, Gbps: 1e9, Tbps: 1e12 };
+  const bps = val * units[fromUnit];
+
+  document.getElementById('unit-results').innerHTML =
+    row('bps', bps.toLocaleString()) +
+    row('Kbps', (bps / 1e3).toFixed(4)) +
+    row('Mbps', (bps / 1e6).toFixed(4)) +
+    row('Gbps', (bps / 1e9).toFixed(6)) +
+    row('Tbps', (bps / 1e12).toFixed(9)) +
+    row('KBps', (bps / 8 / 1e3).toFixed(4)) +
+    row('MBps', (bps / 8 / 1e6).toFixed(4)) +
+    row('GBps', (bps / 8 / 1e9).toFixed(6));
+}
+
+function buildCIDRTable() {
+  if (document.getElementById('cidr-table-container').innerHTML) return;
+  let html = '<table class="subnet-table"><thead><tr><th>CIDR</th><th>Subnet Mask</th><th>Wildcard</th><th>Total IPs</th><th>Usable Hosts</th><th>Class</th></tr></thead><tbody>';
+  for (let i = 0; i <= 32; i++) {
+    const total = Math.pow(2, 32 - i);
+    const usable = i <= 30 ? total - 2 : i === 31 ? 2 : 1;
+    const maskInt = i === 0 ? 0 : (0xFFFFFFFF << (32 - i)) >>> 0;
+    const mask = intToIp(maskInt);
+    const wild = intToIp((~maskInt) >>> 0);
+    let cls = i <= 8 ? '<span class="badge badge-green">A</span>' : i <= 16 ? '<span class="badge badge-blue">B</span>' : i <= 24 ? '<span class="badge badge-orange">C</span>' : '—';
+    html += `<tr><td>/${i}</td><td>${mask}</td><td>${wild}</td><td>${total.toLocaleString()}</td><td>${usable.toLocaleString()}</td><td>${cls}</td></tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById('cidr-table-container').innerHTML = html;
+}
+
+function convertFromDecimal() {
+  const ip = document.getElementById('conv-decimal').value.trim();
+  if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) return;
+  const octets = ip.split('.').map(Number);
+  if (octets.some(o => o > 255 || o < 0)) return;
+  const n = ipToInt(ip);
+  document.getElementById('conv-binary').value = octets.map(o => o.toString(2).padStart(8,'0')).join('.');
+  document.getElementById('conv-hex').value = octets.map(o => o.toString(16).toUpperCase().padStart(2,'0')).join('');
+  document.getElementById('conv-int').value = n;
+  showClassInfo(ip, n);
+}
+
+function convertFromHex() {
+  const hex = document.getElementById('conv-hex').value.trim().replace(/[^0-9a-fA-F]/g,'');
+  if (hex.length !== 8) return;
+  const n = parseInt(hex, 16) >>> 0;
+  const ip = intToIp(n);
+  document.getElementById('conv-decimal').value = ip;
+  document.getElementById('conv-binary').value = ip.split('.').map(o => parseInt(o).toString(2).padStart(8,'0')).join('.');
+  document.getElementById('conv-int').value = n;
+  showClassInfo(ip, n);
+}
+
+function convertFromInt() {
+  const n = parseInt(document.getElementById('conv-int').value) >>> 0;
+  const ip = intToIp(n);
+  document.getElementById('conv-decimal').value = ip;
+  document.getElementById('conv-binary').value = ip.split('.').map(o => parseInt(o).toString(2).padStart(8,'0')).join('.');
+  document.getElementById('conv-hex').value = ip.split('.').map(o => parseInt(o).toString(16).toUpperCase().padStart(2,'0')).join('');
+  showClassInfo(ip, n);
+}
+
+function showClassInfo(ip, n) {
+  const cls = getIPClass(ip);
+  const priv = isPrivate(ip);
+  document.getElementById('conv-class').innerHTML =
+    row('IP Address', ip, 'blue') +
+    row('IP Class', cls) +
+    row('32-bit Value', n.toLocaleString()) +
+    row('Hex', ip.split('.').map(o => parseInt(o).toString(16).toUpperCase().padStart(2,'0')).join(':'));
+
+  document.getElementById('conv-private').innerHTML = priv
+    ? row('Range', priv, 'blue') + row('Type', 'Private / Reserved', 'orange')
+    : row('Type', 'Public IP Address', 'blue');
+}
+</script>
+</body>
+</html>
