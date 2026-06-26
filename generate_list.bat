@@ -1,8 +1,8 @@
 @echo off
 setlocal enabledelayedexpansion
 
-REM File ini akan mengenerate list file .html dan menyimpannya ke LIST.md
-set OUTPUT_FILE=LIST.md
+REM File ini akan mengenerate list file .html dan menyimpannya ke LIST.txt
+set OUTPUT_FILE=LIST.txt
 
 REM Hapus file lama jika ada
 if exist %OUTPUT_FILE% del %OUTPUT_FILE%
