@@ -65,7 +65,7 @@
         .bt-snap.active { background:var(--yl); color:var(--bg); border-color:var(--yl); }
         .bt-snap.active:hover { background:#e6b800; color:var(--bg); }
         .exd { position:relative; display:inline-block; }
-        .exd .dd { display:none; position:absolute; top:calc(100%+4px); right:0; background:var(--cd); border:1px solid var(--bd); border-radius:8px; padding:6px 0; min-width:190px; z-index:200; flex-direction:column; box-shadow:0 12px 32px rgba(0,0,0,.6); }
+        .exd .dd { display:none; position:absolute; top:calc(100%+4px); right:0; background:var(--cd); border:1px solid var(--bd); border-radius:8px; padding:6px 0; min-width:200px; z-index:200; flex-direction:column; box-shadow:0 12px 32px rgba(0,0,0,.6); }
         .exd .dd.open { display:flex; }
         .exd .dd button { background:0; border:none; color:var(--fg); padding:8px 16px; font:500 12px/1 'Space Grotesk',sans-serif; text-align:left; cursor:pointer; transition:background .12s; display:flex; align-items:center; gap:10px; width:100%; }
         .exd .dd button:hover { background:var(--bd); }
@@ -78,10 +78,29 @@
         .stt { font-size:11px; text-transform:uppercase; letter-spacing:1.4px; color:var(--mt); margin-top:8px; margin-bottom:4px; font-weight:600; }
         .stt:first-child { margin-top:0; }
         .cs { display:flex; gap:4px; margin-bottom:2px; }
-        .cb { flex:1; padding:6px 4px; border:2px solid var(--bd); border-radius:5px; background:var(--cd); color:var(--mt); font:600 11px/1 'Space Grotesk',sans-serif; cursor:pointer; text-align:center; transition:all .2s; position:relative; }
+        .cb {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            padding: 6px 4px 4px;
+            border: 2px solid var(--bd);
+            border-radius: 5px;
+            background: var(--cd);
+            color: var(--mt);
+            font: 600 11px/1 'Space Grotesk', sans-serif;
+            cursor: pointer;
+            text-align: center;
+            transition: all .2s;
+            position: relative;
+            flex: 1;
+            min-height: 44px;
+        }
         .cb:hover { border-color:var(--fg); color:var(--fg); transform:translateY(-1px); }
         .cb.a { border-color:var(--in); color:var(--in); background:rgba(41,182,246,.12); box-shadow:0 0 12px rgba(41,182,246,.15); }
-        .cb .cb-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px; vertical-align:middle; border:1px solid rgba(255,255,255,.1); }
+        .cb .cb-dot { width:12px; height:12px; border-radius:50%; display:inline-block; border:1px solid rgba(255,255,255,.15); flex-shrink:0; }
+        .cb .cb-label { font-size:9px; line-height:1.2; font-weight:600; text-transform:uppercase; letter-spacing:0.3px; }
         .db { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:6px; background:var(--cd); border:1px solid var(--bd); color:var(--fg); cursor:pointer; transition:all .12s; font:500 12px/1.3 'Space Grotesk',sans-serif; text-align:left; width:100%; }
         .db:hover { border-color:var(--ac); transform:translateX(2px); }
         .db.a { border-color:var(--ac); background:var(--ad); }
@@ -185,8 +204,11 @@
             <div class="exd" id="exportDropdown">
                 <button class="bt btx"><i class="fa-solid fa-file-export"></i> Export <i class="fa-solid fa-caret-down"></i></button>
                 <div class="dd" id="dropdownMenu">
-                    <button id="exPNG"><i class="fa-regular fa-image"></i> PNG</button>
-                    <button id="exSVG"><i class="fa-regular fa-file-code"></i> SVG</button>
+                    <button id="exPNGDark"><i class="fa-regular fa-image"></i> PNG (Dark)</button>
+                    <button id="exPNGLight"><i class="fa-regular fa-image"></i> PNG (Light)</button>
+                    <div class="sep"></div>
+                    <button id="exSVGDark"><i class="fa-regular fa-file-code"></i> SVG (Dark)</button>
+                    <button id="exSVGLight"><i class="fa-regular fa-file-code"></i> SVG (Light)</button>
                     <div class="sep"></div>
                     <button id="exJSON"><i class="fa-regular fa-file-lines"></i> JSON</button>
                     <button id="exPDF"><i class="fa-regular fa-file-pdf"></i> PDF (Full)</button>
@@ -271,17 +293,19 @@ var DT = {
     ipcam: { lb: 'IP Camera', fa: 'fa-camera', ic: '\uf030', co: '#4dd0e1', bg: 'rgba(77,208,225,.1)', r: 22, pt: 1, dc: 'IP Camera' }
 };
 
+// ========== CABLE TYPES ==========
 var CT = {
     ethernet: { lb: 'Ethernet', co: '#29b6f6', dh: [], w: 3, sp: 1 },
     fiber: { lb: 'Fiber', co: '#c084fc', dh: [8,4], w: 2.5, sp: 1.8 },
-    wireless: { lb: 'Wireless', co: '#ffa726', dh: [3,5], w: 2, sp: .6 }
+    wireless: { lb: 'Wireless', co: '#ffa726', dh: [3,5], w: 2, sp: .6 },
+    other: { lb: 'Other', co: '#888888', dh: [1,3], w: 2, sp: .4 }
 };
 
 var DS_ARR = ['online','warning','offline'];
 var CS_ARR = ['active','degraded','down'];
 var SC_OBJ = { online:'#00d48e', warning:'#ffa726', offline:'#ff4757' };
-var PORT_TYPES = ['ethernet','fiber','wireless'];
-var PORT_COLORS = { ethernet:'#29b6f6', fiber:'#c084fc', wireless:'#ffa726' };
+var PORT_TYPES = ['ethernet','fiber','wireless','other'];
+var PORT_COLORS = { ethernet:'#29b6f6', fiber:'#c084fc', wireless:'#ffa726', other:'#888888' };
 
 // ========== STATE ==========
 var devs = [], cabs = [];
@@ -297,6 +321,8 @@ var skipAutoScroll = false;
 var manualToggle = false, isAutoHide = false;
 var snapToGrid = true;
 var GRID_SIZE = 40;
+var __exportMode = false;
+var __exportTheme = 'dark';
 
 var cv = document.getElementById('dc');
 var cx = cv.getContext('2d');
@@ -547,6 +573,27 @@ function drawCables() {
         var c = cabs[i], a = getDeviceById(c.from), b = getDeviceById(c.to);
         if (!a || !b) continue;
         var ct = CT[c.type], isSel = (c.id === sCI);
+
+        // ===== Warna label kabel berdasarkan tema =====
+        var isExport = __exportMode;
+        var theme = __exportTheme || 'dark';
+        var labelBg, labelStroke, labelTextColor;
+        if (isExport) {
+            if (theme === 'dark') {
+                labelBg = 'rgba(12,15,20,.9)';
+                labelStroke = 'rgba(42,51,72,.5)';
+                labelTextColor = c.status === 'degraded' ? '#ffa726' : c.status === 'down' ? '#ff4757' : '#7b8ca3';
+            } else { // light
+                labelBg = 'rgba(255,255,255,0.85)';
+                labelStroke = 'rgba(42,51,72,0.3)';
+                labelTextColor = c.status === 'degraded' ? '#ffa726' : c.status === 'down' ? '#ff4757' : '#444444';
+            }
+        } else {
+            labelBg = 'rgba(12,15,20,.9)';
+            labelStroke = 'rgba(42,51,72,.5)';
+            labelTextColor = c.status === 'degraded' ? '#ffa726' : c.status === 'down' ? '#ff4757' : '#7b8ca3';
+        }
+
         if (isSel) {
             cx.strokeStyle = ct.co; cx.lineWidth = ct.w + 6; cx.globalAlpha = .12; cx.setLineDash([]);
             cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke(); cx.globalAlpha = 1;
@@ -566,9 +613,9 @@ function drawCables() {
         var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, lb = (c.name || 'Cable') + ' P' + c.fromPort + '\u2192P' + c.toPort + ' ' + c.bw + 'M';
         cx.font = '600 8px "JetBrains Mono",monospace'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
         var tw = cx.measureText(lb).width + 10;
-        cx.fillStyle = 'rgba(12,15,20,.9)'; cx.beginPath(); cx.roundRect(mx - tw/2, my - 7, tw, 14, 3); cx.fill();
-        cx.strokeStyle = 'rgba(42,51,72,.5)'; cx.lineWidth = .5; cx.stroke();
-        cx.fillStyle = c.status === 'degraded' ? '#ffa726' : c.status === 'down' ? '#ff4757' : '#7b8ca3';
+        cx.fillStyle = labelBg; cx.beginPath(); cx.roundRect(mx - tw/2, my - 7, tw, 14, 3); cx.fill();
+        cx.strokeStyle = labelStroke; cx.lineWidth = .5; cx.stroke();
+        cx.fillStyle = labelTextColor;
         cx.fillText(lb, mx, my);
     }
 }
@@ -578,6 +625,32 @@ function drawDevices() {
         var d = devs[i], t = DT[d.type], r = t.r, isSel = (d.id === sDI), isCS = (d.id === cSrc), isMultiSel = (selectedDevs.indexOf(d.id) !== -1), s = d.sc;
         if (s < .01) continue;
         cx.save(); cx.translate(d.x, d.y); cx.scale(s, s);
+
+        var isExport = __exportMode;
+        var theme = __exportTheme || 'dark';
+        var nameColor, ipColor, deviceBg, deviceStroke, strokeColor;
+
+        if (isExport) {
+            if (theme === 'dark') {
+                nameColor = '#e4eaf2';
+                ipColor = '#7b8ca3';
+                deviceBg = '#1c2230';
+                deviceStroke = 'rgba(42,51,72,0.7)';
+            } else {
+                nameColor = '#1a1f2e';
+                ipColor = '#444444';
+                deviceBg = '#f5f5f5';
+                deviceStroke = 'rgba(42,51,72,0.5)';
+            }
+            strokeColor = 'rgba(42,51,72,0.5)';
+        } else {
+            nameColor = '#e4eaf2';
+            ipColor = '#7b8ca3';
+            deviceBg = '#1c2230';
+            deviceStroke = 'rgba(42,51,72,0.7)';
+            strokeColor = (isSel || isMultiSel) ? '#29b6f6' : 'rgba(42,51,72,0.7)';
+        }
+
         if (d.status === 'online') {
             var pulse = Math.sin(d.ph) * .5 + .5;
             cx.beginPath(); cx.arc(0, 0, r + 6 + pulse * 12, 0, 6.2832); cx.strokeStyle = 'rgba(' + hR(t.co) + ',' + (0.04 + pulse * .04) + ')'; cx.lineWidth = 1.2; cx.stroke();
@@ -589,14 +662,14 @@ function drawDevices() {
             cx.beginPath(); cx.arc(0, 0, r + 5, 0, 6.2832); cx.strokeStyle = isSel ? '#fff' : '#29b6f6'; cx.lineWidth = isSel ? 3 : 2; cx.setLineDash(isSel ? [4,4] : [3,3]); cx.stroke(); cx.setLineDash([]);
         }
         cx.shadowColor = 'rgba(0,0,0,.35)'; cx.shadowBlur = 12; cx.shadowOffsetY = 3;
-        cx.beginPath(); cx.arc(0, 0, r, 0, 6.2832); cx.fillStyle = '#1c2230'; cx.fill();
+        cx.beginPath(); cx.arc(0, 0, r, 0, 6.2832); cx.fillStyle = deviceBg; cx.fill();
         cx.shadowColor = 'transparent';
-        cx.beginPath(); cx.arc(0, 0, r, 0, 6.2832); cx.strokeStyle = (isSel || isMultiSel) ? '#29b6f6' : 'rgba(42,51,72,.7)'; cx.lineWidth = (isSel || isMultiSel) ? 2.5 : 1.2; cx.stroke();
+        cx.beginPath(); cx.arc(0, 0, r, 0, 6.2832); cx.strokeStyle = (isSel || isMultiSel) ? '#29b6f6' : deviceStroke; cx.lineWidth = (isSel || isMultiSel) ? 2.5 : 1.2; cx.stroke();
         cx.fillStyle = t.co; cx.textAlign = 'center'; cx.textBaseline = 'middle';
         cx.font = '900 ' + Math.round(r * .6) + 'px "Font Awesome 6 Free"'; cx.fillText(t.ic, 0, 1);
         var scolor = SC_OBJ[d.status], dx2 = r * .5, dy2 = -r * .5;
         cx.beginPath(); cx.arc(dx2, dy2, 4, 0, 6.2832); cx.fillStyle = scolor; cx.fill();
-        cx.beginPath(); cx.arc(dx2, dy2, 4, 0, 6.2832); cx.strokeStyle = '#1c2230'; cx.lineWidth = 2; cx.stroke();
+        cx.beginPath(); cx.arc(dx2, dy2, 4, 0, 6.2832); cx.strokeStyle = deviceBg; cx.lineWidth = 2; cx.stroke();
         cx.beginPath(); cx.arc(-r * .5, r * .5, 7, 0, 6.2832); cx.fillStyle = 'rgba(250,204,21,.85)'; cx.fill();
         cx.font = '700 7px "JetBrains Mono",monospace'; cx.fillStyle = '#1a1f2e'; cx.fillText(String(d.ports), -r * .5, r * .5 + .5);
         var cc = 0;
@@ -605,8 +678,8 @@ function drawDevices() {
             cx.beginPath(); cx.arc(r * .5, r * .5, 7, 0, 6.2832); cx.fillStyle = 'rgba(41,182,246,.85)'; cx.fill();
             cx.font = '700 7px "JetBrains Mono",monospace'; cx.fillStyle = '#fff'; cx.fillText(String(cc), r * .5, r * .5 + .5);
         }
-        cx.font = '700 10px "Space Grotesk",sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'top'; cx.fillStyle = '#e4eaf2'; cx.fillText(d.name, 0, r + 7);
-        cx.font = '500 8px "JetBrains Mono",monospace'; cx.fillStyle = '#7b8ca3'; cx.fillText(d.ip, 0, r + 19);
+        cx.font = '700 10px "Space Grotesk",sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'top'; cx.fillStyle = nameColor; cx.fillText(d.name, 0, r + 7);
+        cx.font = '500 8px "JetBrains Mono",monospace'; cx.fillStyle = ipColor; cx.fillText(d.ip, 0, r + 19);
         cx.restore();
     }
 }
@@ -858,7 +931,7 @@ function uDL() {
                 '<span class="leg-item"><span class="leg-sq" style="background:var(--dn);"></span> Down</span>' +
                 '<span class="leg-item"><span class="leg-sq" style="background:var(--cd);border-color:var(--bd);"></span> Empty</span>' +
                 '<span class="leg-item" style="margin-left:4px;color:var(--mt);font-size:8px;">● ' +
-                '<span style="color:var(--in);">E</span> <span style="color:var(--pp);">F</span> <span style="color:var(--wn);">W</span></span>' +
+                '<span style="color:var(--in);">E</span> <span style="color:var(--pp);">F</span> <span style="color:var(--wn);">W</span> <span style="color:#888;">O</span></span>' +
                 '</div>';
         }
         var isMultiSel = (selectedDevs.indexOf(d.id) !== -1);
@@ -978,7 +1051,7 @@ var _sDD = function(d) {
     html += '<div class="dr"><span class="l">CIDR</span><div style="display:flex;align-items:center;gap:6px"><input class="ei" id="eCIDR" value="/' + cidr + '" style="width:60px" placeholder="/24"></div></div>';
     html += erR('Subnet Mask', '<input class="ei eis" id="eSN" value="' + d.subnet + '">');
     html += erR('Gateway', '<input class="ei eis" id="eGW" value="' + d.gateway + '">');
-    html += '<div class="dr"><span class="l">MAC Address</span><span class="v" style="font-size:11px;color:var(--mt)">' + d.mac + '</span></div>';
+    html += erR('MAC Address', '<input class="ei eis" id="eMAC" value="' + d.mac + '" style="font-size:11px">');
     html += '<div class="dr"><span class="l">Uptime</span><span class="v">' + d.uptime + '</span></div></div>';
     html += '<div class="se"><div class="stl">Ports (' + usedCount + '/' + d.ports + ' used)</div>';
     html += '<div class="dr"><span class="l">Total Ports</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="ePt" value="' + d.ports + '" min="1" max="256" style="width:55px"><div class="pb"><div class="f" style="width:' + Math.min(100, portPct) + '%;background:' + pC(portPct) + '"></div></div><span class="v" style="color:' + pC(portPct) + ';min-width:32px">' + portPct + '%</span></div></div>';
@@ -990,9 +1063,9 @@ var _sDD = function(d) {
     for (var p = 1; p <= d.ports; p++) {
         var cable = getCableOnPort(d.id, p), isUsed = cable ? true : false, cableType = cable ? cable.type : null;
         var pt = (portTypes && portTypes[p - 1]) ? portTypes[p - 1] : null, selectedType = cableType || pt, statusLabel = isUsed ? '(used)' : '(empty)';
-        var selE = (selectedType === 'ethernet') ? ' selected' : '', selF = (selectedType === 'fiber') ? ' selected' : '', selW = (selectedType === 'wireless') ? ' selected' : '', selN = (!selectedType) ? ' selected' : '';
+        var selE = (selectedType === 'ethernet') ? ' selected' : '', selF = (selectedType === 'fiber') ? ' selected' : '', selW = (selectedType === 'wireless') ? ' selected' : '', selO = (selectedType === 'other') ? ' selected' : '', selN = (!selectedType) ? ' selected' : '';
         var disabledAttr = isUsed ? ' disabled' : '', statusClass = isUsed ? 'used' : '';
-        html += '<div class="port-type-row"><span class="pt-label">P' + p + '</span><select class="pt-select" data-dev="' + d.id + '" data-port="' + p + '"' + disabledAttr + '><option value=""' + selN + '>Empty</option><option value="ethernet"' + selE + ' style="color:#29b6f6;">Ethernet</option><option value="fiber"' + selF + ' style="color:#c084fc;">Fiber</option><option value="wireless"' + selW + ' style="color:#ffa726;">Wireless</option></select><span class="pt-status ' + statusClass + '">' + statusLabel + '</span></div>';
+        html += '<div class="port-type-row"><span class="pt-label">P' + p + '</span><select class="pt-select" data-dev="' + d.id + '" data-port="' + p + '"' + disabledAttr + '><option value=""' + selN + '>Empty</option><option value="ethernet"' + selE + ' style="color:#29b6f6;">Ethernet</option><option value="fiber"' + selF + ' style="color:#c084fc;">Fiber</option><option value="wireless"' + selW + ' style="color:#ffa726;">Wireless</option><option value="other"' + selO + ' style="color:#888888;">Other</option></select><span class="pt-status ' + statusClass + '">' + statusLabel + '</span></div>';
     }
     html += '</div>';
 
@@ -1023,6 +1096,7 @@ var _sDD = function(d) {
     });
     $('eS').addEventListener('change', function(e) { d.status = e.target.value; _sDD(d); uDL(); uSt(); ren(); });
     $('eIP').addEventListener('change', function(e) { d.ip = e.target.value.trim(); ren(); toast('IP: ' + d.ip, 'in'); });
+    $('eMAC').addEventListener('change', function(e) { d.mac = e.target.value.trim(); toast('MAC: ' + d.mac, 'in'); });
 
     var eCIDR = $('eCIDR');
     var eSN = $('eSN');
@@ -1195,6 +1269,14 @@ function delC(id) {
     ren();
 }
 
+// ========== SIDEBAR SCROLL TO CABLE TYPE ==========
+function scrollSidebarToTop() {
+    var sb = document.getElementById('sb');
+    if (sb) {
+        sb.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
 // ========== BUILD SIDEBAR ==========
 function buildSB() {
     var sb = document.getElementById('sb');
@@ -1202,7 +1284,10 @@ function buildSB() {
     var ck = Object.keys(CT);
     for (var i = 0; i < ck.length; i++) {
         var k = ck[i], v = CT[k], cls = k === selCT ? ' a' : '', dotColor = v.co;
-        h += '<button class="cb' + cls + '" data-c="' + k + '" style="' + (k === selCT ? 'border-color:' + dotColor + ';color:' + dotColor + ';background:rgba(' + hexToRgb(dotColor) + ',0.1);' : '') + '"><span class="cb-dot" style="background:' + dotColor + ';"></span>' + v.lb + '</button>';
+        h += '<button class="cb' + cls + '" data-c="' + k + '" style="' + (k === selCT ? 'border-color:' + dotColor + ';color:' + dotColor + ';background:rgba(' + hexToRgb(dotColor) + ',0.1);' : '') + '">' +
+            '<span class="cb-dot" style="background:' + dotColor + ';"></span>' +
+            '<span class="cb-label">' + v.lb + '</span>' +
+            '</button>';
     }
     h += '</div>';
 
@@ -1416,6 +1501,12 @@ document.addEventListener('keydown', function(e) {
 function sM(m) {
     mode = m; cSrc = null;
     if (m !== 'select') { selectedDevs = []; isSelBox = false; selBox = null; }
+
+    // SIDEBAR SCROLL KE ATAS (CABLE TYPE) saat Connect
+    if (m === 'connect') {
+        scrollSidebarToTop();
+    }
+
     var btns = document.querySelectorAll('.mb');
     for (var i = 0; i < btns.length; i++) {
         var b = btns[i]; b.classList.remove('a', 'ac2', 'ad');
@@ -1571,7 +1662,7 @@ function escapeXml(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 }
 
-// ===== drawDeviceSVGInline - menggunakan Font Awesome path =====
+// ===== drawDeviceSVGInline =====
 function drawDeviceSVGInline(iconKey, x, y, size, color) {
     var ic = ICON_PATHS[iconKey];
     if (!ic) return '';
@@ -1582,7 +1673,7 @@ function drawDeviceSVGInline(iconKey, x, y, size, color) {
 }
 
 // ===== EXPORT PNG =====
-document.getElementById('exPNG').addEventListener('click', function() {
+function exportPNG(mode) {
     if (!devs.length && !cabs.length) { toast('Nothing to export', 'er'); return; }
 
     var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -1608,26 +1699,38 @@ document.getElementById('exPNG').addEventListener('click', function() {
     off.width = w; off.height = h;
     var ox = off.getContext('2d');
 
+    if (mode === 'light') {
+        ox.fillStyle = '#ffffff';
+        ox.fillRect(0, 0, w, h);
+    } else {
+        ox.clearRect(0, 0, w, h);
+    }
+
     var savedPX = pX, savedPY = pY, savedZM = zm;
     var savedW = cW, savedH = cH, savedDP = dp;
     var savedCV = cv, savedCX = cx;
 
     cv = off; cx = ox; cW = w; cH = h; dp = 1;
     pX = -minX * scale; pY = -minY * scale; zm = scale;
+
+    __exportMode = true;
+    __exportTheme = mode;
     ren();
+    __exportMode = false;
 
     cv = savedCV; cx = savedCX; cW = savedW; cH = savedH; dp = savedDP;
     pX = savedPX; pY = savedPY; zm = savedZM;
 
     var link = document.createElement('a');
-    link.download = 'nettopo-export-' + new Date().toISOString().slice(0, 10) + '.png';
+    var label = mode === 'light' ? 'light' : 'dark';
+    link.download = 'nettopo-export-' + label + '-' + new Date().toISOString().slice(0, 10) + '.png';
     link.href = off.toDataURL('image/png', 1.0);
     link.click();
-    toast('PNG exported (full topology, 2x)', 'ok');
-});
+    toast('PNG (' + label + ') exported', 'ok');
+}
 
 // ===== EXPORT SVG =====
-document.getElementById('exSVG').addEventListener('click', function() {
+function exportSVG(mode) {
     if (!devs.length && !cabs.length) { toast('Nothing to export', 'er'); return; }
 
     var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -1648,13 +1751,24 @@ document.getElementById('exSVG').addEventListener('click', function() {
     minX -= padding; minY -= padding; maxX += padding; maxY += padding;
     var tw = maxX - minX, th = maxY - minY;
 
+    var isDark = (mode === 'dark');
+    var bgColor = isDark ? '#0c0f14' : '#ffffff';
+    var textColor = isDark ? '#e4eaf2' : '#1a1f2e';
+    var ipColor = isDark ? '#7b8ca3' : '#444444';
+    var deviceBg = isDark ? '#1c2230' : '#f5f5f5';
+    var gridColor = isDark ? 'rgba(42,51,72,0.3)' : 'rgba(42,51,72,0.2)';
+    var strokeColor = isDark ? 'rgba(42,51,72,0.7)' : 'rgba(42,51,72,0.5)';
+    var labelBg = isDark ? 'rgba(12,15,20,0.9)' : 'rgba(255,255,255,0.85)';
+    var labelStroke = isDark ? 'rgba(42,51,72,0.5)' : 'rgba(42,51,72,0.3)';
+    var labelTextColor = isDark ? '#7b8ca3' : '#444444';
+
     var svg = '';
     svg += '<?xml version="1.0" encoding="UTF-8"?>\n';
     svg += '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + minX + ' ' + minY + ' ' + tw + ' ' + th +
-        '" width="' + tw + '" height="' + th + '" style="background-color:#0c0f14;font-family:sans-serif;">\n';
+        '" width="' + tw + '" height="' + th + '" style="background-color:' + bgColor + ';font-family:sans-serif;">\n';
     svg += '<defs>\n';
     svg += '  <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">\n';
-    svg += '    <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.4"/>\n';
+    svg += '    <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="' + (isDark ? '0.4' : '0.15') + '"/>\n';
     svg += '  </filter>\n';
     svg += '</defs>\n';
 
@@ -1665,7 +1779,7 @@ document.getElementById('exSVG').addEventListener('click', function() {
     var startY = Math.floor(minY / gridSize) * gridSize;
     var endY = Math.ceil(maxY / gridSize) * gridSize;
 
-    svg += '  <g stroke="rgba(42,51,72,0.3)" stroke-width="0.5">\n';
+    svg += '  <g stroke="' + gridColor + '" stroke-width="0.5">\n';
     for (var x = startX; x <= endX; x += gridSize) {
         svg += '    <line x1="' + x + '" y1="' + minY + '" x2="' + x + '" y2="' + maxY + '"/>\n';
     }
@@ -1674,7 +1788,6 @@ document.getElementById('exSVG').addEventListener('click', function() {
     }
     svg += '  </g>\n';
 
-    // Origin axis
     svg += '  <line x1="0" y1="' + minY + '" x2="0" y2="' + maxY + '" stroke="rgba(0,212,142,0.06)" stroke-width="1"/>\n';
     svg += '  <line x1="' + minX + '" y1="0" x2="' + maxX + '" y2="0" stroke="rgba(0,212,142,0.06)" stroke-width="1"/>\n';
 
@@ -1701,11 +1814,11 @@ document.getElementById('exSVG').addEventListener('click', function() {
 
         var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
         var lb = (c.name || 'Cable') + ' P' + c.fromPort + '\u2192P' + c.toPort + ' ' + c.bw + 'M';
-        var textColor = c.status === 'degraded' ? '#ffa726' : c.status === 'down' ? '#ff4757' : '#7b8ca3';
+        var lColor = c.status === 'degraded' ? '#ffa726' : c.status === 'down' ? '#ff4757' : labelTextColor;
         var tw2 = lb.length * 5 + 10;
-        svg += '  <rect x="' + (mx - tw2 / 2) + '" y="' + (my - 7) + '" width="' + tw2 + '" height="14" rx="3" fill="rgba(12,15,20,0.9)" stroke="rgba(42,51,72,0.5)" stroke-width="0.5"/>\n';
+        svg += '  <rect x="' + (mx - tw2 / 2) + '" y="' + (my - 7) + '" width="' + tw2 + '" height="14" rx="3" fill="' + labelBg + '" stroke="' + labelStroke + '" stroke-width="0.5"/>\n';
         svg += '  <text x="' + mx + '" y="' + (my + 3) + '" text-anchor="middle" font-size="8" font-family="JetBrains Mono,monospace" font-weight="500" fill="' +
-            textColor + '">' + escapeXml(lb) + '</text>\n';
+            lColor + '">' + escapeXml(lb) + '</text>\n';
     }
 
     // Devices
@@ -1722,17 +1835,18 @@ document.getElementById('exSVG').addEventListener('click', function() {
         }
         if (isSel) {
             svg += '  <circle cx="' + d.x + '" cy="' + d.y + '" r="' + (r + 5) +
-                '" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="4,4"/>\n';
+                '" fill="none" stroke="' + (isDark ? '#fff' : '#222') + '" stroke-width="2.5" stroke-dasharray="4,4"/>\n';
         }
         svg += '  <circle cx="' + d.x + '" cy="' + d.y + '" r="' + r +
-            '" fill="#1c2230" stroke="' + (isSel ? '#fff' : 'rgba(42,51,72,0.7)') + '" stroke-width="' + (isSel ? 2.5 : 1.2) + '" filter="url(#shadow)"/>\n';
+            '" fill="' + deviceBg + '" stroke="' + strokeColor + '" stroke-width="' + (isSel ? 2.5 : 1.2) + '" filter="url(#shadow)"/>\n';
 
         var iconSize = r * 0.65;
         var iconSvg = drawDeviceSVGInline(d.type, d.x, d.y, iconSize, color);
         svg += '  ' + iconSvg + '\n';
 
         var scolor = SC_OBJ[d.status];
-        svg += '  <circle cx="' + (d.x + r * 0.5) + '" cy="' + (d.y - r * 0.5) + '" r="4" fill="' + scolor + '" stroke="#1c2230" stroke-width="2"/>\n';
+        var strokeDot = isDark ? deviceBg : '#ffffff';
+        svg += '  <circle cx="' + (d.x + r * 0.5) + '" cy="' + (d.y - r * 0.5) + '" r="4" fill="' + scolor + '" stroke="' + strokeDot + '" stroke-width="2"/>\n';
         svg += '  <circle cx="' + (d.x - r * 0.5) + '" cy="' + (d.y + r * 0.5) + '" r="7" fill="rgba(250,204,21,0.85)"/>\n';
         svg += '  <text x="' + (d.x - r * 0.5) + '" y="' + (d.y + r * 0.5 + 0.5) +
             '" text-anchor="middle" dominant-baseline="central" font-size="7" font-family="JetBrains Mono,monospace" font-weight="700" fill="#1a1f2e">' +
@@ -1746,9 +1860,9 @@ document.getElementById('exSVG').addEventListener('click', function() {
                 cc + '</text>\n';
         }
         svg += '  <text x="' + d.x + '" y="' + (d.y + r + 7) +
-            '" text-anchor="middle" font-size="9" font-weight="700" fill="#e4eaf2">' + escapeXml(d.name) + '</text>\n';
+            '" text-anchor="middle" font-size="9" font-weight="700" fill="' + textColor + '">' + escapeXml(d.name) + '</text>\n';
         svg += '  <text x="' + d.x + '" y="' + (d.y + r + 19) +
-            '" text-anchor="middle" font-size="7" font-family="JetBrains Mono,monospace" font-weight="500" fill="#7b8ca3">' +
+            '" text-anchor="middle" font-size="7" font-family="JetBrains Mono,monospace" font-weight="500" fill="' + ipColor + '">' +
             escapeXml(d.ip) + '</text>\n';
     }
 
@@ -1756,12 +1870,19 @@ document.getElementById('exSVG').addEventListener('click', function() {
 
     var blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
     var link = document.createElement('a');
-    link.download = 'nettopo-export-' + new Date().toISOString().slice(0, 10) + '.svg';
+    var label = mode === 'light' ? 'light' : 'dark';
+    link.download = 'nettopo-export-' + label + '-' + new Date().toISOString().slice(0, 10) + '.svg';
     link.href = URL.createObjectURL(blob);
     link.click();
     setTimeout(function() { URL.revokeObjectURL(link.href); }, 5000);
-    toast('SVG exported (vector, FA icons)', 'ok');
-});
+    toast('SVG (' + label + ') exported', 'ok');
+}
+
+// ===== EVENT LISTENERS EXPORT =====
+document.getElementById('exPNGDark').addEventListener('click', function() { exportPNG('dark'); });
+document.getElementById('exPNGLight').addEventListener('click', function() { exportPNG('light'); });
+document.getElementById('exSVGDark').addEventListener('click', function() { exportSVG('dark'); });
+document.getElementById('exSVGLight').addEventListener('click', function() { exportSVG('light'); });
 
 // ===== EXPORT JSON =====
 document.getElementById('exJSON').addEventListener('click', function() {
@@ -1794,7 +1915,7 @@ function generatePDF() {
         var doc = new jsPDF('p', 'mm', 'a4');
         var pageWidth = 210, pageHeight = 297, margin = 15;
 
-        // Capture topology image (sama seperti PNG)
+        // ===== CAPTURE TOPOLOGY dengan tema LIGHT (teks gelap) agar terbaca di PDF =====
         var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         for (var i = 0; i < devs.length; i++) {
             var d = devs[i], r = DT[d.type].r + 20;
@@ -1818,13 +1939,22 @@ function generatePDF() {
         off.width = w; off.height = h;
         var ox = off.getContext('2d');
 
+        // Background putih untuk gambar
+        ox.fillStyle = '#ffffff';
+        ox.fillRect(0, 0, w, h);
+
         var savedPX = pX, savedPY = pY, savedZM = zm;
         var savedW = cW, savedH = cH, savedDP = dp;
         var savedCV = cv, savedCX = cx;
 
         cv = off; cx = ox; cW = w; cH = h; dp = 1;
         pX = -minX * scale; pY = -minY * scale; zm = scale;
+
+        // ===== GUNAKAN THEMA LIGHT =====
+        __exportMode = true;
+        __exportTheme = 'light';
         ren();
+        __exportMode = false;
 
         cv = savedCV; cx = savedCX; cW = savedW; cH = savedH; dp = savedDP;
         pX = savedPX; pY = savedPY; zm = savedZM;
@@ -2000,7 +2130,7 @@ function generatePDF() {
     }
 }
 
-// ==================== NEW: PDF (SELECTED) ====================
+// ===== PDF (SELECTED) =====
 document.getElementById('exPDFSelected').addEventListener('click', function() {
     if (sDI === null) {
         toast('Please select a device first', 'er');
@@ -2028,7 +2158,6 @@ function generateSelectedPDF(dev) {
         var portPct = dev.ports > 0 ? Math.round(usedCount / dev.ports * 100) : 0;
         var t = DT[dev.type];
 
-        // ===== HEADER =====
         doc.setFontSize(18);
         doc.setTextColor('#000000');
         doc.text('Device Details', pageWidth / 2, margin + 5, { align: 'center' });
@@ -2036,7 +2165,6 @@ function generateSelectedPDF(dev) {
         doc.setTextColor('#000000');
         doc.text('Generated: ' + new Date().toLocaleString(), pageWidth / 2, margin + 11, { align: 'center' });
 
-        // ===== DEVICE INFO =====
         var y = margin + 20;
         doc.setFontSize(12);
         doc.setTextColor('#000000');
@@ -2048,7 +2176,6 @@ function generateSelectedPDF(dev) {
         doc.text('Status: ' + dev.status.charAt(0).toUpperCase() + dev.status.slice(1), margin, y + 10);
         y += 20;
 
-        // ===== NETWORK CONFIG =====
         doc.setFontSize(10);
         doc.setTextColor('#000000');
         doc.setFont('helvetica', 'bold');
@@ -2070,7 +2197,6 @@ function generateSelectedPDF(dev) {
         }
         y += 3;
 
-        // ===== PORT STATS =====
         doc.setFontSize(10);
         doc.setTextColor('#000000');
         doc.setFont('helvetica', 'bold');
@@ -2085,17 +2211,14 @@ function generateSelectedPDF(dev) {
         doc.text('Free Ports: ' + freeCount, margin, y);
         y += 5;
 
-        // ===== PORT GRID =====
-        // Draw port grid as colored boxes
         var gridStartX = margin;
         var gridStartY = y;
-        var cellSize = 4.2; // mm
+        var cellSize = 4.2;
         var gap = 0.8;
         var colsPerRow = 8;
         var totalCols = dev.ports;
         var rows = Math.ceil(totalCols / colsPerRow);
 
-        // Draw background box for the grid
         var gridW = colsPerRow * (cellSize + gap) - gap;
         var gridH = rows * (cellSize + gap) - gap;
         doc.setDrawColor(136, 136, 136);
@@ -2114,7 +2237,7 @@ function generateSelectedPDF(dev) {
 
             var fillColor;
             if (!isUsed) {
-                fillColor = [28, 34, 48]; // dark empty
+                fillColor = [220, 220, 220];
             } else {
                 if (cableStatus === 'active') fillColor = [0, 212, 142];
                 else if (cableStatus === 'degraded') fillColor = [255, 167, 38];
@@ -2124,20 +2247,17 @@ function generateSelectedPDF(dev) {
             doc.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
             doc.rect(cx, cy, cellSize, cellSize, 'F');
 
-            // Border
             doc.setDrawColor(42, 51, 72);
             doc.setLineWidth(0.1);
             doc.rect(cx, cy, cellSize, cellSize, 'S');
 
-            // Port number (small text inside)
-            doc.setTextColor(200, 200, 200);
+            doc.setTextColor(30, 30, 30);
             doc.setFontSize(3.5);
             doc.text(String(p), cx + cellSize / 2, cy + cellSize / 2 + 1, { align: 'center' });
         }
 
         y = gridStartY + gridH + 8;
 
-        // ===== LEGEND =====
         doc.setFontSize(8);
         doc.setTextColor('#000000');
         doc.setFont('helvetica', 'bold');
@@ -2150,7 +2270,7 @@ function generateSelectedPDF(dev) {
             ['Active', [0, 212, 142]],
             ['Degraded', [255, 167, 38]],
             ['Down', [255, 71, 87]],
-            ['Empty', [28, 34, 48]]
+            ['Empty', [220, 220, 220]]
         ];
         var lx = margin;
         for (var i = 0; i < legendItems.length; i++) {
@@ -2165,7 +2285,6 @@ function generateSelectedPDF(dev) {
         }
         y += 6;
 
-        // ===== PERFORMANCE =====
         doc.setFontSize(10);
         doc.setTextColor('#000000');
         doc.setFont('helvetica', 'bold');
@@ -2180,7 +2299,6 @@ function generateSelectedPDF(dev) {
         doc.text('Temperature: ' + dev.temp + '\u00b0C', margin, y);
         y += 6;
 
-        // ===== CONNECTED CABLES =====
         var connectedCables = [];
         for (var i = 0; i < cabs.length; i++) {
             if (cabs[i].from === dev.id || cabs[i].to === dev.id) {
@@ -2208,12 +2326,10 @@ function generateSelectedPDF(dev) {
             y += 3;
         }
 
-        // ===== POSITION =====
         doc.setFontSize(8);
         doc.setTextColor('#666666');
         doc.text('Position: (' + Math.round(dev.x) + ', ' + Math.round(dev.y) + ')', margin, pageHeight - margin - 5);
 
-        // ===== SAVE =====
         var filename = 'device-' + dev.name.replace(/\s+/g, '-') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
         doc.save(filename);
         toast('PDF (Selected) exported: ' + dev.name, 'ok');
