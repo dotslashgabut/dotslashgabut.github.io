@@ -3855,6 +3855,58 @@
             }
             y += 6;
 
+            // === PORT TYPES DETAIL (4 columns, 8 ports per column) ===
+            doc.setFontSize(10);
+            doc.setTextColor('#000000');
+            doc.setFont('helvetica', 'bold');
+            doc.text('Port Types Detail', margin, y);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7);
+            y += 5;
+
+            var typeLabels = { ethernet: 'Ethernet', fiber: 'Fiber', wireless: 'Wireless', other: 'Other' };
+            var portTypes = dev.portTypes || [];
+            var totalPorts = dev.ports;
+            var cols = 4;
+            var rowsPerCol = 8;
+            var portsPerBlock = cols * rowsPerCol; // 32
+            var spacing = 4;
+            var colWidth = (pageWidth - 2 * margin - (cols - 1) * spacing) / cols;
+
+            for (var startP = 1; startP <= totalPorts; startP += portsPerBlock) {
+                var rowY = y;
+                for (var row = 0; row < rowsPerCol; row++) {
+                    for (var col = 0; col < cols; col++) {
+                        var portNum = startP + col * rowsPerCol + row;
+                        if (portNum <= totalPorts) {
+                            var cable = getCableOnPort(dev.id, portNum);
+                            var isUsed = cable ? true : false;
+                            var cableType = cable ? cable.type : null;
+                            var pt = (portTypes && portTypes[portNum - 1]) ? portTypes[portNum - 1] : null;
+                            var displayType = cableType || pt;
+                            var typeLabel = displayType ? (typeLabels[displayType] || displayType) : 'Empty';
+                            var statusLabel = isUsed ? 'Used (' + cable.status + ')' : 'Empty';
+                            var label = 'Port ' + portNum + ': ' + typeLabel + ' (' + statusLabel + ')';
+                            var xPos = margin + col * (colWidth + spacing);
+                            doc.text(label, xPos, rowY);
+                        }
+                    }
+                    rowY += 4.5;
+                    if (rowY > pageHeight - margin - 10) {
+                        doc.addPage();
+                        rowY = margin + 10;
+                        doc.setFontSize(10);
+                        doc.setTextColor('#000000');
+                        doc.setFont('helvetica', 'bold');
+                        doc.text('Port Types Detail (continued)', margin, rowY);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(7);
+                        rowY += 5;
+                    }
+                }
+                y = rowY + 3;
+            }
+
             // === Performance ===
             doc.setFontSize(10);
             doc.setTextColor('#000000');
