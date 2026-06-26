@@ -1,0 +1,2365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NetTopo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root {
+            --bg: #0c0f14;
+            --sf: #141820;
+            --cd: #1c2230;
+            --bd: #2a3348;
+            --fg: #e4eaf2;
+            --mt: #7b8ca3;
+            --ac: #00d48e;
+            --ad: rgba(0, 212, 142, .12);
+            --dn: #ff4757;
+            --wn: #ffa726;
+            --in: #29b6f6;
+            --pp: #a855f7;
+            --pk: #f472b6;
+            --cy: #22d3ee;
+            --yl: #facc15;
+            --or: #ff8a65;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            height: 100vh;
+            overflow: hidden;
+            font-size: 14px;
+        }
+        .app {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: 280px 1fr auto;
+            grid-template-rows: 60px 1fr;
+            height: 100vh;
+        }
+        .app.dp-collapsed { grid-template-columns: 280px 1fr 0px; }
+        header {
+            grid-column: 1/-1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 14px;
+            background: var(--sf);
+            border-bottom: 1px solid var(--bd);
+            gap: 10px;
+            flex-wrap: nowrap;
+            min-height: 60px;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; white-space: nowrap; flex-shrink: 0; }
+        .logo i { color: var(--ac); font-size: 20px; }
+        .logo span { color: var(--mt); font-weight: 400; font-size: 13px; display: none; }
+        .hc {
+            display: flex;
+            gap: 4px;
+            background: var(--cd);
+            border: 1px solid var(--bd);
+            border-radius: 8px;
+            padding: 4px;
+            flex-shrink: 0;
+        }
+        .mb {
+            padding: 7px 14px;
+            border: none;
+            border-radius: 5px;
+            background: 0;
+            color: var(--mt);
+            font: 600 12px/1 'Space Grotesk', sans-serif;
+            cursor: pointer;
+            transition: all .15s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .mb:hover { color: var(--fg); }
+        .mb.a { background: var(--ac); color: var(--bg); }
+        .mb.ac2 { background: var(--in); color: var(--bg); }
+        .mb.ad { background: var(--dn); color: #fff; }
+        .hs {
+            display: flex;
+            gap: 14px;
+            flex-shrink: 0;
+        }
+        .hi {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--mt);
+            white-space: nowrap;
+        }
+        .hi .v { font: 500 12px/1 'JetBrains Mono', monospace; color: var(--fg); }
+        .d5 { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .d5o { background: var(--ac); box-shadow: 0 0 5px var(--ac); }
+        .d5w { background: var(--wn); box-shadow: 0 0 5px var(--wn); }
+        .d5f { background: var(--dn); box-shadow: 0 0 5px var(--dn); }
+        .ha {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+            align-items: center;
+        }
+        .bt {
+            padding: 7px 13px;
+            border: 1px solid var(--bd);
+            border-radius: 6px;
+            background: var(--cd);
+            color: var(--fg);
+            font: 500 12px/1 'Space Grotesk', sans-serif;
+            cursor: pointer;
+            transition: all .15s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .bt:hover { border-color: var(--ac); color: var(--ac); }
+        .bp { background: var(--ac); color: var(--bg); border-color: var(--ac); font-weight: 700; }
+        .bp:hover { background: #00b87a; color: var(--bg); }
+        .btd { border-color: var(--dn); color: var(--dn); }
+        .btd:hover { background: rgba(255, 71, 87, .1); }
+        .btx { border-color: var(--pp); color: var(--pp); }
+        .btx:hover { background: rgba(168, 85, 247, .1); border-color: var(--pp); color: var(--pp); }
+        .btj { border-color: var(--cy); color: var(--cy); }
+        .btj:hover { background: rgba(34, 211, 238, .1); border-color: var(--cy); color: var(--cy); }
+        .bt-snap {
+            border-color: var(--yl);
+            color: var(--yl);
+        }
+        .bt-snap:hover { background: rgba(250, 204, 21, .1); border-color: var(--yl); color: var(--yl); }
+        .bt-snap.active {
+            background: var(--yl);
+            color: var(--bg);
+            border-color: var(--yl);
+        }
+        .bt-snap.active:hover { background: #e6b800; color: var(--bg); }
+        .exd { position: relative; display: inline-block; }
+        .exd .dd {
+            display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            right: 0;
+            background: var(--cd);
+            border: 1px solid var(--bd);
+            border-radius: 8px;
+            padding: 6px 0;
+            min-width: 170px;
+            z-index: 200;
+            flex-direction: column;
+            box-shadow: 0 12px 32px rgba(0,0,0,.6);
+            transition: opacity 0.15s ease;
+        }
+        .exd .dd.open { display: flex; }
+        .exd .dd button {
+            background: 0;
+            border: none;
+            color: var(--fg);
+            padding: 8px 16px;
+            font: 500 12px/1 'Space Grotesk', sans-serif;
+            text-align: left;
+            cursor: pointer;
+            transition: background .12s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+        .exd .dd button:hover { background: var(--bd); }
+        .exd .dd button i { width: 18px; text-align: center; color: var(--mt); font-size: 14px; }
+        .exd .dd .sep { height: 1px; background: var(--bd); margin: 4px 12px; }
+        .exd .bt { padding: 6px 14px; gap: 6px; }
+        .exd .bt i.fa-caret-down { font-size: 10px; margin-left: 2px; opacity: .6; transition: transform .2s; }
+        .exd.open .bt i.fa-caret-down { transform: rotate(180deg); }
+        .sb {
+            background: var(--sf);
+            border-right: 1px solid var(--bd);
+            padding: 12px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 13px;
+            scroll-behavior: smooth;
+            height: 100%;
+        }
+        .stt {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.4px;
+            color: var(--mt);
+            margin-top: 8px;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+        .stt:first-child { margin-top: 0; }
+        .cs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 2px;
+        }
+        .cb {
+            flex: 1;
+            padding: 6px 4px;
+            border: 2px solid var(--bd);
+            border-radius: 5px;
+            background: var(--cd);
+            color: var(--mt);
+            font: 600 11px/1 'Space Grotesk', sans-serif;
+            cursor: pointer;
+            text-align: center;
+            transition: all .2s;
+            position: relative;
+        }
+        .cb:hover { border-color: var(--fg); color: var(--fg); transform: translateY(-1px); }
+        .cb.a { border-color: var(--in); color: var(--in); background: rgba(41,182,246,.12); box-shadow: 0 0 12px rgba(41,182,246,.15); }
+        .cb .cb-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; border: 1px solid rgba(255,255,255,.1); }
+        .db {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            background: var(--cd);
+            border: 1px solid var(--bd);
+            color: var(--fg);
+            cursor: pointer;
+            transition: all .12s;
+            font: 500 12px/1.3 'Space Grotesk', sans-serif;
+            text-align: left;
+            width: 100%;
+        }
+        .db:hover { border-color: var(--ac); transform: translateX(2px); }
+        .db.a { border-color: var(--ac); background: var(--ad); }
+        .db .iw { width: 30px; height: 30px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+        .db .ds { font-size: 10px; color: var(--mt); font-weight: 400; }
+        .dl, .cl { display: flex; flex-direction: column; gap: 2px; }
+        .li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background .12s;
+            font-size: 12px;
+        }
+        .li:hover { background: var(--cd); }
+        .li.s { background: var(--ad); border-left: 3px solid var(--ac); }
+        .li .md { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+        .li .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .li .mt { font: 500 11px/1 'JetBrains Mono', monospace; color: var(--mt); }
+        .port-grid {
+            padding: 4px 0 6px 18px;
+            display: grid;
+            grid-template-columns: repeat(8, 26px);
+            gap: 3px;
+        }
+        .port-box {
+            width: 26px;
+            height: 26px;
+            border-radius: 3px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            cursor: pointer;
+            position: relative;
+            transition: transform .1s, box-shadow .15s;
+            user-select: none;
+            flex-shrink: 0;
+        }
+        .port-box:hover { transform: scale(1.2); z-index: 5; box-shadow: 0 0 12px rgba(255,255,255,.25); }
+        .port-box .type-dot { position: absolute; bottom: 2px; right: 2px; width: 6px; height: 6px; border-radius: 50%; border: 1px solid rgba(0,0,0,.4); }
+        .port-box .pnum { font-size: 9px; line-height: 1; text-shadow: 0 0 2px rgba(0,0,0,.8); }
+        .port-box:nth-child(8n) { margin-right: 6px; }
+        .port-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 4px 0 2px 18px;
+            font-size: 9px;
+            color: var(--mt);
+            align-items: center;
+        }
+        .port-legend .leg-item { display: flex; align-items: center; gap: 4px; }
+        .port-legend .leg-sq { width: 11px; height: 11px; border-radius: 2px; border: 1px solid var(--bd); }
+        .ca {
+            position: relative;
+            overflow: hidden;
+            background: var(--bg);
+        }
+        canvas#dc {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .ch {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--cd);
+            border: 1px solid var(--bd);
+            border-radius: 16px;
+            padding: 7px 18px;
+            font-size: 12px;
+            color: var(--mt);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .ch kbd { background: var(--sf); border: 1px solid var(--bd); border-radius: 3px; padding: 1px 6px; font: 500 11px/1.4 'JetBrains Mono', monospace; color: var(--fg); }
+        .zc {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .zb {
+            width: 34px;
+            height: 34px;
+            border-radius: 6px;
+            border: 1px solid var(--bd);
+            background: var(--cd);
+            color: var(--fg);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all .12s;
+        }
+        .zb:hover { border-color: var(--ac); color: var(--ac); }
+        .dp {
+            background: var(--sf);
+            border-left: 1px solid var(--bd);
+            padding: 12px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 13px;
+            position: relative;
+            min-width: 340px;
+            width: 340px;
+            transition: width 0.3s ease, min-width 0.3s ease, padding 0.3s ease, opacity 0.25s ease, border 0.3s ease;
+        }
+        .dp-auto-hide {
+            min-width: 0 !important;
+            width: 0 !important;
+            padding: 0 !important;
+            border-left: none !important;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .dp-toggle {
+            position: absolute;
+            left: -28px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 26px;
+            height: 48px;
+            background: var(--cd);
+            border: 1px solid var(--bd);
+            border-right: none;
+            border-radius: 6px 0 0 6px;
+            color: var(--mt);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s;
+            z-index: 10;
+            pointer-events: auto;
+        }
+        .dp-toggle:hover { background: var(--bd); color: var(--fg); }
+        .dp-auto-hide .dp-toggle {
+            left: 0;
+            border-radius: 0 6px 6px 0;
+            border-right: 1px solid var(--bd);
+            border-left: none;
+        }
+        .de {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 12px;
+            color: var(--mt);
+            text-align: center;
+        }
+        .de i { font-size: 40px; opacity: .2; }
+        .de p { font-size: 13px; line-height: 1.6; }
+        .dh { display: flex; align-items: center; gap: 12px; }
+        .di { width: 44px; height: 44px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+        .dht h3 { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+        .dht span { font-size: 11px; color: var(--mt); }
+        .se {
+            background: var(--cd);
+            border: 1px solid var(--bd);
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+        .stl { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--mt); margin-bottom: 6px; font-weight: 600; }
+        .dr {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            font-size: 13px;
+            gap: 8px;
+        }
+        .dr:not(:last-child) { border-bottom: 1px solid rgba(42,51,72,.5); }
+        .dr .l { color: var(--mt); white-space: nowrap; flex-shrink: 0; font-size: 12px; }
+        .dr .v { font: 500 12px/1 'JetBrains Mono', monospace; text-align: right; }
+        .pb { flex: 1; max-width: 90px; height: 4px; background: var(--bd); border-radius: 2px; overflow: hidden; }
+        .pb .f { height: 100%; border-radius: 2px; transition: width .3s; }
+        .ei {
+            background: var(--sf);
+            border: 1px solid var(--bd);
+            border-radius: 5px;
+            padding: 6px 9px;
+            color: var(--fg);
+            font: 500 13px/1.4 'JetBrains Mono', monospace;
+            width: 100%;
+            outline: 0;
+            transition: border-color .15s;
+        }
+        .ei:focus { border-color: var(--ac); }
+        .eis { width: 140px; flex-shrink: 0; }
+        .es {
+            background: var(--sf);
+            border: 1px solid var(--bd);
+            border-radius: 5px;
+            padding: 6px 8px;
+            color: var(--fg);
+            font: 500 12px/1.4 'Space Grotesk', sans-serif;
+            outline: 0;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .es:focus { border-color: var(--ac); }
+        .es option { background: var(--cd); color: var(--fg); }
+        .tc {
+            position: fixed;
+            top: 70px;
+            right: 16px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .tt {
+            background: var(--cd);
+            border: 1px solid var(--bd);
+            border-radius: 7px;
+            padding: 10px 16px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: tI .25s ease, tO .25s ease 2.2s forwards;
+            box-shadow: 0 8px 24px rgba(0,0,0,.4);
+        }
+        .tt.ok { border-left: 3px solid var(--ac); }
+        .tt.er { border-left: 3px solid var(--dn); }
+        .tt.in { border-left: 3px solid var(--in); }
+        @keyframes tI { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes tO { from { opacity: 1; } to { opacity: 0; transform: translateY(-10px); } }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: 0; }
+        ::-webkit-scrollbar-thumb { background: var(--bd); border-radius: 3px; }
+        #fileInput { display: none; }
+        .port-type-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 3px 0;
+            font-size: 12px;
+            border-bottom: 1px solid rgba(42,51,72,.3);
+        }
+        .port-type-row .pt-label { min-width: 40px; color: var(--mt); font-weight: 600; }
+        .port-type-row .pt-select {
+            background: var(--sf);
+            border: 1px solid var(--bd);
+            border-radius: 4px;
+            padding: 3px 6px;
+            color: var(--fg);
+            font: 500 11px/1.4 'Space Grotesk', sans-serif;
+            outline: 0;
+            cursor: pointer;
+            flex: 1;
+            max-width: 120px;
+            transition: opacity .2s;
+        }
+        .port-type-row .pt-select:disabled { opacity: 0.4; cursor: not-allowed; border-color: var(--bd); }
+        .port-type-row .pt-select:focus:not(:disabled) { border-color: var(--ac); }
+        .port-type-row .pt-status { font-size: 10px; color: var(--mt); margin-left: auto; }
+        .port-type-row .pt-status.used { color: var(--ac); }
+        /* Snap button active state */
+        .snap-btn-active {
+            border-color: var(--yl) !important;
+            color: var(--yl) !important;
+            background: rgba(250, 204, 21, 0.15) !important;
+        }
+        .snap-btn-active:hover {
+            background: rgba(250, 204, 21, 0.25) !important;
+        }
+        .snap-btn-inactive {
+            border-color: var(--bd) !important;
+            color: var(--mt) !important;
+        }
+    </style>
+</head>
+<body>
+<div class="app" id="appContainer">
+    <header>
+        <div class="logo"><i class="fa-solid fa-diagram-project"></i> NetTopo <span></span></div>
+        <div class="hc" id="modeBar">
+            <button class="mb a" data-m="place"><i class="fa-solid fa-plus"></i> Place</button>
+            <button class="mb" data-m="connect"><i class="fa-solid fa-link"></i> Connect</button>
+            <button class="mb" data-m="select"><i class="fa-solid fa-arrow-pointer"></i> Select</button>
+            <button class="mb" data-m="delete"><i class="fa-solid fa-eraser"></i> Delete</button>
+        </div>
+        <div class="hs">
+            <div class="hi"><span class="d5 d5o"></span>On <span class="v" id="sO">0</span></div>
+            <div class="hi"><span class="d5 d5w"></span>Warn <span class="v" id="sW">0</span></div>
+            <div class="hi"><span class="d5 d5f"></span>Off <span class="v" id="sF">0</span></div>
+            <div class="hi"><i class="fa-solid fa-link" style="color:var(--in);font-size:11px"></i><span class="v" id="sC">0</span></div>
+        </div>
+        <div class="ha">
+            <button class="bt bt-snap" id="bSnap" title="Snap to grid (40px)"><i class="fa-solid fa-th"></i> Snap</button>
+            <button class="bt" id="bCl"><i class="fa-solid fa-trash-can"></i> Clear</button>
+            <button class="bt" id="bLa"><i class="fa-solid fa-wand-magic-sparkles"></i> Layout</button>
+            <button class="bt" id="bAL"><i class="fa-solid fa-shuffle"></i> Auto</button>
+            <button class="bt bp" id="bAd"><i class="fa-solid fa-plus"></i> Add</button>
+            <button class="bt btj" id="bSample"><i class="fa-solid fa-flask"></i> Sample</button>
+            <div class="exd" id="exportDropdown">
+                <button class="bt btx"><i class="fa-solid fa-file-export"></i> Export <i class="fa-solid fa-caret-down"></i></button>
+                <div class="dd" id="dropdownMenu">
+                    <button id="exPNG"><i class="fa-regular fa-image"></i> PNG</button>
+                    <button id="exSVG"><i class="fa-regular fa-file-code"></i> SVG</button>
+                    <div class="sep"></div>
+                    <button id="exJSON"><i class="fa-regular fa-file-lines"></i> JSON</button>
+                    <button id="exPDF"><i class="fa-regular fa-file-pdf"></i> PDF</button>
+                    <button id="imJSON"><i class="fa-regular fa-folder-open"></i> Load JSON</button>
+                </div>
+            </div>
+            <input type="file" id="fileInput" accept=".json" />
+        </div>
+    </header>
+    <aside class="sb" id="sb"></aside>
+    <main class="ca">
+        <canvas id="dc"></canvas>
+        <div class="ch" id="cH">Click to place &middot; <kbd>Drag</kbd> move &middot; <kbd>Scroll</kbd> zoom &middot; <kbd>1-4</kbd> modes &middot; <kbd>G</kbd> snap</div>
+        <div class="zc">
+            <button class="zb" id="zI"><i class="fa-solid fa-plus"></i></button>
+            <button class="zb" id="zO"><i class="fa-solid fa-minus"></i></button>
+            <button class="zb" id="zR"><i class="fa-solid fa-expand"></i></button>
+        </div>
+    </main>
+    <aside class="dp" id="dP">
+        <button class="dp-toggle" id="dpToggle" title="Toggle sidebar"><i class="fa-solid fa-chevron-right"></i></button>
+        <div class="de" id="dE"><i class="fa-solid fa-mouse-pointer"></i><p>Select a device or cable<br>to view &amp; edit</p></div>
+        <div id="dC" style="display:none"></div>
+    </aside>
+</div>
+<div class="tc" id="tC"></div>
+
+<script>
+// ========== DEVICE TYPES ==========
+var DT = {
+    modem: { lb: 'Modem/ONT', fa: 'fa-tower-broadcast', ic: '\uf519', co: '#ffa726', bg: 'rgba(255,167,38,.1)', r: 30, pt: 1, dc: 'ISP Modem / GPON' },
+    olt: { lb: 'OLT', fa: 'fa-cube', ic: '\uf1b2', co: '#ff8a65', bg: 'rgba(255,138,101,.1)', r: 32, pt: 8, dc: 'Optical Line Terminal' },
+    mikrotik: { lb: 'Mikrotik', fa: 'fa-microchip', ic: '\uf2db', co: '#ff5252', bg: 'rgba(255,82,82,.1)', r: 32, pt: 5, dc: 'RouterBoard Mikrotik' },
+    firewall: { lb: 'Firewall', fa: 'fa-shield-halved', ic: '\uf3ed', co: '#ef5350', bg: 'rgba(239,83,80,.1)', r: 30, pt: 4, dc: 'Network Security' },
+    router: { lb: 'Router', fa: 'fa-wifi', ic: '\uf1eb', co: '#00d48e', bg: 'rgba(0,212,142,.1)', r: 28, pt: 4, dc: 'Gateway Router' },
+    sw: { lb: 'Switch', fa: 'fa-network-wired', ic: '\uf6ff', co: '#f472b6', bg: 'rgba(244,114,182,.1)', r: 28, pt: 24, dc: 'Network Switch' },
+    hub: { lb: 'Hub', fa: 'fa-circle-nodes', ic: '\ue4e2', co: '#ffb74d', bg: 'rgba(255,183,77,.1)', r: 26, pt: 8, dc: 'Network Hub' },
+    poe: { lb: 'PoE Switch', fa: 'fa-bolt', ic: '\uf0e7', co: '#facc15', bg: 'rgba(250,204,21,.1)', r: 27, pt: 16, dc: 'Power over Ethernet Switch' },
+    medconv: { lb: 'Media Conv.', fa: 'fa-right-left', ic: '\uf362', co: '#22d3ee', bg: 'rgba(34,211,238,.1)', r: 24, pt: 2, dc: 'Fiber-UTP Converter' },
+    bridge: { lb: 'Bridge', fa: 'fa-code-branch', ic: '\uf126', co: '#26c6da', bg: 'rgba(38,198,218,.1)', r: 26, pt: 2, dc: 'Network Bridge' },
+    ap: { lb: 'Access Point', fa: 'fa-satellite-dish', ic: '\uf7c0', co: '#a855f7', bg: 'rgba(168,85,247,.1)', r: 26, pt: 1, dc: 'WiFi Access Point' },
+    repeater: { lb: 'Repeater', fa: 'fa-arrows-rotate', ic: '\uf2f1', co: '#4ade80', bg: 'rgba(74,222,128,.1)', r: 24, pt: 1, dc: 'WiFi Signal Repeater' },
+    server: { lb: 'Server', fa: 'fa-server', ic: '\uf233', co: '#29b6f6', bg: 'rgba(41,182,246,.1)', r: 32, pt: 2, dc: 'Compute Server' },
+    nas: { lb: 'NAS', fa: 'fa-hard-drive', ic: '\uf0a0', co: '#60a5fa', bg: 'rgba(96,165,250,.1)', r: 28, pt: 2, dc: 'Network Attached Storage' },
+    htb: { lb: 'HTB', fa: 'fa-boxes-stacked', ic: '\uf468', co: '#ffa726', bg: 'rgba(255,167,38,.1)', r: 28, pt: 4, dc: 'Huawei Terminal Box' },
+    laptop: { lb: 'Laptop', fa: 'fa-laptop', ic: '\uf109', co: '#66bb6a', bg: 'rgba(102,187,106,.1)', r: 26, pt: 1, dc: 'Notebook / Laptop' },
+    desktop: { lb: 'Desktop', fa: 'fa-desktop', ic: '\uf390', co: '#42a5f5', bg: 'rgba(66,165,245,.1)', r: 28, pt: 1, dc: 'PC / Workstation' },
+    smartphone: { lb: 'Smartphone', fa: 'fa-mobile-screen-button', ic: '\uf3cd', co: '#ef5350', bg: 'rgba(239,83,80,.1)', r: 22, pt: 1, dc: 'Smartphone / Tablet' },
+    tablet: { lb: 'Tablet', fa: 'fa-tablet-screen-button', ic: '\uf3fa', co: '#ab47bc', bg: 'rgba(171,71,188,.1)', r: 22, pt: 1, dc: 'Tablet / iPad' },
+    printer: { lb: 'Printer', fa: 'fa-print', ic: '\uf02f', co: '#78909c', bg: 'rgba(120,144,156,.1)', r: 24, pt: 1, dc: 'Network Printer' },
+    voip: { lb: 'VoIP', fa: 'fa-phone', ic: '\uf095', co: '#8d6e63', bg: 'rgba(141,110,99,.1)', r: 24, pt: 1, dc: 'VoIP Phone' },
+    cctv: { lb: 'CCTV', fa: 'fa-video', ic: '\uf03d', co: '#c084fc', bg: 'rgba(192,132,252,.1)', r: 26, pt: 1, dc: 'Surveillance Camera' },
+    ipcam: { lb: 'IP Camera', fa: 'fa-camera', ic: '\uf030', co: '#4dd0e1', bg: 'rgba(77,208,225,.1)', r: 22, pt: 1, dc: 'IP Camera' }
+};
+
+var CT = {
+    ethernet: { lb: 'Ethernet', co: '#29b6f6', dh: [], w: 3, sp: 1 },
+    fiber: { lb: 'Fiber', co: '#c084fc', dh: [8,4], w: 2.5, sp: 1.8 },
+    wireless: { lb: 'Wireless', co: '#ffa726', dh: [3,5], w: 2, sp: .6 }
+};
+
+var DS_ARR = ['online','warning','offline'];
+var CS_ARR = ['active','degraded','down'];
+var SC_OBJ = { online:'#00d48e', warning:'#ffa726', offline:'#ff4757' };
+var PORT_TYPES = ['ethernet','fiber','wireless'];
+var PORT_COLORS = { ethernet:'#29b6f6', fiber:'#c084fc', wireless:'#ffa726' };
+
+// ========== STATE ==========
+var devs = [], cabs = [];
+var selT = 'modem', selCT = 'ethernet', mode = 'place';
+var sDI = null, sCI = null, cSrc = null;
+var dragD = null, doX = 0, doY = 0;
+var zm = 1, pX = 0, pY = 0;
+var iPan = false, psx = 0, psy = 0, ppx = 0, ppy = 0;
+var idC = 0, cidC = 0, mX = -999, mY = -999, tm = 0, firstRS = true;
+var selectedDevs = [];
+var selBox = null, isSelBox = false;
+var skipAutoScroll = false;
+var manualToggle = false, isAutoHide = false;
+var snapToGrid = false;
+var GRID_SIZE = 40;
+
+var cv = document.getElementById('dc');
+var cx = cv.getContext('2d');
+var cW = 0, cH = 0, dp = 1;
+
+// ========== SNAP ==========
+function snap(v) {
+    if (!snapToGrid) return v;
+    return Math.round(v / GRID_SIZE) * GRID_SIZE;
+}
+
+// ========== CIDR HELPERS ==========
+function maskToCidr(mask) {
+    if (!mask) return '';
+    var parts = mask.split('.');
+    if (parts.length !== 4) return '';
+    var binary = '';
+    for (var i = 0; i < 4; i++) {
+        var num = parseInt(parts[i]);
+        if (isNaN(num) || num < 0 || num > 255) return '';
+        binary += num.toString(2).padStart(8, '0');
+    }
+    var count = 0;
+    for (var i = 0; i < 32; i++) {
+        if (binary[i] === '1') count++;
+        else break;
+    }
+    return count.toString();
+}
+
+function cidrToMask(cidr) {
+    var c = parseInt(cidr);
+    if (isNaN(c) || c < 0 || c > 32) return '';
+    var binary = '';
+    for (var i = 0; i < 32; i++) {
+        binary += i < c ? '1' : '0';
+    }
+    var parts = [];
+    for (var i = 0; i < 4; i++) {
+        parts.push(parseInt(binary.substring(i * 8, i * 8 + 8), 2));
+    }
+    return parts.join('.');
+}
+
+// ========== CANVAS ==========
+function rsz() {
+    var r = cv.parentElement.getBoundingClientRect();
+    dp = window.devicePixelRatio || 1;
+    cv.width = r.width * dp;
+    cv.height = r.height * dp;
+    cv.style.width = r.width + 'px';
+    cv.style.height = r.height + 'px';
+    cW = r.width; cH = r.height;
+    if (firstRS) { pX = cW/2; pY = cH/2; firstRS = false; }
+    ren();
+}
+window.addEventListener('resize', rsz);
+
+function s2w(a,b) { return { x:(a-pX)/zm, y:(b-pY)/zm }; }
+function w2s(a,b) { return { x:a*zm+pX, y:b*zm+pY }; }
+function mp(e) { var r = cv.getBoundingClientRect(); return { x:e.clientX-r.left, y:e.clientY-r.top }; }
+function cl(v) { return Math.max(-2000, Math.min(2000, v)); }
+function hR(h) { return parseInt(h.slice(1,3),16)+','+parseInt(h.slice(3,5),16)+','+parseInt(h.slice(5,7),16); }
+function pC(v) { return v > 70 ? 'var(--dn)' : v > 40 ? 'var(--wn)' : 'var(--ac)'; }
+
+function getDeviceById(id) {
+    for (var i = 0; i < devs.length; i++) { if (devs[i].id === id) return devs[i]; }
+    return null;
+}
+function getCableOnPort(devId, portNum) {
+    for (var i = 0; i < cabs.length; i++) {
+        var c = cabs[i];
+        if ((c.from === devId && c.fromPort === portNum) || (c.to === devId && c.toPort === portNum)) return c;
+    }
+    return null;
+}
+
+function mkD(t, x, y) {
+    var d = DT[t]; idC++;
+    var portTypes = []; for (var p = 1; p <= d.pt; p++) portTypes.push(null);
+    return {
+        id: idC, type: t, x: x, y: y,
+        status: DS_ARR[Math.floor(Math.random() * 3)],
+        name: d.lb + '-' + String(idC).padStart(3, '0'),
+        ip: '192.168.' + ((idC % 253) + 1) + '.' + (((idC * 7) % 253) + 1),
+        subnet: '255.255.255.0',
+        gateway: '192.168.1.1',
+        mac: Array.from({length:6}, function(){ return Math.floor(Math.random()*256).toString(16).padStart(2,'0'); }).join(':'),
+        ports: d.pt,
+        portTypes: portTypes,
+        uptime: Math.floor(Math.random()*720) + 'h ' + Math.floor(Math.random()*60) + 'm',
+        cpu: Math.floor(Math.random()*80) + 5,
+        mem: Math.floor(Math.random()*70) + 10,
+        temp: Math.floor(Math.random()*40) + 25,
+        sc: 0, ts: 1, ph: Math.random() * 6.28
+    };
+}
+
+function setPortType(devId, portNum, type) {
+    var dev = getDeviceById(devId); if (!dev) return false;
+    if (!dev.portTypes) { dev.portTypes = []; for (var p = 1; p <= dev.ports; p++) dev.portTypes.push(null); }
+    if (portNum >= 1 && portNum <= dev.ports) { dev.portTypes[portNum - 1] = type; return true; }
+    return false;
+}
+
+function usedPorts(devId, excCabId) {
+    var u = {};
+    for (var i = 0; i < cabs.length; i++) {
+        var c = cabs[i];
+        if (c.id === excCabId) continue;
+        if (c.from === devId) u[c.fromPort] = 1;
+        if (c.to === devId) u[c.toPort] = 1;
+    }
+    return u;
+}
+
+function nextFree(devId, excCabId) {
+    var d = getDeviceById(devId); if (!d) return -1;
+    var u = usedPorts(devId, excCabId);
+    for (var p = 1; p <= d.ports; p++) { if (!u[p]) return p; }
+    return -1;
+}
+
+function mkC(f, t, tp) {
+    var fp = nextFree(f, -1), tp2 = nextFree(t, -1);
+    if (fp === -1 || tp2 === -1) { toast('Ports are full on one of the devices', 'er'); return null; }
+    cidC++;
+    var a = getDeviceById(f), b = getDeviceById(t);
+    var dx = a.x - b.x, dy = a.y - b.y, pts = [];
+    for (var i = 0, n = 3 + Math.floor(Math.random() * 3); i < n; i++) pts.push({ t: Math.random(), sp: .2 + Math.random() * .3 });
+    return {
+        id: cidC, from: f, to: t, type: tp, fromPort: fp, toPort: tp2,
+        status: CS_ARR[Math.floor(Math.random() * 3)],
+        bw: Math.floor(Math.random() * 900) + 100, mx: 1000,
+        lat: Math.floor(Math.random() * 50) + 1,
+        len: Math.round(Math.hypot(dx, dy)),
+        pts: pts, name: 'Cable-' + String(cidC).padStart(3, '0')
+    };
+}
+
+// ========== HIT TEST ==========
+function hD(x, y) {
+    for (var i = devs.length - 1; i >= 0; i--) {
+        var d = devs[i], r = DT[d.type].r + 6, dx = x - d.x, dy = y - d.y;
+        if (dx*dx + dy*dy <= r*r) return d;
+    }
+    return null;
+}
+function hC(x, y) {
+    var best = null, bestD = 18;
+    for (var i = 0; i < cabs.length; i++) {
+        var c = cabs[i], a = getDeviceById(c.from), b = getDeviceById(c.to);
+        if (!a || !b) continue;
+        var ds = ptSegDist(x, y, a.x, a.y, b.x, b.y);
+        if (ds < bestD) { bestD = ds; best = c; }
+    }
+    return best;
+}
+function ptSegDist(px, py, ax, ay, bx, by) {
+    var dx = bx - ax, dy = by - ay, l = dx*dx + dy*dy;
+    if (l === 0) return Math.hypot(px - ax, py - ay);
+    var t = ((px - ax) * dx + (py - ay) * dy) / l;
+    if (t < 0) t = 0; if (t > 1) t = 1;
+    return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}
+
+function toast(msg, type) {
+    var c = document.getElementById('tC'), d = document.createElement('div');
+    d.className = 'tt ' + type;
+    var icon = type === 'ok' ? 'fa-check-circle' : type === 'er' ? 'fa-circle-xmark' : 'fa-circle-info';
+    var col = type === 'ok' ? 'var(--ac)' : type === 'er' ? 'var(--dn)' : 'var(--in)';
+    d.innerHTML = '<i class="fa-solid ' + icon + '" style="color:' + col + '"></i> ' + msg;
+    c.appendChild(d);
+    setTimeout(function() { if (d.parentNode) d.remove(); }, 3000);
+}
+
+function uSt() {
+    var on = 0, wa = 0, of = 0;
+    for (var i = 0; i < devs.length; i++) {
+        if (devs[i].status === 'online') on++;
+        else if (devs[i].status === 'warning') wa++;
+        else of++;
+    }
+    document.getElementById('sO').textContent = on;
+    document.getElementById('sW').textContent = wa;
+    document.getElementById('sF').textContent = of;
+    document.getElementById('sC').textContent = cabs.length;
+}
+
+// ========== RENDER ==========
+function ren() {
+    cx.setTransform(dp, 0, 0, dp, 0, 0);
+    cx.clearRect(0, 0, cW, cH);
+    drawGrid();
+    cx.save();
+    cx.translate(pX, pY);
+    cx.scale(zm, zm);
+    drawCables();
+    drawDevices();
+    drawConnPreview();
+    drawSelectionBox();
+    cx.restore();
+    drawGhost();
+}
+
+function drawGrid() {
+    var g = 40 * zm; if (g < 8) return;
+    var ox = pX % g, oy = pY % g;
+    cx.strokeStyle = 'rgba(42,51,72,.3)'; cx.lineWidth = .5; cx.beginPath();
+    for (var x = ox; x < cW; x += g) { cx.moveTo(x, 0); cx.lineTo(x, cH); }
+    for (var y = oy; y < cH; y += g) { cx.moveTo(0, y); cx.lineTo(cW, y); }
+    cx.stroke();
+    var o = w2s(0, 0);
+    if (o.x > -20 && o.x < cW + 20 && o.y > -20 && o.y < cH + 20) {
+        cx.strokeStyle = 'rgba(0,212,142,.06)'; cx.lineWidth = 1; cx.beginPath();
+        cx.moveTo(o.x, 0); cx.lineTo(o.x, cH); cx.moveTo(0, o.y); cx.lineTo(cW, o.y); cx.stroke();
+    }
+    // Snap grid overlay
+    if (snapToGrid) {
+        var gs = GRID_SIZE * zm;
+        if (gs > 4 && gs < 200) {
+            var topLeft = s2w(0, 0);
+            var bottomRight = s2w(cW, cH);
+            var startX = Math.floor(topLeft.x / GRID_SIZE) * GRID_SIZE;
+            var startY = Math.floor(topLeft.y / GRID_SIZE) * GRID_SIZE;
+            var endX = Math.ceil(bottomRight.x / GRID_SIZE) * GRID_SIZE;
+            var endY = Math.ceil(bottomRight.y / GRID_SIZE) * GRID_SIZE;
+            var maxLines = 80;
+            var stepX = Math.max(1, Math.ceil((endX - startX) / GRID_SIZE / maxLines));
+            var stepY = Math.max(1, Math.ceil((endY - startY) / GRID_SIZE / maxLines));
+            cx.strokeStyle = 'rgba(250,204,21,.08)'; cx.lineWidth = .5; cx.setLineDash([2,4]);
+            cx.beginPath();
+            for (var x = startX; x <= endX; x += GRID_SIZE * stepX) {
+                var sx = x * zm + pX;
+                if (sx >= 0 && sx <= cW) { cx.moveTo(sx, 0); cx.lineTo(sx, cH); }
+            }
+            for (var y = startY; y <= endY; y += GRID_SIZE * stepY) {
+                var sy = y * zm + pY;
+                if (sy >= 0 && sy <= cH) { cx.moveTo(0, sy); cx.lineTo(cW, sy); }
+            }
+            cx.stroke();
+            cx.setLineDash([]);
+        }
+    }
+}
+
+function drawCables() {
+    for (var i = 0; i < cabs.length; i++) {
+        var c = cabs[i], a = getDeviceById(c.from), b = getDeviceById(c.to);
+        if (!a || !b) continue;
+        var ct = CT[c.type], isSel = (c.id === sCI);
+        if (isSel) {
+            cx.strokeStyle = ct.co; cx.lineWidth = ct.w + 6; cx.globalAlpha = .12; cx.setLineDash([]);
+            cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke(); cx.globalAlpha = 1;
+        }
+        cx.strokeStyle = c.status === 'down' ? 'rgba(255,71,87,.25)' : ct.co;
+        cx.lineWidth = ct.w; cx.setLineDash(ct.dh);
+        cx.globalAlpha = c.status === 'down' ? .25 : (isSel ? 1 : .55);
+        cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke();
+        cx.setLineDash([]); cx.globalAlpha = 1;
+        if (c.status !== 'down') {
+            for (var p = 0; p < c.pts.length; p++) {
+                var pt = c.pts[p], px = a.x + (b.x - a.x) * pt.t, py = a.y + (b.y - a.y) * pt.t, pr = Math.max(1.5, 3 * (c.type === 'fiber' ? 1.3 : 1));
+                cx.beginPath(); cx.arc(px, py, pr, 0, 6.2832); cx.fillStyle = ct.co; cx.globalAlpha = .85; cx.fill();
+                cx.beginPath(); cx.arc(px, py, pr + 3, 0, 6.2832); cx.fillStyle = ct.co; cx.globalAlpha = .15; cx.fill(); cx.globalAlpha = 1;
+            }
+        }
+        var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, lb = (c.name || 'Cable') + ' P' + c.fromPort + '\u2192P' + c.toPort + ' ' + c.bw + 'M';
+        cx.font = '600 8px "JetBrains Mono",monospace'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+        var tw = cx.measureText(lb).width + 10;
+        cx.fillStyle = 'rgba(12,15,20,.9)'; cx.beginPath(); cx.roundRect(mx - tw/2, my - 7, tw, 14, 3); cx.fill();
+        cx.strokeStyle = 'rgba(42,51,72,.5)'; cx.lineWidth = .5; cx.stroke();
+        cx.fillStyle = c.status === 'degraded' ? '#ffa726' : c.status === 'down' ? '#ff4757' : '#7b8ca3';
+        cx.fillText(lb, mx, my);
+    }
+}
+
+function drawDevices() {
+    for (var i = 0; i < devs.length; i++) {
+        var d = devs[i], t = DT[d.type], r = t.r, isSel = (d.id === sDI), isCS = (d.id === cSrc), isMultiSel = (selectedDevs.indexOf(d.id) !== -1), s = d.sc;
+        if (s < .01) continue;
+        cx.save(); cx.translate(d.x, d.y); cx.scale(s, s);
+        if (d.status === 'online') {
+            var pulse = Math.sin(d.ph) * .5 + .5;
+            cx.beginPath(); cx.arc(0, 0, r + 6 + pulse * 12, 0, 6.2832); cx.strokeStyle = 'rgba(' + hR(t.co) + ',' + (0.04 + pulse * .04) + ')'; cx.lineWidth = 1.2; cx.stroke();
+        }
+        if (isCS) {
+            cx.beginPath(); cx.arc(0, 0, r + 8, 0, 6.2832); cx.strokeStyle = '#29b6f6'; cx.lineWidth = 2; cx.setLineDash([5,5]); cx.lineDashOffset = -tm * 28; cx.stroke(); cx.setLineDash([]); cx.lineDashOffset = 0;
+        }
+        if (isSel || isMultiSel) {
+            cx.beginPath(); cx.arc(0, 0, r + 5, 0, 6.2832); cx.strokeStyle = isSel ? '#fff' : '#29b6f6'; cx.lineWidth = isSel ? 3 : 2; cx.setLineDash(isSel ? [4,4] : [3,3]); cx.stroke(); cx.setLineDash([]);
+        }
+        cx.shadowColor = 'rgba(0,0,0,.35)'; cx.shadowBlur = 12; cx.shadowOffsetY = 3;
+        cx.beginPath(); cx.arc(0, 0, r, 0, 6.2832); cx.fillStyle = '#1c2230'; cx.fill();
+        cx.shadowColor = 'transparent';
+        cx.beginPath(); cx.arc(0, 0, r, 0, 6.2832); cx.strokeStyle = (isSel || isMultiSel) ? '#29b6f6' : 'rgba(42,51,72,.7)'; cx.lineWidth = (isSel || isMultiSel) ? 2.5 : 1.2; cx.stroke();
+        cx.fillStyle = t.co; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+        cx.font = '900 ' + Math.round(r * .6) + 'px "Font Awesome 6 Free"'; cx.fillText(t.ic, 0, 1);
+        var scolor = SC_OBJ[d.status], dx2 = r * .5, dy2 = -r * .5;
+        cx.beginPath(); cx.arc(dx2, dy2, 4, 0, 6.2832); cx.fillStyle = scolor; cx.fill();
+        cx.beginPath(); cx.arc(dx2, dy2, 4, 0, 6.2832); cx.strokeStyle = '#1c2230'; cx.lineWidth = 2; cx.stroke();
+        cx.beginPath(); cx.arc(-r * .5, r * .5, 7, 0, 6.2832); cx.fillStyle = 'rgba(250,204,21,.85)'; cx.fill();
+        cx.font = '700 7px "JetBrains Mono",monospace'; cx.fillStyle = '#1a1f2e'; cx.fillText(String(d.ports), -r * .5, r * .5 + .5);
+        var cc = 0;
+        for (var j = 0; j < cabs.length; j++) { if (cabs[j].from === d.id || cabs[j].to === d.id) cc++; }
+        if (cc > 0) {
+            cx.beginPath(); cx.arc(r * .5, r * .5, 7, 0, 6.2832); cx.fillStyle = 'rgba(41,182,246,.85)'; cx.fill();
+            cx.font = '700 7px "JetBrains Mono",monospace'; cx.fillStyle = '#fff'; cx.fillText(String(cc), r * .5, r * .5 + .5);
+        }
+        cx.font = '700 10px "Space Grotesk",sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'top'; cx.fillStyle = '#e4eaf2'; cx.fillText(d.name, 0, r + 7);
+        cx.font = '500 8px "JetBrains Mono",monospace'; cx.fillStyle = '#7b8ca3'; cx.fillText(d.ip, 0, r + 19);
+        cx.restore();
+    }
+}
+
+function drawSelectionBox() {
+    if (!selBox || !isSelBox) return;
+    var x1 = Math.min(selBox.x1, selBox.x2), y1 = Math.min(selBox.y1, selBox.y2);
+    var x2 = Math.max(selBox.x1, selBox.x2), y2 = Math.max(selBox.y1, selBox.y2);
+    cx.save();
+    cx.strokeStyle = 'rgba(41,182,246,.6)'; cx.lineWidth = 1.5; cx.setLineDash([4,4]);
+    cx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+    cx.fillStyle = 'rgba(41,182,246,.06)'; cx.fillRect(x1, y1, x2 - x1, y2 - y1);
+    cx.restore();
+}
+
+function drawConnPreview() {
+    if (mode !== 'connect' || cSrc === null) return;
+    var src = getDeviceById(cSrc); if (!src) return;
+    var w = s2w(mX, mY), ct = CT[selCT];
+    cx.strokeStyle = ct.co; cx.lineWidth = ct.w; cx.globalAlpha = .4; cx.setLineDash([6,4]); cx.lineDashOffset = -tm * 18;
+    cx.beginPath(); cx.moveTo(src.x, src.y); cx.lineTo(w.x, w.y); cx.stroke();
+    cx.setLineDash([]); cx.lineDashOffset = 0; cx.globalAlpha = 1;
+}
+
+function drawGhost() {
+    if (mode !== 'place' || dragD || iPan) return;
+    if (mX < 0 || mX > cW || mY < 0 || mY > cH) return;
+    var t = DT[selT], r = t.r;
+    cx.save(); cx.globalAlpha = .2; cx.beginPath(); cx.arc(mX, mY, r * zm, 0, 6.2832); cx.fillStyle = t.bg; cx.fill();
+    cx.strokeStyle = t.co; cx.lineWidth = 1; cx.setLineDash([3,3]); cx.stroke(); cx.setLineDash([]);
+    cx.font = '900 ' + Math.round(r * .6 * zm) + 'px "Font Awesome 6 Free"'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillStyle = t.co; cx.fillText(t.ic, mX, mY + 1);
+    cx.restore();
+}
+
+// ========== ANIMATION LOOP ==========
+var lT = 0;
+function loop(ts) {
+    var dt = Math.min((ts - lT) / 1000, .05);
+    lT = ts; tm += dt;
+    var dirty = false;
+    for (var i = 0; i < devs.length; i++) {
+        var d = devs[i];
+        if (Math.abs(d.sc - d.ts) > .001) { d.sc += (d.ts - d.sc) * Math.min(1, dt * 12); dirty = true; }
+        d.ph += dt * 2.5; dirty = true;
+    }
+    for (var i = 0; i < cabs.length; i++) {
+        var c = cabs[i], ct = CT[c.type];
+        for (var p = 0; p < c.pts.length; p++) {
+            c.pts[p].t += dt * c.pts[p].sp * ct.sp * .5;
+            if (c.pts[p].t > 1) c.pts[p].t -= 1;
+        }
+        dirty = true;
+    }
+    var r = cv.parentElement.getBoundingClientRect();
+    if (Math.abs(r.width - cW) > 0.5 || Math.abs(r.height - cH) > 0.5) {
+        dp = window.devicePixelRatio || 1;
+        cv.width = r.width * dp; cv.height = r.height * dp;
+        cv.style.width = r.width + 'px'; cv.style.height = r.height + 'px';
+        cW = r.width; cH = r.height; dirty = true;
+    }
+    if (dirty) ren();
+    requestAnimationFrame(loop);
+}
+
+// ========== DROPDOWN ==========
+var ddTimer = null;
+function openDropdown() {
+    var dd = document.getElementById('dropdownMenu'), exd = document.getElementById('exportDropdown');
+    clearTimeout(ddTimer); dd.classList.add('open'); exd.classList.add('open');
+}
+function closeDropdown(delay) {
+    delay = delay || 200; clearTimeout(ddTimer);
+    ddTimer = setTimeout(function() {
+        var dd = document.getElementById('dropdownMenu'), exd = document.getElementById('exportDropdown');
+        dd.classList.remove('open'); exd.classList.remove('open');
+    }, delay);
+}
+(function() {
+    var exd = document.getElementById('exportDropdown'), dd = document.getElementById('dropdownMenu');
+    exd.addEventListener('mouseenter', function(e) { openDropdown(); });
+    exd.addEventListener('mouseleave', function(e) { closeDropdown(250); });
+    dd.addEventListener('mouseenter', function(e) { clearTimeout(ddTimer); openDropdown(); });
+    dd.addEventListener('mouseleave', function(e) { closeDropdown(150); });
+    var btns = dd.querySelectorAll('button');
+    for (var i = 0; i < btns.length; i++) { btns[i].addEventListener('click', function() { closeDropdown(50); }); }
+})();
+
+// ========== SNAP TOGGLE ==========
+document.getElementById('bSnap').addEventListener('click', function() {
+    snapToGrid = !snapToGrid;
+    this.classList.toggle('active', snapToGrid);
+    this.classList.toggle('snap-btn-active', snapToGrid);
+    this.classList.toggle('snap-btn-inactive', !snapToGrid);
+    toast(snapToGrid ? 'Snap to grid ON (40px)' : 'Snap to grid OFF', 'in');
+    ren();
+});
+// Set initial snap state
+document.getElementById('bSnap').classList.add('snap-btn-active');
+snapToGrid = true;
+
+// ========== RIGHT SIDEBAR AUTO-HIDE ==========
+var dpPanel = document.getElementById('dP');
+var appContainerEl = document.getElementById('appContainer');
+var dpToggle = document.getElementById('dpToggle');
+
+function updateRightPanel() {
+    var hasSelection = (sDI !== null || sCI !== null || selectedDevs.length > 0);
+    var isCurrentlyCollapsed = dpPanel.classList.contains('dp-auto-hide');
+    if (manualToggle) return;
+    if (hasSelection) {
+        if (isCurrentlyCollapsed) {
+            dpPanel.classList.remove('dp-auto-hide');
+            appContainerEl.classList.remove('dp-collapsed');
+            document.getElementById('dE').style.display = 'none';
+            document.getElementById('dC').style.display = 'flex';
+            isAutoHide = false;
+            rsz();
+            setTimeout(function() { sDl(); }, 40);
+        }
+    } else {
+        if (!isCurrentlyCollapsed) {
+            dpPanel.classList.add('dp-auto-hide');
+            appContainerEl.classList.add('dp-collapsed');
+            document.getElementById('dE').style.display = 'flex';
+            document.getElementById('dC').style.display = 'none';
+            isAutoHide = true;
+            rsz();
+        }
+    }
+}
+
+dpToggle.addEventListener('click', function() {
+    manualToggle = !manualToggle;
+    var isCollapsed = dpPanel.classList.contains('dp-auto-hide');
+    if (manualToggle) {
+        if (isCollapsed) {
+            dpPanel.classList.remove('dp-auto-hide');
+            appContainerEl.classList.remove('dp-collapsed');
+            document.getElementById('dE').style.display = 'none';
+            document.getElementById('dC').style.display = 'flex';
+            isAutoHide = false; rsz();
+            setTimeout(function() { sDl(); }, 40);
+            dpToggle.querySelector('i').className = 'fa-solid fa-chevron-right';
+        } else {
+            dpPanel.classList.add('dp-auto-hide');
+            appContainerEl.classList.add('dp-collapsed');
+            document.getElementById('dE').style.display = 'flex';
+            document.getElementById('dC').style.display = 'none';
+            isAutoHide = true; rsz();
+            dpToggle.querySelector('i').className = 'fa-solid fa-chevron-left';
+        }
+    } else {
+        var hasSel = (sDI !== null || sCI !== null || selectedDevs.length > 0);
+        if (hasSel) {
+            dpPanel.classList.remove('dp-auto-hide');
+            appContainerEl.classList.remove('dp-collapsed');
+            document.getElementById('dE').style.display = 'none';
+            document.getElementById('dC').style.display = 'flex';
+            isAutoHide = false; rsz();
+            setTimeout(function() { sDl(); }, 40);
+            dpToggle.querySelector('i').className = 'fa-solid fa-chevron-right';
+        } else {
+            dpPanel.classList.add('dp-auto-hide');
+            appContainerEl.classList.add('dp-collapsed');
+            document.getElementById('dE').style.display = 'flex';
+            document.getElementById('dC').style.display = 'none';
+            isAutoHide = true; rsz();
+            dpToggle.querySelector('i').className = 'fa-solid fa-chevron-left';
+        }
+    }
+});
+
+function rszDelayed() { rsz(); }
+
+// ========== SCROLL TO SELECTED ==========
+function scrollToSelected() {
+    var sb = document.getElementById('sb');
+    if (!sb) return;
+    if (sCI !== null) {
+        var cableItem = document.getElementById('cbl-' + sCI);
+        if (cableItem) { cableItem.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
+    }
+    var targetId = sDI || (selectedDevs.length === 1 ? selectedDevs[0] : null);
+    if (targetId) {
+        var devItem = document.getElementById('dev-' + targetId);
+        if (devItem) { devItem.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+    }
+}
+
+// ========== uDL ==========
+function uDL() {
+    var el = document.getElementById('dL');
+    if (!el) return;
+    if (!devs.length) {
+        el.innerHTML = '<div style="font-size:12px;color:var(--mt);padding:6px;text-align:center">Empty</div>';
+        return;
+    }
+    var h = '';
+    for (var i = 0; i < devs.length; i++) {
+        var d = devs[i];
+        var cc = 0;
+        for (var j = 0; j < cabs.length; j++) { if (cabs[j].from === d.id || cabs[j].to === d.id) cc++; }
+        var used = usedPorts(d.id, -1);
+        var portGrid = '';
+        var portTypes = d.portTypes || [];
+        for (var p = 1; p <= d.ports; p++) {
+            var isUsed = used[p] ? true : false;
+            var cable = getCableOnPort(d.id, p);
+            var cableType = cable ? cable.type : null;
+            var cableStatus = cable ? cable.status : null;
+            var destName = '';
+            if (cable) {
+                var otherId = (cable.from === d.id) ? cable.to : cable.from;
+                var other = getDeviceById(otherId);
+                if (other) destName = other.name;
+            }
+            var pt = (portTypes && portTypes[p - 1]) ? portTypes[p - 1] : null;
+            var displayType = cableType || pt;
+            var bgColor, borderColor, textColor;
+            if (!isUsed && !displayType) {
+                bgColor = 'var(--cd)'; borderColor = 'var(--bd)'; textColor = 'var(--mt)';
+            } else if (isUsed) {
+                if (cableStatus === 'active') { bgColor = 'var(--ac)'; borderColor = 'var(--ac)'; textColor = '#fff'; }
+                else if (cableStatus === 'degraded') { bgColor = 'var(--wn)'; borderColor = 'var(--wn)'; textColor = '#1a1f2e'; }
+                else { bgColor = 'var(--dn)'; borderColor = 'var(--dn)'; textColor = '#fff'; }
+            } else {
+                var ptCol = PORT_COLORS[displayType] || 'var(--mt)';
+                bgColor = 'rgba(255,255,255,.08)'; borderColor = ptCol; textColor = ptCol;
+            }
+            var typeDotColor = '';
+            if (displayType) typeDotColor = PORT_COLORS[displayType] || '';
+            var title = 'Port ' + p;
+            if (isUsed) {
+                title += ' → ' + destName + ' (' + (cableType ? CT[cableType].lb : '?') + ', ' + cableStatus + ')';
+            } else if (displayType) {
+                title += ' (' + displayType + ', empty)';
+            } else {
+                title += ' (empty)';
+            }
+            portGrid += '<div class="port-box" style="background:' + bgColor + ';border:1px solid ' + borderColor + ';color:' + textColor + ';" title="' + title + '" data-dev="' + d.id + '" data-port="' + p + '">' +
+                '<span class="pnum">' + p + '</span>' +
+                (displayType ? '<span class="type-dot" style="background:' + typeDotColor + ';"></span>' : '') +
+                '</div>';
+        }
+        var legend = '';
+        if (d.ports > 0) {
+            legend = '<div class="port-legend">' +
+                '<span class="leg-item"><span class="leg-sq" style="background:var(--ac);"></span> Active</span>' +
+                '<span class="leg-item"><span class="leg-sq" style="background:var(--wn);"></span> Degraded</span>' +
+                '<span class="leg-item"><span class="leg-sq" style="background:var(--dn);"></span> Down</span>' +
+                '<span class="leg-item"><span class="leg-sq" style="background:var(--cd);border-color:var(--bd);"></span> Empty</span>' +
+                '<span class="leg-item" style="margin-left:4px;color:var(--mt);font-size:8px;">● ' +
+                '<span style="color:var(--in);">E</span> <span style="color:var(--pp);">F</span> <span style="color:var(--wn);">W</span></span>' +
+                '</div>';
+        }
+        var isMultiSel = (selectedDevs.indexOf(d.id) !== -1);
+        var isActive = (d.id === sDI || isMultiSel);
+        h += '<div class="li' + (isActive ? ' s' : '') + '" data-d="' + d.id + '" id="dev-' + d.id + '">' +
+            '<span class="md" style="background:' + SC_OBJ[d.status] + '"></span>' +
+            '<span class="nm">' + d.name + (isMultiSel ? ' ✦' : '') + '</span>' +
+            '<span class="mt">' + d.ports + 'P ' + cc + '<i class="fa-solid fa-link" style="font-size:9px;margin-left:2px"></i></span>' +
+            '</div>' +
+            '<div class="port-grid">' + portGrid + '</div>' +
+            legend;
+    }
+    el.innerHTML = h;
+
+    var pboxes = el.querySelectorAll('.port-box');
+    for (var i = 0; i < pboxes.length; i++) {
+        pboxes[i].addEventListener('click', function(e) {
+            e.stopPropagation();
+            var devId = +this.dataset.dev;
+            var portNum = +this.dataset.port;
+            var d = getDeviceById(devId);
+            if (!d) return;
+            var info = 'Port ' + portNum + ' on ' + d.name;
+            var cable = getCableOnPort(devId, portNum);
+            if (cable) {
+                var otherId = (cable.from === devId) ? cable.to : cable.from;
+                var other = getDeviceById(otherId);
+                info += ' → ' + (other ? other.name : '?') + ' (' + CT[cable.type].lb + ', ' + cable.status + ', ' + cable.bw + 'Mbps)';
+            } else {
+                var pt = (d.portTypes && d.portTypes[portNum - 1]) ? d.portTypes[portNum - 1] : null;
+                info += ' (empty' + (pt ? ', type: ' + pt : '') + ')';
+            }
+            toast(info, 'in');
+            sDI = devId; sCI = null;
+            var t = w2s(d.x, d.y);
+            pX += cW/2 - t.x; pY += cH/2 - t.y;
+            skipAutoScroll = false;
+            uUI(true);
+            ren();
+        });
+    }
+    var lis = el.querySelectorAll('.li');
+    for (var i = 0; i < lis.length; i++) {
+        lis[i].addEventListener('click', function() {
+            var id = +this.dataset.d;
+            var d = getDeviceById(id);
+            if (!d) return;
+            if (selectedDevs.indexOf(id) === -1) { selectedDevs = [id]; }
+            sDI = id; sCI = null;
+            var t = w2s(d.x, d.y);
+            pX += cW/2 - t.x; pY += cH/2 - t.y;
+            skipAutoScroll = false;
+            uUI(true);
+            ren();
+        });
+    }
+}
+
+// ========== uCL2 ==========
+function uCL2() {
+    var el = document.getElementById('cL');
+    if (!el) return;
+    if (!cabs.length) {
+        el.innerHTML = '<div style="font-size:12px;color:var(--mt);padding:6px;text-align:center">Empty</div>';
+        return;
+    }
+    var h = '';
+    for (var i = 0; i < cabs.length; i++) {
+        var c = cabs[i], ct = CT[c.type], a = getDeviceById(c.from), b = getDeviceById(c.to);
+        var an = a ? a.name : '?', bn = b ? b.name : '?';
+        var isActive = (c.id === sCI);
+        h += '<div class="li' + (isActive ? ' s' : '') + '" data-c="' + c.id + '" id="cbl-' + c.id + '">' +
+            '<span class="md" style="background:' + ct.co + '"></span>' +
+            '<span class="nm">' + (c.name || 'Cable') + ' ' + an + ' \u2192 ' + bn +
+            '</span><span class="mt">P' + c.fromPort + '\u2192P' + c.toPort + '</span></div>';
+    }
+    el.innerHTML = h;
+    var lis = el.querySelectorAll('.li');
+    for (var i = 0; i < lis.length; i++) {
+        lis[i].addEventListener('click', function() {
+            sCI = +this.dataset.c; sDI = null; selectedDevs = [];
+            skipAutoScroll = false;
+            uUI(true);
+            ren();
+        });
+    }
+}
+
+// ========== DETAIL FUNCTIONS ==========
+var _sEmp = function() {
+    document.getElementById('dE').style.display = 'flex';
+    document.getElementById('dC').style.display = 'none';
+    updateRightPanel();
+};
+
+var _sDl = function() {
+    if (sDI !== null) { var d = getDeviceById(sDI); if (d) { _sDD(d); return; } }
+    if (sCI !== null) { var c = null; for (var i = 0; i < cabs.length; i++) { if (cabs[i].id === sCI) { c = cabs[i]; break; } } if (c) { _sDC(c); return; } }
+    _sEmp();
+};
+
+var _sDD = function(d) {
+    if (dpPanel.classList.contains('dp-auto-hide') && !manualToggle) return;
+    document.getElementById('dE').style.display = 'none';
+    var el = document.getElementById('dC');
+    el.style.display = 'flex'; el.style.flexDirection = 'column'; el.style.gap = '8px';
+    var t = DT[d.type], u = usedPorts(d.id, -1), usedCount = Object.keys(u).length, freeCount = d.ports - usedCount, portPct = d.ports > 0 ? Math.round(usedCount / d.ports * 100) : 0;
+    var stO = '', tyO = '';
+    for (var i = 0; i < DS_ARR.length; i++) { var s = DS_ARR[i], sel = d.status === s ? ' selected' : ''; stO += '<option value="' + s + '"' + sel + '>' + s[0].toUpperCase() + s.slice(1) + '</option>'; }
+    var tkeys = Object.keys(DT);
+    for (var i = 0; i < tkeys.length; i++) { var k = tkeys[i], sel = d.type === k ? ' selected' : ''; tyO += '<option value="' + k + '"' + sel + '>' + DT[k].lb + '</option>'; }
+    var html = '';
+    var cidr = maskToCidr(d.subnet) || '24';
+    html += '<div class="dh"><div class="di" style="background:' + t.bg + ';color:' + t.co + '"><i class="fa-solid ' + t.fa + '"></i></div><div class="dht" style="flex:1;min-width:0"><input class="ei" id="eN" value="' + d.name + '" style="font:700 15px/1.3 \'Space Grotesk\',sans-serif;margin-bottom:3px"><span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><select class="es" id="eT" style="font-size:12px">' + tyO + '</select><select class="es" id="eS" style="font-size:12px">' + stO + '</select></span></div></div>';
+    html += '<div class="se"><div class="stl">Network Configuration</div>';
+    html += erR('IP Address', '<input class="ei eis" id="eIP" value="' + d.ip + '">');
+    html += '<div class="dr"><span class="l">CIDR</span><div style="display:flex;align-items:center;gap:6px"><input class="ei" id="eCIDR" value="/' + cidr + '" style="width:60px" placeholder="/24"></div></div>';
+    html += erR('Subnet Mask', '<input class="ei eis" id="eSN" value="' + d.subnet + '">');
+    html += erR('Gateway', '<input class="ei eis" id="eGW" value="' + d.gateway + '">');
+    html += '<div class="dr"><span class="l">MAC Address</span><span class="v" style="font-size:11px;color:var(--mt)">' + d.mac + '</span></div>';
+    html += '<div class="dr"><span class="l">Uptime</span><span class="v">' + d.uptime + '</span></div></div>';
+    html += '<div class="se"><div class="stl">Ports (' + usedCount + '/' + d.ports + ' used)</div>';
+    html += '<div class="dr"><span class="l">Total Ports</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="ePt" value="' + d.ports + '" min="1" max="256" style="width:55px"><div class="pb"><div class="f" style="width:' + Math.min(100, portPct) + '%;background:' + pC(portPct) + '"></div></div><span class="v" style="color:' + pC(portPct) + ';min-width:32px">' + portPct + '%</span></div></div>';
+    html += '<div class="dr"><span class="l">Used</span><span class="v">' + usedCount + ' port</span></div>';
+    html += '<div class="dr"><span class="l">Free</span><span class="v" style="color:var(--ac)">' + Math.max(0, freeCount) + ' port</span></div></div>';
+
+    html += '<div class="se"><div class="stl">Port Types</div>';
+    var portTypes = d.portTypes || [];
+    for (var p = 1; p <= d.ports; p++) {
+        var cable = getCableOnPort(d.id, p), isUsed = cable ? true : false, cableType = cable ? cable.type : null;
+        var pt = (portTypes && portTypes[p - 1]) ? portTypes[p - 1] : null, selectedType = cableType || pt, statusLabel = isUsed ? '(used)' : '(empty)';
+        var selE = (selectedType === 'ethernet') ? ' selected' : '', selF = (selectedType === 'fiber') ? ' selected' : '', selW = (selectedType === 'wireless') ? ' selected' : '', selN = (!selectedType) ? ' selected' : '';
+        var disabledAttr = isUsed ? ' disabled' : '', statusClass = isUsed ? 'used' : '';
+        html += '<div class="port-type-row"><span class="pt-label">P' + p + '</span><select class="pt-select" data-dev="' + d.id + '" data-port="' + p + '"' + disabledAttr + '><option value=""' + selN + '>Empty</option><option value="ethernet"' + selE + ' style="color:#29b6f6;">Ethernet</option><option value="fiber"' + selF + ' style="color:#c084fc;">Fiber</option><option value="wireless"' + selW + ' style="color:#ffa726;">Wireless</option></select><span class="pt-status ' + statusClass + '">' + statusLabel + '</span></div>';
+    }
+    html += '</div>';
+
+    html += '<div class="se"><div class="stl">Performance</div>';
+    html += '<div class="dr"><span class="l">CPU</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="eCPU" value="' + d.cpu + '" min="0" max="100" style="width:50px"><span style="font-size:11px;color:var(--mt)">%</span><div class="pb"><div class="f" id="cpuB" style="width:' + d.cpu + '%;background:' + pC(d.cpu) + '"></div></div></div></div>';
+    html += '<div class="dr"><span class="l">Memory</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="eMM" value="' + d.mem + '" min="0" max="100" style="width:50px"><span style="font-size:11px;color:var(--mt)">%</span><div class="pb"><div class="f" id="memB" style="width:' + d.mem + '%;background:' + pC(d.mem) + '"></div></div></div></div>';
+    html += '<div class="dr"><span class="l">Temperature</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="eTP" value="' + d.temp + '" min="0" max="120" style="width:50px"><span style="font-size:11px;color:var(--mt)">\u00b0C</span></div></div></div>';
+    html += '<div class="se"><div class="stl">Position</div><div class="dr"><span class="l">X</span><span class="v">' + Math.round(d.x) + '</span></div><div class="dr"><span class="l">Y</span><span class="v">' + Math.round(d.y) + '</span></div></div>';
+    if (usedCount > 0) {
+        html += '<div class="se"><div class="stl">Connected Cables</div>';
+        for (var i = 0; i < cabs.length; i++) {
+            var c = cabs[i]; if (c.from !== d.id && c.to !== d.id) continue;
+            var other = getDeviceById(c.from === d.id ? c.to : c.from), ct = CT[c.type], myP = c.from === d.id ? c.fromPort : c.toPort;
+            var dashStyle = ct.dh.length ? 'background:repeating-linear-gradient(90deg,' + ct.co + ' 0,' + ct.co + ' 4px,transparent 4px,transparent 7px)' : 'background:' + ct.co;
+            html += '<div class="dr" style="cursor:pointer;padding:5px 0" data-cid="' + c.id + '"><span class="l" style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:2px;' + dashStyle + ';display:inline-block;border-radius:1px"></span>' + (other ? other.name : '?') + ' (P' + myP + ')</span><span class="v">' + c.bw + 'Mbps</span></div>';
+        }
+        html += '</div>';
+    }
+    html += '<button class="bt btd" style="width:100%;justify-content:center;padding:8px;margin-top:auto" id="bDD"><i class="fa-solid fa-trash-can"></i> Delete Device</button>';
+    el.innerHTML = html;
+
+    var $ = function(id) { return document.getElementById(id); };
+    $('eN').addEventListener('input', function(e) { d.name = e.target.value; uDL(); ren(); });
+    $('eT').addEventListener('change', function(e) {
+        d.type = e.target.value; d.ports = DT[d.type].pt; d.portTypes = [];
+        for (var p = 1; p <= d.ports; p++) d.portTypes.push(null);
+        _sDD(d); uDL(); ren(); toast('Type: ' + DT[d.type].lb, 'in');
+    });
+    $('eS').addEventListener('change', function(e) { d.status = e.target.value; _sDD(d); uDL(); uSt(); ren(); });
+    $('eIP').addEventListener('change', function(e) { d.ip = e.target.value.trim(); ren(); toast('IP: ' + d.ip, 'in'); });
+
+    var eCIDR = $('eCIDR');
+    var eSN = $('eSN');
+    var updating = false;
+    eCIDR.addEventListener('input', function() {
+        if (updating) return;
+        var val = this.value.trim();
+        if (val.startsWith('/')) val = val.slice(1);
+        var cidr = parseInt(val);
+        if (!isNaN(cidr) && cidr >= 0 && cidr <= 32) {
+            var mask = cidrToMask(cidr);
+            d.subnet = mask;
+            updating = true;
+            eSN.value = mask;
+            updating = false;
+            toast('Subnet: ' + mask, 'in');
+        }
+    });
+    eSN.addEventListener('input', function() {
+        if (updating) return;
+        var mask = this.value.trim();
+        var cidr = maskToCidr(mask);
+        if (cidr >= 0 && cidr <= 32) {
+            d.subnet = mask;
+            updating = true;
+            eCIDR.value = '/' + cidr;
+            updating = false;
+            toast('CIDR: /' + cidr, 'in');
+        }
+    });
+    $('eGW').addEventListener('change', function(e) { d.gateway = e.target.value.trim(); toast('Gateway: ' + d.gateway, 'in'); });
+
+    $('ePt').addEventListener('change', function(e) {
+        var newVal = parseInt(e.target.value) || 1, uCurrent = usedPorts(d.id, -1), usedCountCurrent = Object.keys(uCurrent).length;
+        if (newVal < usedCountCurrent) { toast('Cannot reduce ports below ' + usedCountCurrent + ' used ports', 'er'); e.target.value = d.ports; return; }
+        d.ports = Math.max(1, newVal);
+        var old = d.portTypes || [], npt = [];
+        for (var p = 1; p <= d.ports; p++) { npt.push((p <= old.length) ? old[p - 1] : null); }
+        d.portTypes = npt; _sDD(d); uDL(); ren(); toast('Ports: ' + d.ports, 'in');
+    });
+
+    $('eCPU').addEventListener('input', function(e) { d.cpu = Math.max(0, Math.min(100, parseInt(e.target.value) || 0)); var b = $('cpuB'), c = pC(d.cpu); b.style.width = d.cpu + '%'; b.style.background = c; });
+    $('eMM').addEventListener('input', function(e) { d.mem = Math.max(0, Math.min(100, parseInt(e.target.value) || 0)); var b = $('memB'), c = pC(d.mem); b.style.width = d.mem + '%'; b.style.background = c; });
+    $('eTP').addEventListener('input', function(e) { d.temp = Math.max(0, Math.min(120, parseInt(e.target.value) || 0)); });
+    $('bDD').addEventListener('click', function() { delD(d.id); });
+
+    var ptSelects = el.querySelectorAll('.pt-select');
+    for (var i = 0; i < ptSelects.length; i++) {
+        ptSelects[i].addEventListener('change', function() {
+            var devId = +this.dataset.dev, portNum = +this.dataset.port, val = this.value || null;
+            var cable = getCableOnPort(devId, portNum);
+            if (cable) {
+                toast('Port is in use, cannot change type', 'er');
+                var dev = getDeviceById(devId);
+                if (dev) {
+                    var pt = dev.portTypes && dev.portTypes[portNum - 1] ? dev.portTypes[portNum - 1] : null;
+                    this.value = cable.type || pt || '';
+                }
+                return;
+            }
+            if (setPortType(devId, portNum, val)) {
+                var dev = getDeviceById(devId);
+                if (dev) { toast('Port ' + portNum + ' → ' + (val || 'empty'), 'in'); uDL(); ren(); }
+            }
+        });
+    }
+
+    var cids = el.querySelectorAll('[data-cid]');
+    for (var i = 0; i < cids.length; i++) {
+        cids[i].addEventListener('click', function() {
+            sCI = +this.dataset.cid; sDI = null; selectedDevs = [];
+            skipAutoScroll = false; uUI(true); ren();
+        });
+    }
+};
+
+var _sDC = function(c) {
+    if (dpPanel.classList.contains('dp-auto-hide') && !manualToggle) return;
+    document.getElementById('dE').style.display = 'none';
+    var el = document.getElementById('dC');
+    el.style.display = 'flex'; el.style.flexDirection = 'column'; el.style.gap = '8px';
+    var ct = CT[c.type], a = getDeviceById(c.from), b = getDeviceById(c.to);
+    var stO = '', tyO = '';
+    for (var i = 0; i < CS_ARR.length; i++) { var s = CS_ARR[i], sel = c.status === s ? ' selected' : ''; stO += '<option value="' + s + '"' + sel + '>' + s[0].toUpperCase() + s.slice(1) + '</option>'; }
+    var ckeys = Object.keys(CT);
+    for (var i = 0; i < ckeys.length; i++) { var k = ckeys[i], sel = c.type === k ? ' selected' : ''; tyO += '<option value="' + k + '"' + sel + '>' + CT[k].lb + '</option>'; }
+    var fOpts = makePortOpts(a, c.id), tOpts = makePortOpts(b, c.id), bwPct = Math.round(c.bw / c.mx * 100), bwCol = pC(bwPct);
+    var html = '';
+    html += '<div class="dh"><div class="di" style="background:rgba(41,182,246,.12);color:var(--in)"><i class="fa-solid fa-link"></i></div><div class="dht" style="flex:1;min-width:0"><input class="ei" id="eCName" value="' + (c.name || '') + '" style="font:700 15px/1.3 \'Space Grotesk\',sans-serif;margin-bottom:3px" placeholder="Cable Name"><span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><select class="es" id="eCT" style="font-size:12px">' + tyO + '</select><select class="es" id="eCS" style="font-size:12px">' + stO + '</select></span></div></div>';
+    html += '<div class="se"><div class="stl">Endpoint &amp; Port</div>';
+    html += '<div class="dr"><span class="l">From</span><span class="v" style="color:var(--fg);font-size:13px;cursor:pointer" data-did="' + c.from + '">' + (a ? a.name : '?') + '</span></div>';
+    html += '<div class="dr"><span class="l">Source Port</span><select class="es" id="eFP" style="width:120px">' + fOpts + '</select></div>';
+    html += '<div style="text-align:center;color:var(--mt);font-size:14px;padding:2px 0"><i class="fa-solid fa-arrow-down"></i></div>';
+    html += '<div class="dr"><span class="l">To</span><span class="v" style="color:var(--fg);font-size:13px;cursor:pointer" data-did="' + c.to + '">' + (b ? b.name : '?') + '</span></div>';
+    html += '<div class="dr"><span class="l">Destination Port</span><select class="es" id="eTP2" style="width:120px">' + tOpts + '</select></div></div>';
+    html += '<div class="se"><div class="stl">Properties</div><div class="dr"><span class="l">Length</span><span class="v">' + c.len + 'm</span></div><div class="dr"><span class="l">Latency</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="eLT" value="' + c.lat + '" min="0" max="1000" style="width:55px"><span style="font-size:11px;color:var(--mt)">ms</span></div></div></div>';
+    html += '<div class="se"><div class="stl">Bandwidth</div><div class="dr"><span class="l">Current</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="eBW" value="' + c.bw + '" min="0" max="10000" style="width:55px"><span style="font-size:11px;color:var(--mt)">Mbps</span></div></div><div class="dr"><span class="l">Maximum</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="eMB" value="' + c.mx + '" min="1" max="100000" style="width:55px"><span style="font-size:11px;color:var(--mt)">Mbps</span></div></div>';
+    html += '<div class="dr"><span class="l">Utilization</span><div class="pb" style="flex:1"><div class="f" id="bwBar" style="width:' + Math.min(100, bwPct) + '%;background:' + bwCol + '"></div></div><span class="v" id="bwPct" style="color:' + bwCol + ';min-width:32px">' + Math.min(100, bwPct) + '%</span></div></div>';
+    html += '<button class="bt btd" style="width:100%;justify-content:center;padding:8px;margin-top:auto" id="bDC"><i class="fa-solid fa-trash-can"></i> Delete Cable</button>';
+    el.innerHTML = html;
+    var $ = function(id) { return document.getElementById(id); };
+
+    function updBW() { var pct = Math.round(c.bw / c.mx * 100), col = pC(pct); $('bwBar').style.width = Math.min(100, pct) + '%'; $('bwBar').style.background = col; $('bwPct').textContent = Math.min(100, pct) + '%'; $('bwPct').style.color = col; }
+    $('eCName').addEventListener('input', function(e) { c.name = e.target.value.trim() || 'Cable'; uCL2(); ren(); });
+    $('eCT').addEventListener('change', function(e) { c.type = e.target.value; _sDC(c); uCL2(); ren(); toast('Type: ' + CT[c.type].lb, 'in'); });
+    $('eCS').addEventListener('change', function(e) { c.status = e.target.value; _sDC(c); uCL2(); ren(); });
+    $('eFP').addEventListener('change', function(e) { c.fromPort = parseInt(e.target.value) || 1; uCL2(); ren(); toast('Source port: P' + c.fromPort, 'in'); });
+    $('eTP2').addEventListener('change', function(e) { c.toPort = parseInt(e.target.value) || 1; uCL2(); ren(); toast('Destination port: P' + c.toPort, 'in'); });
+    $('eLT').addEventListener('input', function(e) { c.lat = Math.max(0, parseInt(e.target.value) || 0); });
+    $('eBW').addEventListener('input', function(e) { c.bw = Math.max(0, parseInt(e.target.value) || 0); updBW(); });
+    $('eMB').addEventListener('input', function(e) { c.mx = Math.max(1, parseInt(e.target.value) || 1); updBW(); });
+    $('bDC').addEventListener('click', function() { delC(c.id); });
+    var dids = el.querySelectorAll('[data-did]');
+    for (var i = 0; i < dids.length; i++) {
+        dids[i].addEventListener('click', function() {
+            sDI = +this.dataset.did; sCI = null;
+            var d = getDeviceById(sDI);
+            if (d) { var t = w2s(d.x, d.y); pX += cW/2 - t.x; pY += cH/2 - t.y; }
+            skipAutoScroll = false; uUI(true); ren();
+        });
+    }
+};
+
+function erR(label, inputHtml) { return '<div class="dr"><span class="l">' + label + '</span>' + inputHtml + '</div>'; }
+function makePortOpts(dev, excCabId) {
+    if (!dev) return '<option value="1">1</option>';
+    var u = usedPorts(dev.id, excCabId), h = '';
+    for (var p = 1; p <= dev.ports; p++) { var dis = u[p] ? ' disabled' : ''; var label = u[p] ? p + ' (used)' : p; h += '<option value="' + p + '"' + dis + '>' + label + '</option>'; }
+    return h;
+}
+
+var sEmp = _sEmp, sDl = _sDl, sDD = _sDD, sDC = _sDC;
+
+function uUI(scroll) {
+    if (scroll === undefined) scroll = true;
+    uDL();
+    uCL2();
+    uSt();
+    sDl();
+    if (scroll && !skipAutoScroll) {
+        scrollToSelected();
+    } else {
+        skipAutoScroll = false;
+    }
+    updateRightPanel();
+}
+
+function uCabLen() {
+    for (var i = 0; i < cabs.length; i++) {
+        var c = cabs[i], a = getDeviceById(c.from), b = getDeviceById(c.to);
+        if (a && b) c.len = Math.round(Math.hypot(a.x - b.x, a.y - b.y));
+    }
+}
+
+function delD(id) {
+    for (var i = cabs.length - 1; i >= 0; i--) { if (cabs[i].from === id || cabs[i].to === id) cabs.splice(i, 1); }
+    for (var i = devs.length - 1; i >= 0; i--) { if (devs[i].id === id) { devs.splice(i, 1); break; } }
+    if (sDI === id) sDI = null;
+    var idx = selectedDevs.indexOf(id);
+    if (idx !== -1) selectedDevs.splice(idx, 1);
+    skipAutoScroll = false;
+    uUI(false);
+    ren();
+}
+function delC(id) {
+    for (var i = cabs.length - 1; i >= 0; i--) { if (cabs[i].id === id) { cabs.splice(i, 1); break; } }
+    if (sCI === id) sCI = null;
+    skipAutoScroll = false;
+    uUI(false);
+    ren();
+}
+
+// ========== BUILD SIDEBAR ==========
+function buildSB() {
+    var sb = document.getElementById('sb');
+    var h = '<div class="stt">Cable Type</div><div class="cs" id="cableTypeButtons">';
+    var ck = Object.keys(CT);
+    for (var i = 0; i < ck.length; i++) {
+        var k = ck[i], v = CT[k], cls = k === selCT ? ' a' : '', dotColor = v.co;
+        h += '<button class="cb' + cls + '" data-c="' + k + '" style="' + (k === selCT ? 'border-color:' + dotColor + ';color:' + dotColor + ';background:rgba(' + hexToRgb(dotColor) + ',0.1);' : '') + '"><span class="cb-dot" style="background:' + dotColor + ';"></span>' + v.lb + '</button>';
+    }
+    h += '</div>';
+
+    h += '<div class="stt">Network Devices</div>';
+    var keys = Object.keys(DT);
+    // Sort keys by category
+    var categories = {
+        wan: ['modem', 'olt'],
+        routing: ['mikrotik', 'firewall', 'router'],
+        switching: ['sw', 'hub', 'poe', 'medconv', 'bridge'],
+        wireless: ['ap', 'repeater'],
+        compute: ['server', 'nas', 'htb'],
+        end: ['laptop', 'desktop', 'smartphone', 'tablet', 'printer', 'voip', 'cctv', 'ipcam']
+    };
+    var orderedKeys = [];
+    for (var cat in categories) {
+        for (var j = 0; j < categories[cat].length; j++) {
+            if (keys.indexOf(categories[cat][j]) !== -1) {
+                orderedKeys.push(categories[cat][j]);
+            }
+        }
+    }
+    // Add any remaining keys
+    for (var i = 0; i < keys.length; i++) {
+        if (orderedKeys.indexOf(keys[i]) === -1) orderedKeys.push(keys[i]);
+    }
+
+    for (var i = 0; i < orderedKeys.length; i++) {
+        var k = orderedKeys[i], v = DT[k], cls = k === selT ? ' a' : '';
+        h += '<button class="db' + cls + '" data-t="' + k + '"><div class="iw" style="background:' + v.bg + ';color:' + v.co + '"><i class="fa-solid ' + v.fa + '"></i></div><div><div style="font-weight:600">' + v.lb + '</div><div class="ds">' + v.dc + ' (' + v.pt + ' Ports)</div></div></button>';
+    }
+
+    h += '<div class="stt">Devices</div><div class="dl" id="dL"></div>';
+    h += '<div class="stt">Cables</div><div class="cl" id="cL"></div>';
+    sb.innerHTML = h;
+
+    var cbs = sb.querySelectorAll('.cb');
+    for (var i = 0; i < cbs.length; i++) {
+        cbs[i].addEventListener('click', function() {
+            var all = sb.querySelectorAll('.cb');
+            var val = this.dataset.c, color = CT[val].co;
+            for (var j = 0; j < all.length; j++) {
+                all[j].classList.remove('a');
+                all[j].style.borderColor = '';
+                all[j].style.color = '';
+                all[j].style.background = '';
+            }
+            this.classList.add('a');
+            this.style.borderColor = color;
+            this.style.color = color;
+            this.style.background = 'rgba(' + hexToRgb(color) + ',0.1)';
+            selCT = val;
+        });
+    }
+
+    var dbs = sb.querySelectorAll('.db');
+    for (var i = 0; i < dbs.length; i++) {
+        dbs[i].addEventListener('click', function() {
+            var all = sb.querySelectorAll('.db');
+            for (var j = 0; j < all.length; j++) all[j].classList.remove('a');
+            this.classList.add('a');
+            selT = this.dataset.t;
+            if (mode !== 'place') sM('place');
+        });
+    }
+}
+
+function hexToRgb(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? parseInt(result[1], 16) + ',' + parseInt(result[2], 16) + ',' + parseInt(result[3], 16) : '41,182,246';
+}
+
+// ========== EVENTS ==========
+cv.addEventListener('mousedown', function(e) {
+    var p = mp(e), w = s2w(p.x, p.y);
+    if (e.button === 1) { e.preventDefault(); iPan = true; psx = p.x; psy = p.y; ppx = pX; ppy = pY; cv.style.cursor = 'grabbing'; return; }
+    if (e.button !== 0) return;
+    var hd = hD(w.x, w.y), hc = hC(w.x, w.y);
+
+    if (mode === 'place') {
+        if (hd) { sDI = hd.id; sCI = null; selectedDevs = []; dragD = hd; doX = w.x - hd.x; doY = w.y - hd.y; cv.style.cursor = 'grabbing'; uUI(true); ren(); return; }
+        var nd = mkD(selT, cl(w.x), cl(w.y));
+        devs.push(nd);
+        sDI = nd.id; sCI = null; selectedDevs = [];
+        skipAutoScroll = true; // NO SCROLL ON ADD
+        uUI(false);
+        toast('Added ' + nd.name, 'ok');
+        ren();
+    } else if (mode === 'connect') {
+        if (!hd) { cSrc = null; ren(); return; }
+        if (cSrc === null) { cSrc = hd.id; toast('Select the second device', 'in'); ren(); return; }
+        if (hd.id === cSrc) { cSrc = null; ren(); return; }
+        var srcDev = getDeviceById(cSrc), dstDev = getDeviceById(hd.id);
+        var uSrc = usedPorts(cSrc, -1), uDst = usedPorts(hd.id, -1);
+        var srcFree = false, dstFree = false;
+        for (var p = 1; p <= srcDev.ports; p++) { if (!uSrc[p]) { srcFree = true; break; } }
+        for (var p = 1; p <= dstDev.ports; p++) { if (!uDst[p]) { dstFree = true; break; } }
+        if (!srcFree || !dstFree) { toast('Ports are full on one of the devices', 'er'); cSrc = null; ren(); return; }
+        var dup = false;
+        for (var i = 0; i < cabs.length; i++) { var c = cabs[i]; if ((c.from === cSrc && c.to === hd.id) || (c.to === cSrc && c.from === hd.id)) { dup = true; break; } }
+        if (dup) { toast('Cable already exists', 'er'); cSrc = null; ren(); return; }
+        var nc = mkC(cSrc, hd.id, selCT);
+        if (!nc) { cSrc = null; ren(); return; }
+        cabs.push(nc);
+        sCI = nc.id; sDI = null; selectedDevs = [];
+        var sn = getDeviceById(cSrc);
+        toast('Connected ' + (sn ? sn.name : '?') + ' \u2192 ' + hd.name, 'ok');
+        cSrc = null; uUI(true); ren();
+    } else if (mode === 'select') {
+        if (hd) {
+            if (e.shiftKey) {
+                var idx = selectedDevs.indexOf(hd.id);
+                if (idx === -1) selectedDevs.push(hd.id); else selectedDevs.splice(idx, 1);
+                sDI = hd.id; sCI = null;
+            } else {
+                if (selectedDevs.indexOf(hd.id) === -1) selectedDevs = [hd.id];
+                sDI = hd.id; sCI = null; dragD = hd; doX = w.x - hd.x; doY = w.y - hd.y; cv.style.cursor = 'grabbing';
+            }
+            skipAutoScroll = false;
+            uUI(true); ren(); return;
+        }
+        if (hc) { sCI = hc.id; sDI = null; selectedDevs = []; skipAutoScroll = false; uUI(true); ren(); return; }
+        sDI = null; sCI = null; selectedDevs = []; isSelBox = true; selBox = { x1: w.x, y1: w.y, x2: w.x, y2: w.y };
+        uUI(true); ren();
+    } else if (mode === 'delete') {
+        if (hd) delD(hd.id); else if (hc) delC(hc.id);
+    }
+});
+
+cv.addEventListener('mousemove', function(e) {
+    var p = mp(e); mX = p.x; mY = p.y;
+    if (iPan) { pX = ppx + (p.x - psx); pY = ppy + (p.y - psy); ren(); return; }
+    if (dragD && mode === 'select') {
+        var w = s2w(p.x, p.y), dx = w.x - doX - dragD.x, dy = w.y - doY - dragD.y;
+        for (var i = 0; i < selectedDevs.length; i++) {
+            var d = getDeviceById(selectedDevs[i]);
+            if (d) {
+                var nx = cl(d.x + dx), ny = cl(d.y + dy);
+                if (snapToGrid) { d.x = snap(nx); d.y = snap(ny); } else { d.x = nx; d.y = ny; }
+            }
+        }
+        doX = w.x - dragD.x; doY = w.y - dragD.y;
+        uCabLen(); ren(); return;
+    }
+    if (dragD && mode === 'place') {
+        var w = s2w(p.x, p.y);
+        var nx = cl(w.x - doX), ny = cl(w.y - doY);
+        if (snapToGrid) { dragD.x = snap(nx); dragD.y = snap(ny); } else { dragD.x = nx; dragD.y = ny; }
+        uCabLen(); ren(); return;
+    }
+    if (isSelBox && mode === 'select') {
+        var w = s2w(p.x, p.y); selBox.x2 = w.x; selBox.y2 = w.y;
+        var x1 = Math.min(selBox.x1, selBox.x2), y1 = Math.min(selBox.y1, selBox.y2);
+        var x2 = Math.max(selBox.x1, selBox.x2), y2 = Math.max(selBox.y1, selBox.y2);
+        selectedDevs = [];
+        for (var i = 0; i < devs.length; i++) {
+            var d = devs[i], r = DT[d.type].r;
+            if (d.x + r >= x1 && d.x - r <= x2 && d.y + r >= y1 && d.y - r <= y2) selectedDevs.push(d.id);
+        }
+        uUI(true); ren(); return;
+    }
+    var w = s2w(p.x, p.y), hd = hD(w.x, w.y), hc = hC(w.x, w.y);
+    if (mode === 'place') cv.style.cursor = hd ? 'pointer' : 'crosshair';
+    else if (mode === 'connect') cv.style.cursor = hd ? 'pointer' : 'default';
+    else if (mode === 'select' || mode === 'delete') cv.style.cursor = (hd || hc) ? 'pointer' : 'default';
+    ren();
+});
+
+cv.addEventListener('mouseup', function(e) {
+    if (dragD) {
+        if (selectedDevs.length === 1) sDI = selectedDevs[0]; else if (selectedDevs.length > 1) sDI = null;
+        dragD = null; cv.style.cursor = mode === 'select' ? 'default' : (mode === 'place' ? 'crosshair' : 'default');
+        uUI(true); ren();
+    }
+    if (isSelBox) {
+        isSelBox = false; selBox = null;
+        if (selectedDevs.length === 1) { sDI = selectedDevs[0]; sCI = null; } else if (selectedDevs.length > 1) { sDI = null; sCI = null; }
+        uUI(true); ren();
+    }
+    if (iPan) { iPan = false; cv.style.cursor = 'default'; }
+});
+cv.addEventListener('mouseleave', function() { mX = -999; mY = -999; dragD = null; isSelBox = false; selBox = null; iPan = false; ren(); });
+cv.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+cv.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    var p = mp(e), f = e.deltaY < 0 ? 1.1 : .9, n = Math.max(.12, Math.min(5, zm * f));
+    pX = p.x - (p.x - pX) * (n / zm); pY = p.y - (p.y - pY) * (n / zm); zm = n; ren();
+}, { passive: false });
+
+document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedDevs.length > 1) { var ids = selectedDevs.slice(); for (var i = 0; i < ids.length; i++) delD(ids[i]); selectedDevs = []; return; }
+        if (sDI !== null) delD(sDI); else if (sCI !== null) delC(sCI);
+    }
+    if (e.key === 'Escape') { cSrc = null; sDI = null; sCI = null; selectedDevs = []; uUI(true); ren(); }
+    if (e.key === '1') sM('place');
+    if (e.key === '2') sM('connect');
+    if (e.key === '3') sM('select');
+    if (e.key === '4') sM('delete');
+    if (e.key === 'a' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault(); selectedDevs = [];
+        for (var i = 0; i < devs.length; i++) selectedDevs.push(devs[i].id);
+        if (selectedDevs.length === 1) sDI = selectedDevs[0]; else sDI = null;
+        uUI(true); ren();
+    }
+    if (e.key === 'g' || e.key === 'G') {
+        document.getElementById('bSnap').click();
+    }
+});
+
+// ========== MODE ==========
+function sM(m) {
+    mode = m; cSrc = null;
+    if (m !== 'select') { selectedDevs = []; isSelBox = false; selBox = null; }
+    var btns = document.querySelectorAll('.mb');
+    for (var i = 0; i < btns.length; i++) {
+        var b = btns[i]; b.classList.remove('a', 'ac2', 'ad');
+        if (b.dataset.m === m) { if (m === 'connect') b.classList.add('ac2'); else if (m === 'delete') b.classList.add('ad'); else b.classList.add('a'); }
+    }
+    var hints = {
+        place: 'Click to place &middot; <kbd>Drag</kbd> move &middot; <kbd>Scroll</kbd> zoom &middot; <kbd>G</kbd> snap toggle',
+        connect: 'Click first device, then second &middot; <kbd>Esc</kbd> cancel',
+        select: 'Click to edit &middot; <kbd>Drag</kbd> move &middot; <kbd>Del</kbd> delete &middot; <kbd>Shift</kbd>+click add selection',
+        delete: 'Click to delete &middot; <kbd>Esc</kbd> cancel'
+    };
+    document.getElementById('cH').innerHTML = hints[m];
+    cv.style.cursor = m === 'place' ? 'crosshair' : 'default';
+    if (m === 'place') {
+        var targetBtn = document.querySelector('#sb .db[data-t="' + selT + '"]');
+        if (targetBtn) targetBtn.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+    ren();
+}
+var modeBtns = document.querySelectorAll('.mb');
+for (var i = 0; i < modeBtns.length; i++) { modeBtns[i].addEventListener('click', function() { sM(this.dataset.m); }); }
+
+// ========== ZOOM ==========
+document.getElementById('zI').addEventListener('click', function() {
+    var a = cW/2, b = cH/2, n = Math.min(5, zm * 1.25);
+    pX = a - (a - pX) * (n / zm); pY = b - (b - pY) * (n / zm); zm = n; ren();
+});
+document.getElementById('zO').addEventListener('click', function() {
+    var a = cW/2, b = cH/2, n = Math.max(.12, zm / 1.25);
+    pX = a - (a - pX) * (n / zm); pY = b - (b - pY) * (n / zm); zm = n; ren();
+});
+document.getElementById('zR').addEventListener('click', function() { zm = 1; pX = cW/2; pY = cH/2; ren(); });
+
+// ========== HEADER BUTTONS ==========
+document.getElementById('bAd').addEventListener('click', function() {
+    var keys = Object.keys(DT), t = keys[Math.floor(Math.random() * keys.length)], c = s2w(cW/2, cH/2);
+    var d = mkD(t, c.x + (Math.random() - .5) * 280, c.y + (Math.random() - .5) * 280);
+    devs.push(d);
+    sDI = d.id; sCI = null; selectedDevs = [];
+    skipAutoScroll = true; // NO SCROLL ON ADD
+    uUI(false);
+    toast('Added ' + d.name, 'ok');
+    ren();
+});
+
+document.getElementById('bCl').addEventListener('click', function() {
+    if (!devs.length && !cabs.length) return;
+    devs = []; cabs = []; sDI = null; sCI = null; cSrc = null; selectedDevs = [];
+    idC = 0; cidC = 0;
+    skipAutoScroll = false;
+    uUI(false);
+    cx.clearRect(0, 0, cW, cH);
+    toast('Cleared all', 'in');
+});
+
+document.getElementById('bLa').addEventListener('click', function() {
+    if (!devs.length) { toast('No devices', 'er'); return; }
+    var g = {};
+    for (var i = 0; i < devs.length; i++) { var d = devs[i]; if (!g[d.type]) g[d.type] = []; g[d.type].push(d); }
+    var gk = Object.keys(g), cols = Math.ceil(Math.sqrt(gk.length)), sx = 160, sy = 140, c = s2w(cW/2, cH/2);
+    var tw = (cols - 1) * sx, th = (Math.ceil(gk.length / cols) - 1) * sy, ox = c.x - tw/2, oy = c.y - th/2;
+    for (var gi = 0; gi < gk.length; gi++) {
+        var t = gk[gi], col = gi % cols, row = Math.floor(gi / cols), gx = ox + col * sx, gy = oy + row * sy, gr = g[t], gc = Math.ceil(Math.sqrt(gr.length));
+        for (var di = 0; di < gr.length; di++) {
+            gr[di].x = gx + (di % gc - (gc - 1) / 2) * 80;
+            gr[di].y = gy + (Math.floor(di / gc) - (Math.ceil(gr.length / gc) - 1) / 2) * 70;
+        }
+    }
+    uCabLen(); skipAutoScroll = false; uUI(true); toast('Layout applied', 'ok'); ren();
+});
+
+document.getElementById('bAL').addEventListener('click', function() {
+    if (devs.length < 2) { toast('Need 2+ devices', 'er'); return; }
+    var added = 0;
+    for (var i = 0; i < devs.length; i++) {
+        var d = devs[i], dconn = 0;
+        for (var j = 0; j < cabs.length; j++) { if (cabs[j].from === d.id || cabs[j].to === d.id) dconn++; }
+        if (dconn >= 3) continue;
+        var best = null, bestD = Infinity;
+        for (var j = 0; j < devs.length; j++) {
+            var o = devs[j];
+            if (o.id === d.id) continue;
+            var dup = false;
+            for (var k = 0; k < cabs.length; k++) {
+                if ((cabs[k].from === d.id && cabs[k].to === o.id) || (cabs[k].to === d.id && cabs[k].from === o.id)) { dup = true; break; }
+            }
+            if (dup) continue;
+            var dx = d.x - o.x, dy = d.y - o.y, dist = dx*dx + dy*dy;
+            if (dist < bestD) { bestD = dist; best = o; }
+        }
+        if (best) {
+            var nc = mkC(d.id, best.id, 'ethernet');
+            if (nc) { cabs.push(nc); added++; }
+        }
+    }
+    if (added > 0) { skipAutoScroll = false; uUI(true); toast('Added ' + added + ' auto-connections', 'ok'); ren(); }
+    else toast('No new connections could be made', 'in');
+});
+
+function loadSample() {
+    devs = []; cabs = []; idC = 0; cidC = 0; sDI = null; sCI = null; cSrc = null; selectedDevs = [];
+    var starters = [
+        { t: 'modem', x: 0, y: 0, ip: '192.168.1.1', gw: '192.168.1.1' },
+        { t: 'mikrotik', x: 0, y: -130, ip: '192.168.1.2', gw: '192.168.1.1' },
+        { t: 'firewall', x: 0, y: -260, ip: '192.168.1.3', gw: '192.168.1.2' },
+        { t: 'sw', x: -150, y: -370, ip: '192.168.1.10', gw: '192.168.1.3' },
+        { t: 'sw', x: 150, y: -370, ip: '192.168.1.11', gw: '192.168.1.3' },
+        { t: 'server', x: -240, y: -490, ip: '192.168.1.20', gw: '192.168.1.10' },
+        { t: 'server', x: -70, y: -490, ip: '192.168.1.21', gw: '192.168.1.10' },
+        { t: 'nas', x: 70, y: -490, ip: '192.168.1.22', gw: '192.168.1.11' },
+        { t: 'ap', x: 200, y: -490, ip: '192.168.1.30', gw: '192.168.1.11' },
+        { t: 'cctv', x: 280, y: -400, ip: '192.168.2.10', gw: '192.168.2.1' },
+        { t: 'repeater', x: -270, y: -180, ip: '192.168.1.40', gw: '192.168.1.2' },
+        { t: 'poe', x: 280, y: -180, ip: '192.168.3.1', gw: '192.168.1.2' },
+        { t: 'medconv', x: -170, y: -220, ip: '192.168.1.50', gw: '192.168.1.2' },
+        { t: 'laptop', x: -320, y: -370, ip: '192.168.1.60', gw: '192.168.1.10' },
+        { t: 'desktop', x: -400, y: -490, ip: '192.168.1.61', gw: '192.168.1.10' },
+        { t: 'smartphone', x: 340, y: -490, ip: '192.168.1.70', gw: '192.168.1.11' },
+        { t: 'htb', x: -350, y: -600, ip: '192.168.1.80', gw: '192.168.1.10' },
+        { t: 'printer', x: 160, y: -600, ip: '192.168.1.90', gw: '192.168.1.11' },
+        { t: 'tablet', x: -160, y: -600, ip: '192.168.1.100', gw: '192.168.1.10' },
+        { t: 'bridge', x: -420, y: -370, ip: '192.168.1.110', gw: '192.168.1.10' },
+        { t: 'voip', x: 360, y: -370, ip: '192.168.1.120', gw: '192.168.1.11' },
+        { t: 'hub', x: -380, y: -250, ip: '192.168.1.130', gw: '192.168.1.2' },
+        { t: 'ipcam', x: 380, y: -250, ip: '192.168.2.20', gw: '192.168.2.1' }
+    ];
+    for (var i = 0; i < starters.length; i++) {
+        var s = starters[i], d = mkD(s.t, s.x, s.y);
+        d.ip = s.ip; d.gateway = s.gw;
+        devs.push(d);
+    }
+    var scabs = [
+        [1,2,'ethernet'],[2,3,'ethernet'],[3,4,'fiber'],[3,5,'fiber'],
+        [4,6,'ethernet'],[4,7,'ethernet'],[5,8,'ethernet'],[5,9,'ethernet'],
+        [9,10,'ethernet'],[2,11,'wireless'],[2,12,'fiber'],[2,13,'ethernet'],
+        [4,14,'ethernet'],[4,15,'ethernet'],[9,16,'wireless'],[4,17,'ethernet'],
+        [7,18,'ethernet'],[5,19,'ethernet'],[2,20,'ethernet'],[3,21,'ethernet'],
+        [5,22,'ethernet']
+    ];
+    for (var i = 0; i < scabs.length; i++) {
+        var nc = mkC(scabs[i][0], scabs[i][1], scabs[i][2]);
+        if (nc) cabs.push(nc);
+    }
+    skipAutoScroll = false;
+    uUI(false);
+    toast('Sample topology loaded', 'ok');
+    ren();
+}
+document.getElementById('bSample').addEventListener('click', loadSample);
+
+// ========== EXPORT FUNCTIONS ==========
+function escapeXml(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+}
+
+// EXPORT PNG
+function exportPNG() {
+    if (!devs.length && !cabs.length) {
+        toast('Nothing to export', 'er');
+        return;
+    }
+    // Hitung bounding box
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (var i = 0; i < devs.length; i++) {
+        var d = devs[i], r = DT[d.type].r + 20;
+        if (d.x - r < minX) minX = d.x - r;
+        if (d.y - r < minY) minY = d.y - r;
+        if (d.x + r > maxX) maxX = d.x + r;
+        if (d.y + r > maxY) maxY = d.y + r;
+        if (d.y + r + 30 > maxY) maxY = d.y + r + 30;
+    }
+    for (var i = 0; i < cabs.length; i++) {
+        var c = cabs[i], a = getDeviceById(c.from), b = getDeviceById(c.to);
+        if (a) { if (a.x < minX) minX = a.x; if (a.y < minY) minY = a.y; if (a.x > maxX) maxX = a.x; if (a.y > maxY) maxY = a.y; }
+        if (b) { if (b.x < minX) minX = b.x; if (b.y < minY) minY = b.y; if (b.x > maxX) maxX = b.x; if (b.y > maxY) maxY = b.y; }
+    }
+    var padding = 80;
+    minX -= padding; minY -= padding; maxX += padding; maxY += padding;
+    var tw = maxX - minX, th = maxY - minY;
+    var scale = 2;
+    var w = Math.ceil(tw * scale), h = Math.ceil(th * scale);
+    var off = document.createElement('canvas');
+    off.width = w; off.height = h;
+    var ox = off.getContext('2d');
+
+    var savedPX = pX, savedPY = pY, savedZM = zm;
+    var savedW = cW, savedH = cH, savedDP = dp;
+    var savedCV = cv, savedCX = cx;
+
+    cv = off; cx = ox; cW = w; cH = h; dp = 1;
+    pX = -minX * scale; pY = -minY * scale; zm = scale;
+    ren();
+
+    cv = savedCV; cx = savedCX; cW = savedW; cH = savedH; dp = savedDP;
+    pX = savedPX; pY = savedPY; zm = savedZM;
+
+    var link = document.createElement('a');
+    link.download = 'nettopo-export-' + new Date().toISOString().slice(0, 10) + '.png';
+    link.href = off.toDataURL('image/png', 1.0);
+    link.click();
+    toast('PNG exported (full topology, 2x)', 'ok');
+}
+
+// EXPORT SVG
+function exportSVG() {
+    if (!devs.length && !cabs.length) {
+        toast('Nothing to export', 'er');
+        return;
+    }
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (var i = 0; i < devs.length; i++) {
+        var d = devs[i], r = DT[d.type].r + 20;
+        if (d.x - r < minX) minX = d.x - r;
+        if (d.y - r < minY) minY = d.y - r;
+        if (d.x + r > maxX) maxX = d.x + r;
+        if (d.y + r > maxY) maxY = d.y + r;
+        if (d.y + r + 30 > maxY) maxY = d.y + r + 30;
+    }
+    for (var i = 0; i < cabs.length; i++) {
+        var c = cabs[i], a = getDeviceById(c.from), b = getDeviceById(c.to);
+        if (a) { if (a.x < minX) minX = a.x; if (a.y < minY) minY = a.y; if (a.x > maxX) maxX = a.x; if (a.y > maxY) maxY = a.y; }
+        if (b) { if (b.x < minX) minX = b.x; if (b.y < minY) minY = b.y; if (b.x > maxX) maxX = b.x; if (b.y > maxY) maxY = b.y; }
+    }
+    var padding = 80;
+    minX -= padding; minY -= padding; maxX += padding; maxY += padding;
+    var tw = maxX - minX, th = maxY - minY;
+
+    var svg = '';
+    svg += '<?xml version="1.0" encoding="UTF-8"?>\n';
+    svg += '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + minX + ' ' + minY + ' ' + tw + ' ' + th + '" width="' + tw + '" height="' + th + '" style="background-color:#0c0f14;font-family:sans-serif;">\n';
+    svg += '<defs><filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.4"/></filter></defs>\n';
+    var gridSize = 40;
+    var startX = Math.floor(minX / gridSize) * gridSize, endX = Math.ceil(maxX / gridSize) * gridSize;
+    var startY = Math.floor(minY / gridSize) * gridSize, endY = Math.ceil(maxY / gridSize) * gridSize;
+    svg += '  <g stroke="rgba(42,51,72,0.3)" stroke-width="0.5">\n';
+    for (var x = startX; x <= endX; x += gridSize) { svg += '    <line x1="' + x + '" y1="' + minY + '" x2="' + x + '" y2="' + maxY + '"/>\n'; }
+    for (var y = startY; y <= endY; y += gridSize) { svg += '    <line x1="' + minX + '" y1="' + y + '" x2="' + maxX + '" y2="' + y + '"/>\n'; }
+    svg += '  </g>\n';
+    svg += '  <line x1="0" y1="' + minY + '" x2="0" y2="' + maxY + '" stroke="rgba(0,212,142,0.06)" stroke-width="1"/>\n';
+    svg += '  <line x1="' + minX + '" y1="0" x2="' + maxX + '" y2="0" stroke="rgba(0,212,142,0.06)" stroke-width="1"/>\n';
+
+    for (var i = 0; i < cabs.length; i++) {
+        var c = cabs[i], a = getDeviceById(c.from), b = getDeviceById(c.to);
+        if (!a || !b) continue;
+        var ct = CT[c.type];
+        var isDown = c.status === 'down';
+        var color = isDown ? 'rgba(255,71,87,0.25)' : ct.co;
+        var width = ct.w;
+        var dash = ct.dh.length ? ' stroke-dasharray="' + ct.dh.join(',') + '"' : '';
+        svg += '  <line x1="' + a.x + '" y1="' + a.y + '" x2="' + b.x + '" y2="' + b.y + '" stroke="' + color + '" stroke-width="' + width + '" opacity="' + (isDown ? '0.25' : '0.55') + '"' + dash + '/>\n';
+        if (!isDown) {
+            for (var p = 0; p < c.pts.length; p++) {
+                var pt = c.pts[p], px = a.x + (b.x - a.x) * pt.t, py = a.y + (b.y - a.y) * pt.t, pr = Math.max(1.5, 3 * (c.type === 'fiber' ? 1.3 : 1));
+                svg += '  <circle cx="' + px + '" cy="' + py + '" r="' + pr + '" fill="' + ct.co + '" opacity="0.85"/>\n';
+                svg += '  <circle cx="' + px + '" cy="' + py + '" r="' + (pr + 3) + '" fill="' + ct.co + '" opacity="0.12"/>\n';
+            }
+        }
+        var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        var lb = (c.name || 'Cable') + ' P' + c.fromPort + '\u2192P' + c.toPort + ' ' + c.bw + 'M';
+        var textColor = c.status === 'degraded' ? '#ffa726' : c.status === 'down' ? '#ff4757' : '#7b8ca3';
+        var tw2 = lb.length * 5 + 10;
+        svg += '  <rect x="' + (mx - tw2 / 2) + '" y="' + (my - 7) + '" width="' + tw2 + '" height="14" rx="3" fill="rgba(12,15,20,0.9)" stroke="rgba(42,51,72,0.5)" stroke-width="0.5"/>\n';
+        svg += '  <text x="' + mx + '" y="' + (my + 3) + '" text-anchor="middle" font-size="8" font-family="JetBrains Mono,monospace" font-weight="500" fill="' + textColor + '">' + escapeXml(lb) + '</text>\n';
+    }
+
+    for (var i = 0; i < devs.length; i++) {
+        var d = devs[i], t = DT[d.type], r = t.r;
+        var color = t.co;
+        var isSel = (d.id === sDI);
+        if (d.status === 'online') {
+            var pulse = 0.5 + 0.5 * Math.sin(d.ph);
+            svg += '  <circle cx="' + d.x + '" cy="' + d.y + '" r="' + (r + 6 + pulse * 12) + '" fill="none" stroke="' + color + '" stroke-width="1.2" opacity="' + (0.04 + pulse * 0.04) + '"/>\n';
+        }
+        if (isSel) {
+            svg += '  <circle cx="' + d.x + '" cy="' + d.y + '" r="' + (r + 5) + '" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="4,4"/>\n';
+        }
+        svg += '  <circle cx="' + d.x + '" cy="' + d.y + '" r="' + r + '" fill="#1c2230" stroke="' + (isSel ? '#fff' : 'rgba(42,51,72,0.7)') + '" stroke-width="' + (isSel ? 2.5 : 1.2) + '" filter="url(#shadow)"/>\n';
+        svg += '  <text x="' + d.x + '" y="' + (d.y + 1) + '" text-anchor="middle" dominant-baseline="central" font-size="' + (r * 0.6) + '" fill="' + color + '" font-family="Font Awesome 6 Free" font-weight="900">' + t.ic + '</text>\n';
+        var scolor = SC_OBJ[d.status];
+        svg += '  <circle cx="' + (d.x + r * 0.5) + '" cy="' + (d.y - r * 0.5) + '" r="4" fill="' + scolor + '" stroke="#1c2230" stroke-width="2"/>\n';
+        svg += '  <circle cx="' + (d.x - r * 0.5) + '" cy="' + (d.y + r * 0.5) + '" r="7" fill="rgba(250,204,21,0.85)"/>\n';
+        svg += '  <text x="' + (d.x - r * 0.5) + '" y="' + (d.y + r * 0.5 + 0.5) + '" text-anchor="middle" dominant-baseline="central" font-size="7" font-family="JetBrains Mono,monospace" font-weight="700" fill="#1a1f2e">' + d.ports + '</text>\n';
+        var cc = 0;
+        for (var j = 0; j < cabs.length; j++) { if (cabs[j].from === d.id || cabs[j].to === d.id) cc++; }
+        if (cc > 0) {
+            svg += '  <circle cx="' + (d.x + r * 0.5) + '" cy="' + (d.y + r * 0.5) + '" r="7" fill="rgba(41,182,246,0.85)"/>\n';
+            svg += '  <text x="' + (d.x + r * 0.5) + '" y="' + (d.y + r * 0.5 + 0.5) + '" text-anchor="middle" dominant-baseline="central" font-size="7" font-family="JetBrains Mono,monospace" font-weight="700" fill="#fff">' + cc + '</text>\n';
+        }
+        svg += '  <text x="' + d.x + '" y="' + (d.y + r + 7) + '" text-anchor="middle" font-size="9" font-weight="700" fill="#e4eaf2">' + escapeXml(d.name) + '</text>\n';
+        svg += '  <text x="' + d.x + '" y="' + (d.y + r + 19) + '" text-anchor="middle" font-size="7" font-family="JetBrains Mono,monospace" font-weight="500" fill="#7b8ca3">' + escapeXml(d.ip) + '</text>\n';
+    }
+    svg += '</svg>';
+
+    var blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+    var link = document.createElement('a');
+    link.download = 'nettopo-export-' + new Date().toISOString().slice(0, 10) + '.svg';
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    setTimeout(function() { URL.revokeObjectURL(link.href); }, 5000);
+    toast('SVG exported (vector, full topology)', 'ok');
+}
+
+// EXPORT PDF
+function exportPDF() {
+    if (!devs.length && !cabs.length) {
+        toast('Nothing to export', 'er');
+        return;
+    }
+    if (typeof window.jspdf === 'undefined') {
+        toast('jsPDF library not loaded. Please refresh.', 'er');
+        return;
+    }
+    toast('Generating PDF...', 'in');
+    generatePDF();
+}
+
+function generatePDF() {
+    var { jsPDF } = window.jspdf;
+    var doc = new jsPDF('p', 'mm', 'a4');
+    var pageWidth = 210, pageHeight = 297, margin = 15;
+
+    // Capture topology
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (var i = 0; i < devs.length; i++) {
+        var d = devs[i], r = DT[d.type].r + 20;
+        if (d.x - r < minX) minX = d.x - r;
+        if (d.y - r < minY) minY = d.y - r;
+        if (d.x + r > maxX) maxX = d.x + r;
+        if (d.y + r > maxY) maxY = d.y + r;
+        if (d.y + r + 30 > maxY) maxY = d.y + r + 30;
+    }
+    for (var i = 0; i < cabs.length; i++) {
+        var c = cabs[i], a = getDeviceById(c.from), b = getDeviceById(c.to);
+        if (a) { if (a.x < minX) minX = a.x; if (a.y < minY) minY = a.y; if (a.x > maxX) maxX = a.x; if (a.y > maxY) maxY = a.y; }
+        if (b) { if (b.x < minX) minX = b.x; if (b.y < minY) minY = b.y; if (b.x > maxX) maxX = b.x; if (b.y > maxY) maxY = b.y; }
+    }
+    var padding = 80;
+    minX -= padding; minY -= padding; maxX += padding; maxY += padding;
+    var tw = maxX - minX, th = maxY - minY;
+    var scale = 2;
+    var w = Math.ceil(tw * scale), h = Math.ceil(th * scale);
+    var off = document.createElement('canvas');
+    off.width = w; off.height = h;
+    var ox = off.getContext('2d');
+    var savedPX = pX, savedPY = pY, savedZM = zm;
+    var savedW = cW, savedH = cH, savedDP = dp;
+    var savedCV = cv, savedCX = cx;
+    cv = off; cx = ox; cW = w; cH = h; dp = 1;
+    pX = -minX * scale; pY = -minY * scale; zm = scale;
+    ren();
+    cv = savedCV; cx = savedCX; cW = savedW; cH = savedH; dp = savedDP;
+    pX = savedPX; pY = savedPY; zm = savedZM;
+    var imgData = off.toDataURL('image/png', 0.95);
+
+    doc.setFontSize(16);
+    doc.setTextColor('#000000');
+    doc.text('NetTopo - Network Topology Report', pageWidth / 2, margin + 5, { align: 'center' });
+    doc.setFontSize(8);
+    doc.setTextColor('#000000');
+    doc.text('Generated: ' + new Date().toLocaleString(), pageWidth / 2, margin + 10, { align: 'center' });
+
+    var maxW = pageWidth - 2 * margin, maxH = pageHeight - 2 * margin - 25;
+    var iw = tw, ih = th;
+    var s = Math.min(maxW / iw, maxH / ih);
+    iw *= s; ih *= s;
+    doc.addImage(imgData, 'PNG', (pageWidth - iw) / 2, margin + 15, iw, ih);
+
+    // Page 2: Devices
+    doc.addPage();
+    doc.setFontSize(14);
+    doc.setTextColor('#000000');
+    doc.text('Device List', margin, margin + 5);
+    var deviceRows = [];
+    for (var i = 0; i < devs.length; i++) {
+        var d = devs[i];
+        var cc = 0;
+        for (var j = 0; j < cabs.length; j++) { if (cabs[j].from === d.id || cabs[j].to === d.id) cc++; }
+        var statusLabel = d.status.charAt(0).toUpperCase() + d.status.slice(1);
+        deviceRows.push([d.name, DT[d.type].lb, statusLabel, d.ip || '-', d.ports.toString(), cc.toString()]);
+    }
+    doc.autoTable({
+        startY: margin + 10,
+        head: [['Name', 'Type', 'Status', 'IP Address', 'Ports', 'Links']],
+        body: deviceRows,
+        theme: 'plain',
+        styles: { textColor: '#000000', lineColor: '#888888', lineWidth: 0.2, fontSize: 7, cellPadding: 1.5, fillColor: '#ffffff' },
+        headStyles: { fillColor: '#e0e7ff', textColor: '#1e1b4b', fontSize: 7, fontStyle: 'bold', halign: 'center' },
+        alternateRowStyles: { fillColor: '#f8fafc' },
+        margin: { left: margin, right: margin },
+        tableWidth: pageWidth - 2 * margin,
+    });
+
+    var afterDeviceY = doc.lastAutoTable ? doc.lastAutoTable.finalY : (margin + 10 + deviceRows.length * 5);
+    var spacing = 8;
+
+    // Cables table
+    if (cabs.length > 0) {
+        var connRows = [];
+        for (var i = 0; i < cabs.length; i++) {
+            var c = cabs[i], a = getDeviceById(c.from), b = getDeviceById(c.to);
+            var an = a ? a.name : '?', bn = b ? b.name : '?';
+            var statusLabel = c.status.charAt(0).toUpperCase() + c.status.slice(1);
+            connRows.push([
+                an + ' (P' + c.fromPort + ')',
+                bn + ' (P' + c.toPort + ')',
+                CT[c.type].lb,
+                c.bw + 'Mbps',
+                statusLabel
+            ]);
+        }
+        var estimatedHeight = connRows.length * 4 + 20;
+        var remaining = pageHeight - afterDeviceY - margin - 20;
+        if (estimatedHeight < remaining) {
+            doc.setFontSize(14);
+            doc.setTextColor('#000000');
+            doc.text('Cable Connections', margin, afterDeviceY + spacing);
+            doc.autoTable({
+                startY: afterDeviceY + spacing + 5,
+                head: [['From', 'To', 'Type', 'Bandwidth', 'Status']],
+                body: connRows,
+                theme: 'plain',
+                styles: { textColor: '#000000', lineColor: '#888888', lineWidth: 0.2, fontSize: 6.5, cellPadding: 1.5, fillColor: '#ffffff' },
+                headStyles: { fillColor: '#e0e7ff', textColor: '#1e1b4b', fontSize: 6.5, fontStyle: 'bold', halign: 'center' },
+                alternateRowStyles: { fillColor: '#f8fafc' },
+                margin: { left: margin, right: margin },
+                tableWidth: pageWidth - 2 * margin,
+            });
+        } else {
+            doc.addPage();
+            doc.setFontSize(14);
+            doc.setTextColor('#000000');
+            doc.text('Cable Connections', margin, margin + 5);
+            doc.autoTable({
+                startY: margin + 10,
+                head: [['From', 'To', 'Type', 'Bandwidth', 'Status']],
+                body: connRows,
+                theme: 'plain',
+                styles: { textColor: '#000000', lineColor: '#888888', lineWidth: 0.2, fontSize: 6.5, cellPadding: 1.5, fillColor: '#ffffff' },
+                headStyles: { fillColor: '#e0e7ff', textColor: '#1e1b4b', fontSize: 6.5, fontStyle: 'bold', halign: 'center' },
+                alternateRowStyles: { fillColor: '#f8fafc' },
+                margin: { left: margin, right: margin },
+                tableWidth: pageWidth - 2 * margin,
+            });
+        }
+    }
+
+    // Selected device details
+    if (sDI !== null) {
+        var selDev = getDeviceById(sDI);
+        if (selDev) {
+            doc.addPage();
+            doc.setFontSize(14);
+            doc.setTextColor('#000000');
+            doc.text('Selected Device Details', margin, margin + 5);
+            doc.setFontSize(9);
+            var y = margin + 15;
+            var details = [
+                ['Name:', selDev.name],
+                ['Type:', DT[selDev.type].lb],
+                ['Status:', selDev.status],
+                ['IP:', selDev.ip],
+                ['Subnet:', selDev.subnet],
+                ['Gateway:', selDev.gateway],
+                ['MAC:', selDev.mac],
+                ['Ports:', selDev.ports],
+                ['CPU:', selDev.cpu + '%'],
+                ['Memory:', selDev.mem + '%'],
+                ['Temperature:', selDev.temp + '\u00b0C'],
+                ['Uptime:', selDev.uptime],
+                ['Position:', '(' + Math.round(selDev.x) + ', ' + Math.round(selDev.y) + ')']
+            ];
+            for (var i = 0; i < details.length; i++) {
+                doc.text(details[i][0] + ' ' + details[i][1], margin, y);
+                y += 6;
+            }
+        }
+    }
+
+    // Selected cable details
+    if (sCI !== null) {
+        var selCab = null;
+        for (var i = 0; i < cabs.length; i++) { if (cabs[i].id === sCI) { selCab = cabs[i]; break; } }
+        if (selCab) {
+            var a = getDeviceById(selCab.from), b = getDeviceById(selCab.to);
+            if (a && b) {
+                doc.addPage();
+                doc.setFontSize(14);
+                doc.setTextColor('#000000');
+                doc.text('Selected Cable Details', margin, margin + 5);
+                doc.setFontSize(9);
+                var y = margin + 15;
+                var details = [
+                    ['Name:', selCab.name || 'Cable'],
+                    ['Type:', CT[selCab.type].lb],
+                    ['Status:', selCab.status],
+                    ['From:', a.name + ' (P' + selCab.fromPort + ')'],
+                    ['To:', b.name + ' (P' + selCab.toPort + ')'],
+                    ['Bandwidth:', selCab.bw + ' Mbps'],
+                    ['Max:', selCab.mx + ' Mbps'],
+                    ['Latency:', selCab.lat + ' ms'],
+                    ['Length:', selCab.len + 'm']
+                ];
+                for (var i = 0; i < details.length; i++) {
+                    doc.text(details[i][0] + ' ' + details[i][1], margin, y);
+                    y += 6;
+                }
+            }
+        }
+    }
+
+    doc.save('nettopo-report-' + new Date().toISOString().slice(0, 10) + '.pdf');
+    toast('PDF exported successfully!', 'ok');
+}
+
+// EXPORT JSON
+function exportJSON() {
+    if (!devs.length && !cabs.length) {
+        toast('Nothing to export', 'er');
+        return;
+    }
+    var data = {
+        version: '1.0',
+        exportedAt: new Date().toISOString(),
+        devices: devs.map(function(d) { return JSON.parse(JSON.stringify(d)); }),
+        cables: cabs.map(function(c) { return JSON.parse(JSON.stringify(c)); }),
+        view: { panX: panX, panY: panY, zoom: zoom }
+    };
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    var link = document.createElement('a');
+    link.download = 'nettopo-export-' + new Date().toISOString().slice(0, 10) + '.json';
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    setTimeout(function() { URL.revokeObjectURL(link.href); }, 5000);
+    toast('JSON exported (' + devs.length + ' devices, ' + cabs.length + ' cables)', 'ok');
+}
+
+// IMPORT JSON
+function importJSON(file) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            var data = JSON.parse(e.target.result);
+            if (!data.devices || !data.cables) { toast('Invalid JSON format', 'er'); return; }
+            devs = []; cabs = [];
+            idC = 0; cidC = 0;
+            for (var i = 0; i < data.devices.length; i++) {
+                var d = data.devices[i];
+                if (!DT[d.type]) { toast('Unknown type: ' + d.type, 'er'); continue; }
+                if (d.id > idC) idC = d.id;
+                d.sc = 0; d.ts = 1; d.ph = Math.random() * 6.28;
+                if (!d.portTypes) { d.portTypes = []; for (var p = 1; p <= d.ports; p++) d.portTypes.push(null); }
+                devs.push(d);
+            }
+            for (var i = 0; i < data.cables.length; i++) {
+                var c = data.cables[i];
+                if (c.id > cidC) cidC = c.id;
+                if (!c.pts) c.pts = [];
+                cabs.push(c);
+            }
+            if (data.view) { panX = data.view.panX || 0; panY = data.view.panY || 0; zoom = data.view.zoom || 1.0; }
+            sDI = null; sCI = null; cSrc = null; selectedDevs = [];
+            skipAutoScroll = false;
+            uUI(true);
+            ren();
+            toast('Import successful (' + devs.length + ' devices, ' + cabs.length + ' cables)', 'ok');
+        } catch (err) {
+            toast('Failed to import JSON: ' + err.message, 'er');
+        }
+    };
+    reader.readAsText(file);
+}
+
+// ========== EXPORT EVENT LISTENERS ==========
+document.getElementById('exPNG').addEventListener('click', function() { exportPNG(); });
+document.getElementById('exSVG').addEventListener('click', function() { exportSVG(); });
+document.getElementById('exJSON').addEventListener('click', function() { exportJSON(); });
+document.getElementById('exPDF').addEventListener('click', function() { exportPDF(); });
+document.getElementById('imJSON').addEventListener('click', function() {
+    document.getElementById('fileInput').click();
+});
+document.getElementById('fileInput').addEventListener('change', function(e) {
+    if (this.files && this.files[0]) {
+        importJSON(this.files[0]);
+    }
+    this.value = '';
+});
+
+// ========== INIT ==========
+function init() {
+    buildSB();
+    rsz();
+    loadSample();
+    // Set initial snap state
+    document.getElementById('bSnap').classList.add('snap-btn-active');
+    document.getElementById('bSnap').classList.add('active');
+    snapToGrid = true;
+    requestAnimationFrame(loop);
+}
+init();
+</script>
+</body>
+</html>
