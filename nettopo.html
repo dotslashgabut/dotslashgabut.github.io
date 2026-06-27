@@ -6,6 +6,7 @@
     <title>NetTopo</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+    <!-- <link rel="stylesheet" href="libs/font-awesome/css/all.min.css" /> -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js">
@@ -2184,15 +2185,15 @@
             html += '<div class="se"><div class="stl">Performance</div>';
             html +=
                 '<div class="dr"><span class="l">CPU</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="eCPU" value="' +
-                d.cpu + '" min="0" max="100" style="width:50px"><span style="font-size:11px;color:var(--mt)">%</span><div class="pb"><div class="f" id="cpuB" style="width:' +
+                d.cpu + '" min="0" max="100" style="width:64px"><span style="font-size:11px;color:var(--mt)">%</span><div class="pb"><div class="f" id="cpuB" style="width:' +
                 d.cpu + '%;background:' + pC(d.cpu) + '"></div></div></div></div>';
             html +=
                 '<div class="dr"><span class="l">Memory</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="eMM" value="' +
-                d.mem + '" min="0" max="100" style="width:50px"><span style="font-size:11px;color:var(--mt)">%</span><div class="pb"><div class="f" id="memB" style="width:' +
+                d.mem + '" min="0" max="100" style="width:64px"><span style="font-size:11px;color:var(--mt)">%</span><div class="pb"><div class="f" id="memB" style="width:' +
                 d.mem + '%;background:' + pC(d.mem) + '"></div></div></div></div>';
             html +=
                 '<div class="dr"><span class="l">Temperature</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="eTP" value="' +
-                d.temp + '" min="0" max="120" style="width:50px"><span style="font-size:11px;color:var(--mt)">\u00b0C</span></div></div></div>';
+                d.temp + '" min="0" max="120" style="width:64px"><span style="font-size:11px;color:var(--mt)">\u00b0C</span></div></div></div>';
             html += '<div class="se"><div class="stl">Position</div><div class="dr"><span class="l">X</span><span class="v">' +
                 Math.round(d.x) + '</span></div><div class="dr"><span class="l">Y</span><span class="v">' + Math.round(d
                 .y) + '</span></div></div>';
@@ -2405,11 +2406,11 @@
             html += '<div class="dr"><span class="l">Destination Port</span><select class="es" id="eTP2" style="width:120px">' +
                 tOpts + '</select></div></div>';
             html += '<div class="se"><div class="stl">Properties</div><div class="dr"><span class="l">Length</span><span class="v">' +
-                c.len + 'm</span></div><div class="dr"><span class="l">Latency</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="eLT" value="' +
+                c.len + 'cm</span></div><div class="dr"><span class="l">Latency</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="eLT" value="' +
                 c.lat + '" min="0" max="1000" style="width:55px"><span style="font-size:11px;color:var(--mt)">ms</span></div></div></div>';
             html += '<div class="se"><div class="stl">Bandwidth</div><div class="dr"><span class="l">Current</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="eBW" value="' +
-                c.bw + '" min="0" max="10000" style="width:55px"><span style="font-size:11px;color:var(--mt)">Mbps</span></div></div><div class="dr"><span class="l">Maximum</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="eMB" value="' +
-                c.mx + '" min="1" max="100000" style="width:55px"><span style="font-size:11px;color:var(--mt)">Mbps</span></div></div>';
+                c.bw + '" min="0" max="10000" style="width:80px"><span style="font-size:11px;color:var(--mt)">Mbps</span></div></div><div class="dr"><span class="l">Maximum</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="eMB" value="' +
+                c.mx + '" min="1" max="100000" style="width:80px"><span style="font-size:11px;color:var(--mt)">Mbps</span></div></div>';
             html +=
                 '<div class="dr"><span class="l">Utilization</span><div class="pb" style="flex:1"><div class="f" id="bwBar" style="width:' +
                 Math.min(100, bwPct) + '%;background:' + bwCol + '"></div></div><span class="v" id="bwPct" style="color:' +
