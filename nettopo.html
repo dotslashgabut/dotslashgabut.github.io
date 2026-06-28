@@ -5,13 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NetTopo</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <!-- <link rel="stylesheet" href="libs/font-awesome/6.7.2/css/all.min.css" />
-    <script src="libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
-    <script src="libs/jspdf-autotable/5.0.8/jspdf.plugin.autotable.min.js"></script> -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@5.0.8/dist/jspdf.plugin.autotable.min.js"></script>
+    </script>
     <style>
+        /* (CSS sama seperti sebelumnya, tidak diubah) */
         :root {
             --bg: #0c0f14;
             --sf: #141820;
@@ -684,6 +683,29 @@
             color: var(--mt);
             margin-bottom: 6px;
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+        }
+        .stl .toggle-icon {
+            font-size: 12px;
+            transition: transform 0.2s;
+            color: var(--mt);
+        }
+        .stl .toggle-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+        .se-collapsible .se-body {
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.25s ease;
+            max-height: 0;
+            opacity: 0;
+        }
+        .se-collapsible.open .se-body {
+            max-height: 2000px;
+            opacity: 1;
         }
         .dr {
             display: flex;
@@ -840,7 +862,7 @@
             outline: 0;
             cursor: pointer;
             flex: 1;
-            max-width: 120px;
+            max-width: 100px;
             transition: opacity .2s;
         }
         .port-type-row .pt-select:disabled {
@@ -851,10 +873,31 @@
         .port-type-row .pt-select:focus:not(:disabled) {
             border-color: var(--ac);
         }
+        .port-type-row .pt-vlan {
+            background: var(--sf);
+            border: 1px solid var(--bd);
+            border-radius: 4px;
+            padding: 3px 6px;
+            color: var(--fg);
+            font: 500 11px/1.4 'JetBrains Mono', monospace;
+            outline: 0;
+            width: 56px;
+            transition: border-color .15s;
+            flex-shrink: 0;
+        }
+        .port-type-row .pt-vlan:focus {
+            border-color: var(--ac);
+        }
+        .port-type-row .pt-vlan:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            border-color: var(--bd);
+        }
         .port-type-row .pt-status {
             font-size: 10px;
             color: var(--mt);
             margin-left: auto;
+            flex-shrink: 0;
         }
         .port-type-row .pt-status.used {
             color: var(--ac);
@@ -912,6 +955,141 @@
             color: var(--mt);
             font-style: italic;
             padding: 4px 0;
+        }
+        .profile-item {
+            background: var(--sf);
+            border: 1px solid var(--bd);
+            border-radius: 5px;
+            padding: 8px 10px;
+            margin-bottom: 4px;
+        }
+        .profile-item .profile-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--mt);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .profile-item .profile-header .del-prof {
+            color: var(--dn);
+            cursor: pointer;
+            font-size: 11px;
+            padding: 0 4px;
+        }
+        .profile-item .profile-header .del-prof:hover {
+            opacity: .7;
+        }
+        .profile-item .ei-sm {
+            font-size: 11px;
+            padding: 4px 6px;
+            width: 100%;
+        }
+        .profile-item .ei-sm-pw {
+            font-size: 11px;
+            padding: 4px 6px;
+            width: calc(100% - 28px);
+        }
+        .profile-item .pw-toggle {
+            background: var(--cd);
+            border: 1px solid var(--bd);
+            border-radius: 4px;
+            color: var(--mt);
+            padding: 3px 6px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        .profile-item .pw-toggle:hover {
+            color: var(--fg);
+        }
+        .add-prof {
+            background: var(--cd);
+            border: 1px dashed var(--bd);
+            border-radius: 5px;
+            padding: 6px;
+            text-align: center;
+            color: var(--mt);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all .15s;
+            width: 100%;
+        }
+        .add-prof:hover {
+            border-color: var(--ac);
+            color: var(--ac);
+        }
+        .dp-connected-info {
+            font-size: 11px;
+            color: var(--mt);
+            padding: 2px 0;
+        }
+        .dp-connected-info .ci-label {
+            color: var(--mt);
+            font-weight: 600;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .dp-connected-info .ci-value {
+            color: var(--fg);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+        }
+        .dp-connected-info .ci-value.accent {
+            color: var(--ac);
+        }
+        .dp-connected-info .ci-value.warn {
+            color: var(--wn);
+        }
+        .dp-connected-info .ci-value.danger {
+            color: var(--dn);
+        }
+        /* Untuk connected cables multi-baris */
+        .conn-cable-item {
+            cursor: pointer;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(42, 51, 72, .3);
+        }
+        .conn-cable-item .conn-main {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--fg);
+        }
+        .conn-cable-item .conn-main .conn-dot {
+            display: inline-block;
+            width: 12px;
+            height: 2px;
+            border-radius: 1px;
+            flex-shrink: 0;
+        }
+        .conn-cable-item .conn-main .conn-name {
+            flex: 1;
+        }
+        .conn-cable-item .conn-main .conn-bw {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--mt);
+        }
+        .conn-cable-item .conn-detail {
+            font-size: 10px;
+            color: var(--mt);
+            padding-left: 20px;
+            margin-top: 2px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .conn-cable-item .conn-detail .detail-item {
+            display: inline-block;
+            margin-right: 12px;
+        }
+        .conn-cable-item .conn-detail .detail-item .dl-label {
+            color: var(--mt);
+            font-weight: 600;
+        }
+        .conn-cable-item .conn-detail .detail-item .dl-value {
+            color: var(--fg);
         }
     </style>
 </head>
@@ -1078,6 +1256,9 @@
         var SC_OBJ = { online: '#00d48e', warning: '#ffa726', offline: '#ff4757' };
         var PORT_TYPES = ['ethernet', 'fiber', 'wireless', 'other'];
         var PORT_COLORS = { ethernet: '#29b6f6', fiber: '#c084fc', wireless: '#ffa726', other: '#888888' };
+        var OP_MODES = ['AP Client Router', 'AP Router', 'Access Point', 'Multi-SSID', 'Repeater (Range Extender)',
+            'Bridge with AP', 'Client', 'Other'
+        ];
 
         // ========== STATE ==========
         var devs = [],
@@ -1115,6 +1296,9 @@
         var GRID_SIZE = 40;
         var __exportMode = false;
         var __exportTheme = 'dark';
+        var _ssidCounter = 0,
+            _pppoeCounter = 0,
+            _vlanCounter = 0;
 
         var cv = document.getElementById('dc');
         var cx = cv.getContext('2d');
@@ -1201,6 +1385,50 @@
             return null;
         }
 
+        function getCablesForDevice(devId) {
+            var r = [];
+            for (var i = 0; i < cabs.length; i++) {
+                if (cabs[i].from === devId || cabs[i].to === devId) r.push(cabs[i]);
+            }
+            return r;
+        }
+
+        function getSsidProfiles(devId) {
+            var d = getDeviceById(devId);
+            if (!d) return [];
+            return d.ssidProfiles || [];
+        }
+
+        function getPppoeProfiles(devId) {
+            var d = getDeviceById(devId);
+            if (!d) return [];
+            return d.pppoeProfiles || [];
+        }
+
+        function getVlanProfiles(devId) {
+            var d = getDeviceById(devId);
+            if (!d) return [];
+            return d.vlanProfiles || [];
+        }
+
+        function getPortTypeObj(dev, portNum) {
+            if (!dev || !dev.portTypes) return null;
+            var pt = dev.portTypes[portNum - 1];
+            if (typeof pt === 'string') return { type: pt, vlan: '' };
+            if (pt && typeof pt === 'object') return pt;
+            return null;
+        }
+
+        function getPortType(dev, portNum) {
+            var o = getPortTypeObj(dev, portNum);
+            return o ? o.type : null;
+        }
+
+        function getPortVlan(dev, portNum) {
+            var o = getPortTypeObj(dev, portNum);
+            return o ? (o.vlan || '') : '';
+        }
+
         function mkD(t, x, y) {
             var d = DT[t];
             idC++;
@@ -1227,16 +1455,25 @@
                 sc: 0,
                 ts: 1,
                 ph: Math.random() * 6.28,
-                notes: ''
+                notes: '',
+                operationMode: '',
+                ssidProfiles: [],
+                lan: { ip: '', subnet: '', cidr: '' },
+                dhcp: { startIP: '', endIP: '', gateway: '', domain: '', primaryDNS: '', secondaryDNS: '' },
+                pppoeProfiles: [],
+                vlanProfiles: []
             };
         }
 
-        function setPortType(devId, portNum, type) {
+        function setPortTypeVlan(devId, portNum, type, vlan) {
             var dev = getDeviceById(devId);
             if (!dev) return false;
             if (!dev.portTypes) { dev.portTypes = [];
                 for (var p = 1; p <= dev.ports; p++) dev.portTypes.push(null); }
-            if (portNum >= 1 && portNum <= dev.ports) { dev.portTypes[portNum - 1] = type; return true; }
+            if (portNum >= 1 && portNum <= dev.ports) {
+                dev.portTypes[portNum - 1] = { type: type || null, vlan: vlan || '' };
+                return true;
+            }
             return false;
         }
 
@@ -1251,26 +1488,59 @@
             return u;
         }
 
-        function nextFree(devId, excCabId) {
+        // Modified: nextFree now respects cable type and source/destination role
+        function nextFree(devId, excCabId, cableType, isSource) {
             var d = getDeviceById(devId);
             if (!d) return -1;
             var u = usedPorts(devId, excCabId);
-            for (var p = 1; p <= d.ports; p++) { if (!u[p]) return p; }
+            var hasSsid = (d.ssidProfiles && d.ssidProfiles.length > 0);
+        
+            for (var p = 1; p <= d.ports; p++) {
+                var ptObj = getPortTypeObj(d, p);
+                var pt = ptObj ? ptObj.type : null;
+                if (cableType === 'wireless') {
+                    // For wireless:
+                    // Source: allow used port if device has SSID (AP mode)
+                    // Destination: port must be unused
+                    var isUsed = u[p] ? true : false;
+                    if (pt === 'wireless' || pt === null) {
+                        if (isSource) {
+                            if (!isUsed || hasSsid) {
+                                return p;
+                            }
+                        } else {
+                            if (!isUsed) {
+                                return p;
+                            }
+                        }
+                    }
+                } else {
+                    // For other cable types: port must match type or be empty, and unused
+                    if (u[p]) continue;
+                    if (pt === cableType || pt === null) {
+                        return p;
+                    }
+                }
+            }
             return -1;
         }
-
+        
+        // Modified: mkC uses isSource parameter
         function mkC(f, t, tp) {
-            var fp = nextFree(f, -1),
-                tp2 = nextFree(t, -1);
-            if (fp === -1 || tp2 === -1) { toast('Ports are full on one of the devices', 'er'); return null; }
+            var fp = nextFree(f, -1, tp, true);  // source
+            var tp2 = nextFree(t, -1, tp, false); // destination
+            if (fp === -1 || tp2 === -1) {
+                var msg = 'No suitable ' + (tp === 'wireless' ? 'wireless/empty' : tp) + ' port available on one of the devices';
+                toast(msg, 'er');
+                return null;
+            }
             cidC++;
             var a = getDeviceById(f),
                 b = getDeviceById(t);
             var dx = a.x - b.x,
                 dy = a.y - b.y,
                 pts = [];
-            for (var i = 0, n = 3 + Math.floor(Math.random() * 3); i < n; i++) pts.push({ t: Math.random(), sp: .2 +
-                    Math.random() * .3 });
+            for (var i = 0, n = 3 + Math.floor(Math.random() * 3); i < n; i++) pts.push({ t: Math.random(), sp: .2 + Math.random() * .3 });
             return {
                 id: cidC,
                 from: f,
@@ -1284,7 +1554,11 @@
                 lat: Math.floor(Math.random() * 50) + 1,
                 len: Math.round(Math.hypot(dx, dy)),
                 pts: pts,
-                name: 'Cable-' + String(cidC).padStart(3, '0')
+                name: 'Cable-' + String(cidC).padStart(3, '0'),
+                ssid: '',
+                pppoe: '',
+                vlanSource: '',
+                vlanDest: ''
             };
         }
 
@@ -1924,7 +2198,9 @@
                         var other = getDeviceById(otherId);
                         if (other) destName = other.name;
                     }
-                    var pt = (portTypes && portTypes[p - 1]) ? portTypes[p - 1] : null;
+                    var ptObj = getPortTypeObj(d, p);
+                    var pt = ptObj ? ptObj.type : null;
+                    var vlan = ptObj ? ptObj.vlan : '';
                     var displayType = cableType || pt;
                     var bgColor, borderColor, textColor;
                     if (!isUsed && !displayType) {
@@ -1952,7 +2228,7 @@
                         title += ' → ' + destName + ' (' + (cableType ? CT[cableType].lb : '?') + ', ' + cableStatus +
                             ')';
                     } else if (displayType) {
-                        title += ' (' + displayType + ', empty)';
+                        title += ' (' + displayType + (vlan ? ', VLAN ' + vlan : '') + ', empty)';
                     } else {
                         title += ' (empty)';
                     }
@@ -1978,10 +2254,11 @@
                 var isMultiSel = (selectedDevs.indexOf(d.id) !== -1);
                 var isActive = (d.id === sDI || isMultiSel);
                 var hasNote = d.notes && d.notes.trim().length > 0;
+                var opMode = d.operationMode ? ' [' + d.operationMode + ']' : '';
                 h += '<div class="li' + (isActive ? ' s' : '') + '" data-d="' + d.id + '" id="dev-' + d.id + '">' +
                     '<span class="md" style="background:' + SC_OBJ[d.status] + '"></span>' +
                     '<span class="nm">' + d.name + (isMultiSel ? ' ✦' : '') + (hasNote ?
-                        ' <i class="fa-regular fa-note-sticky note-icon"></i>' : '') + '</span>' +
+                        ' <i class="fa-regular fa-note-sticky note-icon"></i>' : '') + opMode + '</span>' +
                     '<span class="mt">' + d.ports + 'P ' + cc +
                     '<i class="fa-solid fa-link" style="font-size:9px;margin-left:2px"></i></span>' +
                     '</div>' +
@@ -2006,8 +2283,9 @@
                         info += ' → ' + (other ? other.name : '?') + ' (' + CT[cable.type].lb + ', ' + cable
                             .status + ', ' + cable.bw + 'Mbps)';
                     } else {
-                        var pt = (d.portTypes && d.portTypes[portNum - 1]) ? d.portTypes[portNum - 1] : null;
-                        info += ' (empty' + (pt ? ', type: ' + pt : '') + ')';
+                        var pt = getPortType(d, portNum);
+                        var v = getPortVlan(d, portNum);
+                        info += ' (empty' + (pt ? ', type: ' + pt : '') + (v ? ', VLAN: ' + v : '') + ')';
                     }
                     toast(info, 'in');
                     sDI = devId;
@@ -2057,10 +2335,16 @@
                 var an = a ? a.name : '?',
                     bn = b ? b.name : '?';
                 var isActive = (c.id === sCI);
+                var extra = '';
+                if (c.type === 'wireless' && c.ssid) extra = ' SSID:' + c.ssid;
+                else if ((c.type === 'ethernet' || c.type === 'fiber') && c.pppoe) extra = ' PPPoE:' + c.pppoe;
+                else if (c.type === 'other' && c.ssid) extra = ' SSID:' + c.ssid;
+                if (c.vlanSource) extra += ' VLANsrc:' + c.vlanSource;
+                if (c.vlanDest) extra += ' VLANdst:' + c.vlanDest;
                 h += '<div class="li' + (isActive ? ' s' : '') + '" data-c="' + c.id + '" id="cbl-' + c.id + '">' +
                     '<span class="md" style="background:' + ct.co + '"></span>' +
                     '<span class="nm">' + (c.name || 'Cable') + ' ' + an + ' \u2192 ' + bn +
-                    '</span><span class="mt">P' + c.fromPort + '\u2192P' + c.toPort + '</span></div>';
+                    extra + '</span><span class="mt">P' + c.fromPort + '\u2192P' + c.toPort + '</span></div>';
             }
             el.innerHTML = h;
             var lis = el.querySelectorAll('.li');
@@ -2105,6 +2389,16 @@
             return h;
         }
 
+        // --- helper: collapsible section ---
+        function collapsibleSection(title, id, content, defaultOpen) {
+            var openClass = defaultOpen ? ' open' : '';
+            return '<div class="se se-collapsible' + openClass + '" data-section="' + id + '">' +
+                '<div class="stl" data-toggle="' + id + '">' + title +
+                ' <span class="toggle-icon' + (defaultOpen ? '' : ' collapsed') + '"><i class="fa-solid fa-chevron-down"></i></span></div>' +
+                '<div class="se-body">' + content + '</div></div>';
+        }
+
+        // --- build device detail ---
         var _sDD = function(d) {
             if (dpPanel.classList.contains('dp-auto-hide') && !manualToggle) return;
             document.getElementById('dE').style.display = 'none';
@@ -2126,13 +2420,24 @@
             for (var i = 0; i < tkeys.length; i++) { var k = tkeys[i],
                     sel = d.type === k ? ' selected' : '';
                 tyO += '<option value="' + k + '"' + sel + '>' + DT[k].lb + '</option>'; }
+
+            var opModeOpts = '';
+            for (var i = 0; i < OP_MODES.length; i++) {
+                var sel = d.operationMode === OP_MODES[i] ? ' selected' : '';
+                opModeOpts += '<option value="' + OP_MODES[i] + '"' + sel + '>' + OP_MODES[i] + '</option>';
+            }
+            var otherMode = (d.operationMode && OP_MODES.indexOf(d.operationMode) === -1) ? d.operationMode : '';
+
             var html = '';
             var cidr = maskToCidr(d.subnet) || '24';
+            // Header
             html += '<div class="dh"><div class="di" style="background:' + t.bg + ';color:' + t.co +
                 '"><i class="fa-solid ' + t.fa + '"></i></div><div class="dht" style="flex:1;min-width:0"><input class="ei" id="eN" value="' +
                 d.name + '" style="font:700 15px/1.3 \'Space Grotesk\',sans-serif;margin-bottom:3px"><span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><select class="es" id="eT" style="font-size:12px">' +
                 tyO + '</select><select class="es" id="eS" style="font-size:12px">' + stO +
                 '</select></span></div></div>';
+
+            // === Network Configuration (existing) ===
             html += '<div class="se"><div class="stl">Network Configuration</div>';
             html += erR('IP Address', '<input class="ei eis" id="eIP" value="' + d.ip + '">');
             html +=
@@ -2144,26 +2449,30 @@
                 '" style="font-size:11px">');
             html += '<div class="dr"><span class="l">Uptime</span><span class="v">' + d.uptime +
             '</span></div></div>';
-            html += '<div class="se"><div class="stl">Ports (' + usedCount + '/' + d.ports + ' used)</div>';
-            html +=
+
+            // === Ports ===
+            var portHtml = '';
+            portHtml +=
                 '<div class="dr"><span class="l">Total Ports</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="ePt" value="' +
                 d.ports + '" min="1" max="256" style="width:55px"><div class="pb"><div class="f" style="width:' +
                 Math.min(100, portPct) + '%;background:' + pC(portPct) + '"></div></div><span class="v" style="color:' +
                 pC(portPct) + ';min-width:32px">' + portPct + '%</span></div></div>';
-            html += '<div class="dr"><span class="l">Used</span><span class="v">' + usedCount +
+            portHtml += '<div class="dr"><span class="l">Used</span><span class="v">' + usedCount +
                 ' port</span></div>';
-            html += '<div class="dr"><span class="l">Free</span><span class="v" style="color:var(--ac)">' +
-                Math.max(0, freeCount) + ' port</span></div></div>';
+            portHtml += '<div class="dr"><span class="l">Free</span><span class="v" style="color:var(--ac)">' +
+                Math.max(0, freeCount) + ' port</span></div>';
 
-            html += '<div class="se"><div class="stl">Port Types</div>';
+            // Port Types with VLAN input
             var portTypes = d.portTypes || [];
             for (var p = 1; p <= d.ports; p++) {
                 var cable = getCableOnPort(d.id, p),
                     isUsed = cable ? true : false,
                     cableType = cable ? cable.type : null;
-                var pt = (portTypes && portTypes[p - 1]) ? portTypes[p - 1] : null,
-                    selectedType = cableType || pt,
-                    statusLabel = isUsed ? '(used)' : '(empty)';
+                var ptObj = getPortTypeObj(d, p);
+                var pt = ptObj ? ptObj.type : null;
+                var vlan = ptObj ? ptObj.vlan : '';
+                var selectedType = cableType || pt;
+                var statusLabel = isUsed ? '(used)' : '(empty)';
                 var selE = (selectedType === 'ethernet') ? ' selected' : '',
                     selF = (selectedType === 'fiber') ? ' selected' : '',
                     selW = (selectedType === 'wireless') ? ' selected' : '',
@@ -2171,60 +2480,186 @@
                     selN = (!selectedType) ? ' selected' : '';
                 var disabledAttr = isUsed ? ' disabled' : '',
                     statusClass = isUsed ? 'used' : '';
-                html += '<div class="port-type-row"><span class="pt-label">P' + p +
+                portHtml += '<div class="port-type-row"><span class="pt-label">P' + p +
                     '</span><select class="pt-select" data-dev="' + d.id + '" data-port="' + p + '"' +
                     disabledAttr + '><option value=""' + selN + '>Empty</option><option value="ethernet"' +
                     selE + ' style="color:#29b6f6;">Ethernet</option><option value="fiber"' + selF +
                     ' style="color:#c084fc;">Fiber</option><option value="wireless"' + selW +
                     ' style="color:#ffa726;">Wireless</option><option value="other"' + selO +
-                    ' style="color:#888888;">Other</option></select><span class="pt-status ' + statusClass +
-                    '">' + statusLabel + '</span></div>';
+                    ' style="color:#888888;">Other</option></select>' +
+                    '<input class="pt-vlan" data-dev="' + d.id + '" data-port="' + p +
+                    '" value="' + vlan + '" placeholder="VLAN" ' + disabledAttr + '>' +
+                    '<span class="pt-status ' + statusClass + '">' + statusLabel + '</span></div>';
             }
-            html += '</div>';
+            html += collapsibleSection('Ports (' + usedCount + '/' + d.ports + ' used)', 'ports', portHtml, true);
 
-            html += '<div class="se"><div class="stl">Performance</div>';
-            html +=
+            // === Operation Mode ===
+            var opHtml = '';
+            opHtml +=
+                '<div class="dr"><span class="l">Operation Mode</span><select class="es" id="eOpMode" style="width:180px">' +
+                opModeOpts + '</select></div>';
+            opHtml +=
+                '<div class="dr" id="opModeOtherRow" style="' + (OP_MODES.indexOf(d.operationMode) === -1 &&
+                    d.operationMode ? '' : 'display:none') + '"><span class="l">Other Mode</span><input class="ei eis" id="eOpModeOther" value="' +
+                otherMode + '" placeholder="Enter custom mode"></div>';
+            html += collapsibleSection('Operation Mode', 'opmode', opHtml, false);
+
+            // === Access Point Settings (SSID profiles) ===
+            var ssidHtml = '';
+            var ssids = d.ssidProfiles || [];
+            for (var i = 0; i < ssids.length; i++) {
+                var sp = ssids[i];
+                var pwVis = sp._pwVis || false;
+                ssidHtml += '<div class="profile-item" data-ssid-idx="' + i + '">' +
+                    '<div class="profile-header"><span>SSID #' + (i + 1) +
+                    '</span><span class="del-prof" data-ssid-del="' + i + '"><i class="fa-regular fa-trash-can"></i></span></div>' +
+                    '<div class="dr" style="border:none;padding:2px 0"><span class="l" style="font-size:10px">SSID</span><input class="ei ei-sm" data-ssid-field="' +
+                    i + '" value="' + (sp.ssid || '') + '" placeholder="SSID name"></div>' +
+                    '<div class="dr" style="border:none;padding:2px 0"><span class="l" style="font-size:10px">Password</span><div style="display:flex;gap:4px;align-items:center;flex:1"><input class="ei ei-sm-pw" data-ssid-pw="' +
+                    i + '" type="' + (pwVis ? 'text' : 'password') + '" value="' + (sp.password || '') +
+                    '" placeholder="Password"><button class="pw-toggle" data-ssid-pw-toggle="' + i +
+                    '"><i class="fa-solid ' + (pwVis ? 'fa-eye-slash' : 'fa-eye') + '"></i></button></div></div>' +
+                    '</div>';
+            }
+            ssidHtml += '<button class="add-prof" id="addSsid"><i class="fa-solid fa-plus"></i> Add SSID</button>';
+            html += collapsibleSection('Access Point Settings (' + ssids.length + ' SSID)', 'ssid', ssidHtml, false);
+
+            // === LAN ===
+            var lan = d.lan || { ip: '', subnet: '', cidr: '' };
+            var lanHtml = '';
+            lanHtml += erR('IP Address', '<input class="ei eis" id="eLanIP" value="' + (lan.ip || '') + '">');
+            lanHtml += erR('Subnet Mask', '<input class="ei eis" id="eLanSubnet" value="' + (lan.subnet || '') +
+                '">');
+            lanHtml += erR('CIDR', '<input class="ei eis" id="eLanCidr" value="' + (lan.cidr || '') + '">');
+            html += collapsibleSection('LAN', 'lan', lanHtml, false);
+
+            // === DHCP Server ===
+            var dhcp = d.dhcp || { startIP: '', endIP: '', gateway: '', domain: '', primaryDNS: '', secondaryDNS: '' };
+            var dhcpHtml = '';
+            dhcpHtml += erR('Start IP', '<input class="ei eis" id="eDhcpStart" value="' + (dhcp.startIP || '') +
+                '">');
+            dhcpHtml += erR('End IP', '<input class="ei eis" id="eDhcpEnd" value="' + (dhcp.endIP || '') + '">');
+            dhcpHtml += erR('Gateway', '<input class="ei eis" id="eDhcpGateway" value="' + (dhcp.gateway || '') +
+                '">');
+            dhcpHtml += erR('Domain', '<input class="ei eis" id="eDhcpDomain" value="' + (dhcp.domain || '') + '">');
+            dhcpHtml += erR('Primary DNS', '<input class="ei eis" id="eDhcpPrimary" value="' + (dhcp.primaryDNS ||
+                    '') + '">');
+            dhcpHtml += erR('Secondary DNS', '<input class="ei eis" id="eDhcpSecondary" value="' + (dhcp
+                .secondaryDNS || '') + '">');
+            html += collapsibleSection('DHCP Server', 'dhcp', dhcpHtml, false);
+
+            // === PPPoE Profiles ===
+            var pppoeHtml = '';
+            var pppoes = d.pppoeProfiles || [];
+            for (var i = 0; i < pppoes.length; i++) {
+                var pp = pppoes[i];
+                var pwVis = pp._pwVis || false;
+                pppoeHtml += '<div class="profile-item" data-pppoe-idx="' + i + '">' +
+                    '<div class="profile-header"><span>PPPoE #' + (i + 1) +
+                    '</span><span class="del-prof" data-pppoe-del="' + i +
+                    '"><i class="fa-regular fa-trash-can"></i></span></div>' +
+                    '<div class="dr" style="border:none;padding:2px 0"><span class="l" style="font-size:10px">Username</span><input class="ei ei-sm" data-pppoe-user="' +
+                    i + '" value="' + (pp.username || '') + '" placeholder="Username"></div>' +
+                    '<div class="dr" style="border:none;padding:2px 0"><span class="l" style="font-size:10px">Password</span><div style="display:flex;gap:4px;align-items:center;flex:1"><input class="ei ei-sm-pw" data-pppoe-pw="' +
+                    i + '" type="' + (pwVis ? 'text' : 'password') + '" value="' + (pp.password || '') +
+                    '" placeholder="Password"><button class="pw-toggle" data-pppoe-pw-toggle="' + i +
+                    '"><i class="fa-solid ' + (pwVis ? 'fa-eye-slash' : 'fa-eye') + '"></i></button></div></div>' +
+                    '</div>';
+            }
+            pppoeHtml += '<button class="add-prof" id="addPppoe"><i class="fa-solid fa-plus"></i> Add PPPoE</button>';
+            html += collapsibleSection('PPPoE Profile (' + pppoes.length + ')', 'pppoe', pppoeHtml, false);
+
+            // === VLAN Profiles ===
+            var vlanHtml = '';
+            var vlans = d.vlanProfiles || [];
+            for (var i = 0; i < vlans.length; i++) {
+                var vp = vlans[i];
+                vlanHtml += '<div class="profile-item" data-vlan-idx="' + i + '">' +
+                    '<div class="profile-header"><span>VLAN #' + (i + 1) +
+                    '</span><span class="del-prof" data-vlan-del="' + i +
+                    '"><i class="fa-regular fa-trash-can"></i></span></div>' +
+                    '<div class="dr" style="border:none;padding:2px 0"><span class="l" style="font-size:10px">VLAN ID</span><input class="ei ei-sm" data-vlan-id="' +
+                    i + '" value="' + (vp.vlanId || '') + '" placeholder="VLAN ID (e.g. 10)"></div>' +
+                    '</div>';
+            }
+            vlanHtml += '<button class="add-prof" id="addVlan"><i class="fa-solid fa-plus"></i> Add VLAN</button>';
+            html += collapsibleSection('VLAN (' + vlans.length + ')', 'vlan', vlanHtml, false);
+
+            // === Performance ===
+            var perfHtml = '';
+            perfHtml +=
                 '<div class="dr"><span class="l">CPU</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="eCPU" value="' +
                 d.cpu + '" min="0" max="100" style="width:64px"><span style="font-size:11px;color:var(--mt)">%</span><div class="pb"><div class="f" id="cpuB" style="width:' +
                 d.cpu + '%;background:' + pC(d.cpu) + '"></div></div></div></div>';
-            html +=
+            perfHtml +=
                 '<div class="dr"><span class="l">Memory</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="eMM" value="' +
                 d.mem + '" min="0" max="100" style="width:64px"><span style="font-size:11px;color:var(--mt)">%</span><div class="pb"><div class="f" id="memB" style="width:' +
                 d.mem + '%;background:' + pC(d.mem) + '"></div></div></div></div>';
-            html +=
+            perfHtml +=
                 '<div class="dr"><span class="l">Temperature</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="eTP" value="' +
-                d.temp + '" min="0" max="120" style="width:64px"><span style="font-size:11px;color:var(--mt)">\u00b0C</span></div></div></div>';
-            html += '<div class="se"><div class="stl">Position</div><div class="dr"><span class="l">X</span><span class="v">' +
-                Math.round(d.x) + '</span></div><div class="dr"><span class="l">Y</span><span class="v">' + Math.round(d
-                .y) + '</span></div></div>';
+                d.temp + '" min="0" max="120" style="width:64px"><span style="font-size:11px;color:var(--mt)">\u00b0C</span></div></div>';
+            html += collapsibleSection('Performance', 'perf', perfHtml, false);
 
-            html +=
-                '<div class="se"><div class="stl">Notes</div><textarea class="ei" id="eNotes" style="min-height:60px;resize:vertical;font-family:\'Space Grotesk\',sans-serif;font-size:12px;" placeholder="Add notes about this device...">' +
-                (d.notes || '') + '</textarea></div>';
+            // === Position ===
+            var posHtml = '';
+            posHtml += '<div class="dr"><span class="l">X</span><span class="v">' + Math.round(d.x) +
+            '</span></div>';
+            posHtml += '<div class="dr"><span class="l">Y</span><span class="v">' + Math.round(d.y) +
+            '</span></div>';
+            html += collapsibleSection('Position', 'pos', posHtml, false);
 
-            if (usedCount > 0) {
-                html += '<div class="se"><div class="stl">Connected Cables</div>';
-                for (var i = 0; i < cabs.length; i++) {
-                    var c = cabs[i];
-                    if (c.from !== d.id && c.to !== d.id) continue;
-                    var other = getDeviceById(c.from === d.id ? c.to : c.from),
-                        ct = CT[c.type],
-                        myP = c.from === d.id ? c.fromPort : c.toPort;
-                    var dashStyle = ct.dh.length ?
-                        'background:repeating-linear-gradient(90deg,' + ct.co + ' 0,' + ct.co + ' 4px,transparent 4px,transparent 7px)' :
-                        'background:' + ct.co;
-                    html += '<div class="dr" style="cursor:pointer;padding:5px 0" data-cid="' + c.id +
-                        '"><span class="l" style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:2px;' +
-                        dashStyle + ';display:inline-block;border-radius:1px"></span>' + (other ? other.name :
-                        '?') + ' (P' + myP + ')</span><span class="v">' + c.bw + 'Mbps</span></div>';
+            // === Notes ===
+            var notesHtml = '<textarea class="ei" id="eNotes" style="min-height:60px;resize:vertical;font-family:\'Space Grotesk\',sans-serif;font-size:12px;" placeholder="Add notes about this device...">' +
+                (d.notes || '') + '</textarea>';
+            html += collapsibleSection('Notes', 'notes', notesHtml, false);
+
+            // === Connected Cables (enhanced - multi-line) ===
+            var connCabs = getCablesForDevice(d.id);
+            var connHtml = '';
+            if (connCabs.length > 0) {
+                for (var i = 0; i < connCabs.length; i++) {
+                    var c = connCabs[i];
+                    var other = getDeviceById(c.from === d.id ? c.to : c.from);
+                    var myP = c.from === d.id ? c.fromPort : c.toPort;
+                    var extraHtml = '';
+                    var extras = [];
+                    if (c.type === 'wireless' && c.ssid) extras.push({ label: 'SSID', value: c.ssid });
+                    if (c.vlanSource) extras.push({ label: 'VLANsrc', value: c.vlanSource });
+                    if (c.vlanDest) extras.push({ label: 'VLANdst', value: c.vlanDest });
+                    if (c.pppoe) extras.push({ label: 'PPPoE', value: c.pppoe });
+                    if (extras.length) {
+                        extraHtml = '<div class="conn-detail">' +
+                            extras.map(function(e) {
+                                return '<span class="detail-item"><span class="dl-label">' + e
+                                    .label + ':</span> <span class="dl-value">' + e.value +
+                                    '</span></span>';
+                            }).join('') +
+                            '</div>';
+                    }
+                    var dotColor = CT[c.type].co;
+                    connHtml += '<div class="conn-cable-item" data-cid="' + c.id + '">' +
+                        '<div class="conn-main">' +
+                        '<span class="conn-dot" style="background:' + dotColor + ';"></span>' +
+                        '<span class="conn-name">' + (other ? other.name : '?') + ' (P' + myP + ')</span>' +
+                        '<span class="conn-bw">' + c.bw + 'Mbps</span>' +
+                        '</div>' +
+                        extraHtml +
+                        '</div>';
                 }
-                html += '</div>';
+            } else {
+                connHtml = '<div style="font-size:12px;color:var(--mt);padding:4px 0">No connected cables</div>';
             }
+            html += collapsibleSection('Connected Cables (' + connCabs.length + ')', 'conn', connHtml, true);
+
             html +=
                 '<button class="bt btd" style="width:100%;justify-content:center;padding:8px;margin-top:auto" id="bDD"><i class="fa-solid fa-trash-can"></i> Delete Device</button>';
+
             el.innerHTML = html;
 
+            // === Event binding ===
             var $ = function(id) { return document.getElementById(id); };
+
+            // Header fields
             $('eN').addEventListener('input', function(e) { d.name = e.target.value;
                 uDL();
                 ren(); });
@@ -2243,20 +2678,13 @@
                 uDL();
                 uSt();
                 ren(); });
+
+            // Network
             $('eIP').addEventListener('change', function(e) { d.ip = e.target.value.trim();
                 ren();
                 toast('IP: ' + d.ip, 'in'); });
             $('eMAC').addEventListener('change', function(e) { d.mac = e.target.value.trim();
                 toast('MAC: ' + d.mac, 'in'); });
-            $('eNotes').addEventListener('input', function(e) {
-                d.notes = e.target.value;
-                var notesInput = document.getElementById('sbNotesInput');
-                if (notesInput && notesInput !== e.target) {
-                    notesInput.value = d.notes || '';
-                }
-                uDL();
-            });
-
             var eCIDR = $('eCIDR');
             var eSN = $('eSN');
             var updating = false;
@@ -2289,6 +2717,7 @@
             $('eGW').addEventListener('change', function(e) { d.gateway = e.target.value.trim();
                 toast('Gateway: ' + d.gateway, 'in'); });
 
+            // Ports
             $('ePt').addEventListener('change', function(e) {
                 var newVal = parseInt(e.target.value) || 1,
                     uCurrent = usedPorts(d.id, -1),
@@ -2307,6 +2736,381 @@
                 toast('Ports: ' + d.ports, 'in');
             });
 
+            // Port Type + VLAN selects
+            var ptSelects = el.querySelectorAll('.pt-select');
+            var ptVlans = el.querySelectorAll('.pt-vlan');
+            for (var i = 0; i < ptSelects.length; i++) {
+                ptSelects[i].addEventListener('change', function() {
+                    var devId = +this.dataset.dev,
+                        portNum = +this.dataset.port,
+                        val = this.value || null;
+                    var cable = getCableOnPort(devId, portNum);
+                    if (cable) {
+                        toast('Port is in use, cannot change type', 'er');
+                        var dev = getDeviceById(devId);
+                        if (dev) {
+                            var pt = getPortType(dev, portNum);
+                            this.value = cable.type || pt || '';
+                        }
+                        return;
+                    }
+                    var vlanInput = this.parentElement.querySelector('.pt-vlan');
+                    var vlan = vlanInput ? vlanInput.value : '';
+                    if (setPortTypeVlan(devId, portNum, val, vlan)) {
+                        var dev = getDeviceById(devId);
+                        if (dev) { toast('Port ' + portNum + ' → ' + (val || 'empty') + (vlan ? ', VLAN ' +
+                                vlan : ''), 'in');
+                            uDL();
+                            ren(); }
+                    }
+                });
+            }
+            for (var i = 0; i < ptVlans.length; i++) {
+                ptVlans[i].addEventListener('change', function() {
+                    var devId = +this.dataset.dev,
+                        portNum = +this.dataset.port,
+                        vlan = this.value;
+                    var cable = getCableOnPort(devId, portNum);
+                    if (cable) {
+                        toast('Port is in use, cannot change VLAN', 'er');
+                        var dev = getDeviceById(devId);
+                        if (dev) {
+                            var v = getPortVlan(dev, portNum);
+                            this.value = v || '';
+                        }
+                        return;
+                    }
+                    var sel = this.parentElement.querySelector('.pt-select');
+                    var type = sel ? sel.value : null;
+                    if (setPortTypeVlan(devId, portNum, type, vlan)) {
+                        var dev = getDeviceById(devId);
+                        if (dev) { toast('Port ' + portNum + ' VLAN: ' + (vlan || 'none'), 'in');
+                            uDL();
+                            ren(); }
+                    }
+                });
+            }
+
+            // Operation Mode
+            $('eOpMode').addEventListener('change', function() {
+                var val = this.value;
+                d.operationMode = val;
+                var otherRow = document.getElementById('opModeOtherRow');
+                if (val === 'Other') {
+                    otherRow.style.display = 'flex';
+                } else {
+                    otherRow.style.display = 'none';
+                }
+                uDL();
+                ren();
+                toast('Operation Mode: ' + val, 'in');
+            });
+            var opOther = $('eOpModeOther');
+            if (opOther) {
+                opOther.addEventListener('input', function() {
+                    d.operationMode = this.value.trim() || 'Other';
+                    uDL();
+                    ren();
+                });
+            }
+
+            // === Helper to add profile item to DOM without full re-render ===
+            function addProfileItem(containerSelector, profileArray, templateFn, counterVar) {
+                // Only used for SSID, PPPoE, VLAN add
+            }
+
+            // SSID profiles - password toggle without re-render
+            function setupSsidPwToggle() {
+                var toggles = el.querySelectorAll('[data-ssid-pw-toggle]');
+                for (var i = 0; i < toggles.length; i++) {
+                    toggles[i].addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        var idx = parseInt(this.dataset.ssidPwToggle);
+                        if (!isNaN(idx) && d.ssidProfiles && d.ssidProfiles[idx]) {
+                            d.ssidProfiles[idx]._pwVis = !d.ssidProfiles[idx]._pwVis;
+                            var pwInput = el.querySelector('[data-ssid-pw="' + idx + '"]');
+                            if (pwInput) {
+                                pwInput.type = d.ssidProfiles[idx]._pwVis ? 'text' : 'password';
+                            }
+                            var icon = this.querySelector('i');
+                            if (icon) {
+                                icon.className = 'fa-solid ' + (d.ssidProfiles[idx]._pwVis ?
+                                    'fa-eye-slash' : 'fa-eye');
+                            }
+                        }
+                    });
+                }
+            }
+
+            function setupPppoePwToggle() {
+                var toggles = el.querySelectorAll('[data-pppoe-pw-toggle]');
+                for (var i = 0; i < toggles.length; i++) {
+                    toggles[i].addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        var idx = parseInt(this.dataset.pppoePwToggle);
+                        if (!isNaN(idx) && d.pppoeProfiles && d.pppoeProfiles[idx]) {
+                            d.pppoeProfiles[idx]._pwVis = !d.pppoeProfiles[idx]._pwVis;
+                            var pwInput = el.querySelector('[data-pppoe-pw="' + idx + '"]');
+                            if (pwInput) {
+                                pwInput.type = d.pppoeProfiles[idx]._pwVis ? 'text' : 'password';
+                            }
+                            var icon = this.querySelector('i');
+                            if (icon) {
+                                icon.className = 'fa-solid ' + (d.pppoeProfiles[idx]._pwVis ?
+                                    'fa-eye-slash' : 'fa-eye');
+                            }
+                        }
+                    });
+                }
+            }
+
+            // === Add SSID without full re-render ===
+            var addSsidBtn = document.getElementById('addSsid');
+            if (addSsidBtn) {
+                addSsidBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (!d.ssidProfiles) d.ssidProfiles = [];
+                    var newIdx = d.ssidProfiles.length;
+                    d.ssidProfiles.push({ id: ++_ssidCounter, ssid: '', password: '', _pwVis: false });
+                    // Find the container (parent of the button)
+                    var container = this.parentElement;
+                    if (!container) return;
+                    // Remove the button temporarily
+                    var btn = this;
+                    // Build new profile HTML
+                    var pwVis = false;
+                    var profHtml = '<div class="profile-item" data-ssid-idx="' + newIdx + '">' +
+                        '<div class="profile-header"><span>SSID #' + (newIdx + 1) +
+                        '</span><span class="del-prof" data-ssid-del="' + newIdx +
+                        '"><i class="fa-regular fa-trash-can"></i></span></div>' +
+                        '<div class="dr" style="border:none;padding:2px 0"><span class="l" style="font-size:10px">SSID</span><input class="ei ei-sm" data-ssid-field="' +
+                        newIdx + '" value="" placeholder="SSID name"></div>' +
+                        '<div class="dr" style="border:none;padding:2px 0"><span class="l" style="font-size:10px">Password</span><div style="display:flex;gap:4px;align-items:center;flex:1"><input class="ei ei-sm-pw" data-ssid-pw="' +
+                        newIdx + '" type="password" value="" placeholder="Password"><button class="pw-toggle" data-ssid-pw-toggle="' +
+                        newIdx + '"><i class="fa-solid fa-eye"></i></button></div></div>' +
+                        '</div>';
+                    // Insert before the button
+                    container.insertBefore(createElementFromHTML(profHtml), btn);
+                    // Update counters in header
+                    var header = container.closest('.se-collapsible').querySelector('.stl');
+                    if (header) {
+                        var match = header.textContent.match(/\((\d+)\s+SSID\)/);
+                        if (match) {
+                            var count = parseInt(match[1]) + 1;
+                            header.textContent = header.textContent.replace(/\(\d+\s+SSID\)/, '(' + count +
+                                ' SSID)');
+                        }
+                    }
+                    // Re-bind events for new items
+                    bindProfileEvents(el, d);
+                    toast('SSID profile added', 'in');
+                });
+            }
+
+            // Helper to create element from HTML string
+            function createElementFromHTML(htmlString) {
+                var div = document.createElement('div');
+                div.innerHTML = htmlString.trim();
+                return div.firstChild;
+            }
+
+            // Bind events for profile items (delete, password toggle, input)
+            function bindProfileEvents(el, d) {
+                // Delete SSID
+                var delSsid = el.querySelectorAll('[data-ssid-del]');
+                for (var i = 0; i < delSsid.length; i++) {
+                    delSsid[i].addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        var idx = parseInt(this.dataset.ssidDel);
+                        if (!isNaN(idx) && d.ssidProfiles && d.ssidProfiles[idx]) {
+                            d.ssidProfiles.splice(idx, 1);
+                            // Re-render entire section (simpler)
+                            _sDD(d);
+                            toast('SSID removed', 'in');
+                        }
+                    });
+                }
+                // Delete PPPoE
+                var delPppoe = el.querySelectorAll('[data-pppoe-del]');
+                for (var i = 0; i < delPppoe.length; i++) {
+                    delPppoe[i].addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        var idx = parseInt(this.dataset.pppoeDel);
+                        if (!isNaN(idx) && d.pppoeProfiles && d.pppoeProfiles[idx]) {
+                            d.pppoeProfiles.splice(idx, 1);
+                            _sDD(d);
+                            toast('PPPoE removed', 'in');
+                        }
+                    });
+                }
+                // Delete VLAN
+                var delVlan = el.querySelectorAll('[data-vlan-del]');
+                for (var i = 0; i < delVlan.length; i++) {
+                    delVlan[i].addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        var idx = parseInt(this.dataset.vlanDel);
+                        if (!isNaN(idx) && d.vlanProfiles && d.vlanProfiles[idx]) {
+                            d.vlanProfiles.splice(idx, 1);
+                            _sDD(d);
+                            toast('VLAN removed', 'in');
+                        }
+                    });
+                }
+                // Password toggles
+                setupSsidPwToggle();
+                setupPppoePwToggle();
+                // Input events for SSID, PPPoE, VLAN (already handled by global listeners)
+            }
+
+            // Re-bind after re-render (already called at end of _sDD)
+
+            // PPPoE add without full re-render
+            var addPppoeBtn = document.getElementById('addPppoe');
+            if (addPppoeBtn) {
+                addPppoeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (!d.pppoeProfiles) d.pppoeProfiles = [];
+                    var newIdx = d.pppoeProfiles.length;
+                    d.pppoeProfiles.push({ id: ++_pppoeCounter, username: '', password: '',
+                    _pwVis: false });
+                    var container = this.parentElement;
+                    if (!container) return;
+                    var profHtml = '<div class="profile-item" data-pppoe-idx="' + newIdx + '">' +
+                        '<div class="profile-header"><span>PPPoE #' + (newIdx + 1) +
+                        '</span><span class="del-prof" data-pppoe-del="' + newIdx +
+                        '"><i class="fa-regular fa-trash-can"></i></span></div>' +
+                        '<div class="dr" style="border:none;padding:2px 0"><span class="l" style="font-size:10px">Username</span><input class="ei ei-sm" data-pppoe-user="' +
+                        newIdx + '" value="" placeholder="Username"></div>' +
+                        '<div class="dr" style="border:none;padding:2px 0"><span class="l" style="font-size:10px">Password</span><div style="display:flex;gap:4px;align-items:center;flex:1"><input class="ei ei-sm-pw" data-pppoe-pw="' +
+                        newIdx + '" type="password" value="" placeholder="Password"><button class="pw-toggle" data-pppoe-pw-toggle="' +
+                        newIdx + '"><i class="fa-solid fa-eye"></i></button></div></div>' +
+                        '</div>';
+                    container.insertBefore(createElementFromHTML(profHtml), this);
+                    var header = container.closest('.se-collapsible').querySelector('.stl');
+                    if (header) {
+                        var match = header.textContent.match(/\((\d+)\s+PPPoE\)/);
+                        if (match) {
+                            var count = parseInt(match[1]) + 1;
+                            header.textContent = header.textContent.replace(/\(\d+\s+PPPoE\)/, '(' + count +
+                                ' PPPoE)');
+                        }
+                    }
+                    bindProfileEvents(el, d);
+                    toast('PPPoE profile added', 'in');
+                });
+            }
+
+            // VLAN add without full re-render
+            var addVlanBtn = document.getElementById('addVlan');
+            if (addVlanBtn) {
+                addVlanBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (!d.vlanProfiles) d.vlanProfiles = [];
+                    var newIdx = d.vlanProfiles.length;
+                    d.vlanProfiles.push({ id: ++_vlanCounter, vlanId: '' });
+                    var container = this.parentElement;
+                    if (!container) return;
+                    var profHtml = '<div class="profile-item" data-vlan-idx="' + newIdx + '">' +
+                        '<div class="profile-header"><span>VLAN #' + (newIdx + 1) +
+                        '</span><span class="del-prof" data-vlan-del="' + newIdx +
+                        '"><i class="fa-regular fa-trash-can"></i></span></div>' +
+                        '<div class="dr" style="border:none;padding:2px 0"><span class="l" style="font-size:10px">VLAN ID</span><input class="ei ei-sm" data-vlan-id="' +
+                        newIdx + '" value="" placeholder="VLAN ID (e.g. 10)"></div>' +
+                        '</div>';
+                    container.insertBefore(createElementFromHTML(profHtml), this);
+                    var header = container.closest('.se-collapsible').querySelector('.stl');
+                    if (header) {
+                        var match = header.textContent.match(/\((\d+)\s+VLAN\)/);
+                        if (match) {
+                            var count = parseInt(match[1]) + 1;
+                            header.textContent = header.textContent.replace(/\(\d+\s+VLAN\)/, '(' + count +
+                                ' VLAN)');
+                        }
+                    }
+                    bindProfileEvents(el, d);
+                    toast('VLAN profile added', 'in');
+                });
+            }
+
+            // Live updates for input fields (using event delegation)
+            el.addEventListener('input', function(e) {
+                var target = e.target;
+                // SSID field
+                var ssidField = target.closest('[data-ssid-field]');
+                if (ssidField) {
+                    var idx = parseInt(ssidField.dataset.ssidField);
+                    if (!isNaN(idx) && d.ssidProfiles && d.ssidProfiles[idx]) {
+                        d.ssidProfiles[idx].ssid = ssidField.value;
+                        uDL();
+                        ren();
+                    }
+                    return;
+                }
+                var ssidPw = target.closest('[data-ssid-pw]');
+                if (ssidPw) {
+                    var idx2 = parseInt(ssidPw.dataset.ssidPw);
+                    if (!isNaN(idx2) && d.ssidProfiles && d.ssidProfiles[idx2]) {
+                        d.ssidProfiles[idx2].password = ssidPw.value;
+                        uDL();
+                        ren();
+                    }
+                    return;
+                }
+                var pppoeUser = target.closest('[data-pppoe-user]');
+                if (pppoeUser) {
+                    var idx = parseInt(pppoeUser.dataset.pppoeUser);
+                    if (!isNaN(idx) && d.pppoeProfiles && d.pppoeProfiles[idx]) {
+                        d.pppoeProfiles[idx].username = pppoeUser.value;
+                        uDL();
+                        ren();
+                    }
+                    return;
+                }
+                var pppoePw = target.closest('[data-pppoe-pw]');
+                if (pppoePw) {
+                    var idx2 = parseInt(pppoePw.dataset.pppoePw);
+                    if (!isNaN(idx2) && d.pppoeProfiles && d.pppoeProfiles[idx2]) {
+                        d.pppoeProfiles[idx2].password = pppoePw.value;
+                        uDL();
+                        ren();
+                    }
+                    return;
+                }
+                var vlanId = target.closest('[data-vlan-id]');
+                if (vlanId) {
+                    var idx = parseInt(vlanId.dataset.vlanId);
+                    if (!isNaN(idx) && d.vlanProfiles && d.vlanProfiles[idx]) {
+                        d.vlanProfiles[idx].vlanId = vlanId.value;
+                        uDL();
+                        ren();
+                    }
+                    return;
+                }
+            });
+
+            // LAN
+            $('eLanIP').addEventListener('input', function(e) { if (!d.lan) d.lan = {};
+                d.lan.ip = e.target.value; });
+            $('eLanSubnet').addEventListener('input', function(e) { if (!d.lan) d.lan = {};
+                d.lan.subnet = e.target.value; });
+            $('eLanCidr').addEventListener('input', function(e) { if (!d.lan) d.lan = {};
+                d.lan.cidr = e.target.value; });
+
+            // DHCP
+            $('eDhcpStart').addEventListener('input', function(e) { if (!d.dhcp) d.dhcp = {};
+                d.dhcp.startIP = e.target.value; });
+            $('eDhcpEnd').addEventListener('input', function(e) { if (!d.dhcp) d.dhcp = {};
+                d.dhcp.endIP = e.target.value; });
+            $('eDhcpGateway').addEventListener('input', function(e) { if (!d.dhcp) d.dhcp = {};
+                d.dhcp.gateway = e.target.value; });
+            $('eDhcpDomain').addEventListener('input', function(e) { if (!d.dhcp) d.dhcp = {};
+                d.dhcp.domain = e.target.value; });
+            $('eDhcpPrimary').addEventListener('input', function(e) { if (!d.dhcp) d.dhcp = {};
+                d.dhcp.primaryDNS = e.target.value; });
+            $('eDhcpSecondary').addEventListener('input', function(e) { if (!d.dhcp) d.dhcp = {};
+                d.dhcp.secondaryDNS = e.target.value; });
+
+            // Performance
             $('eCPU').addEventListener('input', function(e) { d.cpu = Math.max(0, Math.min(100, parseInt(e.target
                     .value) || 0));
                 var b = $('cpuB'),
@@ -2321,34 +3125,21 @@
                 b.style.background = c; });
             $('eTP').addEventListener('input', function(e) { d.temp = Math.max(0, Math.min(120, parseInt(e.target
                     .value) || 0)); });
+
+            // Notes
+            $('eNotes').addEventListener('input', function(e) {
+                d.notes = e.target.value;
+                var notesInput = document.getElementById('sbNotesInput');
+                if (notesInput && notesInput !== e.target) {
+                    notesInput.value = d.notes || '';
+                }
+                uDL();
+            });
+
+            // Delete
             $('bDD').addEventListener('click', function() { delD(d.id); });
 
-            var ptSelects = el.querySelectorAll('.pt-select');
-            for (var i = 0; i < ptSelects.length; i++) {
-                ptSelects[i].addEventListener('change', function() {
-                    var devId = +this.dataset.dev,
-                        portNum = +this.dataset.port,
-                        val = this.value || null;
-                    var cable = getCableOnPort(devId, portNum);
-                    if (cable) {
-                        toast('Port is in use, cannot change type', 'er');
-                        var dev = getDeviceById(devId);
-                        if (dev) {
-                            var pt = dev.portTypes && dev.portTypes[portNum - 1] ? dev.portTypes[portNum -
-                                1] : null;
-                            this.value = cable.type || pt || '';
-                        }
-                        return;
-                    }
-                    if (setPortType(devId, portNum, val)) {
-                        var dev = getDeviceById(devId);
-                        if (dev) { toast('Port ' + portNum + ' → ' + (val || 'empty'), 'in');
-                            uDL();
-                            ren(); }
-                    }
-                });
-            }
-
+            // Connected cables click
             var cids = el.querySelectorAll('[data-cid]');
             for (var i = 0; i < cids.length; i++) {
                 cids[i].addEventListener('click', function() {
@@ -2360,9 +3151,29 @@
                     ren();
                 });
             }
+
+            // Collapsible toggles
+            var toggles = el.querySelectorAll('[data-toggle]');
+            for (var i = 0; i < toggles.length; i++) {
+                toggles[i].addEventListener('click', function() {
+                    var sec = this.dataset.toggle;
+                    var parent = this.closest('.se-collapsible');
+                    if (parent) {
+                        parent.classList.toggle('open');
+                        var icon = parent.querySelector('.toggle-icon');
+                        if (icon) icon.classList.toggle('collapsed');
+                    }
+                });
+            }
+
+            // Setup password toggles (non-render)
+            setupSsidPwToggle();
+            setupPppoePwToggle();
+
             updateNotesSidebar();
         };
 
+        // --- build cable detail ---
         var _sDC = function(c) {
             if (dpPanel.classList.contains('dp-auto-hide') && !manualToggle) return;
             document.getElementById('dE').style.display = 'none';
@@ -2388,12 +3199,101 @@
 
             var bwPct = Math.round(c.bw / c.mx * 100),
                 bwCol = pC(bwPct);
+
+            // Build cable-specific fields
+            var cableExtraHtml = '';
+
+            // SSID dropdown (for wireless and other)
+            var srcSsidProfiles = getSsidProfiles(c.from);
+            var ssidOpts = '<option value="">None</option>';
+            for (var i = 0; i < srcSsidProfiles.length; i++) {
+                var sp = srcSsidProfiles[i];
+                var sel = (c.ssid === sp.ssid) ? ' selected' : '';
+                ssidOpts += '<option value="' + sp.ssid + '"' + sel + '>' + (sp.ssid || 'SSID #' + (i + 1)) +
+                    '</option>';
+            }
+            if (c.ssid && srcSsidProfiles.every(function(sp) { return sp.ssid !== c.ssid; })) {
+                ssidOpts += '<option value="' + c.ssid + '" selected>' + c.ssid + ' (custom)</option>';
+            }
+
+            // PPPoE dropdown (for ethernet, fiber, other)
+            var srcPppoeProfiles = getPppoeProfiles(c.from);
+            var pppoeOpts = '<option value="">None</option>';
+            var usedPppoe = {};
+            for (var i = 0; i < cabs.length; i++) {
+                if (cabs[i].id === c.id) continue;
+                if (cabs[i].from === c.from && cabs[i].pppoe) {
+                    usedPppoe[cabs[i].pppoe] = 1;
+                }
+            }
+            for (var i = 0; i < srcPppoeProfiles.length; i++) {
+                var pp = srcPppoeProfiles[i];
+                var dis = usedPppoe[pp.username] ? ' disabled' : '';
+                var sel = (c.pppoe === pp.username) ? ' selected' : '';
+                pppoeOpts += '<option value="' + pp.username + '"' + sel + dis + '>' + (pp.username || 'PPPoE #' +
+                    (i + 1)) + (usedPppoe[pp.username] ? ' (used)' : '') + '</option>';
+            }
+            if (c.pppoe && srcPppoeProfiles.every(function(pp) { return pp.username !== c.pppoe; })) {
+                pppoeOpts += '<option value="' + c.pppoe + '" selected>' + c.pppoe + ' (custom)</option>';
+            }
+
+            // Cable-specific sections
+            if (c.type === 'wireless') {
+                cableExtraHtml += '<div class="se"><div class="stl">Wireless Settings</div>';
+                cableExtraHtml +=
+                    '<div class="dr"><span class="l" style="font-weight:600;color:var(--fg);">Connected to SSID</span></div>';
+                cableExtraHtml +=
+                    '<div class="dr"><span class="l">SSID</span><select class="es" id="eCableSsid" style="width:180px">' +
+                    ssidOpts + '</select></div>';
+                cableExtraHtml += '</div>';
+            } else if (c.type === 'ethernet') {
+                cableExtraHtml += '<div class="se"><div class="stl">Ethernet Settings</div>';
+                cableExtraHtml +=
+                    '<div class="dr"><span class="l">PPPoE</span><select class="es" id="eCablePppoe" style="width:180px">' +
+                    pppoeOpts + '</select></div>';
+                var vlanSrc = getPortVlan(a, c.fromPort) || '';
+                var vlanDst = getPortVlan(b, c.toPort) || '';
+                cableExtraHtml +=
+                    '<div class="dr"><span class="l">VLAN (Source)</span><span class="v">' + (vlanSrc || '—') +
+                    '</span></div>';
+                cableExtraHtml +=
+                    '<div class="dr"><span class="l">VLAN (Dest)</span><span class="v">' + (vlanDst || '—') +
+                    '</span></div>';
+                cableExtraHtml += '</div>';
+            } else if (c.type === 'fiber') {
+                cableExtraHtml += '<div class="se"><div class="stl">Fiber Settings</div>';
+                cableExtraHtml +=
+                    '<div class="dr"><span class="l">PPPoE</span><select class="es" id="eCablePppoe" style="width:180px">' +
+                    pppoeOpts + '</select></div>';
+                cableExtraHtml += '</div>';
+            } else if (c.type === 'other') {
+                cableExtraHtml += '<div class="se"><div class="stl">Other Settings</div>';
+                cableExtraHtml +=
+                    '<div class="dr"><span class="l" style="font-weight:600;color:var(--fg);">Connected to SSID</span></div>';
+                cableExtraHtml +=
+                    '<div class="dr"><span class="l">SSID</span><select class="es" id="eCableSsid" style="width:180px">' +
+                    ssidOpts + '</select></div>';
+                cableExtraHtml +=
+                    '<div class="dr"><span class="l">PPPoE</span><select class="es" id="eCablePppoe" style="width:180px">' +
+                    pppoeOpts + '</select></div>';
+                var vlanSrc2 = getPortVlan(a, c.fromPort) || '';
+                var vlanDst2 = getPortVlan(b, c.toPort) || '';
+                cableExtraHtml +=
+                    '<div class="dr"><span class="l">VLAN (Source)</span><span class="v">' + (vlanSrc2 || '—') +
+                    '</span></div>';
+                cableExtraHtml +=
+                    '<div class="dr"><span class="l">VLAN (Dest)</span><span class="v">' + (vlanDst2 || '—') +
+                    '</span></div>';
+                cableExtraHtml += '</div>';
+            }
+
             var html = '';
             html += '<div class="dh"><div class="di" style="background:rgba(41,182,246,.12);color:var(--in)"><i class="fa-solid fa-link"></i></div><div class="dht" style="flex:1;min-width:0"><input class="ei" id="eCName" value="' +
                 (c.name || '') +
                 '" style="font:700 15px/1.3 \'Space Grotesk\',sans-serif;margin-bottom:3px" placeholder="Cable Name"><span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><select class="es" id="eCT" style="font-size:12px">' +
                 tyO + '</select><select class="es" id="eCS" style="font-size:12px">' + stO +
                 '</select></span></div></div>';
+
             html += '<div class="se"><div class="stl">Endpoint &amp; Port</div>';
             html += '<div class="dr"><span class="l">From</span><span class="v" style="color:var(--fg);font-size:13px;cursor:pointer" data-did="' +
                 c.from + '">' + (a ? a.name : '?') + '</span></div>';
@@ -2405,9 +3305,13 @@
                 c.to + '">' + (b ? b.name : '?') + '</span></div>';
             html += '<div class="dr"><span class="l">Destination Port</span><select class="es" id="eTP2" style="width:120px">' +
                 tOpts + '</select></div></div>';
+
+            html += cableExtraHtml;
+
             html += '<div class="se"><div class="stl">Properties</div><div class="dr"><span class="l">Length</span><span class="v">' +
                 c.len + 'cm</span></div><div class="dr"><span class="l">Latency</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="eLT" value="' +
                 c.lat + '" min="0" max="1000" style="width:55px"><span style="font-size:11px;color:var(--mt)">ms</span></div></div></div>';
+
             html += '<div class="se"><div class="stl">Bandwidth</div><div class="dr"><span class="l">Current</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="eBW" value="' +
                 c.bw + '" min="0" max="10000" style="width:80px"><span style="font-size:11px;color:var(--mt)">Mbps</span></div></div><div class="dr"><span class="l">Maximum</span><div style="display:flex;align-items:center;gap:6px"><input type="number" class="ei" id="eMB" value="' +
                 c.mx + '" min="1" max="100000" style="width:80px"><span style="font-size:11px;color:var(--mt)">Mbps</span></div></div>';
@@ -2415,9 +3319,12 @@
                 '<div class="dr"><span class="l">Utilization</span><div class="pb" style="flex:1"><div class="f" id="bwBar" style="width:' +
                 Math.min(100, bwPct) + '%;background:' + bwCol + '"></div></div><span class="v" id="bwPct" style="color:' +
                 bwCol + ';min-width:32px">' + Math.min(100, bwPct) + '%</span></div></div>';
+
             html +=
                 '<button class="bt btd" style="width:100%;justify-content:center;padding:8px;margin-top:auto" id="bDC"><i class="fa-solid fa-trash-can"></i> Delete Cable</button>';
+
             el.innerHTML = html;
+
             var $ = function(id) { return document.getElementById(id); };
 
             $('eFP').value = c.fromPort;
@@ -2429,14 +3336,17 @@
                 $('bwBar').style.background = col;
                 $('bwPct').textContent = Math.min(100, pct) + '%';
                 $('bwPct').style.color = col; }
+
             $('eCName').addEventListener('input', function(e) { c.name = e.target.value.trim() || 'Cable';
                 uCL2();
                 ren(); });
-            $('eCT').addEventListener('change', function(e) { c.type = e.target.value;
+            $('eCT').addEventListener('change', function(e) {
+                c.type = e.target.value;
                 _sDC(c);
                 uCL2();
                 ren();
-                toast('Type: ' + CT[c.type].lb, 'in'); });
+                toast('Type: ' + CT[c.type].lb, 'in');
+            });
             $('eCS').addEventListener('change', function(e) { c.status = e.target.value;
                 _sDC(c);
                 uCL2();
@@ -2454,7 +3364,46 @@
                 updBW(); });
             $('eMB').addEventListener('input', function(e) { c.mx = Math.max(1, parseInt(e.target.value) || 1);
                 updBW(); });
+
+            // Cable-specific fields
+            var ssidSel = document.getElementById('eCableSsid');
+            if (ssidSel) {
+                ssidSel.addEventListener('change', function() {
+                    c.ssid = this.value || '';
+                    uCL2();
+                    ren();
+                    toast('SSID: ' + (c.ssid || 'none'), 'in');
+                });
+            }
+            var pppoeSel = document.getElementById('eCablePppoe');
+            if (pppoeSel) {
+                pppoeSel.addEventListener('change', function() {
+                    var val = this.value;
+                    if (val) {
+                        for (var i = 0; i < cabs.length; i++) {
+                            if (cabs[i].id === c.id) continue;
+                            if (cabs[i].from === c.from && cabs[i].pppoe === val) {
+                                toast('PPPoE "' + val + '" already used on another cable', 'er');
+                                var srcProfiles = getPppoeProfiles(c.from);
+                                var found = false;
+                                for (var j = 0; j < srcProfiles.length; j++) {
+                                    if (srcProfiles[j].username === c.pppoe) { found = true; break; }
+                                }
+                                if (!found && c.pppoe) {}
+                                _sDC(c);
+                                return;
+                            }
+                        }
+                    }
+                    c.pppoe = val || '';
+                    uCL2();
+                    ren();
+                    toast('PPPoE: ' + (c.pppoe || 'none'), 'in');
+                });
+            }
+
             $('bDC').addEventListener('click', function() { delC(c.id); });
+
             var dids = el.querySelectorAll('[data-did]');
             for (var i = 0; i < dids.length; i++) {
                 dids[i].addEventListener('click', function() {
@@ -2622,7 +3571,8 @@
                 '41,182,246';
         }
 
-        // ========== EVENTS ==========
+        // ========== EVENTS (same as before) ==========
+        // Inside cv.addEventListener('mousedown', ...) for mode === 'connect':
         cv.addEventListener('mousedown', function(e) {
             var p = mp(e),
                 w = s2w(p.x, p.y);
@@ -2664,33 +3614,33 @@
                 toast('Added ' + nd.name, 'ok');
                 ren();
             } else if (mode === 'connect') {
-                if (!hd) { cSrc = null;
-                    ren(); return; }
-                if (cSrc === null) { cSrc = hd.id;
-                    toast('Select the second device', 'in');
-                    ren(); return; }
-                if (hd.id === cSrc) { cSrc = null;
-                    ren(); return; }
-                var srcDev = getDeviceById(cSrc),
-                    dstDev = getDeviceById(hd.id);
-                var uSrc = usedPorts(cSrc, -1),
-                    uDst = usedPorts(hd.id, -1);
-                var srcFree = false,
-                    dstFree = false;
-                for (var p = 1; p <= srcDev.ports; p++) { if (!uSrc[p]) { srcFree = true; break; } }
-                for (var p = 1; p <= dstDev.ports; p++) { if (!uDst[p]) { dstFree = true; break; } }
-                if (!srcFree || !dstFree) { toast('Ports are full on one of the devices', 'er');
+                if (!hd) { cSrc = null; ren(); return; }
+                if (cSrc === null) { cSrc = hd.id; toast('Select the second device', 'in'); ren(); return; }
+                if (hd.id === cSrc) { cSrc = null; ren(); return; }
+        
+                // Use updated nextFree logic
+                var srcPort = nextFree(cSrc, -1, selCT, true);
+                var dstPort = nextFree(hd.id, -1, selCT, false);
+                if (srcPort === -1 || dstPort === -1) {
+                    var msg = 'No suitable ' + (selCT === 'wireless' ? 'wireless/empty' : selCT) + ' port available on one of the devices';
+                    toast(msg, 'er');
                     cSrc = null;
-                    ren(); return; }
+                    ren();
+                    return;
+                }
+        
                 var dup = false;
-                for (var i = 0; i < cabs.length; i++) { var c = cabs[i]; if ((c.from === cSrc && c.to === hd.id) || (
-                        c.to === cSrc && c.from === hd.id)) { dup = true; break; } }
-                if (dup) { toast('Cable already exists', 'er');
-                    cSrc = null;
-                    ren(); return; }
+                for (var i = 0; i < cabs.length; i++) {
+                    var c = cabs[i];
+                    if ((c.from === cSrc && c.to === hd.id) || (c.to === cSrc && c.from === hd.id)) {
+                        dup = true;
+                        break;
+                    }
+                }
+                if (dup) { toast('Cable already exists', 'er'); cSrc = null; ren(); return; }
+        
                 var nc = mkC(cSrc, hd.id, selCT);
-                if (!nc) { cSrc = null;
-                    ren(); return; }
+                if (!nc) { cSrc = null; ren(); return; }
                 cabs.push(nc);
                 sCI = nc.id;
                 sDI = null;
@@ -3058,6 +4008,10 @@
             sCI = null;
             cSrc = null;
             selectedDevs = [];
+            _ssidCounter = 0;
+            _pppoeCounter = 0;
+            _vlanCounter = 0;
+
             var starters = [
                 { t: 'modem', x: 0, y: 0, ip: '192.168.1.1', gw: '192.168.1.1' },
                 { t: 'mikrotik', x: 0, y: -130, ip: '192.168.1.2', gw: '192.168.1.1' },
@@ -3088,6 +4042,23 @@
                     d = mkD(s.t, s.x, s.y);
                 d.ip = s.ip;
                 d.gateway = s.gw;
+                if (d.type === 'ap') {
+                    d.ssidProfiles = [{ id: ++_ssidCounter, ssid: 'Office-WiFi', password: 'secure123' },
+                        { id: ++_ssidCounter, ssid: 'Guest-Network', password: 'guest2024' }
+                    ];
+                    d.operationMode = 'Access Point';
+                }
+                if (d.type === 'router' || d.type === 'mikrotik') {
+                    d.pppoeProfiles = [{ id: ++_pppoeCounter, username: 'user1', password: 'pass1' },
+                        { id: ++_pppoeCounter, username: 'user2', password: 'pass2' }
+                    ];
+                    d.vlanProfiles = [{ id: ++_vlanCounter, vlanId: '10' }, { id: ++_vlanCounter,
+                        vlanId: '20' }];
+                    d.operationMode = 'AP Router';
+                    d.lan = { ip: '192.168.1.1', subnet: '255.255.255.0', cidr: '24' };
+                    d.dhcp = { startIP: '192.168.1.100', endIP: '192.168.1.200', gateway: '192.168.1.1',
+                        domain: 'local', primaryDNS: '8.8.8.8', secondaryDNS: '8.8.4.4' };
+                }
                 devs.push(d);
             }
             var scabs = [
@@ -3115,11 +4086,25 @@
             ];
             for (var i = 0; i < scabs.length; i++) {
                 var nc = mkC(scabs[i][0], scabs[i][1], scabs[i][2]);
-                if (nc) cabs.push(nc);
+                if (nc) {
+                    if (nc.type === 'wireless') {
+                        var srcDev = getDeviceById(nc.from);
+                        if (srcDev && srcDev.ssidProfiles && srcDev.ssidProfiles.length > 0) {
+                            nc.ssid = srcDev.ssidProfiles[0].ssid;
+                        }
+                    }
+                    if (nc.type === 'ethernet' || nc.type === 'fiber') {
+                        var srcDev2 = getDeviceById(nc.from);
+                        if (srcDev2 && srcDev2.pppoeProfiles && srcDev2.pppoeProfiles.length > 0) {
+                            nc.pppoe = srcDev2.pppoeProfiles[0].username;
+                        }
+                    }
+                    cabs.push(nc);
+                }
             }
             skipAutoScroll = false;
             uUI(false);
-            toast('Sample topology loaded', 'ok');
+            toast('Sample topology loaded with enhanced profiles', 'ok');
             ren();
         }
         document.getElementById('bSample').addEventListener('click', loadSample);
@@ -3427,26 +4412,147 @@
         document.getElementById('exJSON').addEventListener('click', function() {
             if (!devs.length && !cabs.length) { toast('Nothing to export', 'er'); return; }
             var data = {
-                version: '1.1',
+                version: '2.0',
                 exportedAt: new Date().toISOString(),
                 devices: devs.map(function(d) {
                     var obj = JSON.parse(JSON.stringify(d));
                     obj.cidr = maskToCidr(d.subnet) || '24';
                     if (!obj.notes) obj.notes = '';
+                    if (!obj.operationMode) obj.operationMode = '';
+                    if (!obj.ssidProfiles) obj.ssidProfiles = [];
+                    if (!obj.lan) obj.lan = { ip: '', subnet: '', cidr: '' };
+                    if (!obj.dhcp) obj.dhcp = { startIP: '', endIP: '', gateway: '', domain: '',
+                        primaryDNS: '', secondaryDNS: '' };
+                    if (!obj.pppoeProfiles) obj.pppoeProfiles = [];
+                    if (!obj.vlanProfiles) obj.vlanProfiles = [];
+                    if (obj.portTypes) {
+                        obj.portTypes = obj.portTypes.map(function(pt) {
+                            if (pt && typeof pt === 'object') {
+                                return { type: pt.type || null, vlan: pt.vlan || '' };
+                            }
+                            return { type: pt || null, vlan: '' };
+                        });
+                    }
                     return obj;
                 }),
-                cables: cabs.map(function(c) { return JSON.parse(JSON.stringify(c)); }),
-                view: { panX: pX, panY: pY, zoom: zm }
+                cables: cabs.map(function(c) {
+                    var obj = JSON.parse(JSON.stringify(c));
+                    if (!obj.ssid) obj.ssid = '';
+                    if (!obj.pppoe) obj.pppoe = '';
+                    if (!obj.vlanSource) obj.vlanSource = '';
+                    if (!obj.vlanDest) obj.vlanDest = '';
+                    return obj;
+                }),
+                view: { panX: pX, panY: pY, zoom: zm },
+                counters: { device: idC, cable: cidC, ssid: _ssidCounter, pppoe: _pppoeCounter,
+                    vlan: _vlanCounter }
             };
             var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             var link = document.createElement('a');
             link.download = 'nettopo-export-' + new Date().toISOString().slice(0, 10) + '.json';
             link.href = URL.createObjectURL(blob);
             link.click();
-            toast('JSON exported (includes CIDR & Notes)', 'ok');
+            toast('JSON exported (v2 with enhanced profiles)', 'ok');
         });
 
-        // ===== PDF (FULL) =====
+        // ===== IMPORT JSON =====
+        function importJSON(file) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    var data = JSON.parse(e.target.result);
+                    if (!data.devices || !data.cables) { toast('Invalid JSON format', 'er'); return; }
+                    devs = [];
+                    cabs = [];
+                    idC = 0;
+                    cidC = 0;
+                    _ssidCounter = 0;
+                    _pppoeCounter = 0;
+                    _vlanCounter = 0;
+                    for (var i = 0; i < data.devices.length; i++) {
+                        var d = data.devices[i];
+                        if (!DT[d.type]) { toast('Unknown type: ' + d.type, 'er'); continue; }
+                        if (d.id > idC) idC = d.id;
+                        d.sc = 0;
+                        d.ts = 1;
+                        d.ph = Math.random() * 6.28;
+                        if (!d.portTypes) { d.portTypes = [];
+                            for (var p = 1; p <= d.ports; p++) d.portTypes.push(null); }
+                        if (d.portTypes && d.portTypes.length > 0 && typeof d.portTypes[0] === 'string') {
+                            d.portTypes = d.portTypes.map(function(t) { return t ? { type: t,
+                                    vlan: '' } : null; });
+                        }
+                        if (!d.notes) d.notes = '';
+                        if (!d.operationMode) d.operationMode = '';
+                        if (!d.ssidProfiles) d.ssidProfiles = [];
+                        if (!d.lan) d.lan = { ip: '', subnet: '', cidr: '' };
+                        if (!d.dhcp) d.dhcp = { startIP: '', endIP: '', gateway: '', domain: '',
+                            primaryDNS: '', secondaryDNS: '' };
+                        if (!d.pppoeProfiles) d.pppoeProfiles = [];
+                        if (!d.vlanProfiles) d.vlanProfiles = [];
+                        if (d.ssidProfiles) {
+                            for (var j = 0; j < d.ssidProfiles.length; j++) {
+                                if (d.ssidProfiles[j].id > _ssidCounter) _ssidCounter = d.ssidProfiles[j]
+                                    .id;
+                            }
+                        }
+                        if (d.pppoeProfiles) {
+                            for (var j = 0; j < d.pppoeProfiles.length; j++) {
+                                if (d.pppoeProfiles[j].id > _pppoeCounter) _pppoeCounter = d.pppoeProfiles[
+                                    j].id;
+                            }
+                        }
+                        if (d.vlanProfiles) {
+                            for (var j = 0; j < d.vlanProfiles.length; j++) {
+                                if (d.vlanProfiles[j].id > _vlanCounter) _vlanCounter = d.vlanProfiles[j]
+                                    .id;
+                            }
+                        }
+                        devs.push(d);
+                    }
+                    for (var i = 0; i < data.cables.length; i++) {
+                        var c = data.cables[i];
+                        if (c.id > cidC) cidC = c.id;
+                        if (!c.pts) c.pts = [];
+                        if (!c.ssid) c.ssid = '';
+                        if (!c.pppoe) c.pppoe = '';
+                        if (!c.vlanSource) c.vlanSource = '';
+                        if (!c.vlanDest) c.vlanDest = '';
+                        cabs.push(c);
+                    }
+                    if (data.view) { pX = data.view.panX || 0;
+                        pY = data.view.panY || 0;
+                        zm = data.view.zoom || 1.0; }
+                    if (data.counters) {
+                        if (data.counters.device > idC) idC = data.counters.device;
+                        if (data.counters.cable > cidC) cidC = data.counters.cable;
+                        if (data.counters.ssid > _ssidCounter) _ssidCounter = data.counters.ssid;
+                        if (data.counters.pppoe > _pppoeCounter) _pppoeCounter = data.counters.pppoe;
+                        if (data.counters.vlan > _vlanCounter) _vlanCounter = data.counters.vlan;
+                    }
+                    sDI = null;
+                    sCI = null;
+                    cSrc = null;
+                    selectedDevs = [];
+                    skipAutoScroll = false;
+                    uUI(true);
+                    ren();
+                    toast('Import successful (v2 with enhanced profiles)', 'ok');
+                } catch (err) {
+                    toast('Failed to import JSON: ' + err.message, 'er');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        document.getElementById('imJSON').addEventListener('click', function() { document.getElementById('fileInput')
+                .click(); });
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            if (this.files && this.files[0]) { importJSON(this.files[0]); }
+            this.value = '';
+        });
+
+        // ===== PDF (Full) =====
         document.getElementById('exPDF').addEventListener('click', function() {
             if (!devs.length && !cabs.length) { toast('No data to export', 'er'); return; }
             toast('Generating PDF (full report)...', 'in');
@@ -3570,14 +4676,22 @@
                     for (var j = 0; j < cabs.length; j++) { if (cabs[j].from === d.id || cabs[j].to === d.id) cc++; }
                     var statusLabel = d.status.charAt(0).toUpperCase() + d.status.slice(1);
                     var cidr = maskToCidr(d.subnet) || '24';
+                    var opMode = d.operationMode || '';
+                    var ssidCount = (d.ssidProfiles || []).length;
+                    var pppoeCount = (d.pppoeProfiles || []).length;
+                    var vlanCount = (d.vlanProfiles || []).length;
+                    var extra = '';
+                    if (ssidCount) extra += ' SSID:' + ssidCount;
+                    if (pppoeCount) extra += ' PPPoE:' + pppoeCount;
+                    if (vlanCount) extra += ' VLAN:' + vlanCount;
                     deviceRows.push([d.name, DT[d.type].lb, statusLabel, d.ip + '/' + cidr, d.ports.toString(), cc
-                        .toString()
+                        .toString(), opMode + extra
                     ]);
                 }
                 doc.autoTable({
                     startY: margin + 10,
                     head: [
-                        ['Name', 'Type', 'Status', 'IP/CIDR', 'Ports', 'Links']
+                        ['Name', 'Type', 'Status', 'IP/CIDR', 'Ports', 'Links', 'Profiles']
                     ],
                     body: deviceRows,
                     theme: 'plain',
@@ -3604,13 +4718,20 @@
                         var an = a ? a.name : '?',
                             bn = b ? b.name : '?';
                         var statusLabel = c.status.charAt(0).toUpperCase() + c.status.slice(1);
+                        var extraInfo = [];
+                        if (c.type === 'wireless' && c.ssid) extraInfo.push('SSID:' + c.ssid);
+                        if (c.pppoe) extraInfo.push('PPPoE:' + c.pppoe);
+                        if (c.vlanSource) extraInfo.push('VLANsrc:' + c.vlanSource);
+                        if (c.vlanDest) extraInfo.push('VLANdst:' + c.vlanDest);
+                        var extraStr = extraInfo.length ? extraInfo.join(' ') : '';
                         connRows.push([
                             c.name || 'Cable',
                             an + ' (P' + c.fromPort + ')',
                             bn + ' (P' + c.toPort + ')',
                             CT[c.type].lb,
                             c.bw + 'Mbps',
-                            statusLabel
+                            statusLabel,
+                            extraStr
                         ]);
                     }
                     var estimatedHeight = connRows.length * 4 + 20;
@@ -3622,7 +4743,7 @@
                         doc.autoTable({
                             startY: afterDeviceY + spacing + 5,
                             head: [
-                                ['Name', 'From', 'To', 'Type', 'Bandwidth', 'Status']
+                                ['Name', 'From', 'To', 'Type', 'Bandwidth', 'Status', 'Extra']
                             ],
                             body: connRows,
                             theme: 'plain',
@@ -3642,7 +4763,7 @@
                         doc.autoTable({
                             startY: margin + 10,
                             head: [
-                                ['Name', 'From', 'To', 'Type', 'Bandwidth', 'Status']
+                                ['Name', 'From', 'To', 'Type', 'Bandwidth', 'Status', 'Extra']
                             ],
                             body: connRows,
                             theme: 'plain',
@@ -3657,7 +4778,7 @@
                     }
                 }
 
-                // === PAGE 4+: DEVICE DETAILS (sama dengan PDF Selected) ===
+                // === PAGE 4+: DEVICE DETAILS (selected) ===
                 if (sDI !== null) {
                     var selDev = getDeviceById(sDI);
                     if (selDev) {
@@ -3674,8 +4795,7 @@
             }
         }
 
-        // === HELPER: GENERATE DEVICE DETAILS PAGE ===
-        // addNewPage: if true, call doc.addPage() first; if false, render on current page
+        // === HELPER: GENERATE DEVICE DETAILS PAGE (with fix for position overlap) ===
         function generateDeviceDetailsPage(doc, dev, pageWidth, pageHeight, margin, addNewPage) {
             if (addNewPage === undefined) addNewPage = true;
 
@@ -3706,9 +4826,13 @@
             doc.setFontSize(9);
             doc.text('Type: ' + t.lb, margin, y + 5);
             doc.text('Status: ' + dev.status.charAt(0).toUpperCase() + dev.status.slice(1), margin, y + 10);
+            if (dev.operationMode) {
+                doc.text('Operation Mode: ' + dev.operationMode, margin, y + 15);
+                y += 5;
+            }
             y += 20;
 
-            // === Network Configuration (dengan Notes multi-line) ===
+            // === Network Configuration ===
             doc.setFontSize(10);
             doc.setTextColor('#000000');
             doc.setFont('helvetica', 'bold');
@@ -3725,19 +4849,55 @@
                 ['MAC Address:', dev.mac],
                 ['Uptime:', dev.uptime]
             ];
-
             for (var i = 0; i < netData.length; i++) {
                 doc.text(netData[i][0] + ' ' + netData[i][1], margin, y);
                 y += 5;
             }
 
-            // === Notes (multi-line support) ===
+            // === LAN ===
+            if (dev.lan && (dev.lan.ip || dev.lan.subnet || dev.lan.cidr)) {
+                var lan = dev.lan;
+                doc.setFont('helvetica', 'bold');
+                doc.text('LAN', margin, y);
+                doc.setFont('helvetica', 'normal');
+                y += 5;
+                if (lan.ip) { doc.text('IP: ' + lan.ip, margin + 5, y);
+                    y += 4.5; }
+                if (lan.subnet) { doc.text('Subnet: ' + lan.subnet, margin + 5, y);
+                    y += 4.5; }
+                if (lan.cidr) { doc.text('CIDR: ' + lan.cidr, margin + 5, y);
+                    y += 4.5; }
+                y += 3;
+            }
+
+            // === DHCP ===
+            if (dev.dhcp && (dev.dhcp.startIP || dev.dhcp.endIP || dev.dhcp.gateway)) {
+                var dhcp = dev.dhcp;
+                doc.setFont('helvetica', 'bold');
+                doc.text('DHCP Server', margin, y);
+                doc.setFont('helvetica', 'normal');
+                y += 5;
+                if (dhcp.startIP) { doc.text('Start IP: ' + dhcp.startIP, margin + 5, y);
+                    y += 4.5; }
+                if (dhcp.endIP) { doc.text('End IP: ' + dhcp.endIP, margin + 5, y);
+                    y += 4.5; }
+                if (dhcp.gateway) { doc.text('Gateway: ' + dhcp.gateway, margin + 5, y);
+                    y += 4.5; }
+                if (dhcp.domain) { doc.text('Domain: ' + dhcp.domain, margin + 5, y);
+                    y += 4.5; }
+                if (dhcp.primaryDNS) { doc.text('Primary DNS: ' + dhcp.primaryDNS, margin + 5, y);
+                    y += 4.5; }
+                if (dhcp.secondaryDNS) { doc.text('Secondary DNS: ' + dhcp.secondaryDNS, margin + 5, y);
+                    y += 4.5; }
+                y += 3;
+            }
+
+            // === Notes ===
             if (dev.notes && dev.notes.trim()) {
                 doc.setFont('helvetica', 'bold');
                 doc.text('Notes:', margin, y);
                 doc.setFont('helvetica', 'normal');
                 y += 4.5;
-
                 var noteLines = dev.notes.split('\n');
                 for (var i = 0; i < noteLines.length; i++) {
                     var line = noteLines[i].trim();
@@ -3856,56 +5016,158 @@
             }
             y += 6;
 
-            // === PORT TYPES DETAIL (4 columns, 8 ports per column) ===
-            doc.setFontSize(10);
-            doc.setTextColor('#000000');
-            doc.setFont('helvetica', 'bold');
-            doc.text('Port Types Detail', margin, y);
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(7);
-            y += 5;
-
-            var typeLabels = { ethernet: 'Ethernet', fiber: 'Fiber', wireless: 'Wireless', other: 'Other' };
+            // === Port Types Detail ===
             var portTypes = dev.portTypes || [];
-            var totalPorts = dev.ports;
-            var cols = 4;
-            var rowsPerCol = 8;
-            var portsPerBlock = cols * rowsPerCol; // 32
-            var spacing = 4;
-            var colWidth = (pageWidth - 2 * margin - (cols - 1) * spacing) / cols;
+            var hasPortTypes = false;
+            for (var i = 0; i < portTypes.length; i++) {
+                if (portTypes[i] && (portTypes[i].type || portTypes[i].vlan)) { hasPortTypes = true; break; }
+            }
+            if (hasPortTypes) {
+                doc.setFontSize(10);
+                doc.setTextColor('#000000');
+                doc.setFont('helvetica', 'bold');
+                doc.text('Port Types Detail', margin, y);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7);
+                y += 5;
 
-            for (var startP = 1; startP <= totalPorts; startP += portsPerBlock) {
-                var rowY = y;
-                for (var row = 0; row < rowsPerCol; row++) {
-                    for (var col = 0; col < cols; col++) {
-                        var portNum = startP + col * rowsPerCol + row;
-                        if (portNum <= totalPorts) {
-                            var cable = getCableOnPort(dev.id, portNum);
-                            var isUsed = cable ? true : false;
-                            var cableType = cable ? cable.type : null;
-                            var pt = (portTypes && portTypes[portNum - 1]) ? portTypes[portNum - 1] : null;
-                            var displayType = cableType || pt;
-                            var typeLabel = displayType ? (typeLabels[displayType] || displayType) : 'Empty';
-                            var statusLabel = isUsed ? 'Used (' + cable.status + ')' : 'Empty';
-                            var label = 'Port ' + portNum + ': ' + typeLabel + ' (' + statusLabel + ')';
-                            var xPos = margin + col * (colWidth + spacing);
-                            doc.text(label, xPos, rowY);
+                var typeLabels = { ethernet: 'Ethernet', fiber: 'Fiber', wireless: 'Wireless', other: 'Other' };
+                var totalPorts = dev.ports;
+                var cols = 4;
+                var rowsPerCol = 8;
+                var portsPerBlock = cols * rowsPerCol;
+                var spacing = 4;
+                var colWidth = (pageWidth - 2 * margin - (cols - 1) * spacing) / cols;
+
+                for (var startP = 1; startP <= totalPorts; startP += portsPerBlock) {
+                    var rowY = y;
+                    for (var row = 0; row < rowsPerCol; row++) {
+                        for (var col = 0; col < cols; col++) {
+                            var portNum = startP + col * rowsPerCol + row;
+                            if (portNum <= totalPorts) {
+                                var cable = getCableOnPort(dev.id, portNum);
+                                var isUsed = cable ? true : false;
+                                var cableType = cable ? cable.type : null;
+                                var ptObj = getPortTypeObj(dev, portNum);
+                                var pt = ptObj ? ptObj.type : null;
+                                var vlan = ptObj ? ptObj.vlan : '';
+                                var displayType = cableType || pt;
+                                var typeLabel = displayType ? (typeLabels[displayType] || displayType) : 'Empty';
+                                var statusLabel = isUsed ? 'Used' : 'Empty';
+                                var label = 'P' + portNum + ': ' + typeLabel + (vlan ? ' VLAN:' + vlan : '') +
+                                    ' (' + statusLabel + ')';
+                                var xPos = margin + col * (colWidth + spacing);
+                                doc.text(label, xPos, rowY);
+                            }
+                        }
+                        rowY += 4.5;
+                        if (rowY > pageHeight - margin - 10) {
+                            doc.addPage();
+                            rowY = margin + 10;
+                            doc.setFontSize(10);
+                            doc.setTextColor('#000000');
+                            doc.setFont('helvetica', 'bold');
+                            doc.text('Port Types Detail (continued)', margin, rowY);
+                            doc.setFont('helvetica', 'normal');
+                            doc.setFontSize(7);
+                            rowY += 5;
                         }
                     }
-                    rowY += 4.5;
-                    if (rowY > pageHeight - margin - 10) {
+                    y = rowY + 3;
+                }
+                y += 3;
+            }
+
+            // === SSID Profiles ===
+            var ssids = dev.ssidProfiles || [];
+            if (ssids.length > 0) {
+                doc.setFontSize(10);
+                doc.setTextColor('#000000');
+                doc.setFont('helvetica', 'bold');
+                doc.text('Access Point Settings (' + ssids.length + ' SSID)', margin, y);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7);
+                y += 5;
+                for (var i = 0; i < ssids.length; i++) {
+                    var sp = ssids[i];
+                    var label = 'SSID #' + (i + 1) + ': ' + (sp.ssid || '(unnamed)') + ' | Password: ' + (sp
+                        .password ? '••••••••' : '(none)');
+                    doc.text(label, margin, y);
+                    y += 4.5;
+                    if (y > pageHeight - margin - 10) {
                         doc.addPage();
-                        rowY = margin + 10;
+                        y = margin + 10;
                         doc.setFontSize(10);
                         doc.setTextColor('#000000');
                         doc.setFont('helvetica', 'bold');
-                        doc.text('Port Types Detail (continued)', margin, rowY);
+                        doc.text('Access Point Settings (continued)', margin, y);
                         doc.setFont('helvetica', 'normal');
                         doc.setFontSize(7);
-                        rowY += 5;
+                        y += 5;
                     }
                 }
-                y = rowY + 3;
+                y += 3;
+            }
+
+            // === PPPoE Profiles ===
+            var pppoes = dev.pppoeProfiles || [];
+            if (pppoes.length > 0) {
+                doc.setFontSize(10);
+                doc.setTextColor('#000000');
+                doc.setFont('helvetica', 'bold');
+                doc.text('PPPoE Profiles (' + pppoes.length + ')', margin, y);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7);
+                y += 5;
+                for (var i = 0; i < pppoes.length; i++) {
+                    var pp = pppoes[i];
+                    var label = 'PPPoE #' + (i + 1) + ': ' + (pp.username || '(unnamed)') + ' | Password: ' + (pp
+                        .password ? '••••••••' : '(none)');
+                    doc.text(label, margin, y);
+                    y += 4.5;
+                    if (y > pageHeight - margin - 10) {
+                        doc.addPage();
+                        y = margin + 10;
+                        doc.setFontSize(10);
+                        doc.setTextColor('#000000');
+                        doc.setFont('helvetica', 'bold');
+                        doc.text('PPPoE Profiles (continued)', margin, y);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(7);
+                        y += 5;
+                    }
+                }
+                y += 3;
+            }
+
+            // === VLAN Profiles ===
+            var vlans = dev.vlanProfiles || [];
+            if (vlans.length > 0) {
+                doc.setFontSize(10);
+                doc.setTextColor('#000000');
+                doc.setFont('helvetica', 'bold');
+                doc.text('VLAN Profiles (' + vlans.length + ')', margin, y);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7);
+                y += 5;
+                for (var i = 0; i < vlans.length; i++) {
+                    var vp = vlans[i];
+                    var label = 'VLAN #' + (i + 1) + ': ID ' + (vp.vlanId || '(none)');
+                    doc.text(label, margin, y);
+                    y += 4.5;
+                    if (y > pageHeight - margin - 10) {
+                        doc.addPage();
+                        y = margin + 10;
+                        doc.setFontSize(10);
+                        doc.setTextColor('#000000');
+                        doc.setFont('helvetica', 'bold');
+                        doc.text('VLAN Profiles (continued)', margin, y);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(7);
+                        y += 5;
+                    }
+                }
+                y += 3;
             }
 
             // === Performance ===
@@ -3924,13 +5186,7 @@
             y += 6;
 
             // === Connected Cables ===
-            var connectedCables = [];
-            for (var i = 0; i < cabs.length; i++) {
-                if (cabs[i].from === dev.id || cabs[i].to === dev.id) {
-                    connectedCables.push(cabs[i]);
-                }
-            }
-
+            var connectedCables = getCablesForDevice(dev.id);
             if (connectedCables.length > 0) {
                 doc.setFontSize(10);
                 doc.setTextColor('#000000');
@@ -3940,22 +5196,54 @@
                 doc.setFontSize(7);
                 y += 5;
 
+                var cabRows = [];
                 for (var i = 0; i < connectedCables.length; i++) {
                     var c = connectedCables[i];
                     var other = getDeviceById(c.from === dev.id ? c.to : c.from);
                     var myP = c.from === dev.id ? c.fromPort : c.toPort;
-                    var label = (other ? other.name : '?') + ' (P' + myP + ')  \u2192  ' + c.type + '  ' + c.bw +
-                        'Mbps  [' + c.status + ']';
-                    doc.text(label, margin, y);
-                    y += 4.5;
+                    var extraInfo = [];
+                    if (c.type === 'wireless' && c.ssid) extraInfo.push('SSID:' + c.ssid);
+                    if (c.vlanSource) extraInfo.push('VLANsrc:' + c.vlanSource);
+                    if (c.vlanDest) extraInfo.push('VLANdst:' + c.vlanDest);
+                    if (c.pppoe) extraInfo.push('PPPoE:' + c.pppoe);
+                    var extraStr = extraInfo.length ? extraInfo.join(' ') : '';
+                    cabRows.push([
+                        (other ? other.name : '?') + ' (P' + myP + ')',
+                        CT[c.type].lb,
+                        c.bw + 'Mbps',
+                        c.status,
+                        extraStr
+                    ]);
                 }
-                y += 3;
+
+                doc.autoTable({
+                    startY: y,
+                    head: [
+                        ['Device (Port)', 'Type', 'Bandwidth', 'Status', 'Extra']
+                    ],
+                    body: cabRows,
+                    theme: 'plain',
+                    styles: { textColor: '#000000', lineColor: '#888888', lineWidth: 0.1, fontSize: 6.5,
+                        cellPadding: 1.2, fillColor: '#ffffff' },
+                    headStyles: { fillColor: '#e0e7ff', textColor: '#1e1b4b', fontSize: 6.5,
+                    fontStyle: 'bold', halign: 'center' },
+                    alternateRowStyles: { fillColor: '#f8fafc' },
+                    margin: { left: margin, right: margin },
+                    tableWidth: pageWidth - 2 * margin,
+                });
+                y = doc.lastAutoTable ? doc.lastAutoTable.finalY + 3 : y + 3;
             }
 
+            // === Position (fix: add new page if not enough space) ===
+            var posY = pageHeight - margin - 5;
+            if (y + 10 > posY) {
+                doc.addPage();
+                y = margin + 10;
+                posY = pageHeight - margin - 5;
+            }
             doc.setFontSize(8);
             doc.setTextColor('#666666');
-            doc.text('Position: (' + Math.round(dev.x) + ', ' + Math.round(dev.y) + ')', margin, pageHeight - margin -
-                5);
+            doc.text('Position: (' + Math.round(dev.x) + ', ' + Math.round(dev.y) + ')', margin, posY);
         }
 
         // ===== PDF (SELECTED) =====
@@ -3980,8 +5268,6 @@
                 var pageWidth = 210,
                     pageHeight = 297,
                     margin = 15;
-                // IMPORTANT: pass false as 5th param so we render on the existing first page,
-                // avoiding a blank page at the start.
                 generateDeviceDetailsPage(doc, dev, pageWidth, pageHeight, margin, false);
                 var filename = 'device-' + dev.name.replace(/\s+/g, '-') + '-' + new Date().toISOString().slice(0,
                     10) + '.pdf';
@@ -3992,60 +5278,6 @@
                 toast('PDF (Selected) failed: ' + err.message, 'er');
             }
         }
-
-        // ===== IMPORT JSON =====
-        function importJSON(file) {
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    var data = JSON.parse(e.target.result);
-                    if (!data.devices || !data.cables) { toast('Invalid JSON format', 'er'); return; }
-                    devs = [];
-                    cabs = [];
-                    idC = 0;
-                    cidC = 0;
-                    for (var i = 0; i < data.devices.length; i++) {
-                        var d = data.devices[i];
-                        if (!DT[d.type]) { toast('Unknown type: ' + d.type, 'er'); continue; }
-                        if (d.id > idC) idC = d.id;
-                        d.sc = 0;
-                        d.ts = 1;
-                        d.ph = Math.random() * 6.28;
-                        if (!d.portTypes) { d.portTypes = [];
-                            for (var p = 1; p <= d.ports; p++) d.portTypes.push(null); }
-                        if (d.notes === undefined) d.notes = '';
-                        devs.push(d);
-                    }
-                    for (var i = 0; i < data.cables.length; i++) {
-                        var c = data.cables[i];
-                        if (c.id > cidC) cidC = c.id;
-                        if (!c.pts) c.pts = [];
-                        cabs.push(c);
-                    }
-                    if (data.view) { pX = data.view.panX || 0;
-                        pY = data.view.panY || 0;
-                        zm = data.view.zoom || 1.0; }
-                    sDI = null;
-                    sCI = null;
-                    cSrc = null;
-                    selectedDevs = [];
-                    skipAutoScroll = false;
-                    uUI(true);
-                    ren();
-                    toast('Import successful (' + devs.length + ' devices, ' + cabs.length + ' cables)', 'ok');
-                } catch (err) {
-                    toast('Failed to import JSON: ' + err.message, 'er');
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        document.getElementById('imJSON').addEventListener('click', function() { document.getElementById('fileInput')
-                .click(); });
-        document.getElementById('fileInput').addEventListener('change', function(e) {
-            if (this.files && this.files[0]) { importJSON(this.files[0]); }
-            this.value = '';
-        });
 
         // ========== INIT ==========
         function init() {
