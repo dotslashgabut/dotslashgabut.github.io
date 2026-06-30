@@ -577,6 +577,34 @@
             border-color: var(--ac);
             color: var(--ac);
         }
+        .zb:disabled {
+            opacity: .3;
+            cursor: not-allowed;
+            border-color: var(--bd);
+            color: var(--mt);
+        }
+        .zb:disabled:hover {
+            border-color: var(--bd);
+            color: var(--mt);
+        }
+        .uc {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .uc-clear {
+            margin-top: 4px;
+            border-color: var(--dn) !important;
+            color: var(--dn) !important;
+        }
+        .uc-clear:hover {
+            background: rgba(255,71,87,.12) !important;
+            border-color: var(--dn) !important;
+            color: var(--dn) !important;
+        }
         .dp {
             background: var(--sf);
             border-left: 1px solid var(--bd);
@@ -1114,7 +1142,7 @@
             </div>
             <div class="ha">
                 <button class="bt bt-snap active" id="bSnap" title="Snap to grid (40px)"><i class="fa-solid fa-th"></i> Snap</button>
-                <button class="bt" id="bCl"><i class="fa-solid fa-trash-can"></i> Clear</button>
+                <button class="bt btd" id="bReset" title="Reset — hapus semua data permanen"><i class="fa-solid fa-power-off"></i> Reset</button>
                 <button class="bt" id="bLa"><i class="fa-solid fa-wand-magic-sparkles"></i> Layout</button>
                 <button class="bt" id="bAL"><i class="fa-solid fa-shuffle"></i> Auto</button>
                 <button class="bt bp" id="bAd"><i class="fa-solid fa-plus"></i> Add</button>
@@ -1159,6 +1187,11 @@
                 <button class="zb" id="zI"><i class="fa-solid fa-plus"></i></button>
                 <button class="zb" id="zO"><i class="fa-solid fa-minus"></i></button>
                 <button class="zb" id="zR"><i class="fa-solid fa-expand"></i></button>
+            </div>
+            <div class="uc">
+                <button class="zb" id="bUndo" title="Undo (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
+                <button class="zb" id="bRedo" title="Redo (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
+                <button class="zb uc-clear" id="bCl" title="Clear canvas"><i class="fa-solid fa-trash-can"></i></button>
             </div>
         </main>
         <aside class="dp" id="dP">
@@ -1302,6 +1335,100 @@
         var _ssidCounter = 0,
             _pppoeCounter = 0,
             _vlanCounter = 0;
+
+        // ===== UNDO/REDO =====
+        var _undoStack = [], _redoStack = [];
+        var _MAX_HISTORY = 50;
+        var _suspendHistory = false;
+
+        function _snapshot() {
+            return JSON.stringify({ devs: devs, cabs: cabs, idC: idC, cidC: cidC,
+                _ssidCounter: _ssidCounter, _pppoeCounter: _pppoeCounter, _vlanCounter: _vlanCounter });
+        }
+
+        function pushHistory() {
+            if (_suspendHistory) return;
+            _undoStack.push(_snapshot());
+            if (_undoStack.length > _MAX_HISTORY) _undoStack.shift();
+            _redoStack = [];
+            _updateUndoRedoBtns();
+        }
+
+        function _restoreSnapshot(snap) {
+            var s = JSON.parse(snap);
+            devs = s.devs; cabs = s.cabs; idC = s.idC; cidC = s.cidC;
+            _ssidCounter = s._ssidCounter; _pppoeCounter = s._pppoeCounter; _vlanCounter = s._vlanCounter;
+            if (sDI !== null && !getDeviceById(sDI)) sDI = null;
+            if (sCI !== null) { var found = false; for (var i=0;i<cabs.length;i++) if (cabs[i].id===sCI){found=true;break;} if (!found) sCI=null; }
+            selectedDevs = [];
+            skipAutoScroll = false;
+            uUI(false);
+            ren();
+            saveToIDB();
+        }
+
+        function doUndo() {
+            if (!_undoStack.length) { toast('Nothing to undo', 'in'); return; }
+            _redoStack.push(_snapshot());
+            _restoreSnapshot(_undoStack.pop());
+            _updateUndoRedoBtns();
+        }
+
+        function doRedo() {
+            if (!_redoStack.length) { toast('Nothing to redo', 'in'); return; }
+            _undoStack.push(_snapshot());
+            _restoreSnapshot(_redoStack.pop());
+            _updateUndoRedoBtns();
+        }
+
+        function _updateUndoRedoBtns() {
+            var bu = document.getElementById('bUndo'), br = document.getElementById('bRedo');
+            if (bu) bu.disabled = !_undoStack.length;
+            if (br) br.disabled = !_redoStack.length;
+        }
+
+        // ===== INDEXEDDB =====
+        var _idb = null;
+        var IDB_NAME = 'NetTopoIDB', IDB_STORE = 'state', IDB_KEY = 'main';
+
+        function openIDB(cb) {
+            if (_idb) { cb(_idb); return; }
+            var req = indexedDB.open(IDB_NAME, 1);
+            req.onupgradeneeded = function(e) {
+                e.target.result.createObjectStore(IDB_STORE);
+            };
+            req.onsuccess = function(e) { _idb = e.target.result; cb(_idb); };
+            req.onerror = function() { console.warn('IDB open failed'); };
+        }
+
+        function saveToIDB() {
+            try {
+                openIDB(function(db) {
+                    var tx = db.transaction(IDB_STORE, 'readwrite');
+                    var data = { devs: devs, cabs: cabs, idC: idC, cidC: cidC,
+                        _ssidCounter: _ssidCounter, _pppoeCounter: _pppoeCounter, _vlanCounter: _vlanCounter,
+                        zm: zm, pX: pX, pY: pY };
+                    tx.objectStore(IDB_STORE).put(JSON.stringify(data), IDB_KEY);
+                });
+            } catch(e) {}
+        }
+
+        function loadFromIDB(cb) {
+            openIDB(function(db) {
+                var tx = db.transaction(IDB_STORE, 'readonly');
+                var req = tx.objectStore(IDB_STORE).get(IDB_KEY);
+                req.onsuccess = function(e) { cb(e.target.result ? JSON.parse(e.target.result) : null); };
+                req.onerror = function() { cb(null); };
+            });
+        }
+
+        function clearIDB(cb) {
+            openIDB(function(db) {
+                var tx = db.transaction(IDB_STORE, 'readwrite');
+                tx.objectStore(IDB_STORE).delete(IDB_KEY);
+                if (cb) tx.oncomplete = cb;
+            });
+        }
 
         var cv = document.getElementById('dc');
         var cx = cv.getContext('2d');
@@ -2867,45 +2994,18 @@
                 }
             }
 
-            // === Add SSID without full re-render ===
+            // === Add SSID — full re-render (fixes index bugs) ===
             var addSsidBtn = document.getElementById('addSsid');
             if (addSsidBtn) {
                 addSsidBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
+                    pushHistory();
                     if (!d.ssidProfiles) d.ssidProfiles = [];
-                    var newIdx = d.ssidProfiles.length;
                     d.ssidProfiles.push({ id: ++_ssidCounter, ssid: '', password: '', _pwVis: false });
-                    // Find the container (parent of the button)
-                    var container = this.parentElement;
-                    if (!container) return;
-                    // Remove the button temporarily
-                    var btn = this;
-                    // Build new profile HTML
-                    var pwVis = false;
-                    var profHtml = '<div class="profile-item" data-ssid-idx="' + newIdx + '">' +
-                        '<div class="profile-header"><span>SSID #' + (newIdx + 1) +
-                        '</span><span class="del-prof" data-ssid-del="' + newIdx +
-                        '"><i class="fa-regular fa-trash-can"></i></span></div>' +
-                        '<div class="dr" style="border:none;padding:2px 0"><span class="l" style="font-size:10px">SSID</span><input class="ei ei-sm" data-ssid-field="' +
-                        newIdx + '" value="" placeholder="SSID name"></div>' +
-                        '<div class="dr" style="border:none;padding:2px 0"><span class="l" style="font-size:10px">Password</span><div style="display:flex;gap:4px;align-items:center;flex:1"><input class="ei ei-sm-pw" data-ssid-pw="' +
-                        newIdx + '" type="password" value="" placeholder="Password"><button class="pw-toggle" data-ssid-pw-toggle="' +
-                        newIdx + '"><i class="fa-solid fa-eye"></i></button></div></div>' +
-                        '</div>';
-                    // Insert before the button
-                    container.insertBefore(createElementFromHTML(profHtml), btn);
-                    // Update counters in header
-                    var header = container.closest('.se-collapsible').querySelector('.stl');
-                    if (header) {
-                        var match = header.textContent.match(/\((\d+)\s+SSID\)/);
-                        if (match) {
-                            var count = parseInt(match[1]) + 1;
-                            header.textContent = header.textContent.replace(/\(\d+\s+SSID\)/, '(' + count +
-                                ' SSID)');
-                        }
-                    }
-                    // Re-bind events for new items
-                    bindProfileEvents(el, d);
+                    saveToIDB();
+                    _sDD(d);
+                    var ssidSec = document.querySelector('[data-section="ssid"]');
+                    if (ssidSec) ssidSec.classList.add('open');
                     toast('SSID profile added', 'in');
                 });
             }
@@ -2925,10 +3025,13 @@
                     delSsid[i].addEventListener('click', function(e) {
                         e.stopPropagation();
                         var idx = parseInt(this.dataset.ssidDel);
-                        if (!isNaN(idx) && d.ssidProfiles && d.ssidProfiles[idx]) {
+                        if (!isNaN(idx) && d.ssidProfiles && idx < d.ssidProfiles.length) {
+                            pushHistory();
                             d.ssidProfiles.splice(idx, 1);
-                            // Re-render entire section (simpler)
+                            saveToIDB();
                             _sDD(d);
+                            var ssidSec = document.querySelector('[data-section="ssid"]');
+                            if (ssidSec) ssidSec.classList.add('open');
                             toast('SSID removed', 'in');
                         }
                     });
@@ -2939,9 +3042,13 @@
                     delPppoe[i].addEventListener('click', function(e) {
                         e.stopPropagation();
                         var idx = parseInt(this.dataset.pppoeDel);
-                        if (!isNaN(idx) && d.pppoeProfiles && d.pppoeProfiles[idx]) {
+                        if (!isNaN(idx) && d.pppoeProfiles && idx < d.pppoeProfiles.length) {
+                            pushHistory();
                             d.pppoeProfiles.splice(idx, 1);
+                            saveToIDB();
                             _sDD(d);
+                            var pppoeSec = document.querySelector('[data-section="pppoe"]');
+                            if (pppoeSec) pppoeSec.classList.add('open');
                             toast('PPPoE removed', 'in');
                         }
                     });
@@ -2952,9 +3059,13 @@
                     delVlan[i].addEventListener('click', function(e) {
                         e.stopPropagation();
                         var idx = parseInt(this.dataset.vlanDel);
-                        if (!isNaN(idx) && d.vlanProfiles && d.vlanProfiles[idx]) {
+                        if (!isNaN(idx) && d.vlanProfiles && idx < d.vlanProfiles.length) {
+                            pushHistory();
                             d.vlanProfiles.splice(idx, 1);
+                            saveToIDB();
                             _sDD(d);
+                            var vlanSec = document.querySelector('[data-section="vlan"]');
+                            if (vlanSec) vlanSec.classList.add('open');
                             toast('VLAN removed', 'in');
                         }
                     });
@@ -2962,75 +3073,38 @@
                 // Password toggles
                 setupSsidPwToggle();
                 setupPppoePwToggle();
-                // Input events for SSID, PPPoE, VLAN (already handled by global listeners)
             }
 
             // Re-bind after re-render (already called at end of _sDD)
 
-            // PPPoE add without full re-render
+            // PPPoE add — full re-render
             var addPppoeBtn = document.getElementById('addPppoe');
             if (addPppoeBtn) {
                 addPppoeBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
+                    pushHistory();
                     if (!d.pppoeProfiles) d.pppoeProfiles = [];
-                    var newIdx = d.pppoeProfiles.length;
-                    d.pppoeProfiles.push({ id: ++_pppoeCounter, username: '', password: '',
-                    _pwVis: false });
-                    var container = this.parentElement;
-                    if (!container) return;
-                    var profHtml = '<div class="profile-item" data-pppoe-idx="' + newIdx + '">' +
-                        '<div class="profile-header"><span>PPPoE #' + (newIdx + 1) +
-                        '</span><span class="del-prof" data-pppoe-del="' + newIdx +
-                        '"><i class="fa-regular fa-trash-can"></i></span></div>' +
-                        '<div class="dr" style="border:none;padding:2px 0"><span class="l" style="font-size:10px">Username</span><input class="ei ei-sm" data-pppoe-user="' +
-                        newIdx + '" value="" placeholder="Username"></div>' +
-                        '<div class="dr" style="border:none;padding:2px 0"><span class="l" style="font-size:10px">Password</span><div style="display:flex;gap:4px;align-items:center;flex:1"><input class="ei ei-sm-pw" data-pppoe-pw="' +
-                        newIdx + '" type="password" value="" placeholder="Password"><button class="pw-toggle" data-pppoe-pw-toggle="' +
-                        newIdx + '"><i class="fa-solid fa-eye"></i></button></div></div>' +
-                        '</div>';
-                    container.insertBefore(createElementFromHTML(profHtml), this);
-                    var header = container.closest('.se-collapsible').querySelector('.stl');
-                    if (header) {
-                        var match = header.textContent.match(/\((\d+)\s+PPPoE\)/);
-                        if (match) {
-                            var count = parseInt(match[1]) + 1;
-                            header.textContent = header.textContent.replace(/\(\d+\s+PPPoE\)/, '(' + count +
-                                ' PPPoE)');
-                        }
-                    }
-                    bindProfileEvents(el, d);
+                    d.pppoeProfiles.push({ id: ++_pppoeCounter, username: '', password: '', _pwVis: false });
+                    saveToIDB();
+                    _sDD(d);
+                    var pppoeSec = document.querySelector('[data-section="pppoe"]');
+                    if (pppoeSec) pppoeSec.classList.add('open');
                     toast('PPPoE profile added', 'in');
                 });
             }
 
-            // VLAN add without full re-render
+            // VLAN add — full re-render
             var addVlanBtn = document.getElementById('addVlan');
             if (addVlanBtn) {
                 addVlanBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
+                    pushHistory();
                     if (!d.vlanProfiles) d.vlanProfiles = [];
-                    var newIdx = d.vlanProfiles.length;
                     d.vlanProfiles.push({ id: ++_vlanCounter, vlanId: '' });
-                    var container = this.parentElement;
-                    if (!container) return;
-                    var profHtml = '<div class="profile-item" data-vlan-idx="' + newIdx + '">' +
-                        '<div class="profile-header"><span>VLAN #' + (newIdx + 1) +
-                        '</span><span class="del-prof" data-vlan-del="' + newIdx +
-                        '"><i class="fa-regular fa-trash-can"></i></span></div>' +
-                        '<div class="dr" style="border:none;padding:2px 0"><span class="l" style="font-size:10px">VLAN ID</span><input class="ei ei-sm" data-vlan-id="' +
-                        newIdx + '" value="" placeholder="VLAN ID (e.g. 10)"></div>' +
-                        '</div>';
-                    container.insertBefore(createElementFromHTML(profHtml), this);
-                    var header = container.closest('.se-collapsible').querySelector('.stl');
-                    if (header) {
-                        var match = header.textContent.match(/\((\d+)\s+VLAN\)/);
-                        if (match) {
-                            var count = parseInt(match[1]) + 1;
-                            header.textContent = header.textContent.replace(/\(\d+\s+VLAN\)/, '(' + count +
-                                ' VLAN)');
-                        }
-                    }
-                    bindProfileEvents(el, d);
+                    saveToIDB();
+                    _sDD(d);
+                    var vlanSec = document.querySelector('[data-section="vlan"]');
+                    if (vlanSec) vlanSec.classList.add('open');
                     toast('VLAN profile added', 'in');
                 });
             }
@@ -3046,6 +3120,8 @@
                         d.ssidProfiles[idx].ssid = ssidField.value;
                         uDL();
                         ren();
+                        clearTimeout(_saveTimer);
+                        _saveTimer = setTimeout(saveToIDB, 800);
                     }
                     return;
                 }
@@ -3056,6 +3132,8 @@
                         d.ssidProfiles[idx2].password = ssidPw.value;
                         uDL();
                         ren();
+                        clearTimeout(_saveTimer);
+                        _saveTimer = setTimeout(saveToIDB, 800);
                     }
                     return;
                 }
@@ -3066,6 +3144,8 @@
                         d.pppoeProfiles[idx].username = pppoeUser.value;
                         uDL();
                         ren();
+                        clearTimeout(_saveTimer);
+                        _saveTimer = setTimeout(saveToIDB, 800);
                     }
                     return;
                 }
@@ -3076,6 +3156,8 @@
                         d.pppoeProfiles[idx2].password = pppoePw.value;
                         uDL();
                         ren();
+                        clearTimeout(_saveTimer);
+                        _saveTimer = setTimeout(saveToIDB, 800);
                     }
                     return;
                 }
@@ -3086,6 +3168,8 @@
                         d.vlanProfiles[idx].vlanId = vlanId.value;
                         uDL();
                         ren();
+                        clearTimeout(_saveTimer);
+                        _saveTimer = setTimeout(saveToIDB, 800);
                     }
                     return;
                 }
@@ -3169,9 +3253,8 @@
                 });
             }
 
-            // Setup password toggles (non-render)
-            setupSsidPwToggle();
-            setupPppoePwToggle();
+            // All profile events (add, delete, pw-toggle) bound via bindProfileEvents below
+            bindProfileEvents(el, d);
 
             updateNotesSidebar();
         };
@@ -3431,6 +3514,7 @@
             sDD = _sDD,
             sDC = _sDC;
 
+        var _saveTimer = null;
         function uUI(scroll) {
             if (scroll === undefined) scroll = true;
             uDL();
@@ -3444,6 +3528,9 @@
             }
             updateRightPanel();
             updateNotesSidebar();
+            // Debounced save
+            clearTimeout(_saveTimer);
+            _saveTimer = setTimeout(saveToIDB, 800);
         }
 
         function uCabLen() {
@@ -3456,6 +3543,7 @@
         }
 
         function delD(id) {
+            pushHistory();
             for (var i = cabs.length - 1; i >= 0; i--) { if (cabs[i].from === id || cabs[i].to === id) cabs.splice(i,
                 1); }
             for (var i = devs.length - 1; i >= 0; i--) { if (devs[i].id === id) { devs.splice(i, 1); break; } }
@@ -3468,6 +3556,7 @@
         }
 
         function delC(id) {
+            pushHistory();
             for (var i = cabs.length - 1; i >= 0; i--) { if (cabs[i].id === id) { cabs.splice(i, 1); break; } }
             if (sCI === id) sCI = null;
             skipAutoScroll = false;
@@ -3608,6 +3697,7 @@
                     uUI(true);
                     ren(); return; }
                 var nd = mkD(selT, cl(w.x), cl(w.y));
+                pushHistory();
                 devs.push(nd);
                 sDI = nd.id;
                 sCI = null;
@@ -3644,6 +3734,7 @@
         
                 var nc = mkC(cSrc, hd.id, selCT);
                 if (!nc) { cSrc = null; ren(); return; }
+                pushHistory();
                 cabs.push(nc);
                 sCI = nc.id;
                 sDI = null;
@@ -3769,6 +3860,7 @@
                 else if (selectedDevs.length > 1) sDI = null;
                 dragD = null;
                 cv.style.cursor = mode === 'select' ? 'default' : (mode === 'place' ? 'crosshair' : 'default');
+                saveToIDB();
                 uUI(true);
                 ren();
             }
@@ -3806,6 +3898,8 @@
         document.addEventListener('keydown', function(e) {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA')
                 return;
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); doUndo(); return; }
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); doRedo(); return; }
             if (e.key === 'Delete' || e.key === 'Backspace') {
                 if (selectedDevs.length > 1) { var ids = selectedDevs.slice(); for (var i = 0; i < ids.length; i++)
                         delD(ids[i]);
@@ -3917,6 +4011,7 @@
 
         document.getElementById('bCl').addEventListener('click', function() {
             if (!devs.length && !cabs.length) return;
+            pushHistory();
             devs = [];
             cabs = [];
             sDI = null;
@@ -3928,8 +4023,27 @@
             skipAutoScroll = false;
             uUI(false);
             cx.clearRect(0, 0, cW, cH);
-            toast('Cleared all', 'in');
+            saveToIDB();
+            toast('Canvas cleared', 'in');
         });
+
+        document.getElementById('bReset').addEventListener('click', function() {
+            if (!confirm('Reset akan menghapus SEMUA data secara permanen (termasuk history & storage).\n\nLanjutkan?')) return;
+            _undoStack = []; _redoStack = [];
+            devs = []; cabs = [];
+            sDI = null; sCI = null; cSrc = null; selectedDevs = [];
+            idC = 0; cidC = 0;
+            _ssidCounter = 0; _pppoeCounter = 0; _vlanCounter = 0;
+            skipAutoScroll = false;
+            clearIDB();
+            uUI(false);
+            _updateUndoRedoBtns();
+            cx.clearRect(0, 0, cW, cH);
+            toast('Data direset', 'in');
+        });
+
+        document.getElementById('bUndo').addEventListener('click', doUndo);
+        document.getElementById('bRedo').addEventListener('click', doRedo);
 
         document.getElementById('bLa').addEventListener('click', function() {
             if (!devs.length) { toast('No devices', 'er'); return; }
@@ -4107,10 +4221,15 @@
             }
             skipAutoScroll = false;
             uUI(false);
+            saveToIDB();
+            _undoStack = []; _redoStack = []; _updateUndoRedoBtns();
             toast('Sample topology loaded with enhanced profiles', 'ok');
             ren();
         }
-        document.getElementById('bSample').addEventListener('click', loadSample);
+        document.getElementById('bSample').addEventListener('click', function() {
+            pushHistory();
+            loadSample();
+        });
 
         // ========== EXPORT FUNCTIONS ==========
         function escapeXml(str) {
@@ -4538,6 +4657,8 @@
                     cSrc = null;
                     selectedDevs = [];
                     skipAutoScroll = false;
+                    saveToIDB();
+                    _undoStack = []; _redoStack = []; _updateUndoRedoBtns();
                     uUI(true);
                     ren();
                     toast('Import successful (v2 with enhanced profiles)', 'ok');
@@ -5286,11 +5407,27 @@
         function init() {
             buildSB();
             rsz();
-            loadSample();
+            _updateUndoRedoBtns();
             document.getElementById('bSnap').classList.add('snap-btn-active');
             document.getElementById('bSnap').classList.add('active');
             snapToGrid = true;
             requestAnimationFrame(loop);
+
+            // Try to load from IndexedDB; fallback to sample
+            loadFromIDB(function(saved) {
+                if (saved && saved.devs && saved.devs.length > 0) {
+                    devs = saved.devs; cabs = saved.cabs || [];
+                    idC = saved.idC || 0; cidC = saved.cidC || 0;
+                    _ssidCounter = saved._ssidCounter || 0;
+                    _pppoeCounter = saved._pppoeCounter || 0;
+                    _vlanCounter = saved._vlanCounter || 0;
+                    if (saved.zm) { zm = saved.zm; pX = saved.pX; pY = saved.pY; firstRS = false; }
+                    uUI(false);
+                    toast('Data restored from storage', 'ok');
+                } else {
+                    loadSample();
+                }
+            });
         }
         init();
     </script>
