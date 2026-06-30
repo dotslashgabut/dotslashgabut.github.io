@@ -3959,7 +3959,7 @@
                 place: 'Click to place &middot; <kbd>Drag</kbd> move &middot; <kbd>Scroll</kbd> zoom &middot; <kbd>G</kbd> snap toggle',
                 connect: 'Click first device, then second &middot; <kbd>Esc</kbd> cancel',
                 select: 'Click to edit &middot; <kbd>Drag</kbd> move &middot; <kbd>Del</kbd> delete &middot; <kbd>Shift</kbd>+click add selection &middot; <kbd>Right-click</kbd> drag to pan',
-                delete: 'Click to delete &middot; <kbd>Esc</kbd> cancel'
+                delete: 'Click to delete &middot; <kbd>Ctrl+Z</kbd> undo &middot; <kbd>Ctrl+Y</kbd> redo'
             };
             document.getElementById('cH').innerHTML = hints[m];
             cv.style.cursor = m === 'place' ? 'crosshair' : 'default';
@@ -4032,7 +4032,7 @@
         });
 
         document.getElementById('bReset').addEventListener('click', function() {
-            if (!confirm('Reset akan menghapus SEMUA data secara permanen (termasuk history & storage).\n\nLanjutkan?')) return;
+            if (!confirm('Reset will permanently delete ALL data, including history and storage.\n\nContinue?')) return;
             _undoStack = []; _redoStack = [];
             devs = []; cabs = [];
             sDI = null; sCI = null; cSrc = null; selectedDevs = [];
