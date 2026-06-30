@@ -1291,7 +1291,7 @@
         var SC_OBJ = { online: '#00d48e', warning: '#ffa726', offline: '#ff4757' };
         var PORT_TYPES = ['ethernet', 'fiber', 'wireless', 'other'];
         var PORT_COLORS = { ethernet: '#29b6f6', fiber: '#c084fc', wireless: '#ffa726', other: '#888888' };
-        var OP_MODES = ['AP Client Router', 'AP Router', 'Access Point', 'Multi-SSID', 'Repeater (Range Extender)',
+        var OP_MODES = ['Default', 'AP Client Router', 'AP Router', 'Access Point', 'Multi-SSID', 'Repeater (Range Extender)',
             'Bridge with AP', 'Client', 'Other'
         ];
 
@@ -1402,18 +1402,12 @@
 
         function saveToIDB() {
             try {
-                var data = { devs: devs, cabs: cabs, idC: idC, cidC: cidC,
-                    _ssidCounter: _ssidCounter, _pppoeCounter: _pppoeCounter, _vlanCounter: _vlanCounter,
-                    zm: zm, pX: pX, pY: pY };
-                var serialized = JSON.stringify(data);
-                // Write to localStorage immediately (synchronous — instant)
-                try { localStorage.setItem('NetTopoSnapshot', serialized); } catch(le) {}
-                // Also write to IndexedDB (async, more storage capacity)
                 openIDB(function(db) {
-                    try {
-                        var tx = db.transaction(IDB_STORE, 'readwrite');
-                        tx.objectStore(IDB_STORE).put(serialized, IDB_KEY);
-                    } catch(ie) {}
+                    var tx = db.transaction(IDB_STORE, 'readwrite');
+                    var data = { devs: devs, cabs: cabs, idC: idC, cidC: cidC,
+                        _ssidCounter: _ssidCounter, _pppoeCounter: _pppoeCounter, _vlanCounter: _vlanCounter,
+                        zm: zm, pX: pX, pY: pY };
+                    tx.objectStore(IDB_STORE).put(JSON.stringify(data), IDB_KEY);
                 });
             } catch(e) {}
         }
@@ -1422,41 +1416,8 @@
             openIDB(function(db) {
                 var tx = db.transaction(IDB_STORE, 'readonly');
                 var req = tx.objectStore(IDB_STORE).get(IDB_KEY);
-                req.onsuccess = function(e) {
-                    var idbData = e.target.result ? JSON.parse(e.target.result) : null;
-                    // Also check localStorage snapshot (written synchronously on beforeunload)
-                    var lsRaw = null;
-                    try { lsRaw = localStorage.getItem('NetTopoSnapshot'); } catch(ex) {}
-                    if (lsRaw) {
-                        try {
-                            var lsData = JSON.parse(lsRaw);
-                            // Use localStorage if IDB has no data, OR if localStorage has more devices
-                            // (meaning IDB write didn't finish before page closed)
-                            if (!idbData || (lsData.devs && lsData.devs.length >= (idbData.devs || []).length)) {
-                                // Merge: prefer localStorage for devices/cables, IDB for everything else
-                                // Simple heuristic: if device count matches or LS has more, use LS
-                                if (!idbData || lsData.devs.length >= idbData.devs.length) {
-                                    // Write LS data back to IDB to keep them in sync
-                                    try {
-                                        var tx2 = db.transaction(IDB_STORE, 'readwrite');
-                                        tx2.objectStore(IDB_STORE).put(lsRaw, IDB_KEY);
-                                    } catch(ex2) {}
-                                    cb(lsData);
-                                    return;
-                                }
-                            }
-                        } catch(ex) {}
-                    }
-                    cb(idbData);
-                };
-                req.onerror = function() {
-                    // IDB failed — try localStorage
-                    try {
-                        var lsRaw = localStorage.getItem('NetTopoSnapshot');
-                        if (lsRaw) { cb(JSON.parse(lsRaw)); return; }
-                    } catch(ex) {}
-                    cb(null);
-                };
+                req.onsuccess = function(e) { cb(e.target.result ? JSON.parse(e.target.result) : null); };
+                req.onerror = function() { cb(null); };
             });
         }
 
@@ -2591,10 +2552,11 @@
 
             var opModeOpts = '';
             for (var i = 0; i < OP_MODES.length; i++) {
-                var sel = d.operationMode === OP_MODES[i] ? ' selected' : '';
-                opModeOpts += '<option value="' + OP_MODES[i] + '"' + sel + '>' + OP_MODES[i] + '</option>';
+                var optVal = OP_MODES[i] === 'Default' ? '' : OP_MODES[i];
+                var sel = (d.operationMode || '') === optVal ? ' selected' : '';
+                opModeOpts += '<option value="' + optVal + '"' + sel + '>' + OP_MODES[i] + '</option>';
             }
-            var otherMode = (d.operationMode && OP_MODES.indexOf(d.operationMode) === -1) ? d.operationMode : '';
+            var otherMode = (d.operationMode && d.operationMode !== 'Other' && OP_MODES.indexOf(d.operationMode) === -1) ? d.operationMode : '';
 
             var html = '';
             var cidr = maskToCidr(d.subnet) || '24';
@@ -2662,13 +2624,15 @@
             html += collapsibleSection('Ports (' + usedCount + '/' + d.ports + ' used)', 'ports', portHtml, true);
 
             // === Operation Mode ===
+            // Known stored values (Default maps to '', others map to their label)
+            var _knownModeVals = OP_MODES.map(function(m) { return m === 'Default' ? '' : m; });
+            var _isCustomMode = d.operationMode && _knownModeVals.indexOf(d.operationMode) === -1;
             var opHtml = '';
             opHtml +=
                 '<div class="dr"><span class="l">Operation Mode</span><select class="es" id="eOpMode" style="width:180px">' +
                 opModeOpts + '</select></div>';
             opHtml +=
-                '<div class="dr" id="opModeOtherRow" style="' + (OP_MODES.indexOf(d.operationMode) === -1 &&
-                    d.operationMode ? '' : 'display:none') + '"><span class="l">Other Mode</span><input class="ei eis" id="eOpModeOther" value="' +
+                '<div class="dr" id="opModeOtherRow" style="' + (_isCustomMode ? '' : 'display:none') + '"><span class="l">Other Mode</span><input class="ei eis" id="eOpModeOther" value="' +
                 otherMode + '" placeholder="Enter custom mode"></div>';
             html += collapsibleSection('Operation Mode', 'opmode', opHtml, false);
 
@@ -2961,7 +2925,7 @@
 
             // Operation Mode
             $('eOpMode').addEventListener('change', function() {
-                var val = this.value;
+                var val = this.value; // "" = Default, "Other" = Other, else the mode label
                 d.operationMode = val;
                 var otherRow = document.getElementById('opModeOtherRow');
                 if (val === 'Other') {
@@ -2971,7 +2935,8 @@
                 }
                 uDL();
                 ren();
-                toast('Operation Mode: ' + val, 'in');
+                saveToIDB();
+                toast('Operation Mode: ' + (val || 'Default'), 'in');
             });
             var opOther = $('eOpModeOther');
             if (opOther) {
@@ -2979,6 +2944,7 @@
                     d.operationMode = this.value.trim() || 'Other';
                     uDL();
                     ren();
+                    saveToIDB();
                 });
             }
 
@@ -3158,7 +3124,8 @@
                         d.ssidProfiles[idx].ssid = ssidField.value;
                         uDL();
                         ren();
-                        saveToIDB();
+                        clearTimeout(_saveTimer);
+                        _saveTimer = setTimeout(saveToIDB, 800);
                     }
                     return;
                 }
@@ -3169,7 +3136,8 @@
                         d.ssidProfiles[idx2].password = ssidPw.value;
                         uDL();
                         ren();
-                        saveToIDB();
+                        clearTimeout(_saveTimer);
+                        _saveTimer = setTimeout(saveToIDB, 800);
                     }
                     return;
                 }
@@ -3180,7 +3148,8 @@
                         d.pppoeProfiles[idx].username = pppoeUser.value;
                         uDL();
                         ren();
-                        saveToIDB();
+                        clearTimeout(_saveTimer);
+                        _saveTimer = setTimeout(saveToIDB, 800);
                     }
                     return;
                 }
@@ -3191,7 +3160,8 @@
                         d.pppoeProfiles[idx2].password = pppoePw.value;
                         uDL();
                         ren();
-                        saveToIDB();
+                        clearTimeout(_saveTimer);
+                        _saveTimer = setTimeout(saveToIDB, 800);
                     }
                     return;
                 }
@@ -3202,17 +3172,10 @@
                         d.vlanProfiles[idx].vlanId = vlanId.value;
                         uDL();
                         ren();
-                        saveToIDB();
+                        clearTimeout(_saveTimer);
+                        _saveTimer = setTimeout(saveToIDB, 800);
                     }
                     return;
-                }
-            });
-
-            // Save on blur for any input/textarea/select in the panel — catches fast refresh
-            el.addEventListener('focusout', function(e) {
-                var t = e.target;
-                if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT') {
-                    saveToIDB();
                 }
             });
 
@@ -3569,7 +3532,9 @@
             }
             updateRightPanel();
             updateNotesSidebar();
-            saveToIDB();
+            // Debounced save
+            clearTimeout(_saveTimer);
+            _saveTimer = setTimeout(saveToIDB, 800);
         }
 
         function uCabLen() {
@@ -3690,12 +3655,8 @@
                                 detailNotes.value = d.notes || '';
                             }
                             uDL();
-                            saveToIDB();
                         }
                     }
-                });
-                notesInput.addEventListener('blur', function() {
-                    saveToIDB();
                 });
             }
         }
@@ -5470,21 +5431,6 @@
                 } else {
                     loadSample();
                 }
-            });
-
-            // Flush save immediately before page unloads (covers fast F5 / Ctrl+R)
-            window.addEventListener('beforeunload', function() {
-                // Cancel any pending debounced save
-                clearTimeout(_saveTimer);
-                // Write synchronously to localStorage as an instant backup
-                try {
-                    var data = JSON.stringify({ devs: devs, cabs: cabs, idC: idC, cidC: cidC,
-                        _ssidCounter: _ssidCounter, _pppoeCounter: _pppoeCounter, _vlanCounter: _vlanCounter,
-                        zm: zm, pX: pX, pY: pY });
-                    localStorage.setItem('NetTopoSnapshot', data);
-                } catch(e) {}
-                // Also trigger an IDB save (async, may or may not complete)
-                saveToIDB();
             });
         }
         init();
