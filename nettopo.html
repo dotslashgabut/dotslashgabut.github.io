@@ -1170,14 +1170,14 @@
             <div class="cs" id="cableTypeButtons"></div>
             <div class="stt">Network Devices</div>
             <div id="deviceTypeButtons"></div>
-            <div class="sb-notes" id="sbNotes">
-                <label><i class="fa-regular fa-note-sticky"></i> Notes</label>
-                <textarea id="sbNotesInput" placeholder="Add notes for this device..."></textarea>
-            </div>
             <div class="stt">Devices</div>
             <div class="dl" id="dL"></div>
             <div class="stt">Cables</div>
             <div class="cl" id="cL"></div>
+            <div class="sb-notes" id="sbNotes">
+                <label><i class="fa-regular fa-note-sticky"></i> Notes</label>
+                <textarea id="sbNotesInput" placeholder="Add notes for this device..."></textarea>
+            </div>
         </aside>
         <main class="ca">
             <canvas id="dc"></canvas>
@@ -1402,12 +1402,18 @@
 
         function saveToIDB() {
             try {
+                var data = { devs: devs, cabs: cabs, idC: idC, cidC: cidC,
+                    _ssidCounter: _ssidCounter, _pppoeCounter: _pppoeCounter, _vlanCounter: _vlanCounter,
+                    zm: zm, pX: pX, pY: pY };
+                var serialized = JSON.stringify(data);
+                // Write to localStorage immediately (synchronous — instant)
+                try { localStorage.setItem('NetTopoSnapshot', serialized); } catch(le) {}
+                // Also write to IndexedDB (async, more storage capacity)
                 openIDB(function(db) {
-                    var tx = db.transaction(IDB_STORE, 'readwrite');
-                    var data = { devs: devs, cabs: cabs, idC: idC, cidC: cidC,
-                        _ssidCounter: _ssidCounter, _pppoeCounter: _pppoeCounter, _vlanCounter: _vlanCounter,
-                        zm: zm, pX: pX, pY: pY };
-                    tx.objectStore(IDB_STORE).put(JSON.stringify(data), IDB_KEY);
+                    try {
+                        var tx = db.transaction(IDB_STORE, 'readwrite');
+                        tx.objectStore(IDB_STORE).put(serialized, IDB_KEY);
+                    } catch(ie) {}
                 });
             } catch(e) {}
         }
@@ -1416,8 +1422,41 @@
             openIDB(function(db) {
                 var tx = db.transaction(IDB_STORE, 'readonly');
                 var req = tx.objectStore(IDB_STORE).get(IDB_KEY);
-                req.onsuccess = function(e) { cb(e.target.result ? JSON.parse(e.target.result) : null); };
-                req.onerror = function() { cb(null); };
+                req.onsuccess = function(e) {
+                    var idbData = e.target.result ? JSON.parse(e.target.result) : null;
+                    // Also check localStorage snapshot (written synchronously on beforeunload)
+                    var lsRaw = null;
+                    try { lsRaw = localStorage.getItem('NetTopoSnapshot'); } catch(ex) {}
+                    if (lsRaw) {
+                        try {
+                            var lsData = JSON.parse(lsRaw);
+                            // Use localStorage if IDB has no data, OR if localStorage has more devices
+                            // (meaning IDB write didn't finish before page closed)
+                            if (!idbData || (lsData.devs && lsData.devs.length >= (idbData.devs || []).length)) {
+                                // Merge: prefer localStorage for devices/cables, IDB for everything else
+                                // Simple heuristic: if device count matches or LS has more, use LS
+                                if (!idbData || lsData.devs.length >= idbData.devs.length) {
+                                    // Write LS data back to IDB to keep them in sync
+                                    try {
+                                        var tx2 = db.transaction(IDB_STORE, 'readwrite');
+                                        tx2.objectStore(IDB_STORE).put(lsRaw, IDB_KEY);
+                                    } catch(ex2) {}
+                                    cb(lsData);
+                                    return;
+                                }
+                            }
+                        } catch(ex) {}
+                    }
+                    cb(idbData);
+                };
+                req.onerror = function() {
+                    // IDB failed — try localStorage
+                    try {
+                        var lsRaw = localStorage.getItem('NetTopoSnapshot');
+                        if (lsRaw) { cb(JSON.parse(lsRaw)); return; }
+                    } catch(ex) {}
+                    cb(null);
+                };
             });
         }
 
@@ -3119,8 +3158,7 @@
                         d.ssidProfiles[idx].ssid = ssidField.value;
                         uDL();
                         ren();
-                        clearTimeout(_saveTimer);
-                        _saveTimer = setTimeout(saveToIDB, 800);
+                        saveToIDB();
                     }
                     return;
                 }
@@ -3131,8 +3169,7 @@
                         d.ssidProfiles[idx2].password = ssidPw.value;
                         uDL();
                         ren();
-                        clearTimeout(_saveTimer);
-                        _saveTimer = setTimeout(saveToIDB, 800);
+                        saveToIDB();
                     }
                     return;
                 }
@@ -3143,8 +3180,7 @@
                         d.pppoeProfiles[idx].username = pppoeUser.value;
                         uDL();
                         ren();
-                        clearTimeout(_saveTimer);
-                        _saveTimer = setTimeout(saveToIDB, 800);
+                        saveToIDB();
                     }
                     return;
                 }
@@ -3155,8 +3191,7 @@
                         d.pppoeProfiles[idx2].password = pppoePw.value;
                         uDL();
                         ren();
-                        clearTimeout(_saveTimer);
-                        _saveTimer = setTimeout(saveToIDB, 800);
+                        saveToIDB();
                     }
                     return;
                 }
@@ -3167,10 +3202,17 @@
                         d.vlanProfiles[idx].vlanId = vlanId.value;
                         uDL();
                         ren();
-                        clearTimeout(_saveTimer);
-                        _saveTimer = setTimeout(saveToIDB, 800);
+                        saveToIDB();
                     }
                     return;
+                }
+            });
+
+            // Save on blur for any input/textarea/select in the panel — catches fast refresh
+            el.addEventListener('focusout', function(e) {
+                var t = e.target;
+                if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT') {
+                    saveToIDB();
                 }
             });
 
@@ -3527,9 +3569,7 @@
             }
             updateRightPanel();
             updateNotesSidebar();
-            // Debounced save
-            clearTimeout(_saveTimer);
-            _saveTimer = setTimeout(saveToIDB, 800);
+            saveToIDB();
         }
 
         function uCabLen() {
@@ -3650,8 +3690,12 @@
                                 detailNotes.value = d.notes || '';
                             }
                             uDL();
+                            saveToIDB();
                         }
                     }
+                });
+                notesInput.addEventListener('blur', function() {
+                    saveToIDB();
                 });
             }
         }
@@ -5426,6 +5470,21 @@
                 } else {
                     loadSample();
                 }
+            });
+
+            // Flush save immediately before page unloads (covers fast F5 / Ctrl+R)
+            window.addEventListener('beforeunload', function() {
+                // Cancel any pending debounced save
+                clearTimeout(_saveTimer);
+                // Write synchronously to localStorage as an instant backup
+                try {
+                    var data = JSON.stringify({ devs: devs, cabs: cabs, idC: idC, cidC: cidC,
+                        _ssidCounter: _ssidCounter, _pppoeCounter: _pppoeCounter, _vlanCounter: _vlanCounter,
+                        zm: zm, pX: pX, pY: pY });
+                    localStorage.setItem('NetTopoSnapshot', data);
+                } catch(e) {}
+                // Also trigger an IDB save (async, may or may not complete)
+                saveToIDB();
             });
         }
         init();
