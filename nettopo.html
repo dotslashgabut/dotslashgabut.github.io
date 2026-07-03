@@ -1303,7 +1303,8 @@
             cSrc = null;
         var dragD = null,
             doX = 0,
-            doY = 0;
+            doY = 0,
+            dragMoveSaved = false;
         var zm = 1,
             pX = 0,
             pY = 0;
@@ -3760,6 +3761,7 @@
                         dragD = hd;
                         doX = w.x - hd.x;
                         doY = w.y - hd.y;
+                        dragMoveSaved = false;
                         cv.style.cursor = 'grabbing';
                     }
                     skipAutoScroll = false;
@@ -3802,6 +3804,10 @@
                     ty = snap(ty); }
                 var dx = tx - dragD.x;
                 var dy = ty - dragD.y;
+                if (!dragMoveSaved && (dx !== 0 || dy !== 0)) {
+                    pushHistory();
+                    dragMoveSaved = true;
+                }
                 for (var i = 0; i < selectedDevs.length; i++) {
                     var d = getDeviceById(selectedDevs[i]);
                     if (d) {
