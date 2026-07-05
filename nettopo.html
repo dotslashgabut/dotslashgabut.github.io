@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NetTopo</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <!-- <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" /> -->
     <link rel="stylesheet" href="libs/font-awesome/6.7.2/css/all.min.css" />
     <script src="libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
     <script src="libs/jspdf-autotable/5.0.8/jspdf.plugin.autotable.min.js"></script>
@@ -1306,7 +1306,8 @@
             cSrc = null;
         var dragD = null,
             doX = 0,
-            doY = 0;
+            doY = 0,
+            dragMoveSaved = false;
         var zm = 1,
             pX = 0,
             pY = 0;
@@ -3763,6 +3764,7 @@
                         dragD = hd;
                         doX = w.x - hd.x;
                         doY = w.y - hd.y;
+                        dragMoveSaved = false;
                         cv.style.cursor = 'grabbing';
                     }
                     skipAutoScroll = false;
@@ -3805,6 +3807,10 @@
                     ty = snap(ty); }
                 var dx = tx - dragD.x;
                 var dy = ty - dragD.y;
+                if (!dragMoveSaved && (dx !== 0 || dy !== 0)) {
+                    pushHistory();
+                    dragMoveSaved = true;
+                }
                 for (var i = 0; i < selectedDevs.length; i++) {
                     var d = getDeviceById(selectedDevs[i]);
                     if (d) {
