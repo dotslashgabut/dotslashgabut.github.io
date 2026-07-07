@@ -3242,6 +3242,7 @@
       document.getElementById('exp-audio-src-both').classList.toggle('active', s === 'both');
     }
 
+    let expLastVizWasSpec = false;
     function expSetViz(v) {
       expViz = v;
       ['waveform', 'spectrogram', 'spectrum', 'stereo', 'peak', 'vu', 'wave+spectrogram', 'wave+spectrogram-tall'].forEach(x => {
@@ -3253,6 +3254,14 @@
       });
       const hasSpec = v === 'spectrogram' || v === 'wave+spectrogram' || v === 'wave+spectrogram-tall';
       document.getElementById('exp-spec-opt-section').style.display = hasSpec ? 'block' : 'none';
+      // Spectrogram content is bit-hungry (dense, noisy texture) and blurs more easily
+      // under compression, so suggest the higher bitrate when entering this mode.
+      // The dropdown stays a normal <select> — user can still change it freely.
+      if (hasSpec && !expLastVizWasSpec) {
+        const br = document.getElementById('exp-bitrate');
+        if (br && parseInt(br.value) < 8000000) br.value = '8000000';
+      }
+      expLastVizWasSpec = hasSpec;
     }
 
     function expSetSpecScale(s) {
@@ -3834,6 +3843,7 @@
           width: outW,
           height: outH,
           bitrate: videoBitrate,
+          bitrateMode: 'constant',
           framerate: fps,
           latencyMode: 'quality',
         };
@@ -3885,8 +3895,8 @@
         // Efficiently create planar data (CH0 then CH1)
         const planarData = new Float32Array(numSamples * 2);
         for (let i = 0; i < numSamples; i++) {
-          planarData[i] = pcmInterleaved[(start + i) * 2];
-          planarData[i + numSamples] = pcmInterleaved[(start + i) * 2 + 1];
+          planarData[i] = Math.max(-1, Math.min(1, pcmInterleaved[(start + i) * 2]));
+          planarData[i + numSamples] = Math.max(-1, Math.min(1, pcmInterleaved[(start + i) * 2 + 1]));
         }
 
         const audioData = new AudioData({
