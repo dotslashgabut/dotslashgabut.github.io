@@ -3707,12 +3707,25 @@
         const ch1 = buf.numberOfChannels >= 2 ? buf.getChannelData(1) : ch0;
         const scale = srcList.length > 1 ? 0.6 : 1.0;
         const srcRate = buf.sampleRate;
+        const ratio = srcRate / sampleRate;
         for (let i = 0; i < frameCount; i++) {
           if (expCancelled) return null;
-          const srcIdx = Math.floor((i / sampleRate) * srcRate);
+          const srcIdx = Math.floor(i * ratio);
           if (srcIdx >= ch0.length) break;
-          out[i * 2] += (ch0[srcIdx] || 0) * scale;
-          out[i * 2 + 1] += (ch1[srcIdx] || 0) * scale;
+          if (ratio > 1) {
+            // Downsampling: average the span of source samples that this output
+            // sample replaces, acting as a simple anti-aliasing filter so high-frequency
+            // content doesn't fold back as audible buzzing/whine.
+            const spanEnd = Math.min(ch0.length, Math.floor((i + 1) * ratio));
+            let sum0 = 0, sum1 = 0, cnt = 0;
+            for (let k = srcIdx; k < spanEnd; k++) { sum0 += ch0[k] || 0; sum1 += ch1[k] || 0; cnt++; }
+            if (cnt === 0) { sum0 = ch0[srcIdx] || 0; sum1 = ch1[srcIdx] || 0; cnt = 1; }
+            out[i * 2] += (sum0 / cnt) * scale;
+            out[i * 2 + 1] += (sum1 / cnt) * scale;
+          } else {
+            out[i * 2] += (ch0[srcIdx] || 0) * scale;
+            out[i * 2 + 1] += (ch1[srcIdx] || 0) * scale;
+          }
           // Yield every 1M samples to keep UI alive
           if (i > 0 && i % 1000000 === 0) await new Promise(r => setTimeout(r, 0));
         }
