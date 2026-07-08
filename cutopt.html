@@ -1836,6 +1836,13 @@ function initPaper(){
   showPieceFamily('iso-a', document.querySelector('#pieceFamilyTabs .pftab'));
 }
 
+// Escape a paper-size name so it's safe both as a single-quoted JS string
+// arg AND inside a double-quoted HTML onclick attribute (fixes names with
+// " or ' like Photo sizes `2R (2×3")` or Book's `Children's 8×8`).
+function jsAttr(s){
+  return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+}
+
 function showFamily(family, el){
   selectedParentFamily=family;
   document.querySelectorAll('#pfamilyTabs .pftab').forEach(t=>t.classList.remove('active'));
@@ -1846,7 +1853,7 @@ function showFamily(family, el){
   custGrp.style.display='none';
   const sizes=PAPER_DB[family]||[];
   grid.innerHTML=sizes.map(s=>`
-    <button class="psz-btn" onclick="selectParentSize(${s.w},${s.h},'${s.n}',this)">
+    <button class="psz-btn" onclick="selectParentSize(${s.w},${s.h},'${jsAttr(s.n)}',this)">
       <span class="psz-name">${s.n}</span>
       <span class="psz-dim">${s.w}×${s.h}</span>
     </button>`).join('');
@@ -1897,7 +1904,7 @@ function showPieceFamily(family, el){
   const grid=document.getElementById('pieceSizeGrid');
   const sizes=PAPER_DB[family]||[];
   grid.innerHTML=sizes.map(s=>`
-    <button class="psz-btn" onclick="selectPieceSize(${s.w},${s.h},'${s.n}',this)">
+    <button class="psz-btn" onclick="selectPieceSize(${s.w},${s.h},'${jsAttr(s.n)}',this)">
       <span class="psz-name">${s.n}</span>
       <span class="psz-dim">${s.w}×${s.h}</span>
     </button>`).join('');
@@ -2247,7 +2254,7 @@ function splitShowFamily(family, el){
   if(family==='custom'){grid.innerHTML='';custGrp.style.display='';return}
   custGrp.style.display='none';
   const sizes=PAPER_DB[family]||[];
-  grid.innerHTML=sizes.map(s=>`<button class="psz-btn" onclick="selectSplitSource(${s.w},${s.h},'${s.n}',this)"><span class="psz-name">${s.n}</span><span class="psz-dim">${s.w}×${s.h}</span></button>`).join('');
+  grid.innerHTML=sizes.map(s=>`<button class="psz-btn" onclick="selectSplitSource(${s.w},${s.h},'${jsAttr(s.n)}',this)"><span class="psz-name">${s.n}</span><span class="psz-dim">${s.w}×${s.h}</span></button>`).join('');
   if(sizes.length){const first=grid.querySelector('.psz-btn');if(first){first.classList.add('active');selectSplitSource(sizes[0].w,sizes[0].h,sizes[0].n,first)}}
 }
 function selectSplitSource(w,h,name,el){
@@ -2610,7 +2617,7 @@ function cut1ShowFamily(family, el){
   if(family==='custom'){grid.innerHTML='';custGrp.style.display='';return}
   custGrp.style.display='none';
   const sizes=PAPER_DB[family]||[];
-  grid.innerHTML=sizes.map(s=>`<button class="psz-btn" onclick="cut1SelectSource(${s.w},${s.h},'${s.n}',this)"><span class="psz-name">${s.n}</span><span class="psz-dim">${s.w}×${s.h}</span></button>`).join('');
+  grid.innerHTML=sizes.map(s=>`<button class="psz-btn" onclick="cut1SelectSource(${s.w},${s.h},'${jsAttr(s.n)}',this)"><span class="psz-name">${s.n}</span><span class="psz-dim">${s.w}×${s.h}</span></button>`).join('');
   if(sizes.length){const first=grid.querySelector('.psz-btn');if(first){first.classList.add('active');cut1SelectSource(sizes[0].w,sizes[0].h,sizes[0].n,first)}}
 }
 
@@ -2637,7 +2644,7 @@ function cut1ShowPieceFamily(family, el){
   if(family==='custom'){grid.innerHTML='';custGrp.style.display='';return}
   custGrp.style.display='none';
   const sizes=PAPER_DB[family]||[];
-  grid.innerHTML=sizes.map(s=>`<button class="psz-btn" onclick="cut1SelectPiece(${s.w},${s.h},'${s.n}',this)"><span class="psz-name">${s.n}</span><span class="psz-dim">${s.w}×${s.h}</span></button>`).join('');
+  grid.innerHTML=sizes.map(s=>`<button class="psz-btn" onclick="cut1SelectPiece(${s.w},${s.h},'${jsAttr(s.n)}',this)"><span class="psz-name">${s.n}</span><span class="psz-dim">${s.w}×${s.h}</span></button>`).join('');
   cut1PieceW=0; cut1PieceH=0; cut1PieceName='';
   document.getElementById('cut1PieceDisplay').textContent='— select a size above —';
   document.getElementById('cut1PieceDisplay').style.color='var(--accent3)';
