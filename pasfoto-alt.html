@@ -342,8 +342,7 @@ select{cursor:pointer}
             <option value="all">Semua halaman</option>
           </select>
           <div class="sep"></div>
-          <button class="btn btn-s btn-sm" id="btnRotateSel" title="Putar gambar 90° pada kotak terpilih">🔄 Rotate Kotak</button>
-          <button class="btn btn-s btn-sm" id="btnRotateImgSel" title="Putar FOTO saja 90° pada kotak terpilih (ukuran kotak tetap)">🔄 Rotate Foto</button>
+          <button class="btn btn-s btn-sm" id="btnRotateSel" title="Putar gambar 90° pada kotak terpilih">🔄 Rotate</button>
           <button class="btn btn-s btn-sm" id="btnCropMode" title="Aktifkan mode crop: klik & drag di kotak untuk atur posisi gambar">✥ Crop Drag</button>
           <button class="btn btn-s btn-sm" id="btnHandMode" title="Aktifkan mode hand: seret di canvas untuk menggeser tampilan (bisa juga pakai klik kanan seret kapan saja)">🖐️ Hand Tool</button>
           <div class="sep"></div>
@@ -463,7 +462,6 @@ const state={
   overrides:{},
   posOverrides:{},
   cellRotations:{},
-  imageRotations:{},
   cellCropOverrides:{},
   selection:new Set(),
   editMode:false,
@@ -502,7 +500,6 @@ function captureSnapshot(){
     overrides:{...state.overrides},
     posOverrides:JSON.parse(JSON.stringify(state.posOverrides)),
     cellRotations:{...state.cellRotations},
-    imageRotations:{...state.imageRotations},
     cellCropOverrides:JSON.parse(JSON.stringify(state.cellCropOverrides))
   });
 }
@@ -527,7 +524,6 @@ function restoreSnapshot(snap){
   state.overrides={...snap.overrides};
   state.posOverrides=JSON.parse(JSON.stringify(snap.posOverrides));
   state.cellRotations={...(snap.cellRotations||{})};
-  state.imageRotations={...(snap.imageRotations||{})};
   state.cellCropOverrides=JSON.parse(JSON.stringify(snap.cellCropOverrides||{}));
   /* Sync UI inputs */
   syncPaperInputs(); syncBoxInputs();
@@ -618,8 +614,7 @@ document.addEventListener('keydown',e=>{
       if (!cell || !cell.image) return;
       
       const cellRot = getCellRotation(state.currentPage, idx);
-      const imgRot = getImgRotation(state.currentPage, idx);
-      const totalAngleRad = (cell.rotated ? 90 : 0) * Math.PI / 180 + cellRot * Math.PI / 180 + imgRot * Math.PI / 180;
+      const totalAngleRad = (cell.rotated ? 90 : 0) * Math.PI / 180 + cellRot * Math.PI / 180;
       const cosA = Math.cos(totalAngleRad);
       const sinA = Math.sin(totalAngleRad);
       const localStepX = stepX * cosA + stepY * sinA;
@@ -1154,14 +1149,6 @@ function getCellRotation(pageIdx, cellIdx){
   return rot || 0;
 }
 
-function getImgRotation(pageIdx, cellIdx){
-  let rot = state.imageRotations[`${pageIdx}:${cellIdx}`];
-  if(rot === undefined && pageIdx > 0){
-    rot = state.imageRotations[`0:${cellIdx}`];
-  }
-  return rot || 0;
-}
-
 function drawCover(ctx,img,dx,dy,dw,dh,zoom,offX,offY){
   if(dw<=0||dh<=0) return;
   const ir=img.naturalWidth/img.naturalHeight, dr=dw/dh;
@@ -1362,36 +1349,27 @@ function renderPageCanvas(meta,pageIndex,dpi){
       cw=bw; ch=bh;
       ctx.translate(bx,by);
     }
-    /* Step 2: apply the user's manual box rotation (🔄 Rotate). For 90°/270° this simply
-       swaps the box's own width/height (re-centered at the same point) — the frame and
-       border are then just drawn with the new cw,ch, no rotate transform needed for them.
-       Only the photo's pixel content needs an actual rotate, done below. */
-    const swap90=(cellRot===90||cellRot===270);
-    if(swap90){
-      const nw=ch, nh=cw;
-      ctx.translate(cw/2-nw/2, ch/2-nh/2);
-      cw=nw; ch=nh;
+    /* Step 2: apply the user's manual box rotation (🔄 Rotate). This rotates the whole box —
+       frame, photo AND border/cut-line together — around the box's own center, so the
+       border always matches the box+photo orientation instead of staying static. */
+    if(cellRot){
+      ctx.translate(cw/2, ch/2);
+      ctx.rotate(cellRot*Math.PI/180);
+      if(cellRot===90||cellRot===270){
+        const nw=ch, nh=cw;
+        ctx.translate(-nw/2,-nh/2);
+        cw=nw; ch=nh;
+      } else {
+        ctx.translate(-cw/2,-ch/2);
+      }
     }
     if(hasFrame){ ctx.fillStyle=state.frameColor||'#ffffff'; ctx.fillRect(0,0,cw,ch); }
     if(cell.image){
       const ix=im.l*scale, iy=im.t*scale;
       const iw=cw-(im.l+im.r)*scale, ih=ch-(im.t+im.b)*scale;
-      const imgRot=getImgRotation(pageIndex,ci);
-      const totalPhotoRot=(cellRot+imgRot)%360;
-      if(totalPhotoRot){
-        const swapPhoto90=(totalPhotoRot===90||totalPhotoRot===270);
-        const dw=swapPhoto90?ih:iw, dh=swapPhoto90?iw:ih;
-        ctx.save();
-        ctx.translate(ix+iw/2, iy+ih/2);
-        ctx.rotate(totalPhotoRot*Math.PI/180);
-        ctx.translate(-dw/2,-dh/2);
-        drawCover(ctx,cell.image.img,0,0,dw,dh,crop.zoom,crop.offX,crop.offY);
-        ctx.restore();
-      } else {
-        drawCover(ctx,cell.image.img,ix,iy,iw,ih,crop.zoom,crop.offX,crop.offY);
-      }
+      drawCover(ctx,cell.image.img,ix,iy,iw,ih,crop.zoom,crop.offX,crop.offY);
     }
-    /* Draw guides using the same cw,ch — always matches the box+photo shape */
+    /* Draw guides inside the same transformed context so they always follow the box */
     if(state.guide==='border'||state.guide==='both'){
       ctx.save(); ctx.strokeStyle=state.borderColor||'#999'; ctx.lineWidth=Math.max(1,0.12*scale);
       ctx.setLineDash([1.2*scale,0.9*scale]);
@@ -1563,8 +1541,7 @@ window.addEventListener('mousemove', e=>{
         if(!cell||!cell.image) return;
 
         const cellRot=getCellRotation(state.currentPage, idx);
-        const imgRot=getImgRotation(state.currentPage, idx);
-        const totalAngleRad=(cell.rotated?90:0)*Math.PI/180 + cellRot*Math.PI/180 + imgRot*Math.PI/180;
+        const totalAngleRad=(cell.rotated?90:0)*Math.PI/180 + cellRot*Math.PI/180;
         const cosA=Math.cos(totalAngleRad);
         const sinA=Math.sin(totalAngleRad);
         const localDx=dx*cosA + dy*sinA;
@@ -1704,7 +1681,6 @@ $('btnResetPos').onclick=()=>{
   state.selection.forEach(idx=>{
     delete state.posOverrides[`${state.currentPage}:${idx}`];
     delete state.cellRotations[`${state.currentPage}:${idx}`];
-    delete state.imageRotations[`${state.currentPage}:${idx}`];
     delete state.cellCropOverrides[`${state.currentPage}:${idx}`];
   });
   refreshAll();
@@ -1715,7 +1691,6 @@ $('btnResetAllPos').onclick=()=>{
   cells.forEach((_, idx)=>{
     delete state.posOverrides[`${state.currentPage}:${idx}`];
     delete state.cellRotations[`${state.currentPage}:${idx}`];
-    delete state.imageRotations[`${state.currentPage}:${idx}`];
     delete state.cellCropOverrides[`${state.currentPage}:${idx}`];
   });
   refreshAll();
@@ -1733,18 +1708,6 @@ $('btnRotateSel').onclick=()=>{
   });
   refreshAll();
   toast(`🔄 ${state.selection.size} kotak diputar 90°`);
-};
-
-/* ── Rotate selected images inside cells ── */
-$('btnRotateImgSel').onclick=()=>{
-  if(!state.selection.size){ toast('Pilih kotak dulu'); return; }
-  state.selection.forEach(idx=>{
-    const key=`${state.currentPage}:${idx}`;
-    const cur=state.imageRotations[key]||0;
-    state.imageRotations[key]=(cur+90)%360;
-  });
-  refreshAll();
-  toast(`🔄 ${state.selection.size} foto diputar 90° (ukuran kotak tetap)`);
 };
 
 /* ── Crop drag mode toggle ── */
@@ -1915,10 +1878,16 @@ function drawSelectionOverlay(ctx,meta,scale){
       cw=bw; ch=bh;
       ctx.translate(bx,by);
     }
-    if(cellRot===90||cellRot===270){
-      const nw=ch, nh=cw;
-      ctx.translate(cw/2-nw/2, ch/2-nh/2);
-      cw=nw; ch=nh;
+    if(cellRot){
+      ctx.translate(cw/2, ch/2);
+      ctx.rotate(cellRot*Math.PI/180);
+      if(cellRot===90||cellRot===270){
+        const nw=ch, nh=cw;
+        ctx.translate(-nw/2,-nh/2);
+        cw=nw; ch=nh;
+      } else {
+        ctx.translate(-cw/2,-ch/2);
+      }
     }
     ctx.fillStyle='rgba(0,229,176,0.14)'; ctx.fillRect(0,0,cw,ch);
     ctx.strokeStyle='#00e5b0'; ctx.lineWidth=Math.max(2,0.4*scale); ctx.setLineDash([4,3]);
@@ -2061,7 +2030,6 @@ $('btnExportSettings').onclick=()=>{
     rotateAllowed:state.rotateAllowed,
     posOverrides:state.posOverrides,
     cellRotations:state.cellRotations,
-    imageRotations:state.imageRotations,
     cellCropOverrides:state.cellCropOverrides,
     overrides:state.overrides
   };
@@ -2102,7 +2070,6 @@ $('settingsFileInput').onchange=e=>{
       // Load custom layout/coordinates/rotations if present, otherwise reset them to empty objects
       state.posOverrides = s.posOverrides ? JSON.parse(JSON.stringify(s.posOverrides)) : {};
       state.cellRotations = s.cellRotations ? {...s.cellRotations} : {};
-      state.imageRotations = s.imageRotations ? {...s.imageRotations} : {};
       state.cellCropOverrides = s.cellCropOverrides ? JSON.parse(JSON.stringify(s.cellCropOverrides)) : {};
       state.overrides = s.overrides ? {...s.overrides} : {};
       
