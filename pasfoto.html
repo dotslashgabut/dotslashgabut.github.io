@@ -173,6 +173,10 @@ select{cursor:pointer}
           <button class="btn btn-s btn-sm" style="flex:1" id="btnPickFolder">🗂 Muat Folder</button>
         </div>
         <div class="img-list" id="imgList"></div>
+        <div class="upload-row" style="margin-top: 10px;">
+          <button class="btn btn-s btn-sm" style="flex:1; font-weight:700;" id="btnFillLayout" title="Isi kotak-kotak layout dengan foto (qty default 1 jika qty 0)">⚡ Isi Foto</button>
+          <button class="btn btn-s btn-sm" style="flex:1; font-weight:700; color:var(--accent2); border-color:var(--border);" id="btnClearLayout" title="Kosongkan foto di layout (qty jadi 0)">✕ Kosongkan Foto</button>
+        </div>
       </div>
 
       <!-- FILL MODE -->
@@ -361,6 +365,7 @@ select{cursor:pointer}
           <div class="sep"></div>
           <button class="btn btn-s btn-sm" id="btnResetPos" title="Reset posisi & transformasi kotak terpilih saja">↺ Reset Terpilih</button>
           <button class="btn btn-s btn-sm" id="btnResetAllPos" title="Reset semua posisi & transformasi kotak di halaman aktif ini">↺ Reset Halaman Ini</button>
+          <button class="btn btn-s btn-sm" id="btnResetAllPages" title="Reset semua posisi & transformasi kotak di semua halaman">↺ Reset Semua Halaman</button>
           <button class="btn btn-s btn-sm" id="btnClearSel">✕ Hapus Pilihan</button>
           <span id="selCount" style="font-size:.7rem;color:var(--accent);margin-left:auto;font-family:var(--mono)">Tidak ada dipilih</span>
         </div>
@@ -872,6 +877,23 @@ async function handleFiles(fileList){
 $('dropzone').onclick=()=>$('fileInput').click();
 $('btnPickFiles').onclick=()=>$('fileInput').click();
 $('btnPickFolder').onclick=()=>$('folderInput').click();
+$('btnFillLayout').onclick=()=>{
+  if(!state.images.length){ toast('Belum ada foto dimuat'); return; }
+  state.images.forEach(im=>{
+    if(im.qty===0) im.qty=1;
+  });
+  state.overrides={};
+  renderImageList();
+  refreshAll();
+  toast('⚡ Layout diisi foto sesuai qty');
+};
+$('btnClearLayout').onclick=()=>{
+  state.images.forEach(im=>{ im.qty=0; });
+  state.overrides={};
+  renderImageList();
+  refreshAll();
+  toast('✕ Layout dikosongkan');
+};
 $('fileInput').onchange=e=>{ handleFiles(e.target.files); e.target.value=''; };
 $('folderInput').onchange=e=>{ handleFiles(e.target.files); e.target.value=''; };
 ['dragover','dragenter'].forEach(ev=>$('dropzone').addEventListener(ev,e=>{ e.preventDefault(); $('dropzone').classList.add('drag'); }));
@@ -996,12 +1018,10 @@ function computeBulkPages(grid){
   if(grid.cellsPerPage<=0) return [[]];
   state.images.forEach(im=>{
     if(im.qty<=0) return;
-    const nPages=Math.ceil(im.qty/grid.cellsPerPage);
-    for(let p=0;p<nPages;p++){
+    for(let p=0;p<im.qty;p++){
       const cells=[];
       for(let idx=0; idx<grid.cellsPerPage; idx++){
-        const gi=p*grid.cellsPerPage+idx;
-        cells.push(makeGridCell(grid, idx, gi<im.qty?im:null));
+        cells.push(makeGridCell(grid, idx, im));
       }
       pages.push(cells);
     }
@@ -1720,6 +1740,14 @@ $('btnResetAllPos').onclick=()=>{
   });
   refreshAll();
   toast('↺ Semua kotak di halaman ini direset ke layout otomatis');
+};
+$('btnResetAllPages').onclick=()=>{
+  state.posOverrides={};
+  state.cellRotations={};
+  state.imageRotations={};
+  state.cellCropOverrides={};
+  refreshAll();
+  toast('↺ Semua halaman direset ke layout otomatis');
 };
 $('btnClearSel').onclick=()=>{ state.selection.clear(); updateSelCount(); if(lastMeta) renderPreview(lastMeta); };
 
