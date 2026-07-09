@@ -213,7 +213,7 @@ select{cursor:pointer}
               <input type="checkbox" id="rotateAllowed" checked style="width:auto"> Izinkan Rotasi (Landscape/Portrait Otomatis)
             </label>
           </div>
-          <div class="info-box">✂️ Tiap lembar dipak otomatis dgn algoritma <i>skyline packing</i> (referensi CutOpt), mendukung rotasi kotak utk hasil maksimal. Tiap lembar = 1 foto (bulk), semua slot ukuran di atas diisi foto yang sama; foto berikutnya lanjut ke lembar berikutnya.</div>
+          <div class="info-box" id="infoMixedPacking">✂️ Tiap lembar dipak otomatis dgn algoritma <i>skyline packing</i> (referensi CutOpt), mendukung rotasi kotak utk hasil maksimal. Tiap lembar = 1 foto (bulk), semua slot ukuran di atas diisi foto yang sama; foto berikutnya lanjut ke lembar berikutnya.</div>
         </div>
       </div>
 
@@ -2559,7 +2559,7 @@ function applyLanguage() {
     { sel: '#imGrid', key: 'lblInnerMargin', sibling: 'prev' }
   ];
   labelMappings.forEach(m => {
-    const el = $(m.sel);
+    const el = document.querySelector(m.sel);
     if(el) {
       const lbl = m.sibling === 'prev' ? el.parentElement.querySelector('label') : null;
       if(lbl) lbl.textContent = t[m.key];
