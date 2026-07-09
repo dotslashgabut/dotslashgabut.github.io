@@ -1,8 +1,11 @@
 # { testcode }
 
 Just testing, the generated codes from LLMs.
+For offline use, download the offline branch. [Download Offline Branch](https://github.com/dotslashgabut/dotslashgabut.github.io/archive/refs/heads/offline.zip)
 
 ### 🟡 https://dotslashgabut.github.io/
+
+The complete list, here: [LIST.txt](LIST.txt)
 
 - [Color Palette Generator Plus HSL - Dark Mode](https://dotslashgabut.github.io/color-palette-generator-plus-dark.html)
 - [Color Palette Generator Plus HSL](https://dotslashgabut.github.io/color-palette-generator-plus.html)
@@ -39,4 +42,3 @@ Just testing, the generated codes from LLMs.
 - [Pixel Coordinates to RGB Color Code style-2 FFFFFF](https://dotslashgabut.github.io/color_code_pixel_style2.html)
 - [Pixel Coordinates to RGB Color Code with Image Preview](https://dotslashgabut.github.io/pixel_coordinates_hex_color_code_preview_image.html)
 
-_For offline use, download the offline branch._
