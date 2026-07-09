@@ -148,7 +148,6 @@ select{cursor:pointer}
       <span id="pageIndicator" style="padding: 0 4px;">Halaman 1 / 1</span>
       <button class="btn btn-s btn-sm" id="btnNextPage" style="height: 30px; font-weight: 700;">Next ›</button>
     </div>
-    <button class="btn-icon" id="langBtn" title="Ganti bahasa / Switch language" style="font-size: 0.72rem; font-weight: 700; font-family: var(--sans);">ID</button>
     <button class="btn-icon" id="themeBtn" title="Ganti tema">🌙</button>
   </div>
 </header>
@@ -196,7 +195,7 @@ select{cursor:pointer}
           <label>Target Jumlah Lembar (utk tombol 🗎 isi penuh)</label>
           <input type="number" id="targetPages" min="1" value="1">
         </div>
-        <div class="info-box" id="infoFillMode">💡 Tombol <b>🗎</b> pada daftar foto akan mengisi foto tsb hingga penuh sejumlah lembar target di atas (mengisi seluruh lembar hanya dgn foto itu). Mode <b>Bulk</b>: tiap lembar otomatis diisi 1 file foto berbeda (berurutan sesuai daftar, mendukung banyak file sekaligus).</div>
+        <div class="info-box">💡 Tombol <b>🗎</b> pada daftar foto akan mengisi foto tsb hingga penuh sejumlah lembar target di atas (mengisi seluruh lembar hanya dgn foto itu). Mode <b>Bulk</b>: tiap lembar otomatis diisi 1 file foto berbeda (berurutan sesuai daftar, mendukung banyak file sekaligus).</div>
 
         <div id="mixedPanel" class="hidden" style="margin-top:14px">
           <div class="form-group" style="margin-bottom:6px">
@@ -324,7 +323,7 @@ select{cursor:pointer}
           <button class="btn btn-s btn-sm" id="btnImportSettings">⬇ Import Pengaturan</button>
         </div>
         <input type="file" id="settingsFileInput" accept=".json" class="hidden">
-        <div class="info-box" id="infoSettings">💾 Export/import pengaturan layout (kertas, kotak, margin, garis potong, dll.) ke/dari file JSON. Data foto tidak disertakan.</div>
+        <div class="info-box">💾 Export/import pengaturan layout (kertas, kotak, margin, garis potong, dll.) ke/dari file JSON. Data foto tidak disertakan.</div>
       </div>
 
     </div>
@@ -347,7 +346,8 @@ select{cursor:pointer}
             <option value="all">Semua halaman</option>
           </select>
           <div class="sep"></div>
-          <button class="btn btn-s btn-sm" id="btnRotateSel" title="Putar gambar 90° pada kotak terpilih">🔄 Rotate</button>
+          <button class="btn btn-s btn-sm" id="btnRotateSel" title="Putar gambar 90° pada kotak terpilih">🔄 Rotate Kotak</button>
+          <button class="btn btn-s btn-sm" id="btnRotateImgSel" title="Putar FOTO saja 90° pada kotak terpilih (ukuran kotak tetap)">🔄 Rotate Foto</button>
           <button class="btn btn-s btn-sm" id="btnCropMode" title="Aktifkan mode crop: klik & drag di kotak untuk atur posisi gambar">✥ Crop Drag</button>
           <button class="btn btn-s btn-sm" id="btnHandMode" title="Aktifkan mode hand: seret di canvas untuk menggeser tampilan (bisa juga pakai klik kanan seret kapan saja)">🖐️ Hand Tool</button>
           <div class="sep"></div>
@@ -367,7 +367,6 @@ select{cursor:pointer}
           <button class="btn btn-s btn-sm" id="btnResetAllPos" title="Reset semua posisi & transformasi kotak di halaman aktif ini">↺ Reset Halaman Ini</button>
           <button class="btn btn-s btn-sm" id="btnResetAllPages" title="Reset semua posisi & transformasi kotak di semua halaman">↺ Reset Semua Halaman</button>
           <button class="btn btn-s btn-sm" id="btnClearSel">✕ Hapus Pilihan</button>
-          <button class="btn btn-s btn-sm" id="btnSelectMode" title="Mode Seleksi Multi: klik kotak menambah/mengurangi pilihan (seperti Shift+Klik selalu aktif). Drag area tetap bekerja.">☰ Select</button>
           <span id="selCount" style="font-size:.7rem;color:var(--accent);margin-left:auto;font-family:var(--mono)">Tidak ada dipilih</span>
         </div>
 
@@ -421,7 +420,7 @@ select{cursor:pointer}
             <button class="btn btn-s" id="btnDlAll">⬇ Semua Halaman</button>
           </div>
         </div>
-        <div class="info-box" id="infoExport">💡 Klik nama/thumbnail foto di panel kiri untuk mengatur zoom &amp; posisi crop tiap foto.</div>
+        <div class="info-box">💡 Klik nama/thumbnail foto di panel kiri untuk mengatur zoom &amp; posisi crop tiap foto.</div>
       </div>
 
     </div>
@@ -438,341 +437,6 @@ select{cursor:pointer}
 const $=id=>document.getElementById(id);
 const previewCanvas=$('previewCanvas');
 
-const TRANSLATIONS = {
-  id: {
-    logoSubtitle: 'tata letak cetak pas photo',
-    toastNoImages: 'Belum ada foto dimuat',
-    toastFillLayout: '⚡ Layout diisi foto sesuai qty',
-    toastClearLayout: '✕ Layout dikosongkan',
-    statCols: 'Kotak/Hal:',
-    statTotal: 'Total Copy:',
-    statPages: 'Halaman:',
-    statEmpty: 'Slot Kosong:',
-    pageIndicator: 'Halaman {current} / {total}',
-    prevBtn: '‹ Prev',
-    nextBtn: 'Next ›',
-    
-    // Cards
-    cardSource: 'Foto Sumber',
-    cardFillMode: 'Mode Pengisian Lembar',
-    cardPaperSize: 'Ukuran Kertas',
-    cardBoxSize: 'Ukuran Kotak Foto',
-    cardGapMargin: 'Jarak & Margin Dalam',
-    cardGuides: 'Garis Potong & Tampilan',
-    cardSettings: 'Pengaturan',
-    cardPreview: 'Preview',
-    cardExport: 'Export',
-    
-    // Upload panel
-    dropzoneText: 'Klik atau seret gambar ke sini',
-    dropzoneSub: 'JPG / PNG — bisa pilih banyak file',
-    btnPickFiles: '📁 Pilih File',
-    btnPickFolder: '🗂 Muat Folder',
-    btnFillLayout: '⚡ Isi Foto',
-    btnClearLayout: '✕ Kosongkan Foto',
-    
-    // Fill mode panel
-    lblMode: 'Mode',
-    optStandard: 'Standar (gabung berurutan, campur foto)',
-    optBulk: 'Bulk: 1 Lembar = 1 File Foto',
-    optMixed: 'Ukuran Beragam (Mixed Size + Bulk)',
-    optMixedStandard: 'Campur Foto + Ukuran Beragam (Mixed Size)',
-    lblTargetPages: 'Target Jumlah Lembar (utk tombol 🗎 isi penuh)',
-    infoFillMode: '💡 Tombol <b>🗎</b> pada daftar foto akan mengisi foto tsb hingga penuh sejumlah lembar target di atas (mengisi seluruh lembar hanya dgn foto itu). Mode <b>Bulk</b>: tiap lembar otomatis diisi 1 file foto berbeda (berurutan sesuai daftar, mendukung banyak file sekaligus).',
-    lblMixedList: 'Daftar Ukuran Kotak per Lembar (mm)',
-    lblMixedPreset: 'Klik preset untuk menambahkan:',
-    btnAddMixedSize: '+ Tambah Ukuran Custom',
-    lblRotateAllowed: 'Izinkan Rotasi (Landscape/Portrait Otomatis)',
-    infoMixedPacking: '✂️ Tiap lembar dipak otomatis dgn algoritma <i>skyline packing</i> (referensi CutOpt), mendukung rotasi kotak utk hasil maksimal. Tiap lembar = 1 foto (bulk), semua slot ukuran di atas diisi foto yang sama; foto berikutnya lanjut ke lembar berikutnya.',
-    
-    // Paper panel
-    lblPaperPreset: 'Preset Kertas',
-    lblPaperW: 'Lebar (mm)',
-    lblPaperH: 'Tinggi (mm)',
-    lblPaperMargin: 'Margin Kertas (mm)',
-    
-    // Box size panel
-    lblBoxW: 'Lebar (mm)',
-    lblBoxH: 'Tinggi (mm)',
-    
-    // Gap & inner margin panel
-    lblGap: 'Jarak Antar Kotak (mm)',
-    lblInnerMargin: 'Margin Foto di Dalam Kotak (mm)',
-    presetNone: 'Tanpa Margin',
-    presetPolaroid: 'Polaroid',
-    presetFrame: 'Bingkai Tipis',
-    lblFrameColor: 'Warna Bingkai / Margin Dalam',
-    
-    // Guides & Display panel
-    lblGuideStyle: 'Gaya Garis Potong',
-    optGuideNone: 'Tanpa garis',
-    optGuideBorder: 'Garis putus-putus (border)',
-    optGuideCorner: 'Tanda sudut (crop mark)',
-    optGuideBoth: 'Border + tanda sudut',
-    optGuideGapMid: 'Garis di Tengah Jarak Antar Kotak',
-    optGuideGapMidCorner: 'Tanda Sudut di Tengah Jarak Antar Kotak',
-    lblBorderColor: 'Warna Garis',
-    lblPageBg: 'Latar Halaman',
-    
-    // Settings panel
-    btnExportSettings: '⬆ Export Pengaturan',
-    btnImportSettings: '⬇ Import Pengaturan',
-    infoSettings: '💾 Export/import pengaturan layout (kertas, kotak, margin, garis potong, dll.) ke/dari file JSON. Data foto tidak disertakan.',
-    
-    // Toolbar buttons
-    btnEditModeOn: '✏️ Edit Layout: ON',
-    btnEditModeOff: '✏️ Edit Layout: OFF',
-    optEditScopeCurrent: 'Halaman ini saja',
-    optEditScopeAll: 'Semua halaman',
-    btnRotateSel: '🔄 Rotate',
-    btnCropModeOn: '✥ Crop Drag: ON',
-    btnCropModeOff: '✥ Crop Drag',
-    btnHandModeOn: '🖐️ Hand Tool: ON',
-    btnHandModeOff: '🖐️ Hand Tool',
-    btnLayoutZoomIn: '🔍 Tampilan +',
-    btnLayoutZoomOut: '🔍 Tampilan -',
-    btnLayoutZoomReset: '🔍 Fit/100%',
-    btnZoomIn: '➕ Foto +',
-    btnZoomOut: '➖ Foto -',
-    btnResetPan: '🎯 Reset Foto Pan',
-    lblSnapBoxes: 'Snap Kotak',
-    lblSnapGrid: 'Snap Grid',
-    btnResetPos: '↺ Reset Terpilih',
-    btnResetAllPos: '↺ Reset Halaman Ini',
-    btnResetAllPages: '↺ Reset Semua Halaman',
-    btnClearSel: '✕ Hapus Pilihan',
-    noSelection: 'Tidak ada dipilih',
-    countSelection: '{n} dipilih',
-    btnSelectModeOn: '☰ Select: ON',
-    btnSelectModeOff: '☰ Select',
-    
-    // Preview bottom
-    warnBox: '⚠ Ukuran kotak foto (termasuk jarak) lebih besar dari area cetak kertas. Perkecil kotak, jarak, atau margin kertas.',
-    assignHint: '🖱️ <b>Klik</b> kotak = pilih 1. <b>Shift+Klik</b> = pilih banyak kotak sekaligus. <b>Seret di area kosong</b> = pilih banyak kotak dgn kotak seleksi. Klik foto di "Foto Sumber" utk mengisi semua kotak terpilih. Aktifkan <b>Edit Layout</b> lalu seret kotak terpilih utk memindah posisinya. <b>Crop</b>: aktifkan lalu klik & seret di kotak utk geser gambar, scroll utk zoom.',
-    guideLegend: 'Preview dirender pada resolusi layar (150dpi). Hasil unduhan/PDF dirender ulang pada DPI yang dipilih di bawah agar tetap tajam.',
-    
-    // Export panel
-    lblDpi: 'Resolusi (DPI)',
-    lblDpiCustom: 'DPI Custom',
-    lblImgFormat: 'Format Unduh Gambar',
-    lblJpgQuality: 'Kualitas JPG',
-    btnExportPdf: '⬇ Export PDF (semua halaman)',
-    btnDlPage: '⬇ Halaman Ini',
-    btnDlAll: '⬇ Semua Halaman',
-    infoExport: '💡 Klik nama/thumbnail foto di panel kiri untuk mengatur zoom & posisi crop tiap foto.',
-    
-    // Stepper & Adjust
-    thumbTitle: 'Klik untuk atur crop',
-    btnDec: '−',
-    btnInc: '+',
-    btnFillsheets: '🗎',
-    btnAdjust: '⚙',
-    btnRemove: '✕',
-    titleFillsheets: 'Isi penuh sesuai target lembar',
-    titleAdjust: 'Atur crop',
-    titleRemove: 'Hapus',
-    lblZoom: 'Zoom',
-    lblPanX: 'Geser X',
-    lblPanY: 'Geser Y',
-    btnResetCrop: '↺ Reset Crop',
-    
-    // Toasts & Dialogs
-    toastNoFiles: 'Tidak ada file gambar yang valid',
-    toastLoaded: '✅ {n} foto dimuat',
-    toastAssigned: '✅ "{name}" dipasang ke {n} kotak terpilih',
-    toastFullFilled: '✅ "{name}" diisi penuh utk {n} lembar',
-    toastUndo: '↩ Undo',
-    toastRedo: '↪ Redo',
-    toastSelectFirst: 'Pilih kotak dulu',
-    toastResetAuto: '↺ Posisi & transformasi direset ke layout otomatis',
-    toastResetAllAuto: '↺ Semua kotak di halaman ini direset ke layout otomatis',
-    toastResetAllPagesAuto: '↺ Semua halaman direset ke layout otomatis',
-    toastRotatedCell: '🔄 {n} kotak diputar 90°',
-    toastCropActive: '✥ Mode crop aktif — klik & seret di kotak untuk geser gambar, scroll untuk zoom',
-    toastHandActive: '🖐️ Hand Tool aktif — klik & seret di mana saja untuk geser tampilan layout',
-    toastZoomDisplay: '🔍 Zoom Tampilan: {n}%',
-    toastZoomDisplayFit: '🔍 Tampilan Otomatis (Fit Area)',
-    toastZoomDisplayReset: '🔍 Tampilan 100% (Ukuran Asli)',
-    toastResetPanCenter: '🎯 Posisi geser (pan) foto direset ke tengah',
-    toastZoomPhotoIn: '➕ Zoom Foto + pada kotak terpilih',
-    toastZoomPhotoOut: '➖ Zoom Foto - pada kotak terpilih',
-    toastWarnBoxOverlap: '⚠ Kotak lebih besar dari kertas',
-    toastDlPage: '⬇ Halaman diunduh',
-    toastDlAllStart: '⬇ Mengunduh {n} halaman…',
-    toastPdfSuccess: '✅ PDF {n} halaman diunduh',
-    toastPdfFailed: '❌ Gagal membuat PDF: ',
-    toastSettingsExport: '⬆ Pengaturan diekspor ke JSON',
-    toastSettingsImport: '⬇ Pengaturan diimpor dari JSON',
-    toastSettingsImportFailed: '❌ Gagal mengimpor: '
-  },
-  en: {
-    logoSubtitle: 'passport / print photo layout engine',
-    toastNoImages: 'No photos loaded',
-    toastFillLayout: '⚡ Layout filled with photos according to qty',
-    toastClearLayout: '✕ Layout cleared',
-    statCols: 'Boxes/Page:',
-    statTotal: 'Total Copies:',
-    statPages: 'Pages:',
-    statEmpty: 'Empty Slots:',
-    pageIndicator: 'Page {current} / {total}',
-    prevBtn: '‹ Prev',
-    nextBtn: 'Next ›',
-    
-    // Cards
-    cardSource: 'Source Photos',
-    cardFillMode: 'Page Filling Mode',
-    cardPaperSize: 'Paper Size',
-    cardBoxSize: 'Photo Box Size',
-    cardGapMargin: 'Spacing & Inner Margins',
-    cardGuides: 'Cut Guides & Appearance',
-    cardSettings: 'Settings',
-    cardPreview: 'Preview',
-    cardExport: 'Export',
-    
-    // Upload panel
-    dropzoneText: 'Click or drag images here',
-    dropzoneSub: 'JPG / PNG — supports multiple files',
-    btnPickFiles: '📁 Pick Files',
-    btnPickFolder: '🗂 Load Folder',
-    btnFillLayout: '⚡ Fill Photos',
-    btnClearLayout: '✕ Clear Photos',
-    
-    // Fill mode panel
-    lblMode: 'Mode',
-    optStandard: 'Standard (sequential mixing)',
-    optBulk: 'Bulk: 1 Page = 1 Photo File',
-    optMixed: 'Mixed Sizes (Mixed Size + Bulk)',
-    optMixedStandard: 'Mixed Sizes (Mixed Size + Standard Mixing)',
-    lblTargetPages: 'Target Page Count (for 🗎 full fill button)',
-    infoFillMode: '💡 The <b>🗎</b> button fills the entire template with this photo up to the target pages. <b>Bulk</b>: each page is automatically filled with a different photo file sequentially.',
-    lblMixedList: 'List of Box Sizes per Page (mm)',
-    lblMixedPreset: 'Click preset to add:',
-    btnAddMixedSize: '+ Add Custom Size',
-    lblRotateAllowed: 'Allow Rotation (Auto Landscape/Portrait)',
-    infoMixedPacking: '✂️ Each sheet is packed automatically using the skyline packing algorithm (CutOpt reference), supporting box rotation for maximum efficiency.',
-    
-    // Paper panel
-    lblPaperPreset: 'Paper Preset',
-    lblPaperW: 'Width (mm)',
-    lblPaperH: 'Height (mm)',
-    lblPaperMargin: 'Paper Margin (mm)',
-    
-    // Box size panel
-    lblBoxW: 'Width (mm)',
-    lblBoxH: 'Height (mm)',
-    
-    // Gap & inner margin panel
-    lblGap: 'Box Spacing (mm)',
-    lblInnerMargin: 'Inner Margins (mm)',
-    presetNone: 'No Margins',
-    presetPolaroid: 'Polaroid style',
-    presetFrame: 'Thin Frame',
-    lblFrameColor: 'Frame / Background Color',
-    
-    // Guides & Display panel
-    lblGuideStyle: 'Cut Guide Style',
-    optGuideNone: 'No guides',
-    optGuideBorder: 'Dashed line (border)',
-    optGuideCorner: 'Crop marks',
-    optGuideBoth: 'Border + Crop marks',
-    optGuideGapMid: 'Line in Middle of Spacing',
-    optGuideGapMidCorner: 'Crop Marks in Middle of Spacing',
-    lblBorderColor: 'Guide Color',
-    lblPageBg: 'Page Background',
-    
-    // Settings panel
-    btnExportSettings: '⬆ Export Settings',
-    btnImportSettings: '⬇ Import Settings',
-    infoSettings: '💾 Export/import layout settings (paper, box, margins, cut guides, etc.) to/from JSON. Photo data is not included.',
-    
-    // Toolbar buttons
-    btnEditModeOn: '✏️ Edit Layout: ON',
-    btnEditModeOff: '✏️ Edit Layout: OFF',
-    optEditScopeCurrent: 'This page only',
-    optEditScopeAll: 'All pages',
-    btnRotateSel: '🔄 Rotate',
-    btnCropModeOn: '✥ Crop Drag: ON',
-    btnCropModeOff: '✥ Crop Drag',
-    btnHandModeOn: '🖐️ Hand Tool: ON',
-    btnHandModeOff: '🖐️ Hand Tool',
-    btnLayoutZoomIn: '🔍 Zoom In',
-    btnLayoutZoomOut: '🔍 Zoom Out',
-    btnLayoutZoomReset: '🔍 Fit/100%',
-    btnZoomIn: '➕ Photo +',
-    btnZoomOut: '➖ Photo -',
-    btnResetPan: '🎯 Reset Photo Pan',
-    lblSnapBoxes: 'Snap Boxes',
-    lblSnapGrid: 'Snap Grid',
-    btnResetPos: '↺ Reset Selected',
-    btnResetAllPos: '↺ Reset Current Page',
-    btnResetAllPages: '↺ Reset All Pages',
-    btnClearSel: '✕ Clear Selection',
-    noSelection: 'No selection',
-    countSelection: '{n} selected',
-    btnSelectModeOn: '☰ Select: ON',
-    btnSelectModeOff: '☰ Select',
-    
-    // Preview bottom
-    warnBox: '⚠ Photo box size (including spacing) exceeds printable paper area. Reduce box size, spacing, or margins.',
-    assignHint: '🖱️ <b>Click</b> box = select. <b>Shift+Click</b> = select multiple. <b>Drag empty space</b> = select area. Click a source photo on left to fill selected boxes. Toggle <b>Edit Layout</b> to drag boxes. <b>Crop</b>: toggle and drag box to pan, scroll to zoom.',
-    guideLegend: 'Preview rendered at screen resolution (150dpi). PDF/downloads will render at selected high print DPI.',
-    
-    // Export panel
-    lblDpi: 'Resolution (DPI)',
-    lblDpiCustom: 'Custom DPI',
-    lblImgFormat: 'Image Format',
-    lblJpgQuality: 'JPG Quality',
-    btnExportPdf: '⬇ Export PDF (all pages)',
-    btnDlPage: '⬇ This Page',
-    btnDlAll: '⬇ All Pages',
-    infoExport: '💡 Click photo name/thumbnail in left panel to adjust crop & zoom for each photo.',
-    
-    // Stepper & Adjust
-    thumbTitle: 'Click to adjust crop',
-    btnDec: '−',
-    btnInc: '+',
-    btnFillsheets: '🗎',
-    btnAdjust: '⚙',
-    btnRemove: '✕',
-    titleFillsheets: 'Fill entire sheets',
-    titleAdjust: 'Adjust Crop',
-    titleRemove: 'Delete',
-    lblZoom: 'Zoom',
-    lblPanX: 'Pan X',
-    lblPanY: 'Pan Y',
-    btnResetCrop: '↺ Reset Crop',
-    
-    // Toasts & Dialogs
-    toastNoFiles: 'No valid image files found',
-    toastLoaded: '✅ {n} photos loaded',
-    toastAssigned: '✅ Assigned "{name}" to {n} selected boxes',
-    toastFullFilled: '✅ Filled "{name}" to {n} pages',
-    toastUndo: '↪ Undo',
-    toastRedo: '↪ Redo',
-    toastSelectFirst: 'Select a box first',
-    toastResetAuto: '↺ Position & transform reset to auto-layout',
-    toastResetAllAuto: '↺ All boxes on this page reset to auto-layout',
-    toastResetAllPagesAuto: '↺ All pages reset to auto-layout',
-    toastRotatedCell: '🔄 {n} boxes rotated 90°',
-    toastCropActive: '✥ Crop mode active — click & drag inside boxes to pan, scroll to zoom',
-    toastHandActive: '🖐️ Hand Tool active — click & drag anywhere to pan layout view',
-    toastZoomDisplay: '🔍 Layout Zoom: {n}%',
-    toastZoomDisplayFit: '🔍 Auto Fit Layout',
-    toastZoomDisplayReset: '🔍 Original Size (100%)',
-    toastResetPanCenter: '🎯 Photo pan position reset to center',
-    toastZoomPhotoIn: '➕ Zoomed photo in on selected boxes',
-    toastZoomPhotoOut: '➖ Zoomed photo out on selected boxes',
-    toastWarnBoxOverlap: '⚠ Box size exceeds paper area',
-    toastDlPage: '⬇ Page downloaded',
-    toastDlAllStart: '⬇ Downloading {n} pages…',
-    toastPdfSuccess: '✅ PDF downloaded ({n} pages)',
-    toastPdfFailed: '❌ Failed to create PDF: ',
-    toastSettingsExport: '⬆ Settings exported to JSON',
-    toastSettingsImport: '⬇ Settings imported from JSON',
-    toastSettingsImportFailed: '❌ Import failed: '
-  }
-};
-
 function toast(msg){
   const t=$('toast'); t.textContent=msg; t.classList.add('show');
   clearTimeout(toast._tm); toast._tm=setTimeout(()=>t.classList.remove('show'),2600);
@@ -783,7 +447,6 @@ function toast(msg){
    ================================================================ */
 let imgSeq=0;
 const state={
-  lang:'id',
   images:[],
   paper:{w:102,h:152,name:'4R (10x15)'},
   pageMargin:{t:5,r:5,b:5,l:5},
@@ -805,11 +468,12 @@ const state={
   overrides:{},
   posOverrides:{},
   cellRotations:{},
+  imageRotations:{},
   cellCropOverrides:{},
   selection:new Set(),
   editMode:false,
   editScope:'current',
-  cropDragMode:false, selectMode:false,
+  cropDragMode:false,
   handMode:false,
   snapToBoxes:true,
   snapToGrid:false,
@@ -843,6 +507,7 @@ function captureSnapshot(){
     overrides:{...state.overrides},
     posOverrides:JSON.parse(JSON.stringify(state.posOverrides)),
     cellRotations:{...state.cellRotations},
+    imageRotations:{...state.imageRotations},
     cellCropOverrides:JSON.parse(JSON.stringify(state.cellCropOverrides))
   });
 }
@@ -867,6 +532,7 @@ function restoreSnapshot(snap){
   state.overrides={...snap.overrides};
   state.posOverrides=JSON.parse(JSON.stringify(snap.posOverrides));
   state.cellRotations={...(snap.cellRotations||{})};
+  state.imageRotations={...(snap.imageRotations||{})};
   state.cellCropOverrides=JSON.parse(JSON.stringify(snap.cellCropOverrides||{}));
   /* Sync UI inputs */
   syncPaperInputs(); syncBoxInputs();
@@ -957,7 +623,8 @@ document.addEventListener('keydown',e=>{
       if (!cell || !cell.image) return;
       
       const cellRot = getCellRotation(state.currentPage, idx);
-      const totalAngleRad = (cell.rotated ? 90 : 0) * Math.PI / 180 + cellRot * Math.PI / 180;
+      const imgRot = getImgRotation(state.currentPage, idx);
+      const totalAngleRad = (cell.rotated ? 90 : 0) * Math.PI / 180 + cellRot * Math.PI / 180 + imgRot * Math.PI / 180;
       const cosA = Math.cos(totalAngleRad);
       const sinA = Math.sin(totalAngleRad);
       const localStepX = stepX * cosA + stepY * sinA;
@@ -1072,14 +739,13 @@ function buildMarginGrid(container, stateObj, linkedKey, onChange){
   const linked = state[linkedKey];
   if(linked){
     const wrap=document.createElement('div'); wrap.className='mg-single';
-    const lbl=document.createElement('div'); lbl.className='mlbl'; lbl.textContent= (state.lang || 'id') === 'en' ? 'All sides' : 'Semua sisi';
+    const lbl=document.createElement('div'); lbl.className='mlbl'; lbl.textContent='Semua sisi';
     const inp=document.createElement('input'); inp.type='number'; inp.step='0.1'; inp.min='0'; inp.value=stateObj.t;
     inp.oninput=()=>{ const v=parseFloat(inp.value)||0; stateObj.t=stateObj.r=stateObj.b=stateObj.l=v; onChange(); };
     wrap.appendChild(lbl); wrap.appendChild(inp);
     container.appendChild(wrap);
   } else {
-    const lang = state.lang || 'id';
-    const labels= lang === 'en' ? [['t','Top'],['r','Right'],['b','Bottom'],['l','Left']] : [['t','Atas'],['r','Kanan'],['b','Bawah'],['l','Kiri']];
+    const labels=[['t','Atas'],['r','Kanan'],['b','Bawah'],['l','Kiri']];
     labels.forEach(([k,lab])=>{
       const wrap=document.createElement('div');
       const lbl=document.createElement('div'); lbl.className='mlbl'; lbl.textContent=lab;
@@ -1100,8 +766,7 @@ function buildGapGrid(){
     wrap.appendChild(lbl); wrap.appendChild(inp);
     container.appendChild(wrap);
   } else {
-    const lang = state.lang || 'id';
-    [['x', lang === 'en' ? 'Gap X' : 'Gap X'],['y', lang === 'en' ? 'Gap Y' : 'Gap Y']].forEach(([k,lab])=>{
+    [['x','Gap X'],['y','Gap Y']].forEach(([k,lab])=>{
       const wrap=document.createElement('div');
       const lbl=document.createElement('div'); lbl.className='mlbl'; lbl.textContent=lab;
       const inp=document.createElement('input'); inp.type='number'; inp.step='0.1'; inp.min='0'; inp.value=state.gap[k];
@@ -1213,21 +878,21 @@ $('dropzone').onclick=()=>$('fileInput').click();
 $('btnPickFiles').onclick=()=>$('fileInput').click();
 $('btnPickFolder').onclick=()=>$('folderInput').click();
 $('btnFillLayout').onclick=()=>{
-  if(!state.images.length){ toast(TRANSLATIONS[state.lang].toastNoImages); return; }
+  if(!state.images.length){ toast('Belum ada foto dimuat'); return; }
   state.images.forEach(im=>{
     if(im.qty===0) im.qty=1;
   });
   state.overrides={};
   renderImageList();
   refreshAll();
-  toast(TRANSLATIONS[state.lang].toastFillLayout);
+  toast('⚡ Layout diisi foto sesuai qty');
 };
 $('btnClearLayout').onclick=()=>{
   state.images.forEach(im=>{ im.qty=0; });
   state.overrides={};
   renderImageList();
   refreshAll();
-  toast(TRANSLATIONS[state.lang].toastClearLayout);
+  toast('✕ Layout dikosongkan');
 };
 $('fileInput').onchange=e=>{ handleFiles(e.target.files); e.target.value=''; };
 $('folderInput').onchange=e=>{ handleFiles(e.target.files); e.target.value=''; };
@@ -1237,10 +902,8 @@ $('dropzone').addEventListener('drop',e=>{ if(e.dataTransfer.files.length) handl
 
 function renderImageList(){
   const list=$('imgList');
-  const lang = state.lang || 'id';
-  const t = TRANSLATIONS[lang];
   if(!state.images.length){
-    list.innerHTML=`<div class="empty-imgs"><div class="ei">🖼️</div><p>${lang==='id'?'Belum ada foto dimuat':'No photos loaded yet'}</p></div>`;
+    list.innerHTML=`<div class="empty-imgs"><div class="ei">🖼️</div><p>Belum ada foto dimuat</p></div>`;
     return;
   }
   list.innerHTML='';
@@ -1248,7 +911,7 @@ function renderImageList(){
     const row=document.createElement('div'); row.className='img-row';
     row.innerHTML=`
       <div class="img-row-main">
-        <img class="img-thumb" src="${im.url}" title="${t.thumbTitle}">
+        <img class="img-thumb" src="${im.url}" title="Klik untuk atur crop">
         <div class="img-info">
           <div class="img-name">${im.name}</div>
           <div class="img-meta">${im.img.naturalWidth}×${im.img.naturalHeight}px</div>
@@ -1259,16 +922,16 @@ function renderImageList(){
           <button data-act="inc">+</button>
         </div>
         <div class="img-row-actions">
-          <button class="mini-btn" data-act="fillsheets" title="${t.titleFillsheets}">🗎</button>
-          <button class="mini-btn" data-act="adjust" title="${t.titleAdjust}">⚙</button>
-          <button class="mini-btn danger" data-act="remove" title="${t.titleRemove}">✕</button>
+          <button class="mini-btn" data-act="fillsheets" title="Isi penuh sesuai target lembar">🗎</button>
+          <button class="mini-btn" data-act="adjust" title="Atur crop">⚙</button>
+          <button class="mini-btn danger" data-act="remove" title="Hapus">✕</button>
         </div>
       </div>
       <div class="adjust-panel ${im.open?'':'hidden'}">
-        <div class="slider-row"><label>${t.lblZoom}</label><input type="range" min="1" max="3" step="0.05" value="${im.zoom}" data-act="zoom"><span class="val">${im.zoom.toFixed(2)}×</span></div>
-        <div class="slider-row"><label>${t.lblPanX}</label><input type="range" min="-1" max="1" step="0.02" value="${im.offX}" data-act="offX"><span class="val">${im.offX.toFixed(2)}</span></div>
-        <div class="slider-row"><label>${t.lblPanY}</label><input type="range" min="-1" max="1" step="0.02" value="${im.offY}" data-act="offY"><span class="val">${im.offY.toFixed(2)}</span></div>
-        <button class="btn btn-s btn-sm" data-act="reset">${t.btnResetCrop}</button>
+        <div class="slider-row"><label>Zoom</label><input type="range" min="1" max="3" step="0.05" value="${im.zoom}" data-act="zoom"><span class="val">${im.zoom.toFixed(2)}×</span></div>
+        <div class="slider-row"><label>Geser X</label><input type="range" min="-1" max="1" step="0.02" value="${im.offX}" data-act="offX"><span class="val">${im.offX.toFixed(2)}</span></div>
+        <div class="slider-row"><label>Geser Y</label><input type="range" min="-1" max="1" step="0.02" value="${im.offY}" data-act="offY"><span class="val">${im.offY.toFixed(2)}</span></div>
+        <button class="btn btn-s btn-sm" data-act="reset">↺ Reset Crop</button>
       </div>`;
     const thumb=row.querySelector('.img-thumb');
     function pickForAssign(){
@@ -1278,7 +941,7 @@ function renderImageList(){
       });
       const n=state.selection.size;
       refreshAll();
-      toast(t.toastAssigned.replace('{name}', im.name).replace('{n}', n));
+      toast(`✅ "${im.name}" dipasang ke ${n} kotak terpilih`);
       return true;
     }
     thumb.onclick=()=>{ if(pickForAssign()) return; im.open=!im.open; renderImageList(); };
@@ -1288,7 +951,7 @@ function renderImageList(){
       const target=Math.max(1,parseInt($('targetPages').value)||1);
       im.qty = state.fillMode==='mixed' ? target : (meta.cellsPerPage||1)*target;
       renderImageList(); refreshAll();
-      toast(t.toastFullFilled.replace('{name}', im.name).replace('{n}', target));
+      toast(`✅ "${im.name}" diisi penuh utk ${target} lembar`);
     };
     row.querySelector('[data-act="remove"]').onclick=()=>{ URL.revokeObjectURL(im.url); state.images=state.images.filter(x=>x!==im); renderImageList(); refreshAll(); };
     row.querySelector('[data-act="dec"]').onclick=()=>{ im.qty=Math.max(0,im.qty-1); renderImageList(); refreshAll(); };
@@ -1511,6 +1174,14 @@ function getCellRotation(pageIdx, cellIdx){
   return rot || 0;
 }
 
+function getImgRotation(pageIdx, cellIdx){
+  let rot = state.imageRotations[`${pageIdx}:${cellIdx}`];
+  if(rot === undefined && pageIdx > 0){
+    rot = state.imageRotations[`0:${cellIdx}`];
+  }
+  return rot || 0;
+}
+
 function drawCover(ctx,img,dx,dy,dw,dh,zoom,offX,offY){
   if(dw<=0||dh<=0) return;
   const ir=img.naturalWidth/img.naturalHeight, dr=dw/dh;
@@ -1711,27 +1382,36 @@ function renderPageCanvas(meta,pageIndex,dpi){
       cw=bw; ch=bh;
       ctx.translate(bx,by);
     }
-    /* Step 2: apply the user's manual box rotation (🔄 Rotate). This rotates the whole box —
-       frame, photo AND border/cut-line together — around the box's own center, so the
-       border always matches the box+photo orientation instead of staying static. */
-    if(cellRot){
-      ctx.translate(cw/2, ch/2);
-      ctx.rotate(cellRot*Math.PI/180);
-      if(cellRot===90||cellRot===270){
-        const nw=ch, nh=cw;
-        ctx.translate(-nw/2,-nh/2);
-        cw=nw; ch=nh;
-      } else {
-        ctx.translate(-cw/2,-ch/2);
-      }
+    /* Step 2: apply the user's manual box rotation (🔄 Rotate). For 90°/270° this simply
+       swaps the box's own width/height (re-centered at the same point) — the frame and
+       border are then just drawn with the new cw,ch, no rotate transform needed for them.
+       Only the photo's pixel content needs an actual rotate, done below. */
+    const swap90=(cellRot===90||cellRot===270);
+    if(swap90){
+      const nw=ch, nh=cw;
+      ctx.translate(cw/2-nw/2, ch/2-nh/2);
+      cw=nw; ch=nh;
     }
     if(hasFrame){ ctx.fillStyle=state.frameColor||'#ffffff'; ctx.fillRect(0,0,cw,ch); }
     if(cell.image){
       const ix=im.l*scale, iy=im.t*scale;
       const iw=cw-(im.l+im.r)*scale, ih=ch-(im.t+im.b)*scale;
-      drawCover(ctx,cell.image.img,ix,iy,iw,ih,crop.zoom,crop.offX,crop.offY);
+      const imgRot=getImgRotation(pageIndex,ci);
+      const totalPhotoRot=(cellRot+imgRot)%360;
+      if(totalPhotoRot){
+        const swapPhoto90=(totalPhotoRot===90||totalPhotoRot===270);
+        const dw=swapPhoto90?ih:iw, dh=swapPhoto90?iw:ih;
+        ctx.save();
+        ctx.translate(ix+iw/2, iy+ih/2);
+        ctx.rotate(totalPhotoRot*Math.PI/180);
+        ctx.translate(-dw/2,-dh/2);
+        drawCover(ctx,cell.image.img,0,0,dw,dh,crop.zoom,crop.offX,crop.offY);
+        ctx.restore();
+      } else {
+        drawCover(ctx,cell.image.img,ix,iy,iw,ih,crop.zoom,crop.offX,crop.offY);
+      }
     }
-    /* Draw guides inside the same transformed context so they always follow the box */
+    /* Draw guides using the same cw,ch — always matches the box+photo shape */
     if(state.guide==='border'||state.guide==='both'){
       ctx.save(); ctx.strokeStyle=state.borderColor||'#999'; ctx.lineWidth=Math.max(1,0.12*scale);
       ctx.setLineDash([1.2*scale,0.9*scale]);
@@ -1768,15 +1448,13 @@ function refreshAll(){
 function refreshPreviewOnly(){ if(!lastMeta) return refreshAll(); renderPreview(lastMeta); }
 
 function updateStats(meta){
-  const lang = state.lang || 'id';
-  const t = TRANSLATIONS[lang];
   $('statCols').textContent = meta.mixed ? `${meta.cellsPerPage} pcs` : `${meta.cols}×${meta.rows}`;
   $('statTotal').textContent=meta.totalItems;
   $('statPages').textContent=meta.pages.length;
   const lastPage=meta.pages[meta.pages.length-1]||[];
   const emptySlots=meta.cellsPerPage>0 ? lastPage.filter(c=>!c.image).length : 0;
   $('statEmpty').textContent = meta.totalItems>0 ? emptySlots : 0;
-  $('pageIndicator').textContent=t.pageIndicator.replace('{current}', meta.pages.length?state.currentPage+1:0).replace('{total}', meta.pages.length);
+  $('pageIndicator').textContent=`Halaman ${meta.pages.length?state.currentPage+1:0} / ${meta.pages.length}`;
   $('warnBox').classList.toggle('hidden', meta.cellsPerPage>0);
 }
 
@@ -1787,9 +1465,7 @@ previewCanvas.style.cursor='pointer';
 
 function updateSelCount(){
   const el=$('selCount'); if(!el) return;
-  const lang = state.lang || 'id';
-  const t = TRANSLATIONS[lang];
-  el.textContent = state.selection.size ? t.countSelection.replace('{n}', state.selection.size) : t.noSelection;
+  el.textContent = state.selection.size ? `${state.selection.size} dipilih` : 'Tidak ada dipilih';
 }
 
 function clientToMM(e){
@@ -1870,7 +1546,7 @@ previewCanvas.addEventListener('mousedown', e=>{
 
   if(idx>=0){
     /* Clicked on a box — always set selection immediately for single click */
-    if(!e.shiftKey && !state.selectMode && !state.selection.has(idx)){
+    if(!e.shiftKey && !state.selection.has(idx)){
       state.selection=new Set([idx]);
     }
     const selArr=[...state.selection];
@@ -1907,7 +1583,8 @@ window.addEventListener('mousemove', e=>{
         if(!cell||!cell.image) return;
 
         const cellRot=getCellRotation(state.currentPage, idx);
-        const totalAngleRad=(cell.rotated?90:0)*Math.PI/180 + cellRot*Math.PI/180;
+        const imgRot=getImgRotation(state.currentPage, idx);
+        const totalAngleRad=(cell.rotated?90:0)*Math.PI/180 + cellRot*Math.PI/180 + imgRot*Math.PI/180;
         const cosA=Math.cos(totalAngleRad);
         const sinA=Math.sin(totalAngleRad);
         const localDx=dx*cosA + dy*sinA;
@@ -1989,9 +1666,9 @@ window.addEventListener('mouseup', ()=>{
         const overlap=!(c.x+c.w<r.x||c.x>r.x+r.w||c.y+c.h<r.y||c.y>r.y+r.h);
         if(overlap) hits.push(i);
       });
-      if(dragState.shift || state.selectMode) hits.forEach(i=>state.selection.add(i));
+      if(dragState.shift) hits.forEach(i=>state.selection.add(i));
       else state.selection=new Set(hits);
-    } else if(!dragState.shift && !state.selectMode){
+    } else if(!dragState.shift){
       state.selection.clear();
     }
     state._rubberRect=null;
@@ -2014,7 +1691,7 @@ window.addEventListener('mouseup', ()=>{
       refreshAll();
     } else if(!dragState.moved){
       const idx=dragState.idx;
-      if(dragState.shift || state.selectMode){
+      if(dragState.shift){
         if(state.selection.has(idx)) state.selection.delete(idx); else state.selection.add(idx);
       } else {
         if(state.selection.size===1 && state.selection.has(idx)) state.selection.clear();
@@ -2047,6 +1724,7 @@ $('btnResetPos').onclick=()=>{
   state.selection.forEach(idx=>{
     delete state.posOverrides[`${state.currentPage}:${idx}`];
     delete state.cellRotations[`${state.currentPage}:${idx}`];
+    delete state.imageRotations[`${state.currentPage}:${idx}`];
     delete state.cellCropOverrides[`${state.currentPage}:${idx}`];
   });
   refreshAll();
@@ -2057,6 +1735,7 @@ $('btnResetAllPos').onclick=()=>{
   cells.forEach((_, idx)=>{
     delete state.posOverrides[`${state.currentPage}:${idx}`];
     delete state.cellRotations[`${state.currentPage}:${idx}`];
+    delete state.imageRotations[`${state.currentPage}:${idx}`];
     delete state.cellCropOverrides[`${state.currentPage}:${idx}`];
   });
   refreshAll();
@@ -2065,22 +1744,12 @@ $('btnResetAllPos').onclick=()=>{
 $('btnResetAllPages').onclick=()=>{
   state.posOverrides={};
   state.cellRotations={};
+  state.imageRotations={};
   state.cellCropOverrides={};
   refreshAll();
   toast('↺ Semua halaman direset ke layout otomatis');
 };
 $('btnClearSel').onclick=()=>{ state.selection.clear(); updateSelCount(); if(lastMeta) renderPreview(lastMeta); };
-
-/* ── Select Mode Toggle ── */
-$('btnSelectMode').onclick=()=>{
-  state.selectMode=!state.selectMode;
-  const b=$('btnSelectMode');
-  b.classList.toggle('btn-p', state.selectMode);
-  b.classList.toggle('btn-s', !state.selectMode);
-  const lang = state.lang || 'id';
-  b.textContent = state.selectMode ? TRANSLATIONS[lang].btnSelectModeOn : TRANSLATIONS[lang].btnSelectModeOff;
-  if(state.selectMode) toast('☰ Select Mode aktif — klik kotak untuk tambah/hapus pilihan; drag area untuk tambah ke pilihan');
-};
 
 /* ── Rotate selected cells ── */
 $('btnRotateSel').onclick=()=>{
@@ -2092,6 +1761,18 @@ $('btnRotateSel').onclick=()=>{
   });
   refreshAll();
   toast(`🔄 ${state.selection.size} kotak diputar 90°`);
+};
+
+/* ── Rotate selected images inside cells ── */
+$('btnRotateImgSel').onclick=()=>{
+  if(!state.selection.size){ toast('Pilih kotak dulu'); return; }
+  state.selection.forEach(idx=>{
+    const key=`${state.currentPage}:${idx}`;
+    const cur=state.imageRotations[key]||0;
+    state.imageRotations[key]=(cur+90)%360;
+  });
+  refreshAll();
+  toast(`🔄 ${state.selection.size} foto diputar 90° (ukuran kotak tetap)`);
 };
 
 /* ── Crop drag mode toggle ── */
@@ -2262,16 +1943,10 @@ function drawSelectionOverlay(ctx,meta,scale){
       cw=bw; ch=bh;
       ctx.translate(bx,by);
     }
-    if(cellRot){
-      ctx.translate(cw/2, ch/2);
-      ctx.rotate(cellRot*Math.PI/180);
-      if(cellRot===90||cellRot===270){
-        const nw=ch, nh=cw;
-        ctx.translate(-nw/2,-nh/2);
-        cw=nw; ch=nh;
-      } else {
-        ctx.translate(-cw/2,-ch/2);
-      }
+    if(cellRot===90||cellRot===270){
+      const nw=ch, nh=cw;
+      ctx.translate(cw/2-nw/2, ch/2-nh/2);
+      cw=nw; ch=nh;
     }
     ctx.fillStyle='rgba(0,229,176,0.14)'; ctx.fillRect(0,0,cw,ch);
     ctx.strokeStyle='#00e5b0'; ctx.lineWidth=Math.max(2,0.4*scale); ctx.setLineDash([4,3]);
@@ -2414,6 +2089,7 @@ $('btnExportSettings').onclick=()=>{
     rotateAllowed:state.rotateAllowed,
     posOverrides:state.posOverrides,
     cellRotations:state.cellRotations,
+    imageRotations:state.imageRotations,
     cellCropOverrides:state.cellCropOverrides,
     overrides:state.overrides
   };
@@ -2454,6 +2130,7 @@ $('settingsFileInput').onchange=e=>{
       // Load custom layout/coordinates/rotations if present, otherwise reset them to empty objects
       state.posOverrides = s.posOverrides ? JSON.parse(JSON.stringify(s.posOverrides)) : {};
       state.cellRotations = s.cellRotations ? {...s.cellRotations} : {};
+      state.imageRotations = s.imageRotations ? {...s.imageRotations} : {};
       state.cellCropOverrides = s.cellCropOverrides ? JSON.parse(JSON.stringify(s.cellCropOverrides)) : {};
       state.overrides = s.overrides ? {...s.overrides} : {};
       
@@ -2483,195 +2160,12 @@ $('settingsFileInput').onchange=e=>{
   e.target.value='';
 };
 
-function applyLanguage() {
-  const lang = state.lang || 'id';
-  const t = TRANSLATIONS[lang];
-  
-  $('langBtn').textContent = lang.toUpperCase();
-  
-  const subtitle = document.querySelector('.logo small');
-  if(subtitle) subtitle.textContent = t.logoSubtitle;
-  
-  const titles = document.querySelectorAll('.card-title .t');
-  const cardKeys = ['cardSource', 'cardFillMode', 'cardPaperSize', 'cardBoxSize', 'cardGapMargin', 'cardGuides', 'cardSettings', 'cardPreview', 'cardExport'];
-  cardKeys.forEach((k, idx) => {
-    if(titles[idx]) titles[idx].textContent = t[k];
-  });
-  
-  const labelMappings = [
-    { sel: '#fillMode', key: 'lblMode', sibling: 'prev' },
-    { sel: '#targetPages', key: 'lblTargetPages', sibling: 'prev' },
-    { sel: '#paperSelect', key: 'lblPaperPreset', sibling: 'prev' },
-    { sel: '#paperW', key: 'lblPaperW', sibling: 'prev' },
-    { sel: '#paperH', key: 'lblPaperH', sibling: 'prev' },
-    { sel: '#boxW', key: 'lblBoxW', sibling: 'prev' },
-    { sel: '#boxH', key: 'lblBoxH', sibling: 'prev' },
-    { sel: '#dpiSelect', key: 'lblDpi', sibling: 'prev' },
-    { sel: '#dpiCustom', key: 'lblDpiCustom', sibling: 'prev' },
-    { sel: '#imgFormat', key: 'lblImgFormat', sibling: 'prev' },
-    { sel: '#jpgQuality', key: 'lblJpgQuality', sibling: 'prev' },
-    { sel: '#frameColor', key: 'lblFrameColor', sibling: 'prev' },
-    { sel: '#borderColor', key: 'lblBorderColor', sibling: 'prev' },
-    { sel: '#pageBg', key: 'lblPageBg', sibling: 'prev' },
-    { sel: '#guideStyle', key: 'lblGuideStyle', sibling: 'prev' },
-    { sel: '#pmGrid', key: 'lblPaperMargin', sibling: 'prev' },
-    { sel: '#gapGrid', key: 'lblGap', sibling: 'prev' },
-    { sel: '#imGrid', key: 'lblInnerMargin', sibling: 'prev' }
-  ];
-  labelMappings.forEach(m => {
-    const el = $(m.sel);
-    if(el) {
-      const lbl = m.sibling === 'prev' ? el.parentElement.querySelector('label') : null;
-      if(lbl) lbl.textContent = t[m.key];
-    }
-  });
-  
-  const pmLabels = document.querySelectorAll('#pmGrid label');
-  const sideKeys = ['t', 'r', 'b', 'l'];
-  const sideLabels = { id: { t: 'Atas', r: 'Kanan', b: 'Bawah', l: 'Kiri' }, en: { t: 'Top', r: 'Right', b: 'Bottom', l: 'Left' } };
-  pmLabels.forEach((lbl, idx) => {
-    const k = sideKeys[idx];
-    if(k && lbl) lbl.textContent = sideLabels[lang][k];
-  });
-  const imLabels = document.querySelectorAll('#imGrid label');
-  imLabels.forEach((lbl, idx) => {
-    const k = sideKeys[idx];
-    if(k && lbl) lbl.textContent = sideLabels[lang][k];
-  });
-  const gapLabels = document.querySelectorAll('#gapGrid label');
-  const gapSides = { id: { x: 'Gap X', y: 'Gap Y' }, en: { x: 'Gap X', y: 'Gap Y' } };
-  gapLabels.forEach((lbl, idx) => {
-    const k = idx === 0 ? 'x' : 'y';
-    if(lbl) lbl.textContent = gapSides[lang][k];
-  });
-  
-
-
-  const dzP = document.querySelector('#dropzone p');
-  if(dzP) dzP.textContent = t.dropzoneText;
-  const dzSub = document.querySelector('#dropzone .sub');
-  if(dzSub) dzSub.textContent = t.dropzoneSub;
-  
-  if($('infoFillMode')) $('infoFillMode').innerHTML = t.infoFillMode;
-  if($('infoMixedPacking')) $('infoMixedPacking').innerHTML = t.infoMixedPacking;
-  if($('infoSettings')) $('infoSettings').innerHTML = t.infoSettings;
-  if($('infoExport')) $('infoExport').innerHTML = t.infoExport;
-  
-  const statsLabels = document.querySelectorAll('#headerStats .stat-label');
-  if(statsLabels[0]) statsLabels[0].textContent = t.statCols;
-  if(statsLabels[1]) statsLabels[1].textContent = t.statTotal;
-  if(statsLabels[2]) statsLabels[2].textContent = t.statPages;
-  if(statsLabels[3]) statsLabels[3].textContent = t.statEmpty;
-  
-  rebuildPmGrid(); rebuildImGrid(); buildGapGrid();
-  renderImageList();
-  
-  const optStd = document.querySelector('#fillMode option[value="standard"]');
-  if(optStd) optStd.textContent = t.optStandard;
-  const optBlk = document.querySelector('#fillMode option[value="bulk"]');
-  if(optBlk) optBlk.textContent = t.optBulk;
-  const optMix = document.querySelector('#fillMode option[value="mixed"]');
-  if(optMix) optMix.textContent = t.optMixed;
-  const optMixStd = document.querySelector('#fillMode option[value="mixed_standard"]');
-  if(optMixStd) optMixStd.textContent = t.optMixedStandard;
-  
-  const optGNone = document.querySelector('#guideStyle option[value="none"]');
-  if(optGNone) optGNone.textContent = t.optGuideNone;
-  const optGBorder = document.querySelector('#guideStyle option[value="border"]');
-  if(optGBorder) optGBorder.textContent = t.optGuideBorder;
-  const optGCorner = document.querySelector('#guideStyle option[value="corner"]');
-  if(optGCorner) optGCorner.textContent = t.optGuideCorner;
-  const optGBoth = document.querySelector('#guideStyle option[value="both"]');
-  if(optGBoth) optGBoth.textContent = t.optGuideBoth;
-  const optGGapMid = document.querySelector('#guideStyle option[value="gapmid"]');
-  if(optGGapMid) optGGapMid.textContent = t.optGuideGapMid;
-  const optGGapMidCorner = document.querySelector('#guideStyle option[value="gapmid_corner"]');
-  if(optGGapMidCorner) optGGapMidCorner.textContent = t.optGuideGapMidCorner;
-
-  $('btnPickFiles').textContent = t.btnPickFiles;
-  $('btnPickFolder').textContent = t.btnPickFolder;
-  $('btnFillLayout').textContent = t.btnFillLayout;
-  $('btnClearLayout').textContent = t.btnClearLayout;
-  $('btnAddMixedSize').textContent = t.btnAddMixedSize;
-  $('btnExportSettings').textContent = t.btnExportSettings;
-  $('btnImportSettings').textContent = t.btnImportSettings;
-  $('btnExportPdf').textContent = t.btnExportPdf;
-  $('btnDlPage').textContent = t.btnDlPage;
-  $('btnDlAll').textContent = t.btnDlAll;
-  
-  $('presetNone').textContent = t.presetNone;
-  $('presetPolaroid').textContent = t.presetPolaroid;
-  $('presetFrame').textContent = t.presetFrame;
-  
-  $('btnRotateSel').textContent = t.btnRotateSel;
-  $('btnLayoutZoomIn').textContent = t.btnLayoutZoomIn;
-  $('btnLayoutZoomOut').textContent = t.btnLayoutZoomOut;
-  $('btnLayoutZoomReset').textContent = t.btnLayoutZoomReset;
-  $('btnZoomIn').textContent = t.btnZoomIn;
-  $('btnZoomOut').textContent = t.btnZoomOut;
-  $('btnResetPan').textContent = t.btnResetPan;
-  $('btnResetPos').textContent = t.btnResetPos;
-  $('btnResetAllPos').textContent = t.btnResetAllPos;
-  $('btnResetAllPages').textContent = t.btnResetAllPages;
-  $('btnClearSel').textContent = t.btnClearSel;
-  if($('btnSelectMode')) $('btnSelectMode').textContent = state.selectMode ? t.btnSelectModeOn : t.btnSelectModeOff;
-  
-  document.querySelector('#rotateAllowed').parentElement.lastChild.textContent = ' ' + t.lblRotateAllowed;
-  document.querySelector('#snapBoxes').parentElement.lastChild.textContent = ' ' + t.lblSnapBoxes;
-  document.querySelector('#snapGrid').parentElement.lastChild.textContent = ' ' + t.lblSnapGrid;
-  
-  $('btnEditMode').textContent = state.editMode ? t.btnEditModeOn : t.btnEditModeOff;
-  $('btnCropMode').textContent = state.cropDragMode ? t.btnCropModeOn : t.btnCropModeOff;
-  $('btnHandMode').textContent = state.handMode ? t.btnHandModeOn : t.btnHandModeOff;
-  
-  const optScopeCurrent = document.querySelector('#editScope option[value="current"]');
-  if(optScopeCurrent) optScopeCurrent.textContent = t.optEditScopeCurrent;
-  const optScopeAll = document.querySelector('#editScope option[value="all"]');
-  if(optScopeAll) optScopeAll.textContent = t.optEditScopeAll;
-  
-  $('warnBox').textContent = t.warnBox;
-  $('assignHint').innerHTML = t.assignHint;
-  document.querySelector('.guide-legend').textContent = t.guideLegend;
-  
-  const mixedPresetLabel = document.querySelectorAll('#mixedPanel label')[1];
-  if(mixedPresetLabel) mixedPresetLabel.textContent = t.lblMixedPreset;
-  
-  $('btnUndo').title = lang === 'id' ? 'Undo (Ctrl+Z)' : 'Undo (Ctrl+Z)';
-  $('btnRedo').title = lang === 'id' ? 'Redo (Ctrl+Y)' : 'Redo (Ctrl+Y)';
-  $('btnRotateSel').title = lang === 'id' ? 'Putar gambar 90° pada kotak terpilih' : 'Rotate cell 90° on selected boxes';
-  $('btnCropMode').title = lang === 'id' ? 'Aktifkan mode crop: klik & drag di kotak untuk atur posisi gambar' : 'Enable crop mode: click & drag inside boxes to pan image';
-  $('btnHandMode').title = lang === 'id' ? 'Aktifkan mode hand: seret di canvas untuk menggeser tampilan (bisa juga pakai klik kanan seret kapan saja)' : 'Enable hand mode: drag on canvas to pan layout view';
-  $('btnLayoutZoomIn').title = lang === 'id' ? 'Perbesar tampilan lembar preview' : 'Zoom in on sheet preview';
-  $('btnLayoutZoomOut').title = lang === 'id' ? 'Perkecil tampilan lembar preview' : 'Zoom out on sheet preview';
-  $('btnLayoutZoomReset').title = lang === 'id' ? 'Reset zoom tampilan lembar ke default' : 'Reset sheet zoom to default';
-  $('btnZoomIn').title = lang === 'id' ? 'Perbesar gambar pada kotak terpilih' : 'Zoom in photo inside selected boxes';
-  $('btnZoomOut').title = lang === 'id' ? 'Perkecil gambar pada kotak terpilih' : 'Zoom out photo inside selected boxes';
-  $('btnResetPan').title = lang === 'id' ? 'Reset posisi geser (pan) pada kotak terpilih' : 'Reset photo pan to center on selected boxes';
-  $('btnResetPos').title = lang === 'id' ? 'Reset posisi & transformasi kotak terpilih saja' : 'Reset position & transform of selected boxes';
-  $('btnResetAllPos').title = lang === 'id' ? 'Reset semua posisi & transformasi kotak di halaman aktif ini' : 'Reset all positions & transforms on this active page';
-  $('btnResetAllPages').title = lang === 'id' ? 'Reset semua posisi & transformasi kotak di semua halaman' : 'Reset all positions & transforms on all pages';
-  $('btnClearSel').title = lang === 'id' ? 'Hapus Pilihan' : 'Clear Selection';
-
-  document.querySelectorAll('[data-act="fillsheets"]').forEach(b => b.title = t.titleFillsheets);
-  document.querySelectorAll('[data-act="adjust"]').forEach(b => b.title = t.titleAdjust);
-  document.querySelectorAll('[data-act="remove"]').forEach(b => b.title = t.titleRemove);
-  
-  updateSelCount();
-  if(lastMeta) updateStats(lastMeta);
-}
-
+/* ================================================================
+   THEME
+   ================================================================ */
 function applyTheme(t){ document.documentElement.setAttribute('data-theme',t); $('themeBtn').textContent = t==='light'?'☀':'🌙'; localStorage.setItem('pasfoto-theme',t); }
 $('themeBtn').onclick=()=>{ const cur=document.documentElement.getAttribute('data-theme')==='light'?'dark':'light'; applyTheme(cur); };
 applyTheme(localStorage.getItem('pasfoto-theme')||'dark');
-
-$('langBtn').onclick=()=>{
-  const cur = state.lang==='id'?'en':'id';
-  state.lang = cur;
-  localStorage.setItem('pasfoto-lang', cur);
-  applyLanguage();
-};
-state.lang = localStorage.getItem('pasfoto-lang')||'id';
-applyLanguage();
 
 /* ================================================================
    BOOT
