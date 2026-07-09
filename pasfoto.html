@@ -106,7 +106,7 @@ select{cursor:pointer}
 .preview-canvas-container{position:relative;display:block;flex-shrink:0}
 .preview-wrap canvas{display:block;max-width:none;height:auto;box-shadow:0 8px 30px rgba(0,0,0,.45);background:#fff}
 .warn-box{display:flex;gap:8px;align-items:flex-start;background:rgba(255,92,92,.08);border:1px solid rgba(255,92,92,.2);border-radius:var(--radius-sm);padding:10px 13px;font-size:.75rem;color:var(--accent2);margin-top:10px}
-.info-box{display:flex;gap:8px;align-items:flex-start;background:rgba(0,229,176,.07);border:1px solid rgba(0,229,176,.18);border-radius:var(--radius-sm);padding:9px 13px;font-size:.73rem;color:var(--text-muted);margin-top:12px}
+.info-box{display:block;background:rgba(0,229,176,.07);border:1px solid rgba(0,229,176,.18);border-radius:var(--radius-sm);padding:9px 13px;font-size:.73rem;color:var(--text-muted);margin-top:12px;line-height:1.5}
 .export-actions{display:flex;flex-direction:column;gap:8px;margin-top:14px}
 .export-actions .row2{gap:8px}
 .toast{position:fixed;bottom:22px;right:22px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);padding:12px 18px;border-radius:var(--radius-sm);font-size:.82rem;z-index:999;box-shadow:var(--shadow);color:var(--text);transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none;max-width:320px}
@@ -193,10 +193,10 @@ select{cursor:pointer}
           </select>
         </div>
         <div class="form-group">
-          <label>Target Jumlah Lembar (utk tombol 🗎 isi penuh)</label>
+          <label>Target Jml Lembar (utk tombol 🗎 isi penuh)</label>
           <input type="number" id="targetPages" min="1" value="1">
         </div>
-        <div class="info-box" id="infoFillMode">💡 Tombol <b>🗎</b> pada daftar foto akan mengisi foto tsb hingga penuh sejumlah lembar target di atas (mengisi seluruh lembar hanya dgn foto itu). Mode <b>Bulk</b>: tiap lembar otomatis diisi 1 file foto berbeda (berurutan sesuai daftar, mendukung banyak file sekaligus).</div>
+        <div class="info-box" id="infoFillMode">💡 <b>🗎</b> Tombol pada daftar foto akan mengisi foto hingga penuh sejumlah lembar target di atas. <b>Bulk</b>: tiap lembar otomatis diisi 1 file foto berbeda dan banyak.</div>
 
         <div id="mixedPanel" class="hidden" style="margin-top:14px">
           <div class="form-group" style="margin-bottom:6px">
@@ -236,7 +236,7 @@ select{cursor:pointer}
           <button class="btn btn-s btn-sm" id="btnPaperSwap" title="Tukar orientasi">⇄</button>
         </div>
         <div class="form-group" style="margin-top:12px;margin-bottom:6px">
-          <label>Margin Kertas (mm)</label>
+          <label id="lblPaperMarginTxt">Margin Kertas (mm)</label>
         </div>
         <div class="margin-editor">
           <button class="link-toggle active" id="pmLink" title="Kunci semua sisi sama">🔗</button>
@@ -265,7 +265,7 @@ select{cursor:pointer}
       <div class="card">
         <div class="card-title"><div class="t">Jarak &amp; Margin Dalam</div></div>
         <div class="form-group">
-          <label>Jarak Antar Kotak (mm)</label>
+          <label id="lblGapTxt">Jarak Antar Kotak (mm)</label>
         </div>
         <div class="margin-editor" style="margin-bottom:12px">
           <button class="link-toggle active" id="gapLink" title="Kunci X = Y">🔗</button>
@@ -273,7 +273,7 @@ select{cursor:pointer}
         </div>
 
         <div class="form-group" style="margin-bottom:6px">
-          <label>Margin Foto di Dalam Kotak (mm)</label>
+          <label id="lblInnerMarginTxt">Margin Foto di Dalam Kotak (mm)</label>
         </div>
         <div class="margin-editor">
           <button class="link-toggle active" id="imLink" title="Kunci semua sisi sama">🔗</button>
@@ -324,7 +324,7 @@ select{cursor:pointer}
           <button class="btn btn-s btn-sm" id="btnImportSettings">⬇ Import Pengaturan</button>
         </div>
         <input type="file" id="settingsFileInput" accept=".json" class="hidden">
-        <div class="info-box" id="infoSettings">💾 Export/import pengaturan layout (kertas, kotak, margin, garis potong, dll.) ke/dari file JSON. Data foto tidak disertakan.</div>
+        <div class="info-box" id="infoSettings">💾 Export/import pengaturan layout (kertas, kotak, margin, garis potong, dll.) ke/dari file JSON. Foto tidak disertakan.</div>
       </div>
 
     </div>
@@ -378,7 +378,7 @@ select{cursor:pointer}
           </div>
         </div>
         <div class="warn-box hidden" id="warnBox">⚠ Ukuran kotak foto (termasuk jarak) lebih besar dari area cetak kertas. Perkecil kotak, jarak, atau margin kertas.</div>
-        <div class="info-box" id="assignHint">🖱️ <b>Klik</b> kotak = pilih 1. <b>Shift+Klik</b> = pilih banyak kotak sekaligus. <b>Seret di area kosong</b> = pilih banyak kotak dgn kotak seleksi. Klik foto di "Foto Sumber" utk mengisi semua kotak terpilih. Aktifkan <b>Edit Layout</b> lalu seret kotak terpilih utk memindah posisinya. <b>Crop</b>: aktifkan lalu klik & seret di kotak utk geser gambar, scroll utk zoom.</div>
+        <div class="info-box" id="assignHint">🖱️ <b>Klik</b> kotak = pilih 1. <b>Shift+Klik</b> = pilih banyak kotak. <b>Seret di area kosong</b> = pilih banyak kotak dgn kotak seleksi. Klik foto di "Foto Sumber" utk mengisi semua kotak terpilih. <b>Edit Layout</b>: seret kotak terpilih utk memindah posisinya. <b>Crop</b>: aktifkan lalu klik & seret di kotak utk geser gambar, scroll utk zoom.</div>
         <div class="guide-legend">Preview dirender pada resolusi layar (150dpi). Hasil unduhan/PDF dirender ulang pada DPI yang dipilih di bawah agar tetap tajam.</div>
       </div>
 
@@ -388,12 +388,12 @@ select{cursor:pointer}
           <div class="form-group">
             <label>Resolusi (DPI)</label>
             <select id="dpiSelect">
-              <option value="72">72 dpi — layar</option>
-              <option value="150">150 dpi — draft</option>
-              <option value="300" selected>300 dpi — cetak standar</option>
-              <option value="450">450 dpi</option>
-              <option value="600">600 dpi — cetak tinggi</option>
-              <option value="custom">Custom…</option>
+              <option value="72" id="optDpi72">72 dpi — layar</option>
+              <option value="150" id="optDpi150">150 dpi — draft</option>
+              <option value="300" id="optDpi300" selected>300 dpi — cetak standar</option>
+              <option value="450" id="optDpi450">450 dpi</option>
+              <option value="600" id="optDpi600">600 dpi — cetak tinggi</option>
+              <option value="custom" id="optDpiCustomOpt">Custom…</option>
             </select>
           </div>
           <div class="form-group">
@@ -478,8 +478,8 @@ const TRANSLATIONS = {
     optBulk: 'Bulk: 1 Lembar = 1 File Foto',
     optMixed: 'Ukuran Beragam (Mixed Size + Bulk)',
     optMixedStandard: 'Campur Foto + Ukuran Beragam (Mixed Size)',
-    lblTargetPages: 'Target Jumlah Lembar (utk tombol 🗎 isi penuh)',
-    infoFillMode: '💡 Tombol <b>🗎</b> pada daftar foto akan mengisi foto tsb hingga penuh sejumlah lembar target di atas (mengisi seluruh lembar hanya dgn foto itu). Mode <b>Bulk</b>: tiap lembar otomatis diisi 1 file foto berbeda (berurutan sesuai daftar, mendukung banyak file sekaligus).',
+    lblTargetPages: 'Target Jml Lembar (utk tombol 🗎 isi penuh)',
+    infoFillMode: '💡 <b>🗎</b> Tombol pada daftar foto akan mengisi foto hingga penuh sejumlah lembar target di atas. <b>Bulk</b>: tiap lembar otomatis diisi 1 file foto berbeda dan banyak.',
     lblMixedList: 'Daftar Ukuran Kotak per Lembar (mm)',
     lblMixedPreset: 'Klik preset untuk menambahkan:',
     btnAddMixedSize: '+ Tambah Ukuran Custom',
@@ -518,7 +518,7 @@ const TRANSLATIONS = {
     // Settings panel
     btnExportSettings: '⬆ Export Pengaturan',
     btnImportSettings: '⬇ Import Pengaturan',
-    infoSettings: '💾 Export/import pengaturan layout (kertas, kotak, margin, garis potong, dll.) ke/dari file JSON. Data foto tidak disertakan.',
+    infoSettings: '💾 Export/import pengaturan layout (kertas, kotak, margin, garis potong, dll.) ke/dari file JSON. Foto tidak disertakan.',
     
     // Toolbar buttons
     btnEditModeOn: '✏️ Edit Layout: ON',
@@ -550,12 +550,18 @@ const TRANSLATIONS = {
     
     // Preview bottom
     warnBox: '⚠ Ukuran kotak foto (termasuk jarak) lebih besar dari area cetak kertas. Perkecil kotak, jarak, atau margin kertas.',
-    assignHint: '🖱️ <b>Klik</b> kotak = pilih 1. <b>Shift+Klik</b> = pilih banyak kotak sekaligus. <b>Seret di area kosong</b> = pilih banyak kotak dgn kotak seleksi. Klik foto di "Foto Sumber" utk mengisi semua kotak terpilih. Aktifkan <b>Edit Layout</b> lalu seret kotak terpilih utk memindah posisinya. <b>Crop</b>: aktifkan lalu klik & seret di kotak utk geser gambar, scroll utk zoom.',
+    assignHint: '🖱️ <b>Klik</b> kotak = pilih 1. <b>Shift+Klik</b> = pilih banyak kotak. <b>Seret di area kosong</b> = pilih banyak kotak dgn kotak seleksi. Klik foto di "Foto Sumber" utk mengisi semua kotak terpilih. <b>Edit Layout</b>: seret kotak terpilih utk memindah posisinya. <b>Crop</b>: aktifkan lalu klik & seret di kotak utk geser gambar, scroll utk zoom.',
     guideLegend: 'Preview dirender pada resolusi layar (150dpi). Hasil unduhan/PDF dirender ulang pada DPI yang dipilih di bawah agar tetap tajam.',
     
     // Export panel
     lblDpi: 'Resolusi (DPI)',
     lblDpiCustom: 'DPI Custom',
+    optDpi72: '72 dpi — layar',
+    optDpi150: '150 dpi — draft',
+    optDpi300: '300 dpi — cetak standar',
+    optDpi450: '450 dpi',
+    optDpi600: '600 dpi — cetak tinggi',
+    optDpiCustomOpt: 'Custom…',
     lblImgFormat: 'Format Unduh Gambar',
     lblJpgQuality: 'Kualitas JPG',
     btnExportPdf: '⬇ Export PDF (semua halaman)',
@@ -647,7 +653,7 @@ const TRANSLATIONS = {
     optMixed: 'Mixed Sizes (Mixed Size + Bulk)',
     optMixedStandard: 'Mixed Sizes (Mixed Size + Standard Mixing)',
     lblTargetPages: 'Target Page Count (for 🗎 full fill button)',
-    infoFillMode: '💡 The <b>🗎</b> button fills the entire template with this photo up to the target pages. <b>Bulk</b>: each page is automatically filled with a different photo file sequentially.',
+    infoFillMode: '💡 <b>🗎</b> The button fills the entire template with this photo up to the target pages. <b>Bulk</b>: each page is automatically filled with a different photo file sequentially.',
     lblMixedList: 'List of Box Sizes per Page (mm)',
     lblMixedPreset: 'Click preset to add:',
     btnAddMixedSize: '+ Add Custom Size',
@@ -724,6 +730,12 @@ const TRANSLATIONS = {
     // Export panel
     lblDpi: 'Resolution (DPI)',
     lblDpiCustom: 'Custom DPI',
+    optDpi72: '72 dpi — screen',
+    optDpi150: '150 dpi — draft',
+    optDpi300: '300 dpi — standard print',
+    optDpi450: '450 dpi',
+    optDpi600: '600 dpi — high quality print',
+    optDpiCustomOpt: 'Custom…',
     lblImgFormat: 'Image Format',
     lblJpgQuality: 'JPG Quality',
     btnExportPdf: '⬇ Export PDF (all pages)',
@@ -987,7 +999,7 @@ document.addEventListener('keydown',e=>{
    PRESETS
    ================================================================ */
 const PAPER_GROUPS=[
-  {label:'Kertas Foto', sizes:[
+  {label:'Kertas Foto', labelEN:'Photo Paper', sizes:[
     {n:'2R (6x9)',w:60,h:90},{n:'3R (9x13)',w:89,h:127},{n:'4R (10x15)',w:102,h:152},
     {n:'5R (13x18)',w:127,h:178},{n:'6R (15x20)',w:152,h:203},{n:'8R (20x25)',w:203,h:254},
     {n:'8R+ (20x30)',w:203,h:305},{n:'10R (25x30)',w:254,h:305},{n:'10R+ (25x38)',w:254,h:381},
@@ -995,12 +1007,12 @@ const PAPER_GROUPS=[
     {n:'20R (50x60)',w:508,h:609},{n:'24R (60x80)',w:609,h:800},
     {n:'Postcard (10x15)',w:100,h:148}
   ]},
-  {label:'Umum / Cetak Lebar', sizes:[
+  {label:'Umum / Cetak Lebar', labelEN:'General / Wide Print', sizes:[
     {n:'A3',w:297,h:420},{n:'A3+',w:329,h:483},{n:'A2',w:420,h:594},
     {n:'A4',w:210,h:297},{n:'A5',w:148,h:210},{n:'A6',w:105,h:148},
     {n:'F4',w:215,h:330},{n:'Letter',w:216,h:279},{n:'Legal',w:216,h:356}
   ]},
-  {label:'Format Besar (Roll)', sizes:[
+  {label:'Format Besar (Roll)', labelEN:'Large Format (Roll)', sizes:[
     {n:'Roll 24" x 1 meter',w:610,h:1000},
     {n:'Roll 36" x 1 meter',w:914,h:1000},
     {n:'Roll 44" x 1 meter',w:1117,h:1000}
@@ -1011,7 +1023,7 @@ const BOX_PRESETS=[
   {n:'1.5×2 cm',w:15,h:20},{n:'2×3 cm',w:20,h:30},{n:'3×3 cm',w:30,h:30},
   {n:'3×4 cm',w:30,h:40},{n:'3.5×4.5 cm',w:35,h:45},{n:'4×4 cm',w:40,h:40},
   {n:'4×6 cm',w:40,h:60},{n:'4.5×4.5 cm',w:45,h:45},{n:'5×5 cm',w:50,h:50},
-  {n:'2×2 in (US Visa)',w:50.8,h:50.8},{n:'KTP / SIM (5.4×8.6)',w:54,h:85.6},
+  {n:'2×2 in (US Visa)',w:50.8,h:50.8},{n:'ID / KTP / SIM (5.4×8.6)',w:54,h:85.6},
   // Cetak Foto Preset
   {n:'2R (6×9)',w:60,h:90},{n:'3R (9×13)',w:89,h:127},{n:'4R (10×15)',w:102,h:152},
   {n:'5R (13×18)',w:127,h:178},{n:'6R (15×20)',w:152,h:203},{n:'8R (20×25)',w:203,h:254},
@@ -2553,10 +2565,7 @@ function applyLanguage() {
     { sel: '#frameColor', key: 'lblFrameColor', sibling: 'prev' },
     { sel: '#borderColor', key: 'lblBorderColor', sibling: 'prev' },
     { sel: '#pageBg', key: 'lblPageBg', sibling: 'prev' },
-    { sel: '#guideStyle', key: 'lblGuideStyle', sibling: 'prev' },
-    { sel: '#pmGrid', key: 'lblPaperMargin', sibling: 'prev' },
-    { sel: '#gapGrid', key: 'lblGap', sibling: 'prev' },
-    { sel: '#imGrid', key: 'lblInnerMargin', sibling: 'prev' }
+    { sel: '#guideStyle', key: 'lblGuideStyle', sibling: 'prev' }
   ];
   labelMappings.forEach(m => {
     const el = document.querySelector(m.sel);
@@ -2566,6 +2575,10 @@ function applyLanguage() {
     }
   });
   
+  if($('lblPaperMarginTxt')) $('lblPaperMarginTxt').textContent = t.lblPaperMargin;
+  if($('lblGapTxt')) $('lblGapTxt').textContent = t.lblGap;
+  if($('lblInnerMarginTxt')) $('lblInnerMarginTxt').textContent = t.lblInnerMargin;
+
   const pmLabels = document.querySelectorAll('#pmGrid label');
   const sideKeys = ['t', 'r', 'b', 'l'];
   const sideLabels = { id: { t: 'Atas', r: 'Kanan', b: 'Bawah', l: 'Kiri' }, en: { t: 'Top', r: 'Right', b: 'Bottom', l: 'Left' } };
@@ -2627,6 +2640,19 @@ function applyLanguage() {
   if(optGGapMid) optGGapMid.textContent = t.optGuideGapMid;
   const optGGapMidCorner = document.querySelector('#guideStyle option[value="gapmid_corner"]');
   if(optGGapMidCorner) optGGapMidCorner.textContent = t.optGuideGapMidCorner;
+
+  if($('optDpi72')) $('optDpi72').textContent = t.optDpi72;
+  if($('optDpi150')) $('optDpi150').textContent = t.optDpi150;
+  if($('optDpi300')) $('optDpi300').textContent = t.optDpi300;
+  if($('optDpi450')) $('optDpi450').textContent = t.optDpi450;
+  if($('optDpi600')) $('optDpi600').textContent = t.optDpi600;
+  if($('optDpiCustomOpt')) $('optDpiCustomOpt').textContent = t.optDpiCustomOpt;
+
+  const paperOptgroups = document.querySelectorAll('#paperSelect optgroup');
+  paperOptgroups.forEach((og, idx) => {
+    const grp = PAPER_GROUPS[idx];
+    if(grp) og.label = lang === 'id' ? grp.label : grp.labelEN;
+  });
 
   $('btnPickFiles').textContent = t.btnPickFiles;
   $('btnPickFolder').textContent = t.btnPickFolder;
