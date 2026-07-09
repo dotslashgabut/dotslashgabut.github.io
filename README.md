@@ -5,7 +5,7 @@ For offline use, download the offline branch. [Download Offline Branch](https://
 
 ### 🟡 https://dotslashgabut.github.io/
 
-The complete list, here: [LIST.txt](LIST.txt)
+The complete list, here: [list.txt](list.txt)
 
 - [Color Palette Generator Plus HSL - Dark Mode](https://dotslashgabut.github.io/color-palette-generator-plus-dark.html)
 - [Color Palette Generator Plus HSL](https://dotslashgabut.github.io/color-palette-generator-plus.html)
