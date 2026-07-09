@@ -1,5 +1,5 @@
 # Daftar File .html
-Waktu Generate: 09/07/2026  3.57.31,56
+Waktu Generate: 09/07/2026  8.30.14,34
 
 https://dotslashgabut.github.io/advanced-image-comparison.html
 https://dotslashgabut.github.io/alpha-extractor-alt.html
@@ -53,6 +53,7 @@ https://dotslashgabut.github.io/network-calculator.html
 https://dotslashgabut.github.io/paper-cut-optimizer.html
 https://dotslashgabut.github.io/paper-cutting-optimizer.html
 https://dotslashgabut.github.io/pasfoto-alt.html
+https://dotslashgabut.github.io/pasfoto-id.html
 https://dotslashgabut.github.io/pasfoto.html
 https://dotslashgabut.github.io/pixel-coordinates-to-color-codes.html
 https://dotslashgabut.github.io/pixel-steganography-toolkit.html
