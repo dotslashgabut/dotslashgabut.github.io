@@ -245,6 +245,13 @@
       fill: #2a2a2a;
     }
 
+    .placeholder-msg .ph-hint {
+      font-size: 9px;
+      letter-spacing: 1px;
+      color: #262626;
+      text-transform: none;
+    }
+
     /* ── Transport ── */
     #transport {
       position: relative;
@@ -332,6 +339,81 @@
       letter-spacing: 1.5px;
       text-transform: uppercase;
       color: #444;
+    }
+
+    #balance-area {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 14px;
+      border-left: 1px solid var(--ui-border);
+      height: 100%;
+      flex-shrink: 0;
+    }
+
+    #balance-area label {
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #444;
+    }
+
+    #balance-readout {
+      font-size: 9px;
+      color: var(--text-bright);
+      min-width: 74px;
+      white-space: nowrap;
+    }
+
+    #balance-readout .bl {
+      color: var(--accent-l);
+    }
+
+    #balance-readout .br {
+      color: var(--accent-r);
+    }
+
+    #balance-slider {
+      width: 90px;
+    }
+
+    /* ── Responsive transport: wrap scrub/vol/balance to a second row on small screens ── */
+    @media (max-width: 760px), (max-height: 480px) and (orientation: landscape) {
+      #transport {
+        height: auto;
+        min-height: 52px;
+        flex-wrap: wrap;
+      }
+
+      #scrub-track {
+        order: 5;
+        flex: 1 1 100%;
+        height: 36px;
+      }
+
+      #vol-area,
+      #balance-area {
+        order: 6;
+        flex: 1 1 auto;
+        height: 34px;
+        padding: 0 10px;
+        justify-content: center;
+      }
+
+      #vol-slider,
+      #balance-slider {
+        flex: 1;
+        min-width: 0;
+        width: auto;
+      }
+
+      #balance-readout {
+        min-width: 60px;
+      }
+
+      #time-display {
+        font-size: 10px;
+      }
     }
 
     #ab-group {
@@ -463,11 +545,19 @@
 
     input[type=range] {
       -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
       width: 80px;
       height: 2px;
       background: #222;
       outline: none;
       cursor: pointer;
+      accent-color: #666;
+    }
+
+    input[type=range]::-webkit-slider-runnable-track {
+      background: #222;
+      height: 2px;
     }
 
     input[type=range]::-webkit-slider-thumb {
@@ -477,6 +567,13 @@
       border-radius: 0;
       background: #fff;
       cursor: pointer;
+      margin-top: -7px;
+    }
+
+    input[type=range]::-moz-range-track {
+      background: #222;
+      height: 2px;
+      border: none;
     }
 
     input[type=range]::-moz-range-thumb {
@@ -486,6 +583,11 @@
       background: #fff;
       cursor: pointer;
       border: none;
+    }
+
+    input[type=range]::-moz-range-progress {
+      background: #444;
+      height: 2px;
     }
 
     /* ── UI panels ── */
@@ -856,6 +958,224 @@
       pointer-events: none;
     }
 
+    /* ── MIDI / File Info Modal ── */
+    #midi-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #midi-modal.visible {
+      display: flex;
+    }
+
+    #midi-panel {
+      background: #0e0e0e;
+      border: 1px solid #2a2a2a;
+      min-width: 460px;
+      max-width: 560px;
+      width: 100%;
+      max-height: 84vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.9);
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+
+    #midi-panel h3 {
+      font-size: 9px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #888;
+      font-weight: 400;
+      padding: 14px 24px 12px;
+      border-bottom: 1px solid #1e1e1e;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: #0e0e0e;
+      z-index: 1;
+    }
+
+    #midi-panel h3 button {
+      background: transparent;
+      border: none;
+      color: #555;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 0;
+      width: 20px;
+      height: 20px;
+    }
+
+    #midi-panel h3 button:hover {
+      color: #fff;
+      background: transparent;
+      border: none;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      font-size: 11px;
+      padding: 4px 0;
+      border-bottom: 1px dashed #1a1a1a;
+    }
+
+    .info-row .info-k {
+      color: #555;
+      letter-spacing: 0.5px;
+    }
+
+    .info-row .info-v {
+      color: var(--text-bright);
+      text-align: right;
+      word-break: break-all;
+    }
+
+    .midi-track-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 2px;
+      font-size: 10px;
+      border-bottom: 1px solid #161616;
+    }
+
+    .midi-track-row .mt-idx {
+      color: #444;
+      width: 22px;
+      flex-shrink: 0;
+    }
+
+    .midi-track-row .mt-name {
+      flex: 1;
+      color: var(--text-bright);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .midi-track-row .mt-meta {
+      color: #444;
+      font-size: 9px;
+      flex-shrink: 0;
+    }
+
+    .midi-toggle {
+      width: 34px;
+      height: 20px;
+      flex-shrink: 0;
+      background: transparent;
+      border: 1px solid #333;
+      color: #555;
+      font-size: 8px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .midi-toggle.on {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .midi-channel-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 4px;
+    }
+
+    .midi-ch-btn {
+      height: 30px;
+      background: transparent;
+      border: 1px solid #222;
+      color: #555;
+      font-size: 9px;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.3;
+    }
+
+    .midi-ch-btn small {
+      font-size: 7px;
+      color: #444;
+    }
+
+    .midi-ch-btn.on {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .midi-ch-btn.empty {
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    .midi-rerender-note {
+      font-size: 9px;
+      color: #444;
+      margin-top: 6px;
+      font-style: italic;
+      min-height: 12px;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .midi-rerender-note.visible {
+      opacity: 1;
+    }
+
+    .midi-tempo-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .midi-tempo-row input[type=range] {
+      flex: 1;
+      min-width: 120px;
+      width: auto;
+    }
+
+    .midi-tempo-row input[type=number] {
+      width: 60px;
+      background: #111;
+      border: 1px solid #2a2a2a;
+      color: var(--text-bright);
+      font-family: inherit;
+      font-size: 11px;
+      padding: 4px 6px;
+      outline: none;
+    }
+
+    .midi-tempo-row input[type=number]::-webkit-inner-spin-button,
+    .midi-tempo-row input[type=number]::-webkit-outer-spin-button {
+      opacity: 0.5;
+    }
+
+    .midi-tempo-unit {
+      font-size: 9px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #555;
+    }
+
     .exp-res-row {
       display: flex;
       align-items: center;
@@ -1056,7 +1376,8 @@
           <svg viewBox="0 0 24 24">
             <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
           </svg>
-          <span>Drop audio/video or click load</span>
+          <span>Drop audio/video/midi or click load</span>
+          <span class="ph-hint">Drag &amp; drop a file here — .mp3, .wav, .mp4, .mid…</span>
         </div>
         <canvas id="cv-left"></canvas>
         <div class="spinner" id="sp-left">
@@ -1080,7 +1401,8 @@
           <svg viewBox="0 0 24 24">
             <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
           </svg>
-          <span>Drop audio or click load</span>
+          <span>Drop audio/video/midi or click load</span>
+          <span class="ph-hint">Drag &amp; drop a file here — .mp3, .wav, .mp4, .mid…</span>
         </div>
         <canvas id="cv-right"></canvas>
         <div class="spinner" id="sp-right">
@@ -1145,6 +1467,12 @@
       <div id="vol-area">
         <label>Vol</label>
         <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.8">
+      </div>
+      <div id="balance-area">
+        <label>Bal</label>
+        <input type="range" id="balance-slider" min="0" max="100" step="1" value="50"
+          oninput="applyBalance(this.value)" title="Audio 1 / Audio 2 balance">
+        <div id="balance-readout"><span class="bl">50%</span> / <span class="br">50%</span></div>
       </div>
     </div>
 
@@ -1266,9 +1594,14 @@
         Audio 1</div>
       <div class="filename-panel" id="name-left">—</div>
       <div style="display:flex;gap:6px">
-        <button class="btn-icon" onclick="loadLocal('left')" title="Load File (1)">
+        <button class="btn-icon" onclick="loadLocal('left')" title="Load File (Audio / Video / MIDI) (1)">
           <svg viewBox="0 0 24 24">
             <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
+          </svg>
+        </button>
+        <button class="btn-icon" id="btn-info-left" onclick="openFileInfo('left')" title="File Info" style="display:none">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
           </svg>
         </button>
       </div>
@@ -1281,7 +1614,12 @@
         Audio 2</div>
       <div class="filename-panel" id="name-right" style="text-align:right">—</div>
       <div style="display:flex;gap:6px;justify-content:flex-end">
-        <button class="btn-icon" onclick="loadLocal('right')" title="Load File (2)">
+        <button class="btn-icon" id="btn-info-right" onclick="openFileInfo('right')" title="File Info" style="display:none">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+          </svg>
+        </button>
+        <button class="btn-icon" onclick="loadLocal('right')" title="Load File (Audio / Video / MIDI) (2)">
           <svg viewBox="0 0 24 24">
             <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
           </svg>
@@ -1516,6 +1854,42 @@
     </div>
   </div>
 
+  <div id="midi-modal" onclick="if(event.target===this)closeFileInfo()">
+    <div id="midi-panel">
+      <h3>
+        <span id="midi-modal-title">File Info</span>
+        <button onclick="closeFileInfo()">✕</button>
+      </h3>
+
+      <div class="exp-section" id="midi-info-section">
+        <!-- Populated dynamically: basic file info rows -->
+      </div>
+
+      <div class="exp-section" id="midi-tempo-section" style="display:none">
+        <div class="exp-label">Playback Tempo</div>
+        <div class="midi-tempo-row">
+          <input type="range" id="midi-tempo-slider" min="20" max="400" step="1" value="120"
+            oninput="onMidiTempoInput(fileInfoSide, this.value)">
+          <input type="number" id="midi-tempo-number" min="20" max="400" step="1" value="120"
+            oninput="onMidiTempoInput(fileInfoSide, this.value)">
+          <span class="midi-tempo-unit">BPM</span>
+          <button class="exp-btn" onclick="resetMidiTempo(fileInfoSide)">Reset</button>
+        </div>
+      </div>
+
+      <div class="exp-section" id="midi-tracks-section" style="display:none">
+        <div class="exp-label">Tracks</div>
+        <div id="midi-track-list"></div>
+      </div>
+
+      <div class="exp-section" id="midi-channels-section" style="display:none">
+        <div class="exp-label">Channels (click to mute/unmute)</div>
+        <div class="midi-channel-grid" id="midi-channel-grid"></div>
+        <div class="midi-rerender-note" id="midi-rerender-note"></div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ═══════════════════════════════════════════════════
     //  STATE
@@ -1565,10 +1939,20 @@
       return sharedAudioCtx;
     }
 
+    function isMidiFile(file) {
+      const name = (file.name || '').toLowerCase();
+      const type = (file.type || '').toLowerCase();
+      return name.endsWith('.mid') || name.endsWith('.midi') || type.includes('midi');
+    }
+
     function loadLocal(side) {
       const inp = document.createElement('input');
-      inp.type = 'file'; inp.accept = 'audio/*,video/*';
-      inp.onchange = e => { const f = e.target.files[0]; if (f) loadFile(side, f); };
+      inp.type = 'file'; inp.accept = 'audio/*,video/*,.mid,.midi,audio/midi,audio/x-midi';
+      inp.onchange = e => {
+        const f = e.target.files[0]; if (!f) return;
+        if (isMidiFile(f)) { loadMIDIFile(side, f); return; }
+        loadFile(side, f);
+      };
       inp.click();
     }
 
@@ -1605,7 +1989,9 @@
                 source: null, 
                 gainNode: null,
                 isVideo: isVideo,
-                fileName: file.name
+                fileName: file.name,
+                fileSize: file.size,
+                midi: null
             };
             spectrogramRowCache[side] = null;
             buildSpectrogram(side);
@@ -1614,6 +2000,7 @@
             const displayName = isVideo ? `🎬 ${file.name}` : `🎵 ${file.name}`;
             document.getElementById(`name-${side}`).textContent = displayName;
             document.getElementById(`name-${side}`).title = displayName;
+            document.getElementById(`btn-info-${side}`).style.display = '';
     
             showSpinner(side, false);
             renderFrame(); 
@@ -1696,6 +2083,504 @@
         }
     }
 
+    // ═══════════════════════════════════════════════════
+    //  MIDI: parsing, synthesis, and per-side settings
+    // ═══════════════════════════════════════════════════
+
+    // ── SMF (Standard MIDI File) parser ──
+    function parseMIDI(arrayBuffer) {
+      const d = new DataView(arrayBuffer);
+      let p = 0;
+      function u8() { return d.getUint8(p++); }
+      function u16() { const v = d.getUint16(p); p += 2; return v; }
+      function u32() { const v = d.getUint32(p); p += 4; return v; }
+      function str(n) { let s = ''; for (let i = 0; i < n; i++) s += String.fromCharCode(u8()); return s; }
+      function readVarLen() {
+        let val = 0, b;
+        do { b = u8(); val = (val << 7) | (b & 0x7f); } while (b & 0x80);
+        return val >>> 0;
+      }
+
+      if (str(4) !== 'MThd') throw new Error('Not a valid MIDI file (missing MThd header)');
+      const headerLen = u32();
+      const format = u16();
+      const numTracks = u16();
+      const division = u16();
+      p += (headerLen - 6); // skip any extra header bytes
+
+      const tracks = [];
+      for (let t = 0; t < numTracks; t++) {
+        if (str(4) !== 'MTrk') throw new Error('Malformed MIDI track chunk');
+        const trackLen = u32();
+        const trackEnd = p + trackLen;
+        const events = [];
+        let tick = 0, runningStatus = null, trackName = '';
+        while (p < trackEnd) {
+          const delta = readVarLen();
+          tick += delta;
+          let status = u8();
+          if (status < 0x80) { p--; status = runningStatus; } else { runningStatus = status; }
+          if (status === 0xff) {
+            const metaType = u8();
+            const len = readVarLen();
+            const start = p;
+            if (metaType === 0x51 && len === 3) { // Set Tempo
+              const usPerQ = (u8() << 16) | (u8() << 8) | u8();
+              events.push({ tick, type: 'tempo', usPerQuarter: usPerQ });
+            } else if (metaType === 0x03) { // Track Name
+              trackName = str(len);
+            } else if (metaType === 0x58 && len === 4) { // Time Signature
+              const num = u8(), denPow = u8(), cpc = u8(), n32 = u8();
+              events.push({ tick, type: 'timesig', numerator: num, denominator: Math.pow(2, denPow), clocksPerClick: cpc, n32ndPerBeat: n32 });
+            } else {
+              p = start + len;
+            }
+            p = start + len;
+          } else if (status === 0xf0 || status === 0xf7) { // Sysex
+            const len = readVarLen();
+            p += len;
+          } else {
+            const type = status & 0xf0, channel = status & 0x0f;
+            if (type === 0x90) { // note on
+              const note = u8(), vel = u8();
+              events.push(vel > 0 ? { tick, type: 'noteon', channel, note, velocity: vel } : { tick, type: 'noteoff', channel, note });
+            } else if (type === 0x80) { // note off
+              const note = u8(); u8();
+              events.push({ tick, type: 'noteoff', channel, note });
+            } else if (type === 0xa0) { p += 2; } // aftertouch
+            else if (type === 0xb0) { // control change
+              const controller = u8(), value = u8();
+              events.push({ tick, type: 'cc', channel, controller, value });
+            } else if (type === 0xc0) { // program change
+              const program = u8();
+              events.push({ tick, type: 'program', channel, program });
+            } else if (type === 0xd0) { p += 1; } // channel pressure
+            else if (type === 0xe0) { p += 2; } // pitch bend
+            else { p = trackEnd; }
+          }
+        }
+        p = trackEnd;
+        tracks.push({ name: trackName || `Track ${t + 1}`, events });
+      }
+
+      // Build a global tempo map (tick -> usPerQuarter) merged across all tracks (format 1 convention: tempo on track 0, but scan all)
+      const tempoEvents = [];
+      for (const tr of tracks) for (const e of tr.events) if (e.type === 'tempo') tempoEvents.push({ tick: e.tick, usPerQuarter: e.usPerQuarter });
+      tempoEvents.sort((a, b) => a.tick - b.tick);
+      if (tempoEvents.length === 0 || tempoEvents[0].tick > 0) tempoEvents.unshift({ tick: 0, usPerQuarter: 500000 }); // default 120bpm
+
+      // Determine ticks-per-quarter (division). Ignore SMPTE format for simplicity (rare).
+      const ppq = (division & 0x8000) ? 480 : division;
+
+      const { tempoMap, tickToSeconds } = buildTempoMapping(tempoEvents, ppq, 1);
+
+      // Collect channel usage stats + max tick
+      const channelsUsed = new Set();
+      let maxTick = 0;
+      for (const tr of tracks) for (const e of tr.events) {
+        if (e.tick > maxTick) maxTick = e.tick;
+        if (e.channel !== undefined) channelsUsed.add(e.channel);
+      }
+
+      const baseBPM = Math.round(60000000 / tempoEvents[0].usPerQuarter);
+
+      return {
+        format, numTracks, ppq, tracks, tempoMap, tempoEvents,
+        tickToSeconds, channelsUsed, maxTick, baseBPM,
+        durationSec: tickToSeconds(maxTick) + 1.0
+      };
+    }
+
+    // Builds a tick→seconds mapping from a tempo-event list, optionally scaled
+    // (scale > 1 = faster/higher BPM, scale < 1 = slower/lower BPM) relative to the
+    // original tempo(s) in the file. Tempo *changes* within the piece are preserved
+    // proportionally — only the overall speed shifts.
+    function buildTempoMapping(tempoEvents, ppq, scale) {
+      const s = scale > 0 ? scale : 1;
+      const tempoMap = [];
+      let accSec = 0, lastTick = 0, lastUsPerQ = tempoEvents[0].usPerQuarter / s;
+      for (const te of tempoEvents) {
+        const usPerQ = te.usPerQuarter / s;
+        accSec += (te.tick - lastTick) * (lastUsPerQ / 1e6) / ppq;
+        tempoMap.push({ tick: te.tick, sec: accSec, usPerQuarter: usPerQ });
+        lastTick = te.tick; lastUsPerQ = usPerQ;
+      }
+      function tickToSeconds(tick) {
+        let seg = tempoMap[0];
+        for (let i = tempoMap.length - 1; i >= 0; i--) { if (tempoMap[i].tick <= tick) { seg = tempoMap[i]; break; } }
+        return seg.sec + (tick - seg.tick) * (seg.usPerQuarter / 1e6) / ppq;
+      }
+      return { tempoMap, tickToSeconds };
+    }
+
+    // Recomputes a MIDI side's tick→seconds mapping and duration at a new tempo scale,
+    // then re-synthesizes the audio buffer to match.
+    function applyTempoScale(side, scale) {
+      const entry = audio[side];
+      if (!entry?.midi) return;
+      const md = entry.midi.data;
+      const clamped = Math.max(0.1, Math.min(8, scale));
+      entry.midi.tempoScale = clamped;
+      const { tempoMap, tickToSeconds } = buildTempoMapping(md.tempoEvents, md.ppq, clamped);
+      md.tempoMap = tempoMap;
+      md.tickToSeconds = tickToSeconds;
+      md.durationSec = tickToSeconds(md.maxTick) + 1.0;
+      scheduleMidiRerender(side);
+    }
+
+    function resetMidiTempo(side) {
+      const entry = audio[side];
+      if (!entry?.midi) return;
+      applyTempoScale(side, 1);
+      const bpm = entry.midi.data.baseBPM;
+      const slider = document.getElementById('midi-tempo-slider');
+      const number = document.getElementById('midi-tempo-number');
+      if (slider) slider.value = bpm;
+      if (number) number.value = bpm;
+    }
+
+    function onMidiTempoInput(side, value) {
+      const entry = audio[side];
+      if (!entry?.midi) return;
+      let bpm = parseFloat(value);
+      if (!isFinite(bpm)) return;
+      bpm = Math.max(20, Math.min(400, bpm));
+      const slider = document.getElementById('midi-tempo-slider');
+      const number = document.getElementById('midi-tempo-number');
+      if (slider) slider.value = bpm;
+      if (number) number.value = bpm;
+      applyTempoScale(side, bpm / entry.midi.data.baseBPM);
+    }
+
+    // ── Simple built-in synthesizer: renders a parsed MIDI into an AudioBuffer ──
+    // Writes samples directly into Float32Arrays instead of building a huge
+    // OfflineAudioContext node graph (one osc/gain per note) — the node-graph
+    // approach could take an extremely long time (or effectively hang) to
+    // render via startRendering() once a file has more than a few hundred notes.
+    function midiNoteToFreq(n) { return 440 * Math.pow(2, (n - 69) / 12); }
+
+    const MIDI_MAX_RENDER_SECONDS = 20 * 60; // safety cap: 20 minutes
+
+    function midiEnvelope(t, dur, attack, release) {
+      if (t < attack) return attack > 0 ? t / attack : 1;
+      if (t < dur) return 1;
+      const r = t - dur;
+      if (r < release) return 1 - r / release;
+      return 0;
+    }
+
+    function renderNoteIntoBuffer(chL, chR, sampleRate, note, maxSamples) {
+      const isDrum = note.channel === 9;
+      const vel = Math.min(1, note.velocity / 127);
+      const attack = 0.008, release = Math.min(0.3, Math.max(0.03, note.dur * 0.4));
+      const totalDur = note.dur + release;
+      const startSample = Math.floor(note.startSec * sampleRate);
+      if (startSample >= maxSamples) return;
+      const totalSamples = Math.min(Math.ceil(totalDur * sampleRate), maxSamples - startSample);
+      if (totalSamples <= 0) return;
+      const peak = vel * 0.3;
+      const invSR = 1 / sampleRate;
+      const invAttack = attack > 0 ? 1 / attack : 0;
+      const invRelease = 1 / release;
+      const durSamples = Math.floor(note.dur * sampleRate);
+      const attackSamples = Math.floor(attack * sampleRate);
+
+      if (isDrum) {
+        const isLow = note.note < 45;
+        let lp = 0, hp = 0, prev = 0;
+        for (let i = 0; i < totalSamples; i++) {
+          // Inline envelope (attack / sustain / release) to avoid a function call per sample
+          let env;
+          if (i < attackSamples) env = i * invSR * invAttack;
+          else if (i < durSamples) env = 1;
+          else env = Math.max(0, 1 - (i - durSamples) * invSR * invRelease);
+
+          const n = Math.random() * 2 - 1;
+          let s;
+          if (isLow) { lp += (n - lp) * 0.35; s = lp; }
+          else { hp = n - prev + hp * 0.94; prev = n; s = hp; }
+          const idx = startSample + i;
+          const val = s * env * peak;
+          chL[idx] += val; chR[idx] += val;
+        }
+        return;
+      }
+
+      const freq = midiNoteToFreq(note.note);
+      const inc1 = freq * invSR, inc2 = (freq * 1.005) * invSR;
+      let phase1 = 0, phase2 = 0;
+      for (let i = 0; i < totalSamples; i++) {
+        let env;
+        if (i < attackSamples) env = i * invSR * invAttack;
+        else if (i < durSamples) env = 1;
+        else env = Math.max(0, 1 - (i - durSamples) * invSR * invRelease);
+
+        // Closed-form naive sawtooth/triangle from a wrapped [0,1) phase — avoids Math.floor per sample
+        const saw = 2 * phase1 - 1;
+        const tri = 1 - 4 * Math.abs(phase2 - 0.5);
+        phase1 += inc1; if (phase1 >= 1) phase1 -= 1;
+        phase2 += inc2; if (phase2 >= 1) phase2 -= 1;
+        const s = (saw * 0.6 + tri * 0.4) * env * peak;
+        const idx = startSample + i;
+        chL[idx] += s; chR[idx] += s;
+      }
+    }
+
+    async function synthesizeMIDI(midiData, opts) {
+      const enabledTracks = opts.enabledTracks;   // Set of track indices
+      const enabledChannels = opts.enabledChannels; // Set of channel numbers 0-15
+      const sampleRate = 44100;
+      const rawDuration = Math.max(0.5, midiData.durationSec);
+      const duration = Math.min(rawDuration, MIDI_MAX_RENDER_SECONDS);
+      const totalSamples = Math.ceil(sampleRate * duration);
+
+      // Flatten all note-on/note-off pairs (respecting track/channel filters) first
+      const notes = [];
+      midiData.tracks.forEach((track, ti) => {
+        if (!enabledTracks.has(ti)) return;
+        const active = {}; // key: channel-note -> {startTick, velocity}
+        for (const e of track.events) {
+          if (e.type === 'noteon') {
+            active[`${e.channel}-${e.note}`] = { startTick: e.tick, velocity: e.velocity };
+          } else if (e.type === 'noteoff') {
+            const key = `${e.channel}-${e.note}`;
+            const on = active[key];
+            if (on) {
+              delete active[key];
+              if (!enabledChannels.has(e.channel)) continue;
+              const startSec = midiData.tickToSeconds(on.startTick);
+              const endSec = midiData.tickToSeconds(e.tick);
+              if (startSec >= duration) continue;
+              notes.push({ channel: e.channel, note: e.note, velocity: on.velocity, startSec, dur: Math.max(0.03, endSec - startSec) });
+            }
+          }
+        }
+      });
+
+      const actx = getAudioCtx();
+      const outBuffer = actx.createBuffer(2, Math.max(1, totalSamples), sampleRate);
+      const chL = outBuffer.getChannelData(0), chR = outBuffer.getChannelData(1);
+
+      // Render in batches, yielding to the event loop so the tab stays responsive
+      const BATCH = 200;
+      for (let i = 0; i < notes.length; i += BATCH) {
+        const end = Math.min(i + BATCH, notes.length);
+        for (let j = i; j < end; j++) renderNoteIntoBuffer(chL, chR, sampleRate, notes[j], totalSamples);
+        if (end < notes.length) await new Promise(r => setTimeout(r, 0));
+      }
+
+      // Normalize to avoid clipping when many notes overlap
+      let peak = 0;
+      for (let i = 0; i < chL.length; i++) { const a = Math.abs(chL[i]), b = Math.abs(chR[i]); if (a > peak) peak = a; if (b > peak) peak = b; }
+      if (peak > 0.95) {
+        const g = 0.9 / peak;
+        for (let i = 0; i < chL.length; i++) { chL[i] *= g; chR[i] *= g; }
+      }
+
+      if (rawDuration > MIDI_MAX_RENDER_SECONDS) {
+        console.warn(`MIDI duration (${rawDuration.toFixed(1)}s) exceeded render cap; truncated to ${MIDI_MAX_RENDER_SECONDS}s.`);
+      }
+
+      return outBuffer;
+    }
+
+    async function loadMIDIFile(side, file) {
+      showSpinner(side, true);
+      document.getElementById(`ph-${side}`).style.display = 'none';
+      if (audio[side]?.source) {
+        try { audio[side].source.onended = null; audio[side].source.stop(); } catch (e) { }
+        audio[side].source = null; audio[side].analyser = null;
+      }
+      try {
+        const buf = await file.arrayBuffer();
+        const midiData = parseMIDI(buf);
+        const enabledTracks = new Set(midiData.tracks.map((_, i) => i));
+        const enabledChannels = new Set(midiData.channelsUsed);
+        audio[side] = {
+          buffer: null, duration: midiData.durationSec, pcm: null,
+          analyser: null, source: null, gainNode: null,
+          isVideo: false, fileName: file.name, fileSize: file.size,
+          midi: { data: midiData, enabledTracks, enabledChannels, tempoScale: 1 }
+        };
+        await rerenderMIDI(side);
+        document.getElementById(`name-${side}`).textContent = `🎹 ${file.name}`;
+        document.getElementById(`name-${side}`).title = `🎹 ${file.name}`;
+        document.getElementById(`btn-info-${side}`).style.display = '';
+        showSpinner(side, false);
+      } catch (e) {
+        showSpinner(side, false);
+        console.error('Error loading MIDI:', e);
+        alert(`Failed to load ${file.name}: ${e.message}`);
+      }
+    }
+
+    // Re-synthesize the audio buffer for a side's MIDI based on current track/channel selection
+    async function rerenderMIDI(side) {
+      const entry = audio[side];
+      if (!entry || !entry.midi) return;
+      showSpinner(side, true);
+      const wasPlaying = masterPlaying;
+      if (wasPlaying) stopAll();
+      const buffer = await synthesizeMIDI(entry.midi.data, {
+        enabledTracks: entry.midi.enabledTracks,
+        enabledChannels: entry.midi.enabledChannels
+      });
+      entry.buffer = buffer;
+      entry.duration = buffer.duration;
+      entry.pcm = extractPCM(buffer);
+      spectrogramRowCache[side] = null;
+      buildSpectrogram(side);
+      renderFrame();
+      updateTimeDisplay();
+      showSpinner(side, false);
+      if (wasPlaying) startAll();
+    }
+
+    // ── File Info modal ──
+    let fileInfoSide = null;
+    function openFileInfo(side) {
+      const entry = audio[side];
+      if (!entry) return;
+      fileInfoSide = side;
+      document.getElementById('midi-modal-title').textContent = entry.midi ? 'MIDI File Info' : 'File Info';
+
+      const infoSection = document.getElementById('midi-info-section');
+      const rows = [];
+      rows.push(['File', entry.fileName || '—']);
+      if (entry.fileSize != null) rows.push(['Size', formatBytes(entry.fileSize)]);
+      rows.push(['Duration', fmt(entry.duration)]);
+
+      if (entry.midi) {
+        const md = entry.midi.data;
+        rows.push(['Format', `Type ${md.format} · ${md.numTracks} track(s)`]);
+        rows.push(['Division (PPQ)', `${md.ppq} ticks/quarter`]);
+        const bpmList = md.tempoEvents.map(t => Math.round(60000000 / t.usPerQuarter));
+        rows.push(['Original Tempo (BPM)', [...new Set(bpmList)].join(', ') + (bpmList.length > 1 ? ' (changes)' : '')]);
+        const ts = [];
+        for (const tr of md.tracks) for (const e of tr.events) if (e.type === 'timesig') ts.push(`${e.numerator}/${e.denominator}`);
+        rows.push(['Time Signature', ts.length ? [...new Set(ts)].join(', ') : '4/4 (default)']);
+        let noteCount = 0;
+        for (const tr of md.tracks) for (const e of tr.events) if (e.type === 'noteon') noteCount++;
+        rows.push(['Note Events', noteCount.toLocaleString()]);
+        rows.push(['Channels Used', [...md.channelsUsed].sort((a, b) => a - b).map(c => c + 1).join(', ')]);
+      } else {
+        rows.push(['Sample Rate', entry.buffer ? `${entry.buffer.sampleRate.toLocaleString()} Hz` : '—']);
+        rows.push(['Channels', entry.buffer ? entry.buffer.numberOfChannels : '—']);
+        rows.push(['Type', entry.isVideo ? 'Extracted from video' : 'Audio file']);
+      }
+
+      infoSection.innerHTML = rows.map(([k, v]) =>
+        `<div class="info-row"><span class="info-k">${k}</span><span class="info-v">${v}</span></div>`
+      ).join('');
+
+      const tracksSection = document.getElementById('midi-tracks-section');
+      const channelsSection = document.getElementById('midi-channels-section');
+      const tempoSection = document.getElementById('midi-tempo-section');
+      if (entry.midi) {
+        tracksSection.style.display = '';
+        channelsSection.style.display = '';
+        tempoSection.style.display = '';
+        renderMidiTrackList(side);
+        renderMidiChannelGrid(side);
+        const currentBPM = Math.round(entry.midi.data.baseBPM * (entry.midi.tempoScale || 1));
+        const slider = document.getElementById('midi-tempo-slider');
+        const number = document.getElementById('midi-tempo-number');
+        slider.value = currentBPM; number.value = currentBPM;
+      } else {
+        tracksSection.style.display = 'none';
+        channelsSection.style.display = 'none';
+        tempoSection.style.display = 'none';
+      }
+
+      document.getElementById('midi-modal').classList.add('visible');
+    }
+
+    function closeFileInfo() {
+      document.getElementById('midi-modal').classList.remove('visible');
+      fileInfoSide = null;
+    }
+
+    function renderMidiTrackList(side) {
+      const entry = audio[side];
+      const md = entry.midi.data;
+      const list = document.getElementById('midi-track-list');
+      list.innerHTML = md.tracks.map((tr, i) => {
+        const noteCount = tr.events.filter(e => e.type === 'noteon').length;
+        const on = entry.midi.enabledTracks.has(i);
+        return `<div class="midi-track-row">
+          <span class="mt-idx">${i}</span>
+          <span class="mt-name" title="${tr.name}">${tr.name}</span>
+          <span class="mt-meta">${noteCount} notes</span>
+          <button class="midi-toggle ${on ? 'on' : ''}" onclick="toggleMidiTrack('${side}', ${i})">${on ? 'ON' : 'OFF'}</button>
+        </div>`;
+      }).join('');
+    }
+
+    function renderMidiChannelGrid(side) {
+      const entry = audio[side];
+      const md = entry.midi.data;
+      const grid = document.getElementById('midi-channel-grid');
+      let html = '';
+      for (let c = 0; c < 16; c++) {
+        const used = md.channelsUsed.has(c);
+        const on = entry.midi.enabledChannels.has(c);
+        const label = c === 9 ? 'Drums' : `Ch ${c + 1}`;
+        html += `<button class="midi-ch-btn ${on ? 'on' : ''} ${used ? '' : 'empty'}" onclick="toggleMidiChannel('${side}', ${c})">${label}<small>${used ? 'used' : '—'}</small></button>`;
+      }
+      grid.innerHTML = html;
+    }
+
+    let midiRerenderTimer = null;
+    function scheduleMidiRerender(side) {
+      const note = document.getElementById('midi-rerender-note');
+      if (note) { note.textContent = 'Re-rendering audio…'; note.classList.add('visible'); }
+      clearTimeout(midiRerenderTimer);
+      midiRerenderTimer = setTimeout(async () => {
+        await rerenderMIDI(side);
+        const n = document.getElementById('midi-rerender-note');
+        if (n) n.classList.remove('visible');
+      }, 400);
+    }
+
+    function toggleMidiTrack(side, idx) {
+      const entry = audio[side];
+      if (!entry?.midi) return;
+      if (entry.midi.enabledTracks.has(idx)) entry.midi.enabledTracks.delete(idx);
+      else entry.midi.enabledTracks.add(idx);
+      renderMidiTrackList(side);
+      scheduleMidiRerender(side);
+    }
+
+    function toggleMidiChannel(side, ch) {
+      const entry = audio[side];
+      if (!entry?.midi) return;
+      if (entry.midi.enabledChannels.has(ch)) entry.midi.enabledChannels.delete(ch);
+      else entry.midi.enabledChannels.add(ch);
+      renderMidiChannelGrid(side);
+      scheduleMidiRerender(side);
+    }
+
+    function formatBytes(n) {
+      if (n < 1024) return n + ' B';
+      if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+      return (n / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    // ── Audio 1 / Audio 2 volume balance ──
+    let balanceValue = 50; // 0-100, 50 = center
+    function applyBalance(v) {
+      balanceValue = parseFloat(v);
+      const leftPct = Math.round(100 - balanceValue), rightPct = Math.round(balanceValue);
+      document.getElementById('balance-readout').innerHTML = `<span class="bl">${leftPct}%</span> / <span class="br">${rightPct}%</span>`;
+      const vol = parseFloat(document.getElementById('vol-slider').value);
+      for (const side of sides) {
+        if (!audio[side]?.gainNode) continue;
+        const active = (playTarget === 'both' || playTarget === side);
+        const balMult = side === 'left' ? leftPct / 100 : rightPct / 100;
+        audio[side].gainNode.gain.value = active ? vol * balMult : 0;
+      }
+    }
+
     function startAll() {
       const actx = getAudioCtx();
       if (actx.state === 'suspended') actx.resume();
@@ -1708,9 +2593,10 @@
       for (const side of sides) {
         if (!audio[side]) continue;
         const vol = parseFloat(document.getElementById('vol-slider').value);
+        const balMult = side === 'left' ? (100 - balanceValue) / 100 : balanceValue / 100;
         const gain = actx.createGain();
-        // Mute sides not selected by playTarget
-        gain.gain.value = (playTarget === 'both' || playTarget === side) ? vol : 0;
+        // Mute sides not selected by playTarget, and scale by A1/A2 balance
+        gain.gain.value = (playTarget === 'both' || playTarget === side) ? vol * balMult : 0;
         gain.connect(actx.destination);
         const analyser = actx.createAnalyser(); analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0.8; gain.connect(analyser);
         const src = actx.createBufferSource(); src.buffer = audio[side].buffer; src.connect(gain);
@@ -1753,7 +2639,8 @@
       const vol = parseFloat(document.getElementById('vol-slider').value);
       for (const side of sides) {
         if (!audio[side]?.gainNode) continue;
-        audio[side].gainNode.gain.value = (t === 'both' || t === side) ? vol : 0;
+        const balMult = side === 'left' ? (100 - balanceValue) / 100 : balanceValue / 100;
+        audio[side].gainNode.gain.value = (t === 'both' || t === side) ? vol * balMult : 0;
       }
     }
     function toggleRepeat() {
@@ -3098,8 +3985,10 @@
     // ═══════════════════════════════════════════════════
     document.getElementById('vol-slider').addEventListener('input', (e) => {
       const v = parseFloat(e.target.value);
-      for (const s of sides) if (audio[s]?.gainNode)
-        audio[s].gainNode.gain.value = (playTarget === 'both' || playTarget === s) ? v : 0;
+      for (const s of sides) if (audio[s]?.gainNode) {
+        const balMult = s === 'left' ? (100 - balanceValue) / 100 : balanceValue / 100;
+        audio[s].gainNode.gain.value = (playTarget === 'both' || playTarget === s) ? v * balMult : 0;
+      }
     });
 
     let dragDepth = 0;
@@ -3109,7 +3998,15 @@
     window.addEventListener('dragenter', (e) => { if (!isADrag(e)) return; e.preventDefault(); dragDepth++; });
     window.addEventListener('dragleave', (e) => { if (!isADrag(e)) return; dragDepth--; if (dragDepth <= 0) { dragDepth = 0; document.getElementById('drop-left').classList.remove('active'); document.getElementById('drop-right').classList.remove('active'); } });
     window.addEventListener('dragover', (e) => { if (!isADrag(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; const s = sideFromX(e.clientX); document.getElementById('drop-left').classList.toggle('active', s === 'left'); document.getElementById('drop-right').classList.toggle('active', s === 'right'); });
-    window.addEventListener('drop', (e) => { e.preventDefault(); dragDepth = 0; document.getElementById('drop-left').classList.remove('active'); document.getElementById('drop-right').classList.remove('active'); const f = e.dataTransfer.files[0]; if (!f || (!f.type.startsWith('audio/') && !f.type.startsWith('video/'))) return; loadFile(sideFromX(e.clientX), f); });
+    window.addEventListener('drop', (e) => {
+      e.preventDefault(); dragDepth = 0;
+      document.getElementById('drop-left').classList.remove('active'); document.getElementById('drop-right').classList.remove('active');
+      const f = e.dataTransfer.files[0]; if (!f) return;
+      const side = sideFromX(e.clientX);
+      if (isMidiFile(f)) { loadMIDIFile(side, f); return; }
+      if (!f.type.startsWith('audio/') && !f.type.startsWith('video/')) return;
+      loadFile(side, f);
+    });
 
     document.getElementById('btn-play').addEventListener('click', togglePlay);
     document.getElementById('btn-stop').addEventListener('click', stopPlayback);
