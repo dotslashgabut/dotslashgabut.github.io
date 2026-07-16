@@ -8,8 +8,8 @@ REM Hapus file lama jika ada
 if exist %OUTPUT_FILE% del %OUTPUT_FILE%
 
 REM Tambahkan header
-echo # Daftar File .html>> %OUTPUT_FILE%
-echo Waktu Generate: %date% %time%>> %OUTPUT_FILE%
+echo # List of .html Files>> %OUTPUT_FILE%
+echo Generation Time: %date% %time%>> %OUTPUT_FILE%
 echo.>> %OUTPUT_FILE%
 
 REM Loop melalui semua file .html di folder saat ini dan subfolder
