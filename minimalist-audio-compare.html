@@ -352,10 +352,34 @@
     }
 
     #balance-area label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
       font-size: 9px;
       letter-spacing: 1.5px;
       text-transform: uppercase;
       color: #444;
+      cursor: pointer;
+    }
+
+    #balance-toggle {
+      width: 11px;
+      height: 11px;
+      cursor: pointer;
+      accent-color: var(--ui-hover);
+    }
+
+    #balance-slider:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    #balance-area:has(#balance-toggle:checked) label {
+      color: var(--text-bright);
+    }
+
+    #balance-area:not(:has(#balance-toggle:checked)) #balance-readout {
+      opacity: 0.4;
     }
 
     #balance-readout {
@@ -1469,8 +1493,11 @@
         <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.8">
       </div>
       <div id="balance-area">
-        <label>Bal</label>
-        <input type="range" id="balance-slider" min="0" max="100" step="1" value="50"
+        <label id="balance-toggle-label" for="balance-toggle" title="Enable Audio 1 / Audio 2 balance">
+          <input type="checkbox" id="balance-toggle" onchange="toggleBalanceEnabled(this.checked)">
+          Bal
+        </label>
+        <input type="range" id="balance-slider" min="0" max="100" step="1" value="50" disabled
           oninput="applyBalance(this.value)" title="Audio 1 / Audio 2 balance">
         <div id="balance-readout"><span class="bl">50%</span> / <span class="br">50%</span></div>
       </div>
@@ -2568,6 +2595,22 @@
 
     // ── Audio 1 / Audio 2 volume balance ──
     let balanceValue = 50; // 0-100, 50 = center
+    let balanceEnabled = false; // feature off by default
+    function getBalMult(side) {
+      if (!balanceEnabled) return 1;
+      return side === 'left' ? (100 - balanceValue) / 100 : balanceValue / 100;
+    }
+    function toggleBalanceEnabled(checked) {
+      balanceEnabled = checked;
+      document.getElementById('balance-slider').disabled = !checked;
+      // Re-apply gain live without restarting playback
+      const vol = parseFloat(document.getElementById('vol-slider').value);
+      for (const side of sides) {
+        if (!audio[side]?.gainNode) continue;
+        const active = (playTarget === 'both' || playTarget === side);
+        audio[side].gainNode.gain.value = active ? vol * getBalMult(side) : 0;
+      }
+    }
     function applyBalance(v) {
       balanceValue = parseFloat(v);
       const leftPct = Math.round(100 - balanceValue), rightPct = Math.round(balanceValue);
@@ -2576,7 +2619,7 @@
       for (const side of sides) {
         if (!audio[side]?.gainNode) continue;
         const active = (playTarget === 'both' || playTarget === side);
-        const balMult = side === 'left' ? leftPct / 100 : rightPct / 100;
+        const balMult = getBalMult(side);
         audio[side].gainNode.gain.value = active ? vol * balMult : 0;
       }
     }
@@ -2593,7 +2636,7 @@
       for (const side of sides) {
         if (!audio[side]) continue;
         const vol = parseFloat(document.getElementById('vol-slider').value);
-        const balMult = side === 'left' ? (100 - balanceValue) / 100 : balanceValue / 100;
+        const balMult = getBalMult(side);
         const gain = actx.createGain();
         // Mute sides not selected by playTarget, and scale by A1/A2 balance
         gain.gain.value = (playTarget === 'both' || playTarget === side) ? vol * balMult : 0;
@@ -2639,7 +2682,7 @@
       const vol = parseFloat(document.getElementById('vol-slider').value);
       for (const side of sides) {
         if (!audio[side]?.gainNode) continue;
-        const balMult = side === 'left' ? (100 - balanceValue) / 100 : balanceValue / 100;
+        const balMult = getBalMult(side);
         audio[side].gainNode.gain.value = (t === 'both' || t === side) ? vol * balMult : 0;
       }
     }
@@ -3986,7 +4029,7 @@
     document.getElementById('vol-slider').addEventListener('input', (e) => {
       const v = parseFloat(e.target.value);
       for (const s of sides) if (audio[s]?.gainNode) {
-        const balMult = s === 'left' ? (100 - balanceValue) / 100 : balanceValue / 100;
+        const balMult = getBalMult(s);
         audio[s].gainNode.gain.value = (playTarget === 'both' || playTarget === s) ? v * balMult : 0;
       }
     });
