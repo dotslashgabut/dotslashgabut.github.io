@@ -6,6 +6,7 @@
 <title>PasFoto Layout — Tata Letak Cetak Pas Photo</title>
 <!-- <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"> -->
 <script src="libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{
   --bg:#0d0f14;--surface:#161a23;--surface2:#1e2330;--border:#2a3045;
@@ -31,7 +32,6 @@ header{display:flex;align-items:center;justify-content:space-between;padding:14p
 .btn-icon:hover{border-color:var(--accent);color:var(--accent)}
 .container{flex:1;overflow:hidden;padding:0 18px}
 .layout{display:grid;grid-template-columns:400px 1fr;gap:18px;align-items:stretch;height:100%}
-@media(max-width:980px){.layout{grid-template-columns:1fr;height:auto;overflow-y:auto}}
 .col{display:flex;flex-direction:column;gap:16px;overflow-y:auto;padding:18px 6px 60px 0}
 .col:last-child{padding:18px 0 60px 6px}
 .col::-webkit-scrollbar{width:10px;height:10px}.col::-webkit-scrollbar-track{background:rgba(0,0,0,0.05);border-radius:5px}.col::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px;border:2px solid transparent;background-clip:padding-box}.col::-webkit-scrollbar-thumb:hover{background:var(--accent)}
@@ -122,6 +122,32 @@ select{cursor:pointer}
 .undo-redo-bar button:not(:disabled){color:var(--accent);border-color:var(--accent);background:var(--surface2)}
 .undo-redo-bar button:disabled{opacity:.25;cursor:not-allowed;color:var(--text-dim);border-color:var(--border)}
 .app-wrap{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+@media(max-width:980px){
+  html,body{height:auto;min-height:100vh;overflow-y:auto;overflow-x:hidden}
+  .app-wrap{height:auto;min-height:100vh;overflow:visible}
+  header{position:sticky;top:0;flex-wrap:wrap;row-gap:8px;padding:10px 14px}
+  .container{flex:none;height:auto;overflow:visible}
+  .layout{grid-template-columns:1fr;height:auto;overflow:visible}
+  .col{overflow:visible;max-height:none;padding-bottom:24px}
+  .header-actions{order:1;margin-left:auto}
+  .stats-grid{order:2;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0;padding-bottom:2px;justify-content:flex-start}
+  .stats-grid::-webkit-scrollbar{height:4px}
+}
+@media(max-width:480px){
+  .logo small{display:none}
+  .logo{font-size:1rem}
+  .stat-box{padding:4px 8px}
+  .page-nav span{font-size:.7rem}
+  .page-nav .btn{padding:6px 10px}
+  .container{padding:0 10px}
+  .card{padding:14px}
+  .row3,.row4{grid-template-columns:1fr 1fr}
+}
+@media(max-width:420px){
+  .stat-label{display:none}
+  header{gap:8px}
+}
 </style>
 </head>
 <body>
@@ -141,7 +167,7 @@ select{cursor:pointer}
     <div class="stat-box"><span class="stat-label">Slot Kosong:</span><span class="stat-value" id="statEmpty">0</span></div>
   </div>
 
-  <div style="display:flex;gap:8px;align-items:center">
+  <div class="header-actions" style="display:flex;gap:8px;align-items:center">
     <!-- Page Nav placed in Header next to theme switcher -->
     <div class="page-nav" style="margin-right: 10px;">
       <button class="btn btn-s btn-sm" id="btnPrevPage" style="height: 30px; font-weight: 700;">‹ Prev</button>
@@ -417,9 +443,10 @@ select{cursor:pointer}
 
         <div class="export-actions">
           <button class="btn btn-p btn-full" id="btnExportPdf">⬇ Export PDF (semua halaman)</button>
+          <button class="btn btn-s btn-full" id="btnDlPage">⬇ Halaman Ini</button>
           <div class="row2">
-            <button class="btn btn-s" id="btnDlPage">⬇ Halaman Ini</button>
             <button class="btn btn-s" id="btnDlAll">⬇ Semua Halaman</button>
+            <button class="btn btn-s" id="btnDlAllZip">⬇ Semua (ZIP)</button>
           </div>
         </div>
         <div class="info-box" id="infoExport">💡 Klik nama/thumbnail foto di panel kiri untuk mengatur zoom &amp; posisi crop tiap foto.</div>
@@ -567,6 +594,7 @@ const TRANSLATIONS = {
     btnExportPdf: '⬇ Export PDF (semua halaman)',
     btnDlPage: '⬇ Halaman Ini',
     btnDlAll: '⬇ Semua Halaman',
+    btnDlAllZip: '⬇ Semua (ZIP)',
     infoExport: '💡 Klik nama/thumbnail foto di panel kiri untuk mengatur zoom & posisi crop tiap foto.',
     
     // Stepper & Adjust
@@ -741,6 +769,7 @@ const TRANSLATIONS = {
     btnExportPdf: '⬇ Export PDF (all pages)',
     btnDlPage: '⬇ This Page',
     btnDlAll: '⬇ All Pages',
+    btnDlAllZip: '⬇ All (ZIP)',
     infoExport: '💡 Click photo name/thumbnail in left panel to adjust crop & zoom for each photo.',
     
     // Stepper & Adjust
@@ -2384,34 +2413,126 @@ $('imgFormat').onchange=e=>{ $('jpgQualityWrap').style.display = e.target.value=
    ================================================================ */
 /* (toast moved to top of script) */
 
-function downloadCanvas(cv,filename){
-  const fmt=$('imgFormat').value;
-  const ext=fmt==='jpeg'?'jpg':'png';
-  const quality= fmt==='jpeg' ? (Math.max(10,Math.min(100,parseInt($('jpgQuality').value)||92))/100) : undefined;
-  const url=cv.toDataURL(fmt==='jpeg'?'image/jpeg':'image/png',quality);
-  const a=document.createElement('a'); a.download=`${filename}.${ext}`; a.href=url; a.click();
+/* ---- CRC32 (for PNG pHYs chunk) ---- */
+const CRC_TABLE=(()=>{ const t=new Uint32Array(256);
+  for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++){ c = (c&1)? (0xEDB88320 ^ (c>>>1)) : (c>>>1); } t[n]=c>>>0; }
+  return t;
+})();
+function crc32(bytes){
+  let c=0xFFFFFFFF;
+  for(let i=0;i<bytes.length;i++){ c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c>>>8); }
+  return (c ^ 0xFFFFFFFF)>>>0;
 }
 
-$('btnDlPage').onclick=()=>{
+/* Inject a pHYs chunk (pixels-per-meter, from dpi) right after the fixed-size IHDR chunk. */
+function pngSetDpi(bytes,dpi){
+  const ppm=Math.round(dpi*39.3701);
+  const type=new Uint8Array([0x70,0x48,0x59,0x73]); // 'pHYs'
+  const data=new Uint8Array(9);
+  const ddv=new DataView(data.buffer);
+  ddv.setUint32(0,ppm); ddv.setUint32(4,ppm); data[8]=1; // unit=1 -> meters
+  const crcInput=new Uint8Array(4+9); crcInput.set(type,0); crcInput.set(data,4);
+  const crc=crc32(crcInput);
+  const chunk=new Uint8Array(4+4+9+4);
+  const cdv=new DataView(chunk.buffer);
+  cdv.setUint32(0,9); chunk.set(type,4); chunk.set(data,8); cdv.setUint32(17,crc);
+  const IHDR_END=33; // 8(sig)+4(len)+4('IHDR')+13(data)+4(crc)
+  const out=new Uint8Array(bytes.length+chunk.length);
+  out.set(bytes.subarray(0,IHDR_END),0);
+  out.set(chunk,IHDR_END);
+  out.set(bytes.subarray(IHDR_END),IHDR_END+chunk.length);
+  return out;
+}
+
+/* Overwrite the JFIF APP0 density fields (units=1 -> dpi) that canvas.toBlob always writes. */
+function jpegSetDpi(bytes,dpi){
+  if(!(bytes[0]===0xFF&&bytes[1]===0xD8&&bytes[2]===0xFF&&bytes[3]===0xE0)) return bytes;
+  const d=Math.max(1,Math.min(65535,Math.round(dpi)));
+  bytes[13]=1; // units: 1 = dots per inch
+  bytes[14]=(d>>8)&0xFF; bytes[15]=d&0xFF; // Xdensity
+  bytes[16]=(d>>8)&0xFF; bytes[17]=d&0xFF; // Ydensity
+  return bytes;
+}
+
+function canvasToDpiBlob(cv,dpi){
+  const fmt=$('imgFormat').value;
+  const mime=fmt==='jpeg'?'image/jpeg':'image/png';
+  const quality= fmt==='jpeg' ? (Math.max(10,Math.min(100,parseInt($('jpgQuality').value)||92))/100) : undefined;
+  return new Promise((resolve,reject)=>{
+    cv.toBlob(blob=>{
+      if(!blob){ reject(new Error('toBlob failed')); return; }
+      const reader=new FileReader();
+      reader.onload=()=>{
+        const bytes=new Uint8Array(reader.result);
+        const out = fmt==='jpeg' ? jpegSetDpi(bytes,dpi) : pngSetDpi(bytes,dpi);
+        resolve({blob:new Blob([out],{type:mime}), ext: fmt==='jpeg'?'jpg':'png'});
+      };
+      reader.onerror=reject;
+      reader.readAsArrayBuffer(blob);
+    },mime,quality);
+  });
+}
+
+async function downloadCanvas(cv,filename,dpi){
+  const {blob,ext}=await canvasToDpiBlob(cv,dpi);
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.download=`${filename}.${ext}`; a.href=url; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+}
+
+$('btnDlPage').onclick=async()=>{
   const meta=computeLayoutMeta();
   if(meta.cellsPerPage===0){ toast('⚠ Kotak lebih besar dari kertas'); return; }
   const dpi=getSelectedDPI();
   const cv=renderPageCanvas(meta,state.currentPage,dpi);
-  downloadCanvas(cv,`pasfoto-halaman-${state.currentPage+1}`);
+  await downloadCanvas(cv,`pasfoto-halaman-${state.currentPage+1}`,dpi);
   toast('⬇ Halaman diunduh');
 };
 
-$('btnDlAll').onclick=()=>{
+$('btnDlAll').onclick=async()=>{
   const meta=computeLayoutMeta();
   if(meta.cellsPerPage===0){ toast('⚠ Kotak lebih besar dari kertas'); return; }
   const dpi=getSelectedDPI();
-  meta.pages.forEach((_,i)=>{
-    setTimeout(()=>{
+  const btn=$('btnDlAll'); const orig=btn.textContent;
+  btn.disabled=true;
+  try{
+    for(let i=0;i<meta.pages.length;i++){
       const cv=renderPageCanvas(meta,i,dpi);
-      downloadCanvas(cv,`pasfoto-halaman-${i+1}`);
-    }, i*220);
-  });
-  toast(`⬇ Mengunduh ${meta.pages.length} halaman…`);
+      await downloadCanvas(cv,`pasfoto-halaman-${i+1}`,dpi);
+      if(i<meta.pages.length-1) await new Promise(r=>setTimeout(r,220));
+    }
+    toast(`⬇ ${meta.pages.length} halaman diunduh`);
+  }finally{
+    btn.disabled=false; btn.textContent=orig;
+  }
+};
+
+$('btnDlAllZip').onclick=async()=>{
+  const meta=computeLayoutMeta();
+  if(meta.cellsPerPage===0){ toast('⚠ Kotak lebih besar dari kertas'); return; }
+  if(typeof JSZip==='undefined'){ toast('⚠ JSZip tidak ditemukan (libs/jszip)'); return; }
+  const dpi=getSelectedDPI();
+  const btn=$('btnDlAllZip'); const orig=btn.textContent;
+  btn.disabled=true; btn.textContent='⏳ Menyiapkan ZIP…';
+  try{
+    const zip=new JSZip();
+    for(let i=0;i<meta.pages.length;i++){
+      const cv=renderPageCanvas(meta,i,dpi);
+      const {blob,ext}=await canvasToDpiBlob(cv,dpi);
+      zip.file(`pasfoto-halaman-${i+1}.${ext}`,blob);
+      await new Promise(r=>setTimeout(r,0));
+    }
+    const zipBlob=await zip.generateAsync({type:'blob'});
+    const url=URL.createObjectURL(zipBlob);
+    const a=document.createElement('a'); a.download='pasfoto-halaman.zip'; a.href=url; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);
+    toast(`✅ ZIP ${meta.pages.length} halaman diunduh`);
+  }catch(err){
+    console.error(err);
+    toast('⚠ Gagal membuat ZIP');
+  }finally{
+    btn.disabled=false; btn.textContent=orig;
+  }
 };
 
 $('btnExportPdf').onclick=async()=>{
@@ -2664,6 +2785,7 @@ function applyLanguage() {
   $('btnExportPdf').textContent = t.btnExportPdf;
   $('btnDlPage').textContent = t.btnDlPage;
   $('btnDlAll').textContent = t.btnDlAll;
+  $('btnDlAllZip').textContent = t.btnDlAllZip;
   
   $('presetNone').textContent = t.presetNone;
   $('presetPolaroid').textContent = t.presetPolaroid;
