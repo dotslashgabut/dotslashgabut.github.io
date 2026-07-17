@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Minimalist Audio Compare</title>
   <style>
     :root {
@@ -42,6 +42,7 @@
       position: relative;
       width: 100vw;
       height: 100vh;
+      height: 100dvh;
       display: flex;
       flex-direction: column;
     }
@@ -367,6 +368,14 @@
       height: 11px;
       cursor: pointer;
       accent-color: var(--ui-hover);
+      flex-shrink: 0;
+    }
+
+    @media (pointer: coarse) {
+      #balance-toggle {
+        width: 16px;
+        height: 16px;
+      }
     }
 
     #balance-slider:disabled {
@@ -401,45 +410,17 @@
       width: 90px;
     }
 
-    /* ── Responsive transport: wrap scrub/vol/balance to a second row on small screens ── */
-    @media (max-width: 760px), (max-height: 480px) and (orientation: landscape) {
-      #transport {
-        height: auto;
-        min-height: 52px;
-        flex-wrap: wrap;
-      }
-
-      #scrub-track {
-        order: 5;
-        flex: 1 1 100%;
-        height: 36px;
-      }
-
-      #vol-area,
-      #balance-area {
-        order: 6;
-        flex: 1 1 auto;
-        height: 34px;
-        padding: 0 10px;
-        justify-content: center;
-      }
-
-      #vol-slider,
-      #balance-slider {
-        flex: 1;
-        min-width: 0;
-        width: auto;
-      }
-
-      #balance-readout {
-        min-width: 60px;
-      }
-
-      #time-display {
-        font-size: 10px;
-      }
-    }
-
+    /* ── Responsive transport: reflow into clean touch-friendly rows on small screens ──
+       Row 1: play / stop / repeat / play-target (1, 1+2, 2)
+       Row 2: A/B loop controls, evenly stretched full-width
+       Row 3: scrub bar, taller for easier finger dragging
+       Row 4: volume + balance, side by side
+       NOTE: #ab-group, #play-target-group and their buttons use `height: 100%` in the
+       base (desktop) styles, which relies on #transport having a fixed height. Once
+       #transport switches to `height: auto` for wrapping, that percentage height has
+       nothing to resolve against and blows up, pushing rows below the viewport (the
+       vol/balance controls end up unreachable). Every child below gets an explicit
+       pixel height so the auto-height wrap layout is well defined. */
     #ab-group {
       display: flex;
       align-items: stretch;
@@ -612,6 +593,32 @@
     input[type=range]::-moz-range-progress {
       background: #444;
       height: 2px;
+    }
+
+    /* Bigger thumb + taller tap area on touch devices so vol/balance sliders are easy to grab */
+    @media (pointer: coarse) {
+      input[type=range] {
+        height: 28px;
+      }
+
+      input[type=range]::-webkit-slider-runnable-track {
+        height: 4px;
+      }
+
+      input[type=range]::-webkit-slider-thumb {
+        width: 16px;
+        height: 22px;
+        margin-top: -9px;
+      }
+
+      input[type=range]::-moz-range-track {
+        height: 4px;
+      }
+
+      input[type=range]::-moz-range-thumb {
+        width: 16px;
+        height: 22px;
+      }
     }
 
     /* ── UI panels ── */
@@ -1386,6 +1393,115 @@
     #canvas-area.layout-focus1 #divider,
     #canvas-area.layout-focus2 #divider {
       display: none;
+    }
+    /* ── Responsive transport: reflow into clean touch-friendly rows on small screens ──
+       Row 1: play / stop / repeat / play-target (1, 1+2, 2)
+       Row 2: A/B loop controls, evenly stretched full-width
+       Row 3: scrub bar, taller for easier finger dragging
+       Row 4: volume + balance, side by side
+       This block is placed at the end of the stylesheet on purpose: #ab-group,
+       #play-target-group and their buttons use `height: 100%` in the base (desktop)
+       rules above, which relies on #transport having a fixed height. Once #transport
+       switches to `height: auto` here to allow wrapping, that percentage height has
+       nothing valid to resolve against and the browser blows it up to the combined
+       height of every row, pushing the scrub bar and vol/balance controls off the
+       bottom of the screen entirely (they become unreachable, not just misaligned).
+       Every child below gets an explicit pixel height instead so the layout is well
+       defined — and this rule block has to win the cascade over the base rules of
+       equal specificity, so it must come after them in source order. */
+    @media (max-width: 810px), (max-height: 480px) and (orientation: landscape) {
+      #transport {
+        height: auto;
+        min-height: 44px;
+        flex-wrap: wrap;
+        align-items: stretch;
+      }
+
+      /* Row 1 — core transport buttons */
+      .btn-transport {
+        order: 1;
+        width: 44px;
+        height: 44px;
+      }
+
+      #play-target-group {
+        order: 1;
+        height: 44px;
+        flex: 1 1 auto;
+      }
+
+      .btn-play-target {
+        flex: 1;
+        width: auto;
+        height: 44px;
+      }
+
+      /* Row 2 — A/B loop controls, full width, evenly spaced for bigger tap targets */
+      #ab-group {
+        order: 2;
+        flex: 1 1 100%;
+        height: 38px;
+        border-top: 1px solid var(--ui-border);
+      }
+
+      .btn-ab {
+        flex: 1;
+        min-width: 0;
+        height: 100%;
+      }
+
+      /* Row 3 — scrub bar, taller hit area for dragging with a finger */
+      #scrub-track {
+        order: 3;
+        flex: 1 1 100%;
+        height: 44px;
+        border-top: 1px solid var(--ui-border);
+        touch-action: none;
+      }
+
+      /* Row 4 — volume + balance side by side */
+      #vol-area,
+      #balance-area {
+        order: 4;
+        flex: 1 1 50%;
+        min-width: 0;
+        height: 38px;
+        padding: 0 10px;
+        justify-content: center;
+        border-top: 1px solid var(--ui-border);
+      }
+
+      #vol-area {
+        border-right: 1px solid var(--ui-border);
+      }
+
+      #vol-slider,
+      #balance-slider {
+        flex: 1;
+        min-width: 0;
+        width: auto;
+      }
+
+      #balance-readout {
+        min-width: 58px;
+        font-size: 8px;
+      }
+
+      #balance-area label {
+        font-size: 8px;
+      }
+
+      #time-display {
+        font-size: 10px;
+      }
+
+      /* File-load panels float above the transport; the transport is taller on
+         mobile (4 rows) than on desktop, so they need more clearance or the load
+         buttons sit underneath the transport controls and can't be tapped. */
+      #panel-left,
+      #panel-right {
+        bottom: 182px;
+      }
     }
   </style>
 </head>
@@ -4014,6 +4130,18 @@
     scrubTrack.addEventListener('mousedown', (e) => { scrubbing = true; doScrub(e); });
     window.addEventListener('mousemove', (e) => { if (scrubbing) doScrub(e); });
     window.addEventListener('mouseup', () => { scrubbing = false; });
+
+    scrubTrack.addEventListener('touchstart', (e) => {
+      scrubbing = true;
+      doScrub(e.touches[0]);
+    }, { passive: true });
+    window.addEventListener('touchmove', (e) => {
+      if (!scrubbing) return;
+      e.preventDefault();
+      doScrub(e.touches[0]);
+    }, { passive: false });
+    window.addEventListener('touchend', () => { scrubbing = false; });
+    window.addEventListener('touchcancel', () => { scrubbing = false; });
 
     function doScrub(e) {
       const rect = scrubTrack.getBoundingClientRect();
