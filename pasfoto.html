@@ -2480,12 +2480,44 @@ async function downloadCanvas(cv,filename,dpi){
   setTimeout(()=>URL.revokeObjectURL(url),4000);
 }
 
+function sanitizeFilename(s){
+  return String(s||'')
+    .replace(/\.[^./\\]+$/,'')       // strip original extension
+    .replace(/[\\/:*?"<>|]+/g,'_')   // strip filesystem-unsafe chars
+    .replace(/\s+/g,'_')
+    .trim() || 'foto';
+}
+
+/* In bulk/mixed mode each sheet is filled with a single source photo, so the
+   downloaded filename can follow that photo's name. Falls back to the generic
+   "pasfoto-halaman-N" name for standard/mixed_standard pages (which can mix
+   multiple photos per sheet) or when a page has no assigned photo. */
+function buildPageFilenames(meta){
+  const useSourceName = (state.fillMode==='bulk' || state.fillMode==='mixed');
+  const bases = meta.pages.map(cells=>{
+    if(!useSourceName) return null;
+    const imgs = cells.map(c=>c.image).filter(Boolean);
+    if(imgs.length && imgs.every(im=>im.id===imgs[0].id)) return sanitizeFilename(imgs[0].name);
+    return null;
+  });
+  const totals={};
+  bases.forEach(b=>{ if(b) totals[b]=(totals[b]||0)+1; });
+  const seen={};
+  return bases.map((b,i)=>{
+    if(!b) return `pasfoto-halaman-${i+1}`;
+    let out=b;
+    if(totals[b]>1){ seen[b]=(seen[b]||0)+1; out=`${b}-${seen[b]}`; }
+    return `${out} - pasfoto`;
+  });
+}
+
 $('btnDlPage').onclick=async()=>{
   const meta=computeLayoutMeta();
   if(meta.cellsPerPage===0){ toast('⚠ Kotak lebih besar dari kertas'); return; }
   const dpi=getSelectedDPI();
+  const filenames=buildPageFilenames(meta);
   const cv=renderPageCanvas(meta,state.currentPage,dpi);
-  await downloadCanvas(cv,`pasfoto-halaman-${state.currentPage+1}`,dpi);
+  await downloadCanvas(cv,filenames[state.currentPage],dpi);
   toast('⬇ Halaman diunduh');
 };
 
@@ -2493,12 +2525,13 @@ $('btnDlAll').onclick=async()=>{
   const meta=computeLayoutMeta();
   if(meta.cellsPerPage===0){ toast('⚠ Kotak lebih besar dari kertas'); return; }
   const dpi=getSelectedDPI();
+  const filenames=buildPageFilenames(meta);
   const btn=$('btnDlAll'); const orig=btn.textContent;
   btn.disabled=true;
   try{
     for(let i=0;i<meta.pages.length;i++){
       const cv=renderPageCanvas(meta,i,dpi);
-      await downloadCanvas(cv,`pasfoto-halaman-${i+1}`,dpi);
+      await downloadCanvas(cv,filenames[i],dpi);
       if(i<meta.pages.length-1) await new Promise(r=>setTimeout(r,220));
     }
     toast(`⬇ ${meta.pages.length} halaman diunduh`);
@@ -2512,6 +2545,7 @@ $('btnDlAllZip').onclick=async()=>{
   if(meta.cellsPerPage===0){ toast('⚠ Kotak lebih besar dari kertas'); return; }
   if(typeof JSZip==='undefined'){ toast('⚠ JSZip tidak ditemukan (libs/jszip)'); return; }
   const dpi=getSelectedDPI();
+  const filenames=buildPageFilenames(meta);
   const btn=$('btnDlAllZip'); const orig=btn.textContent;
   btn.disabled=true; btn.textContent='⏳ Menyiapkan ZIP…';
   try{
@@ -2519,7 +2553,7 @@ $('btnDlAllZip').onclick=async()=>{
     for(let i=0;i<meta.pages.length;i++){
       const cv=renderPageCanvas(meta,i,dpi);
       const {blob,ext}=await canvasToDpiBlob(cv,dpi);
-      zip.file(`pasfoto-halaman-${i+1}.${ext}`,blob);
+      zip.file(`${filenames[i]}.${ext}`,blob);
       await new Promise(r=>setTimeout(r,0));
     }
     const zipBlob=await zip.generateAsync({type:'blob'});
