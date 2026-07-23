@@ -1,5 +1,5 @@
 # List of .html Files
-Generation Time: 16/07/2026 22.37.30,71
+Generation Time: 23/07/2026 11.30.36,39
 
 https://dotslashgabut.github.io/advanced-image-comparison.html
 https://dotslashgabut.github.io/alpha-extractor-alt.html
@@ -33,6 +33,7 @@ https://dotslashgabut.github.io/encoding-decoding-tool.html
 https://dotslashgabut.github.io/flashsr-webui.html
 https://dotslashgabut.github.io/hex-viewer.html
 https://dotslashgabut.github.io/hexadecimal-separator.html
+https://dotslashgabut.github.io/idcard-generator.html
 https://dotslashgabut.github.io/image-comparison-app-alt.html
 https://dotslashgabut.github.io/image-comparison-app-fullscreen-alt.html
 https://dotslashgabut.github.io/image-comparison-app-fullscreen.html
