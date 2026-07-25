@@ -2621,7 +2621,18 @@ function renderPropPanel(){
 }
 
 function bindPropInputs(f){
-  const upd = (key,val,srcEl) => { pushHistoryOnce(srcEl||key); f[key]=val; renderStage(); renderFieldList(); };
+  // renderStage() tears down and rebuilds the whole stage DOM, which is expensive with many
+  // fields on a card. Range sliders can fire 'input' far more often than the screen can
+  // repaint, so calling renderStage()/renderFieldList() on every single event made dragging
+  // any slider (opacity, rotation, skew, outline width, ...) feel laggy. Instead, apply the
+  // value change immediately (so state stays consistent) but coalesce the actual re-render to
+  // at most once per animation frame.
+  let _updRaf = null;
+  const scheduleRender = () => {
+    if(_updRaf) return;
+    _updRaf = requestAnimationFrame(() => { _updRaf = null; renderStage(); renderFieldList(); });
+  };
+  const upd = (key,val,srcEl) => { pushHistoryOnce(srcEl||key); f[key]=val; scheduleRender(); };
   // Shared by both text and image outline panels: keeps the range slider, the number box, and
   // the "Xmm" label in sync no matter which one the person drags/types into.
   const bindOutlineWidth = () => {
@@ -3941,7 +3952,34 @@ function updateStats(){
 }
 
 /* ================= CANVAS EXPORT ENGINE ================= */
-function loadImage(src){ return new Promise((res,rej) => { const img = new Image(); img.onload=()=>res(img); img.onerror=rej; img.src=src; }); }
+// Cache decoded <img> elements by src so a background/photo/logo that repeats across many
+// rows of a mass export only gets fetched+decoded once instead of on every single card —
+// this was the main cause of export slowness on large datasets.
+const _exportImageCache = new Map();
+function loadImage(src){
+  let p = _exportImageCache.get(src);
+  if(!p){
+    p = new Promise((res,rej) => { const img = new Image(); img.onload=()=>res(img); img.onerror=e=>{ _exportImageCache.delete(src); rej(e); }; img.src=src; });
+    _exportImageCache.set(src, p);
+  }
+  return p;
+}
+// Tracks which "weight px family" combos we've already asked the browser to load, so
+// ensureFontsLoaded() doesn't redundantly re-request the same fonts on every single row.
+const _fontsLoadedCache = new Set();
+// Yields control back to the browser between export steps so it actually gets a chance to
+// paint the progress bar / stay responsive, instead of the whole export running as one
+// uninterrupted synchronous/microtask chain (which is what made the progress bar look frozen
+// or the tab look "not responding" on big batches). Time-throttled to roughly once per frame
+// so it doesn't meaningfully slow down the export itself.
+let _lastExportYield = 0;
+async function exportYield(force){
+  const now = performance.now();
+  if(force || now - _lastExportYield > 16){
+    _lastExportYield = now;
+    await new Promise(r => setTimeout(r, 0));
+  }
+}
 function roundRectPath(ctx,x,y,w,h,r){
   r = Math.min(r, w/2, h/2);
   ctx.beginPath();
@@ -4459,7 +4497,12 @@ async function ensureFontsLoaded(side){
   const fams = new Set();
   side.fields.forEach(f => { if(f.type==='text') fams.add(f.fontFamily); });
   const jobs = [];
-  fams.forEach(fam => { jobs.push(document.fonts.load(`400 20px "${fam}"`).catch(()=>{})); jobs.push(document.fonts.load(`700 20px "${fam}"`).catch(()=>{})); });
+  fams.forEach(fam => {
+    const k400 = fam+'|400', k700 = fam+'|700';
+    if(!_fontsLoadedCache.has(k400)){ jobs.push(document.fonts.load(`400 20px "${fam}"`).catch(()=>{}).then(()=>_fontsLoadedCache.add(k400))); }
+    if(!_fontsLoadedCache.has(k700)){ jobs.push(document.fonts.load(`700 20px "${fam}"`).catch(()=>{}).then(()=>_fontsLoadedCache.add(k700))); }
+  });
+  if(!jobs.length) return; // already loaded earlier in this export — nothing to wait on
   try{ await Promise.all(jobs); }catch(e){}
   try{ await document.fonts.ready; }catch(e){}
 }
@@ -4772,6 +4815,7 @@ $('btnExportZip').onclick = async () => {
   const rowOffset = getExportRowOffset();
   for(let i=0;i<rows.length;i++){
     setExportProgress(state.lang==='en' ? `Building ZIP... ${i+1}/${rows.length}` : `Membuat ZIP... ${i+1}/${rows.length}`, i+1, rows.length);
+    await exportYield();
     const record = rows[i];
     const base = sanitizeFilename(record[state.filenameField] || ('kartu_'+(rowOffset+i)));
     const front = await renderCardCanvas('front', record, state.dpi);
@@ -5127,6 +5171,7 @@ async function runPdfExportBatch(exportRows, outFilename, opts){
       const startIdx = p*perPage, endIdx = Math.min(total, startIdx+perPage);
       for(let i=startIdx;i<endIdx;i++){
         setExportProgress(state.lang==='en' ? `Rendering PDF (front+back)... ${i+1}/${total}` : `Render PDF (depan+belakang)... ${i+1}/${total}`, i+1, total);
+        await exportYield();
         const record = exportRows[i];
         const pos = posFor(i-startIdx);
         if(isTB){
@@ -5166,6 +5211,7 @@ async function runPdfExportBatch(exportRows, outFilename, opts){
       const startIdx = p*perPage, endIdx = Math.min(total, startIdx+perPage);
       for(let i=startIdx;i<endIdx;i++){
         setExportProgress(state.lang==='en' ? `Rendering PDF front... ${i+1}/${total}` : `Render PDF depan... ${i+1}/${total}`, i+1, grandTotal);
+        await exportYield();
         const record = exportRows[i];
         const pos = posFor(i-startIdx, false);
         await placeCard('front', record, pos.x, pos.y, useRotate);
@@ -5175,6 +5221,7 @@ async function runPdfExportBatch(exportRows, outFilename, opts){
         pdf.addPage([paper.w,paper.h], pdfOrientation);
         for(let i=startIdx;i<endIdx;i++){
           setExportProgress(state.lang==='en' ? `Rendering PDF back... ${i+1}/${total}` : `Render PDF belakang... ${i+1}/${total}`, total+i+1, grandTotal);
+          await exportYield();
           const record = exportRows[i];
           const pos = posFor(i-startIdx, state.sheet.mirrorBack);
           await placeCard('back', record, pos.x, pos.y, useRotate);
