@@ -120,7 +120,7 @@ table.dtbl tr:hover td{background:var(--surface2)}
 .field-el{position:absolute;box-sizing:border-box;cursor:move;border:1px dashed transparent;display:flex}
 .field-el:hover{border-color:rgba(0,229,176,.5)}
 .field-el.selected{border:1.5px solid var(--accent);box-shadow:0 0 0 3px rgba(0,229,176,.15)}
-.field-el .txt-inner{width:100%;overflow:hidden;word-wrap:break-word;line-height:1.2}
+.field-el .txt-inner{width:100%;overflow:hidden;word-wrap:break-word;line-height:1.2;font-kerning:none;font-variant-ligatures:none}
 .btn-s.active{background:var(--accent);color:#0d0f14;border-color:var(--accent)}
 .grid-overlay{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:6}
 .snap-guide{position:absolute;background:var(--accent2);pointer-events:none;z-index:20}
@@ -478,7 +478,7 @@ body.dragging-el,body.dragging-el *{user-select:none!important}
     </div>
 
     <div class="card" id="propCard" style="display:none">
-      <div class="card-title"><div class="t" data-i18n="cardProps">Properti Elemen</div><div style="display:flex;gap:6px"><button class="btn btn-s btn-sm" id="btnResetField" data-i18n="btnResetField" data-i18n-title="titleResetField" title="Reset posisi, ukuran, rotasi & skew ke kondisi semula">↺ Reset</button><button class="btn btn-d btn-sm" id="btnDelField" data-i18n="btnDelete">Hapus</button></div></div>
+      <div class="card-title"><div class="t" data-i18n="cardProps">Properti Elemen</div><div style="display:flex;gap:6px"><button class="btn btn-s btn-sm" id="btnResetField" data-i18n="btnResetField" data-i18n-title="titleResetField" title="Reset posisi, ukuran, rotasi, skew & flip ke kondisi semula">↺ Reset</button><button class="btn btn-d btn-sm" id="btnDelField" data-i18n="btnDelete">Hapus</button></div></div>
       <div class="prop-panel" id="propPanel"></div>
     </div>
 
@@ -525,10 +525,12 @@ body.dragging-el,body.dragging-el *{user-select:none!important}
           <div class="chip" data-elementmode="flatten" data-i18n="modeFlatten">🖼️ Flatten (semua jadi gambar)</div>
           <div class="chip active" data-elementmode="layered">🧩 Vector + Layer</div>
         </div>
-        <div class="hint" data-i18n="hintElementMode">"Vector + Layer": teks dengan font yang bisa di-embed tetap jadi teks asli (bisa diseleksi/dicari, ukuran file lebih kecil), foto &amp; gambar jadi objek terpisah — yang tidak didukung otomatis fallback jadi gambar per elemen (tetap sebagai layer tersendiri, bukan digabung ke background). "Flatten": seluruh kartu (background, foto, gambar, teks) dirender jadi satu gambar utuh per sisi — posisi elemen dijamin identik dengan pratinjau (paling aman terutama saat kartu dirotasi di lembar cetak), tapi teks tidak lagi bisa diseleksi/dicari dan ukuran file lebih besar.</div>
+        <div class="hint" data-i18n="hintElementMode">"Vector + Layer": foto &amp; gambar jadi objek terpisah (yang tidak didukung otomatis fallback jadi gambar per elemen), teks jadi gambar per elemen (tetap layer tersendiri, bukan digabung ke background) kecuali opsi embed font di bawah diaktifkan — lihat penjelasannya di bawah. "Flatten": seluruh kartu (background, foto, gambar, teks) dirender jadi satu gambar utuh per sisi — posisi elemen dijamin identik dengan pratinjau (paling aman terutama saat kartu dirotasi di lembar cetak), tapi teks tidak lagi bisa diseleksi/dicari dan ukuran file lebih besar.</div>
         <div id="keepSvgVectorRow" style="margin-top:8px;">
-          <label><input type="checkbox" id="keepSvgVector" style="width:auto"> <span data-i18n="chkKeepSvg">Pertahankan vector untuk elemen gambar .svg</span></label>
-          <div class="hint" data-i18n="hintKeepSvg">Default nonaktif: elemen gambar .svg dijadikan gambar biasa (raster) seperti elemen lain — paling aman, karena beberapa SVG tidak tampil sempurna saat dikonversi ke vector PDF. Font tetap selalu di-embed sebagai teks asli terlepas dari opsi ini. Aktifkan kalau kamu butuh logo/ikon SVG-nya tetap tajam sebagai vector asli di PDF (tidak berlaku untuk elemen yang dirotasi/dibalik di lembar cetak, itu tetap raster).</div>
+          <label><input type="checkbox" id="embedFontVector" style="width:auto"> <span data-i18n="chkEmbedFont">Embed font ke PDF (teks jadi vector asli)</span></label>
+          <div class="hint" data-i18n="hintEmbedFont">Default nonaktif: teks tetap dirender sebagai gambar per elemen (layer tetap terpisah dari background, hanya saja bukan font vector) — paling aman, menghindari font custom (upload .ttf/.otf) yang posisinya bisa bergeser saat di-embed sebagai font asli. Aktifkan kalau kamu butuh teks yang bisa diseleksi/dicari &amp; ukuran file lebih kecil, dan sudah mengecek posisi teksnya tetap sesuai pratinjau setelah export.</div>
+          <label style="margin-top:8px;display:block;"><input type="checkbox" id="keepSvgVector" style="width:auto"> <span data-i18n="chkKeepSvg">Pertahankan vector untuk elemen gambar .svg</span></label>
+          <div class="hint" data-i18n="hintKeepSvg">Default nonaktif: elemen gambar .svg dijadikan gambar biasa (raster) seperti elemen lain — paling aman, karena beberapa SVG tidak tampil sempurna saat dikonversi ke vector PDF. Aktifkan kalau kamu butuh logo/ikon SVG-nya tetap tajam sebagai vector asli di PDF (tidak berlaku untuk elemen yang dirotasi/dibalik di lembar cetak, itu tetap raster).</div>
           <label style="margin-top:8px;display:block;"><input type="checkbox" id="keepPdfVector" style="width:auto" checked> <span data-i18n="chkKeepPdf">Pertahankan vector untuk background/gambar sumber .pdf (via pdf-lib)</span></label>
           <div class="hint" data-i18n="hintKeepPdf">Kalau background atau elemen gambar diunggah dari file .pdf, opsi ini menyisipkannya sebagai halaman PDF asli (vector murni, tidak dirasterisasi) menggunakan pdf-lib — hasilnya lebih rapi &amp; tajam dibanding konversi SVG. Background hanya bisa vector kalau posisi/zoom-nya masih default (belum digeser/di-zoom); kalau tidak, otomatis fallback ke raster.</div>
           <label style="margin-top:8px;display:block;"><input type="checkbox" id="keepQrVector" style="width:auto" checked> <span data-i18n="chkKeepQr">Pertahankan vector untuk QR code</span></label>
@@ -782,16 +784,18 @@ id: {
   titleAlignLeft:'Ratakan ke kiri (tepi kiri elemen terkiri)', titleAlignHCenter:'Ratakan tengah horizontal',
   titleAlignRight:'Ratakan ke kanan (tepi kanan elemen terkanan)', titleAlignTop:'Ratakan ke atas (tepi atas elemen teratas)',
   titleAlignVCenter:'Ratakan tengah vertikal', titleAlignBottom:'Ratakan ke bawah (tepi bawah elemen terbawah)',
-  cardProps:'Properti Elemen', btnDelete:'Hapus', btnResetField:'↺ Reset', titleResetField:'Reset posisi, ukuran, rotasi & skew ke kondisi semula',
+  cardProps:'Properti Elemen', btnDelete:'Hapus', btnResetField:'↺ Reset', titleResetField:'Reset posisi, ukuran, rotasi, skew & flip ke kondisi semula',
   cardExport:'Layout Cetak & Export', lblPaperSize:'Ukuran Kertas', lblPaperW:'Lebar Kertas (mm)', lblPaperH:'Tinggi Kertas (mm)',
   lblPaperOrient:'Orientasi Kertas', orientAuto:'Otomatis (Terbanyak)', orientPortrait:'Potrait',
   hintOrient:'Otomatis memilih potrait atau landscape mana pun yang menampung kartu paling banyak per lembar, berdasarkan ukuran kartu & kertas saat ini.',
   lblCardRotate:'Rotasi Kartu di Layout Cetak', rotOff:'Tidak', rotAlways90:'Selalu 90°', rotAuto:'Otomatis',
   hintCardRotate:'Kartu tetap digambar/diedit tegak seperti biasa di kanvas — opsi ini hanya memutar kartu 90° saat disusun di lembar cetak, supaya kartu vertikal bisa lebih banyak muat per halaman. "Otomatis" memilih yang menghasilkan kartu terbanyak per lembar. Tidak berlaku saat mode "gabung depan & belakang" aktif.',
   lblElementMode:'Mode Elemen PDF', modeFlatten:'🖼️ Flatten (semua jadi gambar)',
-  hintElementMode:'"Vector + Layer": teks dengan font yang bisa di-embed tetap jadi teks asli (bisa diseleksi/dicari, ukuran file lebih kecil), foto & gambar jadi objek terpisah — yang tidak didukung otomatis fallback jadi gambar per elemen (tetap sebagai layer tersendiri, bukan digabung ke background). "Flatten": seluruh kartu (background, foto, gambar, teks) dirender jadi satu gambar utuh per sisi — posisi elemen dijamin identik dengan pratinjau (paling aman terutama saat kartu dirotasi di lembar cetak), tapi teks tidak lagi bisa diseleksi/dicari dan ukuran file lebih besar.',
+  hintElementMode:'"Vector + Layer": foto & gambar jadi objek terpisah (yang tidak didukung otomatis fallback jadi gambar per elemen), teks jadi gambar per elemen (tetap layer tersendiri, bukan digabung ke background) kecuali opsi embed font di bawah diaktifkan — lihat penjelasannya di bawah. "Flatten": seluruh kartu (background, foto, gambar, teks) dirender jadi satu gambar utuh per sisi — posisi elemen dijamin identik dengan pratinjau (paling aman terutama saat kartu dirotasi di lembar cetak), tapi teks tidak lagi bisa diseleksi/dicari dan ukuran file lebih besar.',
+  chkEmbedFont:'Embed font ke PDF (teks jadi vector asli)',
+  hintEmbedFont:'Default nonaktif: teks tetap dirender sebagai gambar per elemen (layer tetap terpisah dari background, hanya saja bukan font vector) — paling aman, menghindari font custom (upload .ttf/.otf) yang posisinya bisa bergeser saat di-embed sebagai font asli. Aktifkan kalau kamu butuh teks yang bisa diseleksi/dicari & ukuran file lebih kecil, dan sudah mengecek posisi teksnya tetap sesuai pratinjau setelah export.',
   chkKeepSvg:'Pertahankan vector untuk elemen gambar .svg',
-  hintKeepSvg:'Default nonaktif: elemen gambar .svg dijadikan gambar biasa (raster) seperti elemen lain — paling aman, karena beberapa SVG tidak tampil sempurna saat dikonversi ke vector PDF. Font tetap selalu di-embed sebagai teks asli terlepas dari opsi ini. Aktifkan kalau kamu butuh logo/ikon SVG-nya tetap tajam sebagai vector asli di PDF (tidak berlaku untuk elemen yang dirotasi/dibalik di lembar cetak, itu tetap raster).',
+  hintKeepSvg:'Default nonaktif: elemen gambar .svg dijadikan gambar biasa (raster) seperti elemen lain — paling aman, karena beberapa SVG tidak tampil sempurna saat dikonversi ke vector PDF. Aktifkan kalau kamu butuh logo/ikon SVG-nya tetap tajam sebagai vector asli di PDF (tidak berlaku untuk elemen yang dirotasi/dibalik di lembar cetak, itu tetap raster).',
   chkKeepPdf:'Pertahankan vector untuk background/gambar sumber .pdf (via pdf-lib)',
   hintKeepPdf:'Kalau background atau elemen gambar diunggah dari file .pdf, opsi ini menyisipkannya sebagai halaman PDF asli (vector murni, tidak dirasterisasi) menggunakan pdf-lib — hasilnya lebih rapi & tajam dibanding konversi SVG. Background hanya bisa vector kalau posisi/zoom-nya masih default (belum digeser/di-zoom); kalau tidak, otomatis fallback ke raster.',
   chkKeepQr:'Pertahankan vector untuk QR code',
@@ -908,16 +912,18 @@ en: {
   titleAlignLeft:'Align left (to the leftmost element\'s left edge)', titleAlignHCenter:'Align horizontal center',
   titleAlignRight:'Align right (to the rightmost element\'s right edge)', titleAlignTop:'Align top (to the topmost element\'s top edge)',
   titleAlignVCenter:'Align vertical center', titleAlignBottom:'Align bottom (to the bottommost element\'s bottom edge)',
-  cardProps:'Element Properties', btnDelete:'Delete', btnResetField:'↺ Reset', titleResetField:'Reset position, size, rotation & skew back to original',
+  cardProps:'Element Properties', btnDelete:'Delete', btnResetField:'↺ Reset', titleResetField:'Reset position, size, rotation, skew & flip back to original',
   cardExport:'Print Layout & Export', lblPaperSize:'Paper Size', lblPaperW:'Paper Width (mm)', lblPaperH:'Paper Height (mm)',
   lblPaperOrient:'Paper Orientation', orientAuto:'Automatic (Most Cards)', orientPortrait:'Portrait',
   hintOrient:'Automatically picks whichever orientation (portrait or landscape) fits the most cards per sheet, based on the current card & paper size.',
   lblCardRotate:'Card Rotation in Print Layout', rotOff:'No', rotAlways90:'Always 90°', rotAuto:'Automatic',
   hintCardRotate:'The card is still drawn/edited upright as usual on the canvas — this option only rotates the card 90° when arranged on the print sheet, so vertical cards can fit more per page. "Automatic" picks whichever yields the most cards per sheet. Not used while "combine front & back" mode is active.',
   lblElementMode:'PDF Element Mode', modeFlatten:'🖼️ Flatten (everything to image)',
-  hintElementMode:'"Vector + Layer": text with an embeddable font stays real text (selectable/searchable, smaller file size), photos & images become separate objects — anything unsupported automatically falls back to an image per element (still a separate layer, not merged into the background). "Flatten": the whole card (background, photo, image, text) is rendered as one flat image per side — element positions are guaranteed identical to the preview (safest, especially when the card is rotated on the print sheet), but text is no longer selectable/searchable and the file size is larger.',
+  hintElementMode:'"Vector + Layer": photos & images become separate objects (anything unsupported automatically falls back to an image per element), text becomes an image per element (still its own separate layer, not merged into the background) unless the embed-font option below is enabled — see that option for details. "Flatten": the whole card (background, photo, image, text) is rendered as one flat image per side — element positions are guaranteed identical to the preview (safest, especially when the card is rotated on the print sheet), but text is no longer selectable/searchable and the file size is larger.',
+  chkEmbedFont:'Embed font into PDF (text becomes real vector)',
+  hintEmbedFont:'Off by default: text is still rendered as an image per element (stays its own layer, separate from the background — just not vector text) — the safest option, avoiding custom fonts (uploaded .ttf/.otf) whose position can shift when embedded as real text. Enable it if you need selectable/searchable text and a smaller file size, and you\'ve checked the text position still matches the preview after export.',
   chkKeepSvg:'Keep vector for .svg image elements',
-  hintKeepSvg:'Off by default: .svg image elements are turned into regular (raster) images like other elements — the safest option, since some SVGs don\'t render perfectly when converted to vector PDF. Fonts are always embedded as real text regardless of this option. Enable it if you need an SVG logo/icon to stay sharp as true vector in the PDF (doesn\'t apply to elements that are rotated/flipped on the print sheet — those stay raster).',
+  hintKeepSvg:'Off by default: .svg image elements are turned into regular (raster) images like other elements — the safest option, since some SVGs don\'t render perfectly when converted to vector PDF. Enable it if you need an SVG logo/icon to stay sharp as true vector in the PDF (doesn\'t apply to elements that are rotated/flipped on the print sheet — those stay raster).',
   chkKeepPdf:'Keep vector for background/image sourced from .pdf (via pdf-lib)',
   hintKeepPdf:'If a background or image element was uploaded from a .pdf file, this option inserts it as an actual PDF page (pure vector, not rasterized) using pdf-lib — the result is cleaner & sharper than an SVG conversion. A background can only stay vector if its position/zoom is still default (not moved/zoomed); otherwise it automatically falls back to raster.',
   chkKeepQr:'Keep vector for QR codes',
@@ -1068,6 +1074,10 @@ function measureStretchNaturalSize(text, fontWeight, fontPx, fontFamily, strokeE
   }
   const ctx = measureStretchNaturalSize._ctx;
   ctx.font = `${fontWeight} ${fontPx}px "${fontFamily}"`;
+  ctx.fontKerning = 'none'; // jsPDF's embedded-font export draws glyphs using plain advance
+  // widths with no kerning-pair adjustment, so every canvas measurement/draw path needs kerning
+  // switched off too, or wrap points and stretch scaling would be computed against a narrower
+  // (kerned) width than what the exported PDF actually renders, producing a visible shift.
   const w = Math.max(1, ctx.measureText(String(text ?? '') || ' ').width);
   // strokeExtraPx is the full outline stroke width (already doubled to match ctx.lineWidth /
   // -webkit-text-stroke, which are centered on the glyph edge) — it bleeds outward on every
@@ -1090,6 +1100,7 @@ function updateTextStretch(f, el, scale){
     const ctx = canvas.getContext('2d');
     const fontPx = f.fontSize*scale;
     ctx.font = `${f.fontWeight} ${fontPx}px "${f.fontFamily}"`;
+    ctx.fontKerning = 'none'; // match jsPDF's non-kerned glyph spacing (see measureStretchNaturalSize)
     ctx.fillStyle = f.color;
     ctx.textBaseline = 'top';
     const hasOutline = setupTextOutline(ctx, f, scale);
@@ -1279,13 +1290,18 @@ const BASE_FONTS = ['Arial','Helvetica','Times New Roman','Georgia','Verdana','C
 function FONTS(){ return BASE_FONTS.concat(state.customFonts.map(f=>f.name)); }
 
 /* ================= PDF FONT EMBEDDING ================= */
-// Standard-14 PDF fonts jsPDF ships with, no embedding needed.
-const STANDARD_FONT_MAP = {
-  'Arial':{pdf:'helvetica'}, 'Helvetica':{pdf:'helvetica'},
-  'Times New Roman':{pdf:'times'}, 'Courier New':{pdf:'courier'}
-};
-// Fonts we know we can't get a free identical TTF for — skip straight to raster fallback.
+// Fonts we know we can't get a free identical TTF for — skip straight to raster fallback
+// instead of ever substituting a different (only similar-looking) typeface. This includes the
+// classic Office/system fonts: jsPDF ships Standard-14 fonts like "helvetica"/"times"/"courier",
+// but those are their own clones, not byte-identical to Arial/Helvetica/Times New Roman/Courier
+// New as actually rendered on the canvas — using them as a drop-in vector substitute is exactly
+// the "font looks different in canvas vs. embedded PDF" mismatch. Flattening to raster instead
+// guarantees the PDF looks exactly like the canvas for these.
 const NO_EMBED_HINT = {
+  'Arial':'Arial adalah font sistem, tidak ada versi TTF gratis yang identik untuk di-embed (font Standard-14 bawaan PDF seperti Helvetica bukan pengganti yang identik)',
+  'Helvetica':'Helvetica adalah font sistem, tidak ada versi TTF gratis yang identik untuk di-embed (font Standard-14 bawaan PDF bukan pengganti yang identik)',
+  'Times New Roman':'Times New Roman adalah font sistem, tidak ada versi TTF gratis yang identik untuk di-embed (font Standard-14 bawaan PDF "Times" bukan pengganti yang identik)',
+  'Courier New':'Courier New adalah font sistem, tidak ada versi TTF gratis yang identik untuk di-embed (font Standard-14 bawaan PDF "Courier" bukan pengganti yang identik)',
   'Georgia':'Georgia adalah font sistem, tidak ada versi TTF gratis yang identik untuk di-embed',
   'Verdana':'Verdana adalah font sistem, tidak ada versi TTF gratis yang identik untuk di-embed'
 };
@@ -1338,12 +1354,9 @@ async function fetchFontBytes(url){
   fontBytesCache.set(url, result);
   return result;
 }
-// Resolve a (family, weight) pair to either a standard PDF font, an embeddable TTF, or a raster fallback.
+// Resolve a (family, weight) pair to either an embeddable TTF or a raster fallback (no more
+// "standard PDF font" substitution — see NO_EMBED_HINT above for why).
 async function resolveFontForPdf(family, weight){
-  if(STANDARD_FONT_MAP[family]){
-    const style = (weight==='700'||weight==='600') ? 'bold' : 'normal';
-    return {mode:'standard', pdfFamily:STANDARD_FONT_MAP[family].pdf, style};
-  }
   if(NO_EMBED_HINT[family]) return {mode:'raster', reason:NO_EMBED_HINT[family]};
   const key = family+'|'+weight;
   if(resolvedFontCache.has(key)) return resolvedFontCache.get(key);
@@ -1425,23 +1438,27 @@ function withTextFieldOpacity(pdf, f, drawFn){
   try{ drawFn(); } finally { if(canFade) pdf.restoreGraphicsState(); }
 }
 // Draws one wrapped, aligned text field as real vector text (embedded/standard font) onto the jsPDF doc.
-// The +halfLead nudge matches the same correction applied in wrapText() (the canvas/raster text
-// path) so this vector path lines up with both the live preview and the raster export instead of
-// sitting slightly higher (jsPDF's own baseline:'top' has no such leading built in). `valign`
-// shifts the whole block down within the field's own f.h for vertical centering/bottom-anchoring.
+// jsPDF's pdf.text() draws at the alphabetic baseline by default. getPdfBaselineOffsetMM computes
+// the correct total offset from the CSS line-box top to that alphabetic baseline in one shot:
+//   cssHalfLead + fontBBAsc_alphabetic
+// — avoiding the old double-count where getHalfLeadMM (which included fontBBAsc_top) was summed
+// with getFontAscentMM (fontBBAsc_alphabetic), adding an extra fontBBAsc_top that visibly shifted
+// embedded-font text downward compared to the canvas preview.
+// `valign` shifts the whole block down within the field's own f.h for vertical centering/bottom-anchoring.
 function drawVectorTextField(pdf, f, text, baseX, baseY, fontInfo){
   withTextFieldOpacity(pdf, f, () => {
     pdf.setFont(fontInfo.pdfName, fontInfo.style||'normal');
     pdf.setFontSize(f.fontSize * 2.834645669); // mm -> pt
     const [r,g,b] = hexToRgb(f.color);
     pdf.setTextColor(r,g,b);
-    const lineHeightMM = f.fontSize*1.25;
-    const lines = pdf.splitTextToSize(String(text??''), f.w);
+    const lineHeightMM = f.fontSize*1.2;
+    const lines = getWrappedLinesMM(f, text);
     const tx = f.align==='left' ? baseX : f.align==='center' ? baseX+f.w/2 : baseX+f.w;
+    const baselineOffMM = getPdfBaselineOffsetMM(f.fontWeight, f.fontFamily, f.fontSize, lineHeightMM);
     const contentH = lines.length*lineHeightMM;
-    const extraY = f.valign==='middle' ? Math.max(0,(f.h-contentH)/2) : f.valign==='bottom' ? Math.max(0, f.h-contentH) : 0;
-    let ty = baseY + lineHeightMM*0.1 + extraY;
-    lines.forEach(line => { pdf.text(line, tx, ty, {align:f.align, baseline:'top'}); ty += lineHeightMM; });
+    const extraY = f.valign==='middle' ? (f.h-contentH)/2 : f.valign==='bottom' ? f.h-contentH : 0;
+    let ty = baseY + extraY;
+    lines.forEach(line => { pdf.text(line, tx, ty + baselineOffMM, {align:f.align}); ty += lineHeightMM; });
   });
 }
 
@@ -1478,7 +1495,7 @@ const state = {
   customFonts: [],
   snap: {grid:false, object:false, card:false, sizeMM:2},
   lockAspect: false,
-  sheet: {paper:'a4', orientation:'auto', cardRotate:'off', elementMode:'layered', keepSvgVector:false, keepPdfVector:true, keepQrVector:true, marginMM:5, gapXMM:3, gapYMM:3, mirrorBack:true, combineSides:false, combineMode:'lr', pairGapMM:5, rotateBack180:false, fillOrder:'row', cutGuides:false, cutGuideStyle:'corner', paperCustomW:210, paperCustomH:297},
+  sheet: {paper:'a4', orientation:'auto', cardRotate:'off', elementMode:'layered', embedFontVector:false, keepSvgVector:false, keepPdfVector:true, keepQrVector:true, marginMM:5, gapXMM:3, gapYMM:3, mirrorBack:true, combineSides:false, combineMode:'lr', pairGapMM:5, rotateBack180:false, fillOrder:'row', cutGuides:false, cutGuideStyle:'corner', paperCustomW:210, paperCustomH:297},
   exportScope: 'all', exportRangeFrom: 1, exportRangeTo: 1
 };
 
@@ -1535,7 +1552,7 @@ function newShapeField(shapeType, variant){
 // older saved project without a snapshot is touched), so "Reset Elemen" has a known baseline
 // to restore to.
 function snapshotOrig(f){
-  f._orig = {x:f.x, y:f.y, w:f.w, h:f.h, rotation:f.rotation||0, skewX:f.skewX||0, skewY:f.skewY||0};
+  f._orig = {x:f.x, y:f.y, w:f.w, h:f.h, rotation:f.rotation||0, skewX:f.skewX||0, skewY:f.skewY||0, flipH:!!f.flipH, flipV:!!f.flipV};
 }
 // Bounding box (mm) of a w×h rectangle after skewing (skx/sky degrees, applied skewY-then-skewX
 // to match the CSS `skewX() skewY()` / canvas transform order used in the preview and export
@@ -1895,8 +1912,8 @@ function renderCustomFontList(){
     list.appendChild(row);
   });
 }
-function addCustomFont(name, kind, bytes, format){
-  state.customFonts.push({name, source:kind, bytes:bytes||null, format:format||null});
+function addCustomFont(name, kind, bytes, format, url){
+  state.customFonts.push({name, source:kind, bytes:bytes||null, format:format||null, url:url||null});
   renderCustomFontList();
   renderPropPanel();
 }
@@ -1940,7 +1957,7 @@ $('btnFontUrl').onclick = async () => {
       const res = await fetch(url);
       if(res.ok){ bytes = await res.arrayBuffer(); format = sniffFontFormat(bytes); }
     }catch(fe){ /* CORS blocked the raw fetch — preview still works via FontFace, embedding won't */ }
-    addCustomFont(name, 'url', bytes, format);
+    addCustomFont(name, 'url', bytes, format, url);
     const embedOk = format==='ttf' || format==='otf';
     let note = '';
     const en = state.lang==='en';
@@ -2252,11 +2269,12 @@ $('btnResetField').onclick = () => {
   // always default to 0) get cleared, and the current snapshot is captured going forward.
   pushHistory();
   if(!f._orig){
-    f.rotation = 0; f.skewX = 0; f.skewY = 0;
+    f.rotation = 0; f.skewX = 0; f.skewY = 0; f.flipH = false; f.flipV = false;
     snapshotOrig(f);
   } else {
     f.x = f._orig.x; f.y = f._orig.y; f.w = f._orig.w; f.h = f._orig.h;
     f.rotation = f._orig.rotation; f.skewX = f._orig.skewX; f.skewY = f._orig.skewY;
+    f.flipH = !!f._orig.flipH; f.flipV = !!f._orig.flipV;
   }
   renderStage(); renderFieldList(); renderPropPanel();
 };
@@ -2978,6 +2996,7 @@ function buildFieldEl(f, scale, record, bleedOffPx){
       const draw = () => {
         ctx.clearRect(0, 0, cw, ch);
         ctx.font = `${f.fontWeight} ${fontPx}px "${f.fontFamily}"`;
+        ctx.fontKerning = 'none'; // match jsPDF's non-kerned glyph spacing (see measureStretchNaturalSize)
         ctx.fillStyle = f.color;
         ctx.textBaseline = 'top';
         const hasOutline = setupTextOutline(ctx, f, scale);
@@ -2993,7 +3012,7 @@ function buildFieldEl(f, scale, record, bleedOffPx){
         } else {
           ctx.textAlign = f.align;
           const tx = padX + (f.align==='left' ? 0 : f.align==='center' ? boxWpx/2 : boxWpx);
-          wrapText(ctx, text, tx, padTop, boxWpx, fontPx*1.25, f.align, hasOutline, f.valign, boxHpx);
+          wrapText(ctx, text, tx, padTop, boxWpx, fontPx*1.2, f.align, hasOutline, f.valign, boxHpx);
         }
       };
       draw();
@@ -3370,6 +3389,19 @@ function startResize(e, f){
     const centerY = anchorY + (c10*(sH*halfW) + c11*(sV*halfH));
     f.x = snapMM(centerX - halfW);
     f.y = snapMM(centerY - halfH);
+    // Snap the resize handle's own tip — the moving corner of the field's (un-rotated) box,
+    // diagonally opposite the fixed anchor corner — to nearby object edges/centers and the
+    // card's own edges/center, same as Snap Objek/Snap Sisi Kartu already do while dragging.
+    // Only that corner is nudged (by adjusting w/h; the anchor corner itself must stay exactly
+    // where the drag started), and it's skipped while aspect-lock is on since independently
+    // nudging w or h there would immediately fight the ratio lock-aspect is trying to enforce.
+    let cornerSnap = {guideX:null, guideY:null};
+    if(!lock){
+      cornerSnap = snapToObjects({id:f.id, w:0, h:0}, f.x+f.w, f.y+f.h, scale);
+      if(cornerSnap.guideX!=null) f.w = Math.max(3, cornerSnap.x-f.x);
+      if(cornerSnap.guideY!=null) f.h = Math.max(3, cornerSnap.y-f.y);
+    }
+    showSnapGuides(cornerSnap.guideX, cornerSnap.guideY, scale, bleedOffPxX);
     el.style.left = (f.x*scale+bleedOffPxX)+'px'; el.style.top = (f.y*scale+bleedOffPxY)+'px';
     el.style.width = (f.w*scale)+'px'; el.style.height = (f.h*scale)+'px';
     el.style.transform = liveTransform(f);
@@ -3401,6 +3433,7 @@ function startResize(e, f){
     handle.removeEventListener('pointerup', finish);
     handle.removeEventListener('pointercancel', finish);
     document.body.classList.remove('dragging-el');
+    clearSnapGuides();
     if(moved) el.dataset.suppressClick = '1';
     if(isGroup) renderPropPanel();
   }
@@ -3790,6 +3823,7 @@ document.querySelectorAll('[data-elementmode]').forEach(chip => {
     $('keepSvgVectorRow').style.display = state.sheet.elementMode==='layered' ? 'block' : 'none';
   };
 });
+$('embedFontVector').onchange = e => state.sheet.embedFontVector = e.target.checked;
 $('keepSvgVector').onchange = e => state.sheet.keepSvgVector = e.target.checked;
 $('keepPdfVector').onchange = e => state.sheet.keepPdfVector = e.target.checked;
 $('keepQrVector').onchange = e => state.sheet.keepQrVector = e.target.checked;
@@ -4025,6 +4059,12 @@ function arrayBufferToBase64(buffer){
   for(let i=0;i<len;i+=chunk){ binary += String.fromCharCode.apply(null, bytes.subarray(i, i+chunk)); }
   return btoa(binary);
 }
+function base64ToArrayBuffer(b64){
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
 // Renders the first page of an uploaded PDF to a PNG data URL (for on-canvas preview and as
 // the raster fallback used when vector embedding isn't possible/enabled), using pdf.js. Also
 // returns the page's native size in PDF points, which export uses (via pdf-lib) to correctly
@@ -4158,6 +4198,115 @@ function getMeasureCtx(){
   if(!_measureCtx) _measureCtx = document.createElement('canvas').getContext('2d');
   return _measureCtx;
 }
+// How far a canvas `textBaseline:'top'` draw origin must be nudged down so the glyphs land where
+// a browser would place them inside a CSS line box of height `lineH` (see .txt-inner's
+// line-height:1.2 rule, which every render path below is meant to match).
+//
+// Canvas textBaseline:'top' places the y-coordinate at the top of the em-square.
+// CSS line-height distributes half-leading = (lineH − contentArea) / 2 above and below the
+// font's content area. The content area height is the font's declared ascent + descent
+// (from font metrics, typically larger than fontSize).
+//
+// With textBaseline='top', TextMetrics gives us:
+//   fontBoundingBoxAscent  = distance from em-square top UP to font content-area top
+//   fontBoundingBoxDescent = distance from em-square top DOWN to font content-area bottom
+//   contentH = fontBBAsc + fontBBDesc = total content area height
+//
+// The offset from the CSS line-box top to the em-square top is:
+//   offset = (lineH − contentH) / 2  +  fontBBAscent
+//          = cssHalfLead + fontBBAscent
+const _halfLeadCache = new Map();
+function getHalfLead(ctx, lineH){
+  const font = ctx.font;
+  const cacheKey = font + '|' + lineH;
+  if(_halfLeadCache.has(cacheKey)) return _halfLeadCache.get(cacheKey);
+
+  const savedBaseline = ctx.textBaseline;
+  ctx.textBaseline = 'top';
+  const m = ctx.measureText('Hg');
+  ctx.textBaseline = savedBaseline;
+
+  const fontBBAsc = m.fontBoundingBoxAscent || 0;
+  const fontBBDesc = m.fontBoundingBoxDescent || 0;
+  const contentH = fontBBAsc + fontBBDesc;
+  const offset = (lineH - contentH) / 2 + fontBBAsc;
+
+  const result = Math.max(0, offset);
+  _halfLeadCache.set(cacheKey, result);
+  return result;
+}
+// PDF-vector counterpart of getHalfLead(): jsPDF has no TextMetrics of its own, but it's drawing
+// the same web font that's already loaded for canvas/preview rendering, so measuring that font in
+// the (unit-agnostic) shared measuring context gives the same ascent/descent ratio jsPDF's own
+// text layout will use — keeping vector PDF text lined up with the raster/preview paths instead
+// of relying on the old flat-ratio guess.
+function getHalfLeadMM(fontWeight, fontFamily, lineHeightMM){
+  const ctx = getMeasureCtx();
+  const fontSizeMM = lineHeightMM / 1.2;
+  ctx.font = `${fontWeight} ${fontSizeMM}px "${fontFamily}"`; // using mm as px — only the ratio matters
+  return getHalfLead(ctx, lineHeightMM);
+}
+// BUG FIX: the three drawVectorTextField* functions below used to convert the CSS-top-anchored
+// `ty` into the alphabetic-baseline Y that jsPDF's pdf.text() actually draws at by adding a
+// hardcoded `fontSize * 0.85` constant ("topOffsetMM"). That 0.85 ratio was hand-tuned against
+// jsPDF's Standard-14 fonts (Helvetica/Times/Courier) and isn't the real ascent ratio of an
+// arbitrary embedded custom font — different fonts declare very different ascent-to-em-size
+// ratios, so any embedded font whose real ascent differs from ~0.85 landed too high or too low.
+// This measures the *actual* ascent of the specific font being drawn (same "mm-as-px, only the
+// ratio matters" trick as getHalfLeadMM/getWrappedLinesMM), matching the font-accurate approach
+// already used for the leading — instead of one flat guess for every font.
+function getFontAscentMM(fontWeight, fontFamily, fontSizeMM){
+  const ctx = getMeasureCtx();
+  ctx.font = `${fontWeight} ${fontSizeMM}px "${fontFamily}"`;
+  const savedBaseline = ctx.textBaseline;
+  ctx.textBaseline = 'alphabetic';
+  const m = ctx.measureText('Hg');
+  ctx.textBaseline = savedBaseline;
+  return m.fontBoundingBoxAscent || fontSizeMM * 0.85;
+}
+// BUG FIX: the three drawVectorTextField* functions used to compute the Y position by adding
+// getHalfLeadMM() (which returns cssHalfLead + fontBBAsc_top) and then getFontAscentMM() (which
+// returns fontBBAsc_alphabetic). Together that double-counts the font's bounding-box ascent
+// measured from the 'top' baseline (fontBBAsc_top), producing a total of:
+//   cssHalfLead + fontBBAsc_top + fontBBAsc_alphabetic
+// instead of the correct:
+//   cssHalfLead + fontBBAsc_alphabetic
+// The extra fontBBAsc_top shifts every line of embedded-font text downward compared to the
+// canvas/raster preview, visibly for fonts whose bounding box extends above the em-square.
+// This helper computes the correct total offset from the CSS line-box top to jsPDF's alphabetic
+// baseline in one shot: (lineH - contentH) / 2  +  fontBBAsc_alphabetic.
+function getPdfBaselineOffsetMM(fontWeight, fontFamily, fontSizeMM, lineHeightMM){
+  const ctx = getMeasureCtx();
+  ctx.font = `${fontWeight} ${fontSizeMM}px "${fontFamily}"`;
+  // Measure content height (font bounding box) using textBaseline='top'
+  const savedBaseline = ctx.textBaseline;
+  ctx.textBaseline = 'top';
+  const mTop = ctx.measureText('Hg');
+  const fontBBAscTop = mTop.fontBoundingBoxAscent || 0;
+  const fontBBDescTop = mTop.fontBoundingBoxDescent || 0;
+  const contentH = fontBBAscTop + fontBBDescTop;
+  const cssHalfLead = Math.max(0, (lineHeightMM - contentH) / 2);
+  // Measure full ascent from alphabetic baseline
+  ctx.textBaseline = 'alphabetic';
+  const mAlph = ctx.measureText('Hg');
+  ctx.textBaseline = savedBaseline;
+  const fontBBAscAlph = mAlph.fontBoundingBoxAscent || fontSizeMM * 0.85;
+  return cssHalfLead + fontBBAscAlph;
+}
+// BUG FIX: the three drawVectorTextField* functions below used to wrap text with jsPDF's own
+// splitTextToSize (which measures the embedded font's glyph widths via jsPDF/fontkit), while the
+// live preview and every raster export path wrap with getWrappedLines() (the browser's own canvas
+// measureText on that same font). The two measurers don't always agree on where a word wraps —
+// so a vector (embedded-font) export could break a line one word earlier/later than the canvas
+// preview, which shifts every following line and shows up as "line spacing looks different in the
+// PDF". Reusing getWrappedLines() here (same "measure in mm-as-px, only the ratio matters" trick
+// as getHalfLeadMM) makes the vector path wrap at exactly the same points as everywhere else.
+function getWrappedLinesMM(f, text){
+  const ctx = getMeasureCtx();
+  ctx.font = `${f.fontWeight} ${f.fontSize}px "${f.fontFamily}"`; // using mm as px — only the ratio matters
+  ctx.fontKerning = 'none'; // match jsPDF's non-kerned glyph spacing (see measureTextFieldGrowth)
+  return getWrappedLines(ctx, String(text??''), f.w);
+}
 // Shared by the live editor preview (buildFieldEl) and the PDF "layered" per-field raster
 // export (renderFieldCanvas): both render a text field onto its own tightly-sized canvas, which
 // silently hard-clips anything that doesn't fit — unlike the full-card PNG export, where the
@@ -4173,36 +4322,38 @@ function measureTextFieldGrowth(f, text, unit){
   const mctx = getMeasureCtx();
   const fontPx = f.fontSize*unit;
   mctx.font = `${f.fontWeight} ${fontPx}px "${f.fontFamily}"`;
+  mctx.fontKerning = 'none'; // match jsPDF's non-kerned glyph spacing so wrap points agree
   const hasOutline = setupTextOutline(mctx, f, unit);
   const strokePad = hasOutline ? mctx.lineWidth/2 : 0;
   let extraH = 0;
   if(!f.stretch){
     const boxWpx = Math.max(1, Math.round(f.w*unit)), boxHpx = Math.max(1, Math.round(f.h*unit));
-    const lineHpx = f.fontSize*1.25*unit;
+    const lineHpx = f.fontSize*1.2*unit;
     extraH = Math.max(0, getWrappedLines(mctx, text, boxWpx).length*lineHpx - boxHpx);
   }
   return { hasOutline, padX: strokePad, padTop: strokePad, padBottom: strokePad+extraH };
 }
 // When `outline` is set, strokes each line first (per-glyph outline, since strokeText/fillText
 // trace the actual letterforms rather than a bounding box) so the fill sits on top of the stroke.
-// Every caller passes lineH as fontPx*1.25 (see call sites), matching the .txt-inner CSS rule's
+// Every caller passes lineH as fontPx*1.2 (see call sites), matching the .txt-inner CSS rule's
 // line-height. CSS text isn't flush with the top of its line box — the browser splits the extra
-// leading (lineH - fontPx) evenly above and below the glyphs — but textBaseline:'top' draws flush
-// with y with no such leading. Without correcting for that, switching a field to this canvas path
-// (e.g. turning on Letter Outline, which forces canvas rendering) visibly nudges the text upward
-// compared to how it sat a moment before. Re-adding half that leading here keeps the vertical
-// position stable across the toggle.
+// leading (lineH - the font's own ascent+descent) evenly above and below the glyphs — but
+// textBaseline:'top' draws flush with y with no such leading. Without correcting for that,
+// switching a field to this canvas path (e.g. turning on Letter Outline, which forces canvas
+// rendering, or exporting to PNG/PDF) visibly nudges the text upward compared to how it sat in
+// the plain DOM preview. getHalfLead() re-adds that leading using the font's real metrics (rather
+// than a flat lineH*0.1 guess) so the vertical position stays stable across every render path.
 // `valign`/`boxH` (both optional) shift the whole text block down within the field's box for
 // vertical centering/bottom-anchoring — pass boxH in the same px unit as x/y/maxW/lineH, or omit
 // both to keep the old top-anchored behavior.
 function wrapText(ctx, text, x, y, maxW, lineH, align, outline, valign, boxH){
   const lines = getWrappedLines(ctx, text, maxW);
-  const halfLead = lineH*0.1;
+  const halfLead = getHalfLead(ctx, lineH);
   let extraY = 0;
   if(valign && boxH!=null){
     const contentH = lines.length*lineH;
-    if(valign==='middle') extraY = Math.max(0, (boxH-contentH)/2);
-    else if(valign==='bottom') extraY = Math.max(0, boxH-contentH);
+    if(valign==='middle') extraY = (boxH-contentH)/2;
+    else if(valign==='bottom') extraY = boxH-contentH;
   }
   lines.forEach((ln,i) => {
     const ly = y + halfLead + extraY + i*lineH;
@@ -4416,6 +4567,7 @@ async function renderCardCanvas(sideKey, record, dpi, bgOnly){
       if(f.uppercase) text = String(text).toUpperCase();
       const fontPx = f.fontSize*mmToPxH;
       ctx.font = `${f.fontWeight} ${fontPx}px "${f.fontFamily}"`;
+      ctx.fontKerning = 'none'; // match jsPDF's non-kerned glyph spacing (see measureStretchNaturalSize)
       ctx.fillStyle = f.color;
       ctx.textBaseline = 'top';
       const hasOutline = setupTextOutline(ctx, f, mmToPxW);
@@ -4434,7 +4586,7 @@ async function renderCardCanvas(sideKey, record, dpi, bgOnly){
       } else {
         ctx.textAlign = f.align;
         const tx = f.align==='left' ? fx : f.align==='center' ? fx+fw/2 : fx+fw;
-        wrapText(ctx, text, tx, fy, fw, fontPx*1.25, f.align, hasOutline, f.valign, fh);
+        wrapText(ctx, text, tx, fy, fw, fontPx*1.2, f.align, hasOutline, f.valign, fh);
       }
     }
     ctx.restore();
@@ -4568,6 +4720,7 @@ async function renderFieldCanvas(sideKey, f, record, dpi){
     const boxWpx = origPxW-padXpx*2, boxHpx = f.h*mmToPx;
     const fontPx = f.fontSize*mmToPx;
     ctx.font = `${f.fontWeight} ${fontPx}px "${f.fontFamily}"`;
+    ctx.fontKerning = 'none'; // match jsPDF's non-kerned glyph spacing (see measureStretchNaturalSize)
     ctx.fillStyle = f.color;
     ctx.textBaseline = 'top';
     const hasOutline = setupTextOutline(ctx, f, mmToPx);
@@ -4583,7 +4736,7 @@ async function renderFieldCanvas(sideKey, f, record, dpi){
     } else {
       ctx.textAlign = f.align;
       const tx = padXpx + (f.align==='left' ? 0 : f.align==='center' ? boxWpx/2 : boxWpx);
-      wrapText(ctx, text, tx, padTopPx, boxWpx, fontPx*1.25, f.align, hasOutline, f.valign, boxHpx);
+      wrapText(ctx, text, tx, padTopPx, boxWpx, fontPx*1.2, f.align, hasOutline, f.valign, boxHpx);
     }
   }
   return cv;
@@ -4674,8 +4827,8 @@ async function runPdfExportBatch(exportRows, outFilename, opts){
 
   const elementMode = state.sheet.elementMode || 'layered';
   setExportIndeterminate(state.lang==='en'
-    ? (elementMode==='flatten' ? 'Preparing render...' : 'Preparing & embedding fonts...')
-    : (elementMode==='flatten' ? 'Menyiapkan render...' : 'Menyiapkan & meng-embed font...'));
+    ? (elementMode==='flatten' || !state.sheet.embedFontVector ? 'Preparing render...' : 'Preparing & embedding fonts...')
+    : (elementMode==='flatten' || !state.sheet.embedFontVector ? 'Menyiapkan render...' : 'Menyiapkan & meng-embed font...'));
   const usedSides = state.doubleSided ? ['front','back'] : ['front'];
   const pairMap = new Map();
   if(elementMode!=='flatten'){
@@ -4683,7 +4836,12 @@ async function runPdfExportBatch(exportRows, outFilename, opts){
       if(f.type==='text'){ const key = f.fontFamily+'|'+f.fontWeight; if(!pairMap.has(key)) pairMap.set(key,[f.fontFamily,f.fontWeight]); }
     }));
   }
-  const fontMap = elementMode==='flatten' ? new Map() : await ensureFontsRegisteredForExport(pdf, Array.from(pairMap.values()));
+  // Font embedding is opt-in (default off): embedding an arbitrary uploaded TTF/OTF as real PDF
+  // text relies on the browser's reported font-ascent metrics lining up with what jsPDF/fontkit
+  // actually draws, which isn't always true for every custom font file — when it's off, text
+  // stays a plain per-field raster image (see the vectorIds check below), which sidesteps that
+  // mismatch entirely at the cost of losing selectable/searchable text.
+  const fontMap = (elementMode==='flatten' || !state.sheet.embedFontVector) ? new Map() : await ensureFontsRegisteredForExport(pdf, Array.from(pairMap.values()));
   const bleedOffMM = eff.bleed/2;
   // Tracks how many uploaded-SVG image fields ended up as real vector paths vs. had to fall
   // back to a raster layer (rotated/flipped placement, or an SVG svg2pdf couldn't parse).
@@ -4715,16 +4873,16 @@ async function runPdfExportBatch(exportRows, outFilename, opts){
       pdf.setFontSize(f.fontSize * 2.834645669);
       const [r,g,b] = hexToRgb(f.color);
       pdf.setTextColor(r,g,b);
-      const lineHeightMM = f.fontSize*1.25;
-      const lines = pdf.splitTextToSize(String(text??''), f.w);
+      const lineHeightMM = f.fontSize*1.2;
+      const lines = getWrappedLinesMM(f, text);
       const fx = bleedOffMM+f.x, fy = bleedOffMM+f.y;
       const tx = f.align==='left' ? fx : f.align==='center' ? fx+f.w/2 : fx+f.w;
-      const topOffsetMM = f.fontSize * 0.85;
+      const baselineOffMM = getPdfBaselineOffsetMM(f.fontWeight, f.fontFamily, f.fontSize, lineHeightMM);
       const contentH = lines.length*lineHeightMM;
-      const extraY = f.valign==='middle' ? Math.max(0,(f.h-contentH)/2) : f.valign==='bottom' ? Math.max(0, f.h-contentH) : 0;
-      let ty = fy + lineHeightMM*0.1 + extraY;
+      const extraY = f.valign==='middle' ? (f.h-contentH)/2 : f.valign==='bottom' ? f.h-contentH : 0;
+      let ty = fy + extraY;
       lines.forEach(line => {
-        const px = posX + ch - ty - topOffsetMM, py = posY + tx;
+        const px = posX + ch - ty - baselineOffMM, py = posY + tx;
         pdf.text(line, px, py, {align:f.align, angle:90, rotationDirection:0});
         ty += lineHeightMM;
       });
@@ -4747,17 +4905,17 @@ async function runPdfExportBatch(exportRows, outFilename, opts){
       pdf.setFontSize(f.fontSize * 2.834645669);
       const [r,g,b] = hexToRgb(f.color);
       pdf.setTextColor(r,g,b);
-      const lineHeightMM = f.fontSize*1.25;
-      const lines = pdf.splitTextToSize(String(text??''), f.w);
+      const lineHeightMM = f.fontSize*1.2;
+      const lines = getWrappedLinesMM(f, text);
       const fx = bleedOffMM+f.x, fy = bleedOffMM+f.y;
       const tx = f.align==='left' ? fx : f.align==='center' ? fx+f.w/2 : fx+f.w;
-      const topOffsetMM = f.fontSize * 0.85;
+      const baselineOffMM = getPdfBaselineOffsetMM(f.fontWeight, f.fontFamily, f.fontSize, lineHeightMM);
       const contentH = lines.length*lineHeightMM;
-      const extraY = f.valign==='middle' ? Math.max(0,(f.h-contentH)/2) : f.valign==='bottom' ? Math.max(0, f.h-contentH) : 0;
+      const extraY = f.valign==='middle' ? (f.h-contentH)/2 : f.valign==='bottom' ? f.h-contentH : 0;
       const px = posX + cw - tx;
-      let ty = fy + lineHeightMM*0.1 + extraY;
+      let ty = fy + extraY;
       lines.forEach(line => {
-        const py = posY + ch - ty - topOffsetMM;
+        const py = posY + ch - ty - baselineOffMM;
         pdf.text(line, px, py, {align:f.align, angle:180, rotationDirection:0});
         ty += lineHeightMM;
       });
@@ -4790,6 +4948,11 @@ async function runPdfExportBatch(exportRows, outFilename, opts){
   async function placeCard(sideKey, record, posX, posY, rotate, flip180){
     const side = state.sides[sideKey];
     const dpi = Math.min(state.dpi,300);
+    // Vector text (below) measures word-wrap with the browser's canvas font metrics (via
+    // getWrappedLinesMM) so it wraps at exactly the same points as the preview/raster canvas —
+    // that requires the actual web font to already be loaded, not just registered/embedded in
+    // the PDF, so make sure of it here before any field is measured or drawn.
+    await ensureFontsLoaded(side);
     // Footprint of this card as actually placed on the sheet (dimensions swap when rotated 90°
     // for print — see rotatedFieldRect/drawVectorTextFieldRotated above — but stay cw×ch for a
     // plain or 180°-flipped placement).
@@ -4864,14 +5027,18 @@ async function runPdfExportBatch(exportRows, outFilename, opts){
       }
     }
     for(const f of side.fields){
-      // A field with its own rotation and/or skew always falls through to the raster path below
-      // (its canvas is pre-rotated/skewed there) — the vector text/SVG/PDF paths here aren't
-      // matrix-transformed to match an arbitrary element rotation or skew. Stretched text falls
+      // A field with its own rotation, skew, and/or flip always falls through to the raster path
+      // below (its canvas is pre-rotated/skewed/flipped there, flattening the font into pixels)
+      // — the vector text/SVG/PDF paths here aren't matrix-transformed to match an arbitrary
+      // element rotation, skew, or flip. BUG FIX: flipH/flipV used to be missing from this check,
+      // so a flipped-only text field stayed on the vector path (which has no flip transform at
+      // all) and silently exported unflipped, with the vector font untouched instead of being
+      // flattened like a rotated/skewed field. Stretched text falls
       // through too: jsPDF's text() has no independent X/Y scale, so "stretch to fit" can only
       // be reproduced by the raster canvas path above. Outlined text/images fall through as well
       // (drawVectorTextField/drawVectorSvgField/the PDF-embed path just place the original
       // font/vector content — there's nowhere in there to draw the per-letter/alpha outline).
-      if(f.type==='text' && vectorIds.has(f.id) && !f.rotation && !f.skewX && !f.skewY && !f.stretch && !f.outline){
+      if(f.type==='text' && vectorIds.has(f.id) && !f.rotation && !f.skewX && !f.skewY && !f.flipH && !f.flipV && !f.stretch && !f.outline){
         const info = fontMap.get(f.fontFamily+'|'+f.fontWeight);
         let text = f.dataField ? (record ? (record[f.dataField] ?? '') : '') : (f.staticText||'');
         if(f.uppercase) text = String(text).toUpperCase();
@@ -4882,7 +5049,7 @@ async function runPdfExportBatch(exportRows, outFilename, opts){
       }
       // Image field uploaded as .pdf, placed without on-sheet rotation/flip — record it for
       // vector embedding via pdf-lib in the post-process pass below instead of rasterizing.
-      if(f.type==='image' && !rotate && !flip180 && !f.rotation && !f.skewX && !f.skewY && !f.outline && state.sheet.keepPdfVector && isPdfFieldSrc(f.pdfSrc)){
+      if(f.type==='image' && !rotate && !flip180 && !f.rotation && !f.skewX && !f.skewY && !f.flipH && !f.flipV && !f.outline && state.sheet.keepPdfVector && isPdfFieldSrc(f.pdfSrc)){
         const pageIndex = pdf.internal.getNumberOfPages()-1;
         pdfEmbedTasks.push({
           pageIndex, pdfSrc: f.pdfSrc, x: posX+bleedOffMM+f.x, y: posY+bleedOffMM+f.y, w: f.w, h: f.h,
@@ -4896,7 +5063,7 @@ async function runPdfExportBatch(exportRows, outFilename, opts){
       // as real vector paths instead of rasterizing (smaller file, crisp at any zoom). Rotated
       // and flip180 placements skip this and always fall back to raster below, since the vector
       // path here isn't matrix-transformed to match those footprints.
-      if(f.type==='image' && !rotate && !flip180 && !f.rotation && !f.skewX && !f.skewY && !f.outline && state.sheet.keepSvgVector && isSvgFieldSrc(f.src)){
+      if(f.type==='image' && !rotate && !flip180 && !f.rotation && !f.skewX && !f.skewY && !f.flipH && !f.flipV && !f.outline && state.sheet.keepSvgVector && isSvgFieldSrc(f.src)){
         const ok = await drawVectorSvgField(pdf, f.src, posX+bleedOffMM+f.x, posY+bleedOffMM+f.y, f.w, f.h);
         if(ok){ svgVectorCount++; continue; }
         svgFallbackCount++;
@@ -4906,7 +5073,7 @@ async function runPdfExportBatch(exportRows, outFilename, opts){
       // embed it as real vector rects (see drawVectorQrField) instead of rasterizing. Always
       // succeeds (no external content to fail on, unlike an arbitrary user SVG), so no fallback
       // counter is needed here.
-      if(f.type==='qrcode' && !rotate && !flip180 && !f.rotation && !f.skewX && !f.skewY && state.sheet.keepQrVector){
+      if(f.type==='qrcode' && !rotate && !flip180 && !f.rotation && !f.skewX && !f.skewY && !f.flipH && !f.flipV && state.sheet.keepQrVector){
         const ok = drawVectorQrField(pdf, f, qrFieldText(f, record), posX+bleedOffMM+f.x, posY+bleedOffMM+f.y, f.w, f.h);
         if(ok){ qrVectorCount++; continue; }
       }
@@ -5024,16 +5191,22 @@ async function runPdfExportBatch(exportRows, outFilename, opts){
       ? ' Flatten mode active: the whole card (including text) is rendered as one flat image per side.'
       : ' Mode Flatten aktif: seluruh kartu (termasuk teks) dirender sebagai satu gambar utuh per sisi.';
   } else {
-    const rasterFonts = new Set();
-    fontMap.forEach((v,k) => { if(v.mode==='raster') rasterFonts.add(k.split('|')[0]); });
-    if(rasterFonts.size){
+    if(!state.sheet.embedFontVector){
       prog.textContent += state.lang==='en'
-        ? ` Vector+Layer mode active. Note: font(s) [${Array.from(rasterFonts).join(', ')}] could not be embedded, that text is still rendered as an image per element (layer stays separate).`
-        : ` Mode Vector+Layer aktif. Catatan: font [${Array.from(rasterFonts).join(', ')}] tidak bisa di-embed, teks tersebut tetap dirender sebagai gambar per elemen (layer tetap terpisah).`;
+        ? ' Vector+Layer mode active. Font embedding is off: all text was rendered as an image per element (layer stays separate), photos/images remain separate objects.'
+        : ' Mode Vector+Layer aktif. Embed font nonaktif: semua teks dirender sebagai gambar per elemen (layer tetap terpisah), gambar/foto tetap sebagai objek terpisah.';
     } else {
-      prog.textContent += state.lang==='en'
-        ? ' Vector+Layer mode active. All text fonts were successfully embedded as real fonts (not images), photos/images remain separate objects.'
-        : ' Mode Vector+Layer aktif. Semua font teks berhasil di-embed sebagai font asli (bukan gambar), gambar/foto tetap sebagai objek terpisah.';
+      const rasterFonts = new Set();
+      fontMap.forEach((v,k) => { if(v.mode==='raster') rasterFonts.add(k.split('|')[0]); });
+      if(rasterFonts.size){
+        prog.textContent += state.lang==='en'
+          ? ` Vector+Layer mode active. Note: font(s) [${Array.from(rasterFonts).join(', ')}] could not be embedded, that text is still rendered as an image per element (layer stays separate).`
+          : ` Mode Vector+Layer aktif. Catatan: font [${Array.from(rasterFonts).join(', ')}] tidak bisa di-embed, teks tersebut tetap dirender sebagai gambar per elemen (layer tetap terpisah).`;
+      } else {
+        prog.textContent += state.lang==='en'
+          ? ' Vector+Layer mode active. All text fonts were successfully embedded as real fonts (not images), photos/images remain separate objects.'
+          : ' Mode Vector+Layer aktif. Semua font teks berhasil di-embed sebagai font asli (bukan gambar), gambar/foto tetap sebagai objek terpisah.';
+      }
     }
     if(svgVectorCount || svgFallbackCount){
       if(svgVectorCount && !svgFallbackCount){
@@ -5188,12 +5361,54 @@ $('btnExportPdf').onclick = async () => {
 };
 
 /* ================= SAVE / LOAD LAYOUT JSON ================= */
+// Re-registers custom fonts restored from a saved layout JSON: re-creates the browser FontFace
+// (or re-injects the Google Fonts <link>) so the canvas preview shows the right typeface again,
+// and repopulates state.customFonts so PDF export's resolveFieldFont() finds the same font the
+// canvas is using instead of two independent (and possibly different) fallbacks.
+async function restoreCustomFonts(list){
+  state.customFonts = [];
+  for(const cf of (list||[])){
+    const name = cf.name; if(!name) continue;
+    const bytes = cf.bytes ? base64ToArrayBuffer(cf.bytes) : null;
+    try{
+      if(bytes){
+        const face = new FontFace(name, bytes);
+        await face.load();
+        document.fonts.add(face);
+      } else if(cf.source==='google'){
+        const famParam = name.replace(/\s+/g,'+');
+        const linkId = 'gf-' + famParam;
+        if(!document.getElementById(linkId)){
+          const link = document.createElement('link');
+          link.id = linkId; link.rel = 'stylesheet';
+          link.href = `https://fonts.googleapis.com/css2?family=${famParam}:wght@400;500;600;700;800&display=swap`;
+          document.head.appendChild(link);
+        }
+        await document.fonts.load(`400 20px "${name}"`);
+        await document.fonts.load(`700 20px "${name}"`);
+      } else if(cf.source==='url' && cf.url){
+        const face = new FontFace(name, `url("${cf.url}")`);
+        await face.load();
+        document.fonts.add(face);
+      }
+    }catch(e){
+      // Font couldn't be re-registered (URL gone / CORS) — canvas will show a substitute font
+      // and PDF export will fall back to raster for it until the person re-adds it manually.
+    }
+    state.customFonts.push({name, source:cf.source||'file', bytes, format:cf.format||null, url:cf.url||null});
+  }
+  renderCustomFontList();
+}
 $('btnSaveLayout').onclick = () => {
   const cfg = {
     card: state.card, dpi: state.dpi, doubleSided: state.doubleSided,
     sides: state.sides, photoField: state.photoField, filenameField: state.filenameField,
     photoSources: state.photoSources.map(s => ({id:s.id, matchField:s.matchField})),
-    sheet: state.sheet
+    sheet: state.sheet,
+    customFonts: state.customFonts.map(cf => ({
+      name: cf.name, source: cf.source, format: cf.format, url: cf.url||null,
+      bytes: cf.bytes ? arrayBufferToBase64(cf.bytes) : null
+    }))
   };
   const blob = new Blob([JSON.stringify(cfg,null,2)], {type:'application/json'});
   const a = document.createElement('a');
@@ -5204,10 +5419,11 @@ $('btnLoadLayout').onclick = () => $('fileLoadLayout').click();
 $('fileLoadLayout').onchange = e => {
   const file = e.target.files[0]; if(!file) return;
   const reader = new FileReader();
-  reader.onload = ev => {
+  reader.onload = async ev => {
     try{
       const cfg = JSON.parse(ev.target.result);
       historyStack = []; redoStack = []; historyGestureKey = null; updateUndoRedoButtons();
+      await restoreCustomFonts(cfg.customFonts);
       Object.assign(state.card, cfg.card||{});
       if(state.card.bleedMM==null) state.card.bleedMM = 0;
       state.dpi = cfg.dpi || state.dpi;
@@ -5230,6 +5446,7 @@ $('fileLoadLayout').onchange = e => {
       if(state.sheet.orientation==null) state.sheet.orientation = 'auto';
       if(state.sheet.cardRotate==null) state.sheet.cardRotate = 'off';
       if(state.sheet.elementMode==null) state.sheet.elementMode = 'layered';
+      if(state.sheet.embedFontVector==null) state.sheet.embedFontVector = false;
       if(state.sheet.keepSvgVector==null) state.sheet.keepSvgVector = false;
       if(state.sheet.keepPdfVector==null) state.sheet.keepPdfVector = true;
       if(state.sheet.keepQrVector==null) state.sheet.keepQrVector = true;
@@ -5272,6 +5489,7 @@ $('fileLoadLayout').onchange = e => {
       document.querySelectorAll('[data-orient]').forEach(c => c.classList.toggle('active', c.dataset.orient===state.sheet.orientation));
       document.querySelectorAll('[data-cardrot]').forEach(c => c.classList.toggle('active', c.dataset.cardrot===state.sheet.cardRotate));
       document.querySelectorAll('[data-elementmode]').forEach(c => c.classList.toggle('active', c.dataset.elementmode===state.sheet.elementMode));
+      $('embedFontVector').checked = !!state.sheet.embedFontVector;
       $('keepSvgVector').checked = !!state.sheet.keepSvgVector;
       $('keepPdfVector').checked = !!state.sheet.keepPdfVector;
       $('keepQrVector').checked = !!state.sheet.keepQrVector;
