@@ -123,6 +123,7 @@ select{cursor:pointer}
 .undo-redo-bar button:disabled{opacity:.25;cursor:not-allowed;color:var(--text-dim);border-color:var(--border)}
 .app-wrap{display:flex;flex-direction:column;height:100vh;overflow:hidden}
 
+.mobile-tabs{display:none}
 @media(max-width:980px){
   html,body{height:auto;min-height:100vh;overflow-y:auto;overflow-x:hidden}
   .app-wrap{height:auto;min-height:100vh;overflow:visible}
@@ -133,6 +134,13 @@ select{cursor:pointer}
   .header-actions{order:1;margin-left:auto}
   .stats-grid{order:2;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0;padding-bottom:2px;justify-content:flex-start}
   .stats-grid::-webkit-scrollbar{height:4px}
+
+  .mobile-tabs{display:flex;position:sticky;top:0;z-index:90;background:var(--surface);border-bottom:1px solid var(--border)}
+  .mobile-tabs button{flex:1;padding:13px 8px;background:none;border:none;color:var(--text-muted);font-family:var(--sans);font-weight:700;font-size:.78rem;letter-spacing:.03em;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+  .mobile-tabs button.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .mobile-tabs button:active{background:var(--surface2)}
+  .col{display:none!important}
+  .col.mtab-active{display:flex!important}
 }
 @media(max-width:480px){
   .logo small{display:none}
@@ -182,8 +190,14 @@ select{cursor:pointer}
 <div class="container">
   <div class="layout">
 
+    <!-- MOBILE TAB SWITCHER -->
+    <div class="mobile-tabs" id="mobileTabs">
+      <button class="mtab-btn active" data-target="colSettings" id="mtabBtnSettings">⚙️ Pengaturan</button>
+      <button class="mtab-btn" data-target="colCanvas" id="mtabBtnCanvas">🖼️ Canvas</button>
+    </div>
+
     <!-- LEFT: CONTROLS -->
-    <div class="col">
+    <div class="col mtab-active" id="colSettings">
 
       <!-- IMAGES -->
       <div class="card">
@@ -311,8 +325,16 @@ select{cursor:pointer}
           <div class="chip" id="presetFrame">Bingkai Tipis</div>
         </div>
         <div class="form-group" style="margin-top:12px;margin-bottom:0">
-          <label>Warna Bingkai / Margin Dalam</label>
-          <input type="color" id="frameColor" value="#ffffff">
+          <div class="row2">
+            <div>
+              <label id="lblFrameColorTxt" title="Mengisi latar kotak &amp; margin dalam — terlihat di sekeliling foto dan di kotak kosong (belum ada foto)">Warna Bingkai / Margin</label>
+              <input type="color" id="frameColor" value="#ffffff" title="Mengisi latar kotak &amp; margin dalam — terlihat di sekeliling foto dan di kotak kosong (belum ada foto)">
+            </div>
+            <div>
+              <label id="lblPhotoBgColorTxt" title="Mengisi area di belakang foto — terlihat jika foto (PNG) punya bagian transparan">Warna Latar Foto Transparan</label>
+              <input type="color" id="photoBgColor" value="#ffffff" title="Mengisi area di belakang foto — terlihat jika foto (PNG) punya bagian transparan">
+            </div>
+          </div>
         </div>
       </div>
 
@@ -356,7 +378,7 @@ select{cursor:pointer}
     </div>
 
     <!-- RIGHT: PREVIEW + EXPORT -->
-    <div class="col">
+    <div class="col" id="colCanvas">
 
       <div class="card">
         <div class="card-title"><div class="t">Preview</div></div>
@@ -490,6 +512,8 @@ const TRANSLATIONS = {
     cardSettings: 'Pengaturan',
     cardPreview: 'Preview',
     cardExport: 'Export',
+    mtabSettings: '⚙️ Pengaturan',
+    mtabCanvas: '🖼️ Canvas',
     
     // Upload panel
     dropzoneText: 'Klik atau seret gambar ke sini',
@@ -529,7 +553,8 @@ const TRANSLATIONS = {
     presetNone: 'Tanpa Margin',
     presetPolaroid: 'Polaroid',
     presetFrame: 'Bingkai Tipis',
-    lblFrameColor: 'Warna Bingkai / Margin Dalam',
+    lblFrameColor: 'Warna Bingkai / Margin',
+    lblPhotoBgColor: 'Warna Latar Foto Transparan',
     
     // Guides & Display panel
     lblGuideStyle: 'Gaya Garis Potong',
@@ -665,6 +690,8 @@ const TRANSLATIONS = {
     cardSettings: 'Settings',
     cardPreview: 'Preview',
     cardExport: 'Export',
+    mtabSettings: '⚙️ Settings',
+    mtabCanvas: '🖼️ Canvas',
     
     // Upload panel
     dropzoneText: 'Click or drag images here',
@@ -704,7 +731,8 @@ const TRANSLATIONS = {
     presetNone: 'No Margins',
     presetPolaroid: 'Polaroid style',
     presetFrame: 'Thin Frame',
-    lblFrameColor: 'Frame / Background Color',
+    lblFrameColor: 'Frame / Margin Color',
+    lblPhotoBgColor: 'Transparent Photo Fill Color',
     
     // Guides & Display panel
     lblGuideStyle: 'Cut Guide Style',
@@ -840,6 +868,7 @@ const state={
   innerMargin:{t:0,r:0,b:0,l:0},
   imLinked:true,
   frameColor:'#ffffff',
+  photoBgColor:'#ffffff',
   guide:'border',
   borderColor:'#999999',
   pageBg:'#ffffff',
@@ -881,7 +910,7 @@ function captureSnapshot(){
     box:{...state.box},
     gap:{...state.gap}, gapLinked:state.gapLinked,
     innerMargin:{...state.innerMargin}, imLinked:state.imLinked,
-    frameColor:state.frameColor, guide:state.guide,
+    frameColor:state.frameColor, photoBgColor:state.photoBgColor, guide:state.guide,
     borderColor:state.borderColor, pageBg:state.pageBg,
     fillMode:state.fillMode, targetPages:state.targetPages,
     mixedBoxes:state.mixedBoxes.map(mb=>({...mb})),
@@ -901,7 +930,7 @@ function restoreSnapshot(snap){
   Object.assign(state.box, snap.box);
   Object.assign(state.gap, snap.gap); state.gapLinked=snap.gapLinked;
   Object.assign(state.innerMargin, snap.innerMargin); state.imLinked=snap.imLinked;
-  state.frameColor=snap.frameColor; state.guide=snap.guide;
+  state.frameColor=snap.frameColor; state.photoBgColor=snap.photoBgColor||'#ffffff'; state.guide=snap.guide;
   state.borderColor=snap.borderColor; state.pageBg=snap.pageBg;
   state.fillMode=snap.fillMode; state.targetPages=snap.targetPages;
   state.mixedBoxes=snap.mixedBoxes.map(mb=>({...mb}));
@@ -927,6 +956,7 @@ function restoreSnapshot(snap){
   $('targetPages').value=state.targetPages;
   $('rotateAllowed').checked=state.rotateAllowed;
   $('frameColor').value=state.frameColor;
+  $('photoBgColor').value=state.photoBgColor;
   $('guideStyle').value=state.guide;
   $('borderColor').value=state.borderColor;
   $('pageBg').value=state.pageBg;
@@ -1231,12 +1261,13 @@ $('btnAddMixedSize').onclick=()=>{
 renderMixedList();
 
 $('frameColor').oninput=e=>{ state.frameColor=e.target.value; refreshAll(); };
+$('photoBgColor').oninput=e=>{ state.photoBgColor=e.target.value; refreshAll(); };
 $('guideStyle').onchange=e=>{ state.guide=e.target.value; refreshAll(); };
 $('borderColor').oninput=e=>{ state.borderColor=e.target.value; refreshAll(); };
 $('pageBg').oninput=e=>{ state.pageBg=e.target.value; refreshAll(); };
 
 $('presetNone').onclick=()=>{ state.innerMargin={t:0,r:0,b:0,l:0}; state.imLinked=true; $('imLink').classList.add('active'); rebuildImGrid(); refreshAll(); };
-$('presetPolaroid').onclick=()=>{ state.innerMargin={t:3,r:3,b:14,l:3}; state.imLinked=false; $('imLink').classList.remove('active'); state.frameColor='#ffffff'; $('frameColor').value='#ffffff'; rebuildImGrid(); refreshAll(); };
+$('presetPolaroid').onclick=()=>{ state.innerMargin={t:3,r:3,b:14,l:3}; state.imLinked=false; $('imLink').classList.remove('active'); state.frameColor='#ffffff'; $('frameColor').value='#ffffff'; state.photoBgColor='#ffffff'; $('photoBgColor').value='#ffffff'; rebuildImGrid(); refreshAll(); };
 $('presetFrame').onclick=()=>{ state.innerMargin={t:2,r:2,b:2,l:2}; state.imLinked=true; $('imLink').classList.add('active'); rebuildImGrid(); refreshAll(); };
 
 /* ================================================================
@@ -1750,7 +1781,6 @@ function renderPageCanvas(meta,pageIndex,dpi){
   ctx.fillRect(0,0,cv.width,cv.height);
   const cells=meta.pages[pageIndex]||[];
   const im=state.innerMargin;
-  const hasFrame=(im.t||im.r||im.b||im.l);
   cells.forEach((cell,ci)=>{
     const bx=cell.x*scale, by=cell.y*scale, bw=cell.w*scale, bh=cell.h*scale;
     const cellRot=getCellRotation(pageIndex,ci);
@@ -1779,7 +1809,12 @@ function renderPageCanvas(meta,pageIndex,dpi){
       ctx.translate(cw/2-nw/2, ch/2-nh/2);
       cw=nw; ch=nh;
     }
-    if(hasFrame){ ctx.fillStyle=state.frameColor||'#ffffff'; ctx.fillRect(0,0,cw,ch); }
+    ctx.fillStyle=state.frameColor||'#ffffff'; ctx.fillRect(0,0,cw,ch);
+    {
+      const ix0=im.l*scale, iy0=im.t*scale;
+      const iw0=cw-(im.l+im.r)*scale, ih0=ch-(im.t+im.b)*scale;
+      if(iw0>0 && ih0>0){ ctx.fillStyle=state.photoBgColor||'#ffffff'; ctx.fillRect(ix0,iy0,iw0,ih0); }
+    }
     if(cell.image){
       const ix=im.l*scale, iy=im.t*scale;
       const iw=cw-(im.l+im.r)*scale, ih=ch-(im.t+im.b)*scale;
@@ -2608,6 +2643,7 @@ $('btnExportSettings').onclick=()=>{
     gap:{...state.gap}, gapLinked:state.gapLinked,
     innerMargin:{...state.innerMargin}, imLinked:state.imLinked,
     frameColor:state.frameColor,
+    photoBgColor:state.photoBgColor,
     guide:state.guide,
     borderColor:state.borderColor,
     pageBg:state.pageBg,
@@ -2619,7 +2655,10 @@ $('btnExportSettings').onclick=()=>{
     cellRotations:state.cellRotations,
     imageRotations:state.imageRotations,
     cellCropOverrides:state.cellCropOverrides,
-    overrides:state.overrides
+    overrides:state.overrides,
+    snapToBoxes:state.snapToBoxes,
+    snapToGrid:state.snapToGrid,
+    snapGridSize:state.snapGridSize
   };
   const blob=new Blob([JSON.stringify(settings,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
@@ -2645,6 +2684,7 @@ $('settingsFileInput').onchange=e=>{
       if(s.innerMargin) Object.assign(state.innerMargin,s.innerMargin);
       if(s.imLinked!==undefined){ state.imLinked=s.imLinked; $('imLink').classList.toggle('active',state.imLinked); }
       if(s.frameColor){ state.frameColor=s.frameColor; $('frameColor').value=s.frameColor; }
+      if(s.photoBgColor){ state.photoBgColor=s.photoBgColor; $('photoBgColor').value=s.photoBgColor; }
       if(s.guide){ state.guide=s.guide; $('guideStyle').value=s.guide; }
       if(s.borderColor){ state.borderColor=s.borderColor; $('borderColor').value=s.borderColor; }
       if(s.pageBg){ state.pageBg=s.pageBg; $('pageBg').value=s.pageBg; }
@@ -2654,6 +2694,9 @@ $('settingsFileInput').onchange=e=>{
         state.mixedBoxes=s.mixedBoxes.map((mb,i)=>({id:'mb'+(mixedSeq++),w:mb.w,h:mb.h,qty:mb.qty}));
       }
       if(s.rotateAllowed!==undefined){ state.rotateAllowed=s.rotateAllowed; $('rotateAllowed').checked=s.rotateAllowed; }
+      if(s.snapToBoxes!==undefined){ state.snapToBoxes=s.snapToBoxes; $('snapBoxes').checked=s.snapToBoxes; }
+      if(s.snapToGrid!==undefined){ state.snapToGrid=s.snapToGrid; $('snapGrid').checked=s.snapToGrid; }
+      if(s.snapGridSize!==undefined){ state.snapGridSize=s.snapGridSize; $('snapGridSize').value=s.snapGridSize; }
       
       // Load custom layout/coordinates/rotations if present, otherwise reset them to empty objects
       state.posOverrides = s.posOverrides ? JSON.parse(JSON.stringify(s.posOverrides)) : {};
@@ -2695,6 +2738,9 @@ function applyLanguage() {
   const t = TRANSLATIONS[lang];
   
   $('langBtn').textContent = lang.toUpperCase();
+
+  if($('mtabBtnSettings')) $('mtabBtnSettings').textContent = t.mtabSettings;
+  if($('mtabBtnCanvas')) $('mtabBtnCanvas').textContent = t.mtabCanvas;
   
   const subtitle = document.querySelector('.logo small');
   if(subtitle) subtitle.textContent = t.logoSubtitle;
@@ -2717,7 +2763,6 @@ function applyLanguage() {
     { sel: '#dpiCustom', key: 'lblDpiCustom', sibling: 'prev' },
     { sel: '#imgFormat', key: 'lblImgFormat', sibling: 'prev' },
     { sel: '#jpgQuality', key: 'lblJpgQuality', sibling: 'prev' },
-    { sel: '#frameColor', key: 'lblFrameColor', sibling: 'prev' },
     { sel: '#borderColor', key: 'lblBorderColor', sibling: 'prev' },
     { sel: '#pageBg', key: 'lblPageBg', sibling: 'prev' },
     { sel: '#guideStyle', key: 'lblGuideStyle', sibling: 'prev' }
@@ -2733,6 +2778,8 @@ function applyLanguage() {
   if($('lblPaperMarginTxt')) $('lblPaperMarginTxt').textContent = t.lblPaperMargin;
   if($('lblGapTxt')) $('lblGapTxt').textContent = t.lblGap;
   if($('lblInnerMarginTxt')) $('lblInnerMarginTxt').textContent = t.lblInnerMargin;
+  if($('lblFrameColorTxt')) $('lblFrameColorTxt').textContent = t.lblFrameColor;
+  if($('lblPhotoBgColorTxt')) $('lblPhotoBgColorTxt').textContent = t.lblPhotoBgColor;
 
   const pmLabels = document.querySelectorAll('#pmGrid label');
   const sideKeys = ['t', 'r', 'b', 'l'];
@@ -2896,6 +2943,19 @@ $('langBtn').onclick=()=>{
 };
 state.lang = localStorage.getItem('pasfoto-lang')||'id';
 applyLanguage();
+
+/* ================================================================
+   MOBILE TAB SWITCHER
+   ================================================================ */
+document.querySelectorAll('.mtab-btn').forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll('.mtab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.col').forEach(c=>c.classList.remove('mtab-active'));
+    $(btn.dataset.target).classList.add('mtab-active');
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+});
 
 /* ================================================================
    BOOT
