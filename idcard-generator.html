@@ -3012,15 +3012,33 @@ function alignSelected(type){
   saveHistory();
 
   if(activeObj.type === 'activeSelection'){
-    const objects = activeObj.getObjects();
+    // Align relative to the selection's own bounding box, computed in mm
+    // from each field's stored x/y/w/h - the same space renderSide() reads
+    // from when it rebuilds the canvas. Writing to obj.left/top (Fabric's
+    // internal, group-relative canvas coordinates) used to look like it
+    // worked for a split second, but the renderSide() call at the bottom
+    // of this function tears the canvas down and rebuilds every object
+    // straight from fieldData right after, so those in-canvas-only changes
+    // were always discarded and the elements silently snapped back to
+    // their old spot - this is why the buttons appeared to do nothing.
+    const fieldObjs = activeObj.getObjects().filter(o => o.fieldData);
+    if(!fieldObjs.length) return;
 
-    objects.forEach(obj => {
-      if(type === 'left') obj.set({ left: -activeObj.width / 2 });
-      if(type === 'hcenter') obj.set({ left: 0 });
-      if(type === 'right') obj.set({ left: activeObj.width / 2 - obj.width * obj.scaleX });
-      if(type === 'top') obj.set({ top: -activeObj.height / 2 });
-      if(type === 'vcenter') obj.set({ top: 0 });
-      if(type === 'bottom') obj.set({ top: activeObj.height / 2 - obj.height * obj.scaleY });
+    const minX = Math.min(...fieldObjs.map(o => o.fieldData.x));
+    const minY = Math.min(...fieldObjs.map(o => o.fieldData.y));
+    const maxX = Math.max(...fieldObjs.map(o => o.fieldData.x + o.fieldData.w));
+    const maxY = Math.max(...fieldObjs.map(o => o.fieldData.y + o.fieldData.h));
+
+    fieldObjs.forEach(obj => {
+      const f = obj.fieldData;
+      if(type === 'left') f.x = minX;
+      if(type === 'hcenter') f.x = minX + (maxX - minX) / 2 - f.w / 2;
+      if(type === 'right') f.x = maxX - f.w;
+      if(type === 'top') f.y = minY;
+      if(type === 'vcenter') f.y = minY + (maxY - minY) / 2 - f.h / 2;
+      if(type === 'bottom') f.y = maxY - f.h;
+      f.x = parseFloat(f.x.toFixed(2));
+      f.y = parseFloat(f.y.toFixed(2));
     });
   } else if(activeObj.fieldData){
     const f = activeObj.fieldData;
