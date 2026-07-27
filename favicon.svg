@@ -1,37 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="8" fill="#08080c"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <clipPath id="edge">
+      <rect width="32" height="32" rx="5"/>
+    </clipPath>
+  </defs>
 
-  <!-- central chip -->
-  <rect x="24" y="24" width="16" height="16" rx="2" fill="#15151b" stroke="#f2f2f0" stroke-width="2"/>
-  <circle cx="28" cy="28" r="1.3" fill="#00e5ff"/>
+  <rect width="32" height="32" rx="5" fill="#08080c"/>
 
-  <!-- traces -->
-  <g fill="none" stroke="#f2f2f0" stroke-width="2" stroke-linecap="square" stroke-linejoin="round">
-    <path d="M29,24 V10 H14"/>
-    <path d="M29,40 V54 H12"/>
-    <path d="M21,29 H10 V18"/>
-    <path d="M43,29 H56 V18"/>
-    <path d="M43,35 H58 V46"/>
-  </g>
+  <g clip-path="url(#edge)">
+    <g transform="rotate(22 16 16)">
+      <!-- traces -->
+      <g stroke="#f2f2f0" stroke-width="2.6" stroke-linecap="square">
+        <path d="M16,12 V4"/>
+        <path d="M16,20 V28"/>
+        <path d="M12,16 H4"/>
+      </g>
+      <path d="M20,16 H28" stroke="#00e5ff" stroke-width="2.6" stroke-linecap="square"/>
 
-  <!-- accent traces -->
-  <g fill="none" stroke="#00e5ff" stroke-width="2" stroke-linecap="square" stroke-linejoin="round" opacity="0.9">
-    <path d="M35,24 V8 H50"/>
-    <path d="M21,35 H8 V46"/>
-  </g>
-  <g fill="none" stroke="#ff2fb0" stroke-width="2" stroke-linecap="square" stroke-linejoin="round" opacity="0.9">
-    <path d="M35,40 V56 H52"/>
-  </g>
+      <!-- chip -->
+      <rect x="11.5" y="11.5" width="9" height="9" rx="1.6" fill="#15151b" stroke="#f2f2f0" stroke-width="2.4"/>
 
-  <!-- pads -->
-  <g fill="#f2f2f0">
-    <circle cx="14" cy="10" r="1.8"/>
-    <circle cx="12" cy="54" r="1.8"/>
-    <circle cx="10" cy="18" r="1.8"/>
-    <circle cx="56" cy="18" r="1.8"/>
-    <circle cx="58" cy="46" r="1.8"/>
+      <!-- pads -->
+      <circle cx="16" cy="4" r="2.1" fill="#f2f2f0"/>
+      <circle cx="16" cy="28" r="2.1" fill="#f2f2f0"/>
+      <circle cx="4" cy="16" r="2.1" fill="#f2f2f0"/>
+      <circle cx="28" cy="16" r="2.1" fill="#00e5ff"/>
+    </g>
   </g>
-  <circle cx="50" cy="8" r="1.8" fill="#00e5ff"/>
-  <circle cx="8" cy="46" r="1.8" fill="#00e5ff"/>
-  <circle cx="52" cy="56" r="1.8" fill="#ff2fb0"/>
 </svg>
