@@ -129,8 +129,9 @@ select{cursor:pointer}
   .app-wrap{height:auto;min-height:100vh;overflow:visible}
   header{position:sticky;top:0;flex-wrap:wrap;row-gap:8px;padding:10px 14px}
   .container{flex:none;height:auto;overflow:visible}
-  .layout{grid-template-columns:1fr;height:auto;overflow:visible}
-  .col{overflow:visible;max-height:none;padding-bottom:24px}
+  .layout{grid-template-columns:minmax(0,1fr);height:auto;overflow:visible}
+  .col{overflow-x:hidden;overflow-y:visible;max-height:none;padding:18px 14px 24px;min-width:0}
+  .col:last-child{padding:18px 14px 24px}
   .header-actions{order:1;margin-left:auto}
   .stats-grid{order:2;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0;padding-bottom:2px;justify-content:flex-start}
   .stats-grid::-webkit-scrollbar{height:4px}
@@ -193,7 +194,7 @@ select{cursor:pointer}
     <!-- MOBILE TAB SWITCHER -->
     <div class="mobile-tabs" id="mobileTabs">
       <button class="mtab-btn active" data-target="colSettings" id="mtabBtnSettings">⚙️ Pengaturan</button>
-      <button class="mtab-btn" data-target="colCanvas" id="mtabBtnCanvas">🖼️ Canvas</button>
+      <button class="mtab-btn" data-target="colCanvas" id="mtabBtnCanvas">🖼️ Canvas & Export</button>
     </div>
 
     <!-- LEFT: CONTROLS -->
@@ -513,7 +514,7 @@ const TRANSLATIONS = {
     cardPreview: 'Preview',
     cardExport: 'Export',
     mtabSettings: '⚙️ Pengaturan',
-    mtabCanvas: '🖼️ Canvas',
+    mtabCanvas: '🖼️ Canvas & Export',
     
     // Upload panel
     dropzoneText: 'Klik atau seret gambar ke sini',
@@ -691,7 +692,7 @@ const TRANSLATIONS = {
     cardPreview: 'Preview',
     cardExport: 'Export',
     mtabSettings: '⚙️ Settings',
-    mtabCanvas: '🖼️ Canvas',
+    mtabCanvas: '🖼️ Canvas & Export',
     
     // Upload panel
     dropzoneText: 'Click or drag images here',
