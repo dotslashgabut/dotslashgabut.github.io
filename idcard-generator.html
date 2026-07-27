@@ -86,6 +86,16 @@ select{cursor:pointer}
 .btn-s:hover{border-color:var(--accent);color:var(--accent)}
 .btn-s.active,.btn-icon.active{background:var(--accent);color:#0d0f14;border-color:var(--accent)}
 .btn-s.active:hover,.btn-icon.active:hover{filter:brightness(1.1);color:#0d0f14}
+/* .btn-s.btn-p covers toggle buttons like #btnBgPosMode, which carry BOTH
+   "btn-s" and "btn-p" at once when active. ".btn-p" and ".btn-s" alone have
+   the exact same specificity, and ".btn-s" is declared later above - so on
+   an element with both classes, ".btn-s"'s gray background/border silently
+   won the cascade and the green highlight never actually rendered, no
+   matter what state.bgPositionMode was. This compound selector has higher
+   specificity than either alone, so it always wins regardless of source
+   order. */
+.btn-s.btn-p{background:var(--accent);color:#0d0f14;border-color:var(--accent)}
+.btn-s.btn-p:hover{filter:brightness(1.1);color:#0d0f14}
 .btn-d{background:var(--surface2);color:var(--accent2);border:1px solid var(--border)}
 .btn-d:hover{border-color:var(--accent2)}
 .btn-full{width:100%}
@@ -1007,12 +1017,69 @@ function initFabricCanvas(){
     const bg = currentBg();
     bg.offsetX = bgDragStart.origOffX + dxMM;
     bg.offsetY = bgDragStart.origOffY + dyMM;
-    renderSide();
+    // Only reposition the background image in place while dragging - see
+    // repositionBgLive() for why this must NOT be a full renderSide() call.
+    // Fall back to the full render only in the rare case there's no live
+    // background image object yet to reposition (e.g. still decoding).
+    if(!repositionBgLive()) renderSide();
   });
   fabricCanvas.on('mouse:up', function() {
+    if(isBgDragging) saveHistory();
     isBgDragging = false;
     paintOverlay();
   });
+}
+
+// Lightweight reposition of ONLY the background image, used while the user is dragging it
+// in "Drag Position on Canvas" mode. The mousemove handler used to call the full renderSide()
+// on every pointer move - which clears the entire fabric canvas and rebuilds every single
+// field (text/photo/QR/shape) from scratch, re-creates the background image, and rewrites the
+// field-list + background-preview thumbnail DOM - dozens of times per second while dragging.
+// That full clear/rebuild cycle is what caused every element on the canvas to visibly flicker,
+// and the constant DOM churn in the side panel (the bg preview thumbnail's <img> being
+// recreated on every move) is what made the "Drag Position on Canvas" button's highlighted/
+// active state flicker too, since it sits right next to that panel and got caught up in the
+// reflow. Dragging only ever changes the background image's left/top, so this just mutates
+// the SAME fabric background image object in place and repaints - no clear(), no field
+// rebuild, no side-panel DOM rewrites. Mirrors the exact fit/zoom/offset math in renderSide()'s
+// side.bg.image block (and computeBgFitSize) so the live drag matches the final render 1:1.
+function repositionBgLive(){
+  if(!fabricCanvas) return false;
+  const bgImg = fabricCanvas.backgroundImage;
+  if(!bgImg) return false;
+
+  const side = state.sides[state.activeSide];
+  const bleedMM = parseFloat(state.card.bleedMM) || 0;
+  const containerW = (state.card.wMM + bleedMM * 2) * SCALE_FACTOR;
+  const containerH = (state.card.hMM + bleedMM * 2) * SCALE_FACTOR;
+  const imgW = bgImg.width;
+  const imgH = bgImg.height;
+  const zoom = side.bg.zoom || 1;
+  const fit = side.bg.fit || 'cover';
+
+  let scaleX = 1, scaleY = 1;
+  if(fit === 'stretch'){
+    scaleX = (containerW / imgW) * zoom;
+    scaleY = (containerH / imgH) * zoom;
+  } else if(fit === 'contain'){
+    const s = Math.min(containerW / imgW, containerH / imgH) * zoom;
+    scaleX = s; scaleY = s;
+  } else { // cover
+    const s = Math.max(containerW / imgW, containerH / imgH) * zoom;
+    scaleX = s; scaleY = s;
+  }
+
+  const baseLeft = (containerW - imgW * scaleX) / 2;
+  const baseTop = (containerH - imgH * scaleY) / 2;
+
+  bgImg.set({
+    left: baseLeft + (side.bg.offsetX || 0) * SCALE_FACTOR,
+    top: baseTop + (side.bg.offsetY || 0) * SCALE_FACTOR,
+    scaleX: scaleX,
+    scaleY: scaleY
+  });
+  fabricCanvas.requestRenderAll();
+  return true;
 }
 
 function updateCanvasSize(){

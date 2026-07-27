@@ -2262,7 +2262,7 @@ function renderBgPreview(){
     $('bgZoom').value = bg.zoom;
     $('bgZoomVal').textContent = Math.round(bg.zoom*100)+'%';
   }
-  if(state.bgEditSide !== state.activeSide){ state.bgPositionMode = false; $('btnBgPosMode').classList.remove('btn-p'); $('bgPosHint').style.display='none'; }
+  if(state.bgEditSide !== state.activeSide){ state.bgPositionMode = false; $('btnBgPosMode').classList.remove('active'); $('bgPosHint').style.display='none'; }
 }
 document.querySelectorAll('[data-bgfit]').forEach(chip => {
   chip.onclick = () => {
@@ -2303,7 +2303,7 @@ $('bgNudgeRight').onclick = e => nudgeBg(1,0,e);
 $('btnBgPosMode').onclick = () => {
   if(state.bgEditSide !== state.activeSide){ setEditSide(state.bgEditSide); }
   state.bgPositionMode = !state.bgPositionMode;
-  $('btnBgPosMode').classList.toggle('btn-p', state.bgPositionMode);
+  $('btnBgPosMode').classList.toggle('active', state.bgPositionMode);
   $('bgPosHint').style.display = state.bgPositionMode ? 'block' : 'none';
   renderStage();
 };
