@@ -1,0 +1,3340 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auto PasFoto Layout — Tata Letak Cetak Pas Photo</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2064%2064%22%3E%3C%21--%20background%20--%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%2260%22%20height%3D%2260%22%20rx%3D%2214%22%20fill%3D%22%230d0f14%22/%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%2260%22%20height%3D%2260%22%20rx%3D%2214%22%20fill%3D%22none%22%20stroke%3D%22%2300e5b0%22%20stroke-width%3D%222%22/%3E%3C%21--%20photo%20card%20--%3E%3Crect%20x%3D%2216%22%20y%3D%2212%22%20width%3D%2232%22%20height%3D%2240%22%20rx%3D%223%22%20fill%3D%22%23161a23%22%20stroke%3D%22%2300e5b0%22%20stroke-width%3D%222.2%22/%3E%3C%21--%20corner%20crop%20marks%20%28passport%20photo%20framing%20cue%29%20--%3E%3Cpath%20d%3D%22M12%2016%20v-4%20h4%22%20fill%3D%22none%22%20stroke%3D%22%23ffc94d%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22/%3E%3Cpath%20d%3D%22M52%2016%20v-4%20h-4%22%20fill%3D%22none%22%20stroke%3D%22%23ffc94d%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22/%3E%3Cpath%20d%3D%22M12%2048%20v4%20h4%22%20fill%3D%22none%22%20stroke%3D%22%23ffc94d%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22/%3E%3Cpath%20d%3D%22M52%2048%20v4%20h-4%22%20fill%3D%22none%22%20stroke%3D%22%23ffc94d%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22/%3E%3C%21--%20portrait%3A%20head%20%2B%20shoulders%20silhouette%20--%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2227%22%20r%3D%226.2%22%20fill%3D%22%2300e5b0%22/%3E%3Cpath%20d%3D%22M20.5%2047c0-7.2%205.1-12%2011.5-12s11.5%204.8%2011.5%2012%22%20fill%3D%22%2300e5b0%22/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{
+  --bg:#0d0f14;--surface:#161a23;--surface2:#1e2330;--border:#2a3045;
+  --accent:#00e5b0;--accent2:#ff5c5c;--accent3:#ffc94d;
+  --text:#e8eaf2;--text-muted:#6b7494;--text-dim:#3d4561;
+  --shadow:0 4px 24px rgba(0,0,0,.4);--radius:12px;--radius-sm:8px;
+  --mono:'DM Mono',monospace;--sans:'Syne',sans-serif;
+}
+[data-theme="light"]{
+  --bg:#f0f2f8;--surface:#fff;--surface2:#e8eaf2;--border:#d0d4e8;
+  --text:#1a1e2e;--text-muted:#5a6080;--text-dim:#a0a8c0;
+  --shadow:0 4px 24px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);height:100vh;overflow:hidden;transition:background .3s,color .3s}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;background:var(--surface);border-bottom:1px solid var(--border);position:relative;z-index:100;backdrop-filter:blur(10px);flex-shrink:0}
+.logo{display:flex;align-items:center;gap:10px;font-size:1.15rem;font-weight:800;letter-spacing:-.03em}
+.logo-icon{width:32px;height:32px;background:var(--surface2);border:1.5px solid var(--accent);border-radius:8px;display:grid;place-items:center;flex-shrink:0;font-size:1.05rem}
+.logo span{color:var(--accent)}
+.logo small{display:block;font-family:var(--mono);font-size:.62rem;color:var(--text-muted);font-weight:400;letter-spacing:.02em}
+.btn-icon{width:36px;height:36px;border:1px solid var(--border);background:var(--surface2);border-radius:var(--radius-sm);cursor:pointer;color:var(--text);display:grid;place-items:center;font-size:.95rem;transition:all .2s}
+.btn-icon:hover{border-color:var(--accent);color:var(--accent)}
+.container{flex:1;overflow:hidden;padding:0 18px}
+.layout{display:grid;grid-template-columns:460px 1fr;gap:18px;align-items:stretch;height:100%}
+.col{display:flex;flex-direction:column;gap:16px;overflow-y:auto;padding:18px 6px 60px 0}
+.col:last-child{padding:18px 0 60px 6px}
+.col::-webkit-scrollbar{width:10px;height:10px}.col::-webkit-scrollbar-track{background:rgba(0,0,0,0.05);border-radius:5px}.col::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px;border:2px solid transparent;background-clip:padding-box}.col::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);flex-shrink:0}
+.card-title{font-size:.68rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+.card-title .t{display:flex;align-items:center;gap:8px}
+.card-title .t::before{content:'';display:block;width:3px;height:13px;background:var(--accent);border-radius:2px}
+.form-group{margin-bottom:12px}
+label{display:block;font-size:.7rem;font-weight:600;color:var(--text-muted);margin-bottom:5px;letter-spacing:.05em;text-transform:uppercase}
+input[type="number"],input[type="text"],select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--mono);font-size:.85rem;padding:8px 11px;outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none}
+input[type="color"]{width:44px;height:34px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);cursor:pointer;padding:2px}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,229,176,.12)}
+select{cursor:pointer}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.chip{padding:5px 12px;border-radius:99px;font-size:.71rem;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);transition:all .2s;font-family:var(--sans);letter-spacing:.02em}
+.chip.active{background:var(--accent);color:#0d0f14;border-color:var(--accent)}
+.chip:hover:not(.active){border-color:var(--accent);color:var(--accent)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 18px;border-radius:var(--radius-sm);font-family:var(--sans);font-weight:700;font-size:.8rem;letter-spacing:.03em;cursor:pointer;transition:all .2s;border:none;white-space:nowrap}
+.btn-p{background:var(--accent);color:#0d0f14}
+.btn-p:hover{filter:brightness(1.12);transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,229,176,.3)}
+.btn-s{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-s:hover{border-color:var(--accent);color:var(--accent)}
+.btn-full{width:100%}
+.btn-sm{padding:7px 12px;font-size:.74rem}
+.btn:disabled{opacity:.4;cursor:not-allowed;filter:none;transform:none}
+.link-toggle{width:32px;height:32px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;display:grid;place-items:center;font-size:.85rem;flex-shrink:0;transition:all .2s}
+.link-toggle.active{background:var(--surface2);color:var(--text-muted);border-color:var(--accent)}
+.margin-editor{display:flex;align-items:center;gap:8px}
+.margin-grid{flex:1;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px}
+.margin-grid .mg-single{grid-column:1/-1}
+.mlbl{font-size:.6rem;color:var(--text-dim);text-align:center;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em}
+.dropzone{border:1.5px dashed var(--border);border-radius:var(--radius-sm);padding:20px 12px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2)}
+.dropzone:hover,.dropzone.drag{border-color:var(--accent);background:rgba(0,229,176,.06)}
+.dropzone .di{font-size:1.6rem;margin-bottom:6px}
+.dropzone p{font-size:.76rem;color:var(--text-muted)}
+.dropzone .sub{font-size:.66rem;color:var(--text-dim);margin-top:3px}
+.upload-row{display:flex;gap:8px;margin-top:10px}
+.img-list{display:flex;flex-direction:column;gap:8px;margin-top:12px;max-height:420px;overflow-y:auto;padding-right:2px}
+.img-row{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;animation:si .2s ease}
+@keyframes si{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.img-row-main{display:flex;align-items:center;gap:10px}
+.img-row-controls{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}
+.img-thumb{width:44px;height:44px;border-radius:6px;object-fit:cover;flex-shrink:0;border:1px solid var(--border);background:var(--bg)}
+.img-info{flex:1;min-width:0}
+.img-name{font-size:.74rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.img-meta{font-size:.63rem;color:var(--text-dim);font-family:var(--mono)}
+.qty-stepper{display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;flex-shrink:0}
+.qty-stepper button{width:24px;height:26px;background:var(--surface);border:none;color:var(--text-muted);cursor:pointer;font-size:.85rem}
+.qty-stepper button:hover{color:var(--accent)}
+.qty-stepper input{width:44px;height:26px;border:none;text-align:center;background:var(--surface);color:var(--text);font-family:var(--mono);font-size:.75rem;padding:0}
+.img-row-actions{display:flex;gap:4px;flex-wrap:wrap;flex-shrink:0}
+.mini-btn{width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;font-size:.75rem;display:grid;place-items:center;transition:all .2s}
+.mini-btn:hover{border-color:var(--accent);color:var(--accent)}
+.mini-btn.danger:hover{border-color:var(--accent2);color:var(--accent2)}
+.adjust-panel{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+.slider-row{display:flex;align-items:center;gap:8px}
+.slider-row label{width:52px;flex-shrink:0;margin:0;font-size:.63rem}
+.slider-row input[type="range"]{flex:1;accent-color:var(--accent)}
+.slider-row .val{width:36px;text-align:right;font-family:var(--mono);font-size:.65rem;color:var(--text-muted);flex-shrink:0}
+.empty-imgs{text-align:center;padding:22px 10px;color:var(--text-dim)}
+.empty-imgs .ei{font-size:1.8rem;margin-bottom:6px}
+.empty-imgs p{font-size:.75rem}
+.stats-grid{display:flex;gap:12px;margin:0 14px;align-items:center}
+.stat-box{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;text-align:center;display:flex;align-items:center;gap:6px;min-width:max-content}
+.stat-value{font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--accent);line-height:1}
+.stat-label{font-size:.58rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin:0}
+.page-nav{display:flex;align-items:center;gap:6px;margin:0 14px}
+.page-nav span{font-family:var(--mono);font-size:.78rem;color:var(--text-muted);min-width:max-content;text-align:center;font-weight:700}
+.preview-wrap{border:1px solid var(--border);border-radius:8px;overflow:auto;background:#33384a;padding:16px;min-height:400px;max-height:900px;position:relative;display:grid;justify-content:safe center;align-content:safe center}
+.preview-canvas-container{position:relative;display:block;flex-shrink:0}
+.preview-wrap canvas{display:block;max-width:none;height:auto;box-shadow:0 8px 30px rgba(0,0,0,.45);background:#fff}
+.warn-box{display:flex;gap:8px;align-items:flex-start;background:rgba(255,92,92,.08);border:1px solid rgba(255,92,92,.2);border-radius:var(--radius-sm);padding:10px 13px;font-size:.75rem;color:var(--accent2);margin-top:10px}
+.info-box{display:block;background:rgba(0,229,176,.07);border:1px solid rgba(0,229,176,.18);border-radius:var(--radius-sm);padding:9px 13px;font-size:.73rem;color:var(--text-muted);margin-top:12px;line-height:1.5}
+.export-actions{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.export-actions .row2{gap:8px}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);padding:12px 18px;border-radius:var(--radius-sm);font-size:.82rem;z-index:999;box-shadow:var(--shadow);color:var(--text);transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none;max-width:320px}
+.toast.show{transform:none;opacity:1}
+.hidden{display:none!important}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-track{background:var(--surface);border-radius:5px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px;border:2px solid transparent;background-clip:padding-box}::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+.guide-legend{font-size:.68rem;color:var(--text-dim);margin-top:8px;line-height:1.5}
+.edit-toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm)}
+.edit-toolbar .sep{width:1px;height:24px;background:var(--border);flex-shrink:0;margin:0 2px}
+.undo-redo-bar{display:flex;gap:6px;align-items:center}
+.undo-redo-bar button{height:26px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;font-family:var(--sans);font-weight:700;transition:all .2s}
+.undo-redo-bar button:hover:not(:disabled){border-color:var(--accent);color:var(--accent);transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,229,176,0.15)}
+.undo-redo-bar button:not(:disabled){color:var(--accent);border-color:var(--accent);background:var(--surface2)}
+.undo-redo-bar button:disabled{opacity:.25;cursor:not-allowed;color:var(--text-dim);border-color:var(--border)}
+.app-wrap{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+.mobile-tabs{display:none}
+@media(max-width:980px){
+  html,body{height:auto;min-height:100vh;overflow-y:auto;overflow-x:hidden}
+  .app-wrap{height:auto;min-height:100vh;overflow:visible}
+  header{position:sticky;top:0;flex-wrap:wrap;row-gap:8px;padding:10px 14px}
+  .container{flex:none;height:auto;overflow:visible}
+  .layout{grid-template-columns:minmax(0,1fr);height:auto;overflow:visible}
+  .col{overflow-x:hidden;overflow-y:visible;max-height:none;padding:18px 14px 24px;min-width:0}
+  .col:last-child{padding:18px 14px 24px}
+  .header-actions{order:1;margin-left:auto}
+  .stats-grid{order:2;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0;padding-bottom:2px;justify-content:flex-start}
+  .stats-grid::-webkit-scrollbar{height:4px}
+
+  .mobile-tabs{display:flex;position:sticky;top:0;z-index:90;background:var(--surface);border-bottom:1px solid var(--border)}
+  .mobile-tabs button{flex:1;padding:13px 8px;background:none;border:none;color:var(--text-muted);font-family:var(--sans);font-weight:700;font-size:.78rem;letter-spacing:.03em;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+  .mobile-tabs button.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .mobile-tabs button:active{background:var(--surface2)}
+  .col{display:none!important}
+  .col.mtab-active{display:flex!important}
+}
+@media(max-width:480px){
+  .logo small{display:none}
+  .logo{font-size:1rem}
+  .stat-box{padding:4px 8px}
+  .page-nav span{font-size:.7rem}
+  .page-nav .btn{padding:6px 10px}
+  .container{padding:0 10px}
+  .card{padding:14px}
+  .row3,.row4{grid-template-columns:1fr 1fr}
+}
+@media(max-width:420px){
+  .stat-label{display:none}
+  header{gap:8px}
+}
+</style>
+</head>
+<body>
+
+<div class="app-wrap">
+<header>
+  <div class="logo">
+    <div class="logo-icon">🪪</div>
+    <div>Auto<span>PasFoto</span><small>tata letak cetak pas photo</small></div>
+  </div>
+  
+  <!-- Stats Grid placed in Header so it is always visible on scroll -->
+  <div class="stats-grid" id="headerStats">
+    <div class="stat-box"><span class="stat-label">Kotak/Hal:</span><span class="stat-value" id="statCols">0×0</span></div>
+    <div class="stat-box"><span class="stat-label">Total Copy:</span><span class="stat-value" id="statTotal">0</span></div>
+    <div class="stat-box"><span class="stat-label">Halaman:</span><span class="stat-value" id="statPages">0</span></div>
+    <div class="stat-box"><span class="stat-label">Slot Kosong:</span><span class="stat-value" id="statEmpty">0</span></div>
+  </div>
+
+  <div class="header-actions" style="display:flex;gap:8px;align-items:center">
+    <!-- Page Nav placed in Header next to theme switcher -->
+    <div class="page-nav" style="margin-right: 10px;">
+      <button class="btn btn-s btn-sm" id="btnPrevPage" style="height: 30px; font-weight: 700;">‹ Prev</button>
+      <span id="pageIndicator" style="padding: 0 4px;">Halaman 1 / 1</span>
+      <button class="btn btn-s btn-sm" id="btnNextPage" style="height: 30px; font-weight: 700;">Next ›</button>
+    </div>
+    <button class="btn-icon" id="langBtn" title="Ganti bahasa / Switch language" style="font-size: 0.72rem; font-weight: 700; font-family: var(--sans);">ID</button>
+    <button class="btn-icon" id="themeBtn" title="Ganti tema">🌙</button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="layout">
+
+    <!-- MOBILE TAB SWITCHER -->
+    <div class="mobile-tabs" id="mobileTabs">
+      <button class="mtab-btn active" data-target="colSettings" id="mtabBtnSettings">⚙️ Pengaturan</button>
+      <button class="mtab-btn" data-target="colCanvas" id="mtabBtnCanvas">🖼️ Canvas & Export</button>
+    </div>
+
+    <!-- LEFT: CONTROLS -->
+    <div class="col mtab-active" id="colSettings">
+
+      <!-- IMAGES -->
+      <div class="card">
+        <div class="card-title"><div class="t">Foto Sumber</div></div>
+        <div class="dropzone" id="dropzone">
+          <div class="di">📷</div>
+          <p>Klik atau seret gambar ke sini</p>
+          <div class="sub">JPG / PNG — bisa pilih banyak file</div>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" multiple class="hidden">
+        <input type="file" id="folderInput" webkitdirectory directory multiple class="hidden">
+        <div class="upload-row">
+          <button class="btn btn-s btn-sm" style="flex:1" id="btnPickFiles">📁 Pilih File</button>
+          <button class="btn btn-s btn-sm" style="flex:1" id="btnPickFolder">🗂 Muat Folder</button>
+        </div>
+        <div class="img-list" id="imgList"></div>
+        <div class="upload-row" style="margin-top: 10px;">
+          <button class="btn btn-s btn-sm" style="flex:1; font-weight:700;" id="btnFillLayout" title="Isi kotak-kotak layout dengan foto (qty default 1 jika qty 0)">⚡ Isi Foto</button>
+          <button class="btn btn-s btn-sm" style="flex:1; font-weight:700; color:var(--accent2); border-color:var(--border);" id="btnClearLayout" title="Kosongkan foto di layout (qty jadi 0)">✕ Kosongkan Foto</button>
+        </div>
+      </div>
+
+      <!-- AI AUTO CROP (from Pas Foto Auto Crop & Align) -->
+      <div class="card">
+        <div class="card-title"><div class="t">🤖 Auto Crop Wajah (AI)</div></div>
+        <div class="info-box" id="aiEngineStatus" style="margin-bottom:12px">⏳ Memuat model deteksi wajah…</div>
+        <div class="form-group">
+          <label>Tinggi Kepala thd Kotak <span id="aiHeadRatioVal" style="color:var(--accent);text-transform:none;font-weight:400">75%</span></label>
+          <input type="range" id="aiHeadRatio" min="40" max="90" value="75" style="width:100%">
+        </div>
+        <div class="form-group">
+          <label>Margin Atas (Ubun ke Tepi) <span id="aiTopMarginVal" style="color:var(--accent);text-transform:none;font-weight:400">10%</span></label>
+          <input type="range" id="aiTopMargin" min="0" max="30" value="10" style="width:100%">
+        </div>
+        <div class="form-group" style="margin-bottom:14px">
+          <label>Estimasi Rambut di Atas Dahi <span id="aiHairExtVal" style="color:var(--accent);text-transform:none;font-weight:400">35%</span></label>
+          <input type="range" id="aiHairExt" min="0" max="70" value="35" style="width:100%">
+        </div>
+        <button class="btn btn-p btn-full" id="btnAutoCropAll">⚙️ Auto Crop Semua Foto</button>
+        <div class="info-box" style="margin-top:10px">💡 Mendeteksi wajah, meluruskan kemiringan kepala, lalu mengatur zoom &amp; posisi crop tiap foto otomatis mengikuti ukuran <b>Kotak Foto</b> di bawah. Hasil auto-crop tetap bisa disesuaikan manual per foto lewat tombol ⚙, atau dikembalikan ke foto asli lewat tombol 🗘.</div>
+      </div>
+
+      <!-- FILL MODE -->
+      <div class="card">
+        <div class="card-title"><div class="t">Mode Pengisian Lembar</div></div>
+        <div class="form-group">
+          <label>Mode</label>
+          <select id="fillMode">
+            <option value="standard">Standar (gabung berurutan, campur foto)</option>
+            <option value="bulk">Bulk: 1 Lembar = 1 File Foto</option>
+            <option value="mixed">Ukuran Beragam (Mixed Size + Bulk)</option>
+            <option value="mixed_standard">Campur Foto + Ukuran Beragam (Mixed Size)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Target Jml Lembar (utk tombol 🗎 isi penuh)</label>
+          <input type="number" id="targetPages" min="1" value="1">
+        </div>
+        <div class="info-box" id="infoFillMode">💡 <b>🗎</b> Tombol pada daftar foto akan mengisi foto hingga penuh sejumlah lembar target di atas. <b>Bulk</b>: tiap lembar otomatis diisi 1 file foto berbeda dan banyak.</div>
+
+        <div id="mixedPanel" class="hidden" style="margin-top:14px">
+          <div class="form-group" style="margin-bottom:6px">
+            <label>Daftar Ukuran Kotak per Lembar (mm)</label>
+          </div>
+          <div class="form-group" style="margin-bottom:8px">
+            <label style="font-size:.62rem;color:var(--text-dim);text-transform:none">Klik preset untuk menambahkan:</label>
+            <div class="chips" id="mixedPresetChips"></div>
+          </div>
+          <div id="mixedList" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button class="btn btn-s btn-sm btn-full" id="btnAddMixedSize" style="margin-top:8px">+ Tambah Ukuran Custom</button>
+          <div class="form-group" style="margin-top:12px;margin-bottom:0">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;font-weight:600">
+              <input type="checkbox" id="rotateAllowed" checked style="width:auto"> Izinkan Rotasi (Landscape/Portrait Otomatis)
+            </label>
+          </div>
+          <div class="info-box" id="infoMixedPacking">✂️ Tiap lembar dipak otomatis dgn algoritma <i>skyline packing</i> (referensi CutOpt), mendukung rotasi kotak utk hasil maksimal. Tiap lembar = 1 foto (bulk), semua slot ukuran di atas diisi foto yang sama; foto berikutnya lanjut ke lembar berikutnya.</div>
+        </div>
+      </div>
+
+      <!-- PAPER -->
+      <div class="card">
+        <div class="card-title"><div class="t">Ukuran Kertas</div></div>
+        <div class="form-group">
+          <label>Preset Kertas</label>
+          <select id="paperSelect"></select>
+        </div>
+        <div class="row3" style="align-items:end">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Lebar (mm)</label>
+            <input type="number" id="paperW" step="0.1" min="10">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Tinggi (mm)</label>
+            <input type="number" id="paperH" step="0.1" min="10">
+          </div>
+          <button class="btn btn-s btn-sm" id="btnPaperSwap" title="Tukar orientasi">⇄</button>
+        </div>
+        <div class="form-group" style="margin-top:12px;margin-bottom:6px">
+          <label id="lblPaperMarginTxt">Margin Kertas (mm)</label>
+        </div>
+        <div class="margin-editor">
+          <button class="link-toggle active" id="pmLink" title="Kunci semua sisi sama">🔗</button>
+          <div class="margin-grid" id="pmGrid"></div>
+        </div>
+      </div>
+
+      <!-- BOX SIZE -->
+      <div class="card">
+        <div class="card-title"><div class="t">Ukuran Kotak Foto</div></div>
+        <div class="chips" id="boxChips"></div>
+        <div class="row3" style="align-items:end;margin-top:10px">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Lebar (mm)</label>
+            <input type="number" id="boxW" step="0.1" min="5">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Tinggi (mm)</label>
+            <input type="number" id="boxH" step="0.1" min="5">
+          </div>
+          <button class="btn btn-s btn-sm" id="btnBoxSwap" title="Tukar orientasi">⇄</button>
+        </div>
+      </div>
+
+      <!-- GAP + INNER MARGIN -->
+      <div class="card">
+        <div class="card-title"><div class="t">Jarak &amp; Margin Dalam</div></div>
+        <div class="form-group">
+          <label id="lblGapTxt">Jarak Antar Kotak (mm)</label>
+        </div>
+        <div class="margin-editor" style="margin-bottom:12px">
+          <button class="link-toggle active" id="gapLink" title="Kunci X = Y">🔗</button>
+          <div class="row2" style="flex:1" id="gapGrid"></div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:6px">
+          <label id="lblInnerMarginTxt">Margin Foto di Dalam Kotak (mm)</label>
+        </div>
+        <div class="margin-editor">
+          <button class="link-toggle active" id="imLink" title="Kunci semua sisi sama">🔗</button>
+          <div class="margin-grid" id="imGrid"></div>
+        </div>
+        <div class="chips" style="margin-top:10px">
+          <div class="chip" id="presetNone">Tanpa Margin</div>
+          <div class="chip" id="presetPolaroid">Polaroid</div>
+          <div class="chip" id="presetFrame">Bingkai Tipis</div>
+        </div>
+        <div class="form-group" style="margin-top:12px;margin-bottom:0">
+          <div class="row2">
+            <div>
+              <label id="lblFrameColorTxt" title="Mengisi latar kotak &amp; margin dalam — terlihat di sekeliling foto dan di kotak kosong (belum ada foto)">Warna Bingkai / Margin</label>
+              <input type="color" id="frameColor" value="#ffffff" title="Mengisi latar kotak &amp; margin dalam — terlihat di sekeliling foto dan di kotak kosong (belum ada foto)">
+            </div>
+            <div>
+              <label id="lblPhotoBgColorTxt" title="Mengisi area di belakang foto — terlihat jika foto (PNG) punya bagian transparan">Warna Latar Foto Transparan</label>
+              <input type="color" id="photoBgColor" value="#ffffff" title="Mengisi area di belakang foto — terlihat jika foto (PNG) punya bagian transparan">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GUIDES -->
+      <div class="card">
+        <div class="card-title"><div class="t">Garis Potong &amp; Tampilan</div></div>
+        <div class="form-group">
+          <label>Gaya Garis Potong</label>
+          <select id="guideStyle">
+            <option value="none">Tanpa garis</option>
+            <option value="border" selected>Garis putus-putus (border)</option>
+            <option value="corner">Tanda sudut (crop mark)</option>
+            <option value="both">Border + tanda sudut</option>
+            <option value="gapmid">Garis di Tengah Jarak Antar Kotak</option>
+            <option value="gapmid_corner">Tanda Sudut di Tengah Jarak Antar Kotak</option>
+          </select>
+        </div>
+        <div class="row2">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Warna Garis</label>
+            <input type="color" id="borderColor" value="#999999">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Latar Halaman</label>
+            <input type="color" id="pageBg" value="#ffffff">
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS IMPORT/EXPORT -->
+      <div class="card">
+        <div class="card-title"><div class="t">Pengaturan</div></div>
+        <div class="row2">
+          <button class="btn btn-s btn-sm" id="btnExportSettings">⬆ Export Pengaturan</button>
+          <button class="btn btn-s btn-sm" id="btnImportSettings">⬇ Import Pengaturan</button>
+        </div>
+        <input type="file" id="settingsFileInput" accept=".json" class="hidden">
+        <div class="info-box" id="infoSettings">💾 Export/import pengaturan layout (kertas, kotak, margin, garis potong, dll.) ke/dari file JSON. Foto tidak disertakan.</div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: PREVIEW + EXPORT -->
+    <div class="col" id="colCanvas">
+
+      <div class="card">
+        <div class="card-title"><div class="t">Preview</div></div>
+
+        <div class="edit-toolbar">
+          <div class="undo-redo-bar" style="margin-right: 4px;">
+            <button id="btnUndo" title="Undo (Ctrl+Z)" disabled style="width: auto; height: 26px; padding: 0 10px; font-size: 0.72rem;">↩ Undo</button>
+            <button id="btnRedo" title="Redo (Ctrl+Y)" disabled style="width: auto; height: 26px; padding: 0 10px; font-size: 0.72rem;">Redo ↪</button>
+          </div>
+          <div class="sep"></div>
+          <button class="btn btn-s btn-sm" id="btnEditMode">✏️ Edit Layout: OFF</button>
+          <select id="editScope" style="width:auto;padding:5px 8px;font-size:.7rem" title="Terapkan perubahan ke…">
+            <option value="current">Halaman ini saja</option>
+            <option value="all">Semua halaman</option>
+          </select>
+          <div class="sep"></div>
+          <button class="btn btn-s btn-sm" id="btnRotateSel" title="Putar gambar 90° pada kotak terpilih">🔄 Rotate Kotak</button>
+          <button class="btn btn-s btn-sm" id="btnRotateImgSel" title="Putar FOTO saja 90° pada kotak terpilih (ukuran kotak tetap)">🔄 Rotate Foto</button>
+          <button class="btn btn-s btn-sm" id="btnCropMode" title="Aktifkan mode crop: klik & drag di kotak untuk atur posisi gambar">✥ Crop Drag</button>
+          <button class="btn btn-s btn-sm" id="btnHandMode" title="Aktifkan mode hand: seret di canvas untuk menggeser tampilan (bisa juga pakai klik kanan seret kapan saja)">🖐️ Hand Tool</button>
+          <div class="sep"></div>
+          <button class="btn btn-s btn-sm" id="btnLayoutZoomIn" title="Perbesar tampilan lembar preview">🔍 Tampilan +</button>
+          <button class="btn btn-s btn-sm" id="btnLayoutZoomOut" title="Perkecil tampilan lembar preview">🔍 Tampilan -</button>
+          <button class="btn btn-s btn-sm" id="btnLayoutZoomReset" title="Reset zoom tampilan lembar ke default">🔍 Fit/100%</button>
+          <div class="sep"></div>
+          <button class="btn btn-s btn-sm" id="btnZoomIn" title="Perbesar gambar pada kotak terpilih">➕ Foto +</button>
+          <button class="btn btn-s btn-sm" id="btnZoomOut" title="Perkecil gambar pada kotak terpilih">➖ Foto -</button>
+          <button class="btn btn-s btn-sm" id="btnResetPan" title="Reset posisi geser (pan) pada kotak terpilih">🎯 Reset Foto Pan</button>
+          <div class="sep"></div>
+          <label style="display:flex;align-items:center;gap:5px;font-size:.7rem;color:var(--text-muted);cursor:pointer"><input type="checkbox" id="snapBoxes" checked style="width:auto">Snap Kotak</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:.7rem;color:var(--text-muted);cursor:pointer"><input type="checkbox" id="snapGrid" style="width:auto">Snap Grid</label>
+          <input type="number" id="snapGridSize" value="5" min="0.5" step="0.5" style="width:56px" title="Jarak snap grid (mm)">
+          <div class="sep"></div>
+          <button class="btn btn-s btn-sm" id="btnResetPos" title="Reset posisi & transformasi kotak terpilih saja">↺ Reset Terpilih</button>
+          <button class="btn btn-s btn-sm" id="btnResetAllPos" title="Reset semua posisi & transformasi kotak di halaman aktif ini">↺ Reset Halaman Ini</button>
+          <button class="btn btn-s btn-sm" id="btnResetAllPages" title="Reset semua posisi & transformasi kotak di semua halaman">↺ Reset Semua Halaman</button>
+          <button class="btn btn-s btn-sm" id="btnClearSel">✕ Hapus Pilihan</button>
+          <button class="btn btn-s btn-sm" id="btnSelectMode" title="Mode Seleksi Multi: klik kotak menambah/mengurangi pilihan (seperti Shift+Klik selalu aktif). Drag area tetap bekerja.">☰ Select</button>
+          <span id="selCount" style="font-size:.7rem;color:var(--accent);margin-left:auto;font-family:var(--mono)">Tidak ada dipilih</span>
+        </div>
+
+        <div class="preview-wrap" id="previewWrap">
+          <div class="preview-canvas-container" id="previewCanvasContainer">
+            <canvas id="previewCanvas"></canvas>
+          </div>
+        </div>
+        <div class="warn-box hidden" id="warnBox">⚠ Ukuran kotak foto (termasuk jarak) lebih besar dari area cetak kertas. Perkecil kotak, jarak, atau margin kertas.</div>
+        <div class="info-box" id="assignHint">🖱️ <b>Klik</b> kotak = pilih 1. <b>Shift+Klik</b> = pilih banyak kotak. <b>Seret di area kosong</b> = pilih banyak kotak dgn kotak seleksi. Klik foto di "Foto Sumber" utk mengisi semua kotak terpilih. <b>Edit Layout</b>: seret kotak terpilih utk memindah posisinya. <b>Crop</b>: aktifkan lalu klik & seret di kotak utk geser gambar, scroll utk zoom.</div>
+        <div class="guide-legend">Preview dirender pada resolusi layar (150dpi). Hasil unduhan/PDF dirender ulang pada DPI yang dipilih di bawah agar tetap tajam.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><div class="t">Export</div></div>
+        <div class="row2">
+          <div class="form-group">
+            <label>Resolusi (DPI)</label>
+            <select id="dpiSelect">
+              <option value="72" id="optDpi72">72 dpi — layar</option>
+              <option value="150" id="optDpi150">150 dpi — draft</option>
+              <option value="300" id="optDpi300" selected>300 dpi — cetak standar</option>
+              <option value="450" id="optDpi450">450 dpi</option>
+              <option value="600" id="optDpi600">600 dpi — cetak tinggi</option>
+              <option value="custom" id="optDpiCustomOpt">Custom…</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>DPI Custom</label>
+            <input type="number" id="dpiCustom" min="30" max="1200" value="300" disabled>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="form-group">
+            <label>Format Unduh Gambar</label>
+            <select id="imgFormat">
+              <option value="png">PNG (lossless)</option>
+              <option value="jpeg">JPG</option>
+            </select>
+          </div>
+          <div class="form-group" id="jpgQualityWrap" style="display:none">
+            <label>Kualitas JPG</label>
+            <input type="number" id="jpgQuality" min="10" max="100" value="92">
+          </div>
+        </div>
+
+        <div class="export-actions">
+          <button class="btn btn-p btn-full" id="btnExportPdf">⬇ Export PDF (semua halaman)</button>
+          <button class="btn btn-s btn-full" id="btnDlPage">⬇ Halaman Ini</button>
+          <div class="row2">
+            <button class="btn btn-s" id="btnDlAll">⬇ Semua Halaman</button>
+            <button class="btn btn-s" id="btnDlAllZip">⬇ Semua (ZIP)</button>
+          </div>
+        </div>
+        <div class="info-box" id="infoExport">💡 Klik nama/thumbnail foto di panel kiri untuk mengatur zoom &amp; posisi crop tiap foto.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ================================================================
+     AI FACE-DETECTION ENGINE (from Pas Foto Auto Crop & Align)
+     Loaded as a module; exposes window.faceAI for the main script.
+     ================================================================ -->
+<script type="module">
+import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+
+function setAiStatus(msg){
+  const el = document.getElementById('aiEngineStatus');
+  if(el) el.textContent = msg;
+}
+
+window.faceAI = { model: null, ready: null, detect: null };
+
+window.faceAI.ready = (async () => {
+  try{
+    setAiStatus('⏳ Memuat model deteksi wajah…');
+    const vision = await FilesetResolver.forVisionTasks(
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+    );
+    const model = await FaceLandmarker.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+        delegate: "GPU"
+      },
+      runningMode: "IMAGE",
+      numFaces: 1,
+    });
+    window.faceAI.model = model;
+    setAiStatus('✅ Model AI siap digunakan');
+  }catch(err){
+    setAiStatus('❌ Gagal memuat model AI (cek koneksi internet)');
+    console.error('faceAI init error:', err);
+  }
+})();
+
+window.faceAI.detect = function(imgEl){
+  if(!window.faceAI.model) return null;
+  try{
+    const result = window.faceAI.model.detect(imgEl);
+    if(!result.faceLandmarks || result.faceLandmarks.length === 0) return null;
+    return result.faceLandmarks[0];
+  }catch(err){
+    console.error('faceAI detect error:', err);
+    return null;
+  }
+};
+</script>
+
+<!-- ================================================================
+     AI BACKGROUND REMOVAL ENGINE (MediaPipe ImageSegmenter — selfie model)
+     Jalan 100% di browser (WASM), tidak ada foto yang dikirim ke server.
+     Pakai package @mediapipe/tasks-vision yang sama dengan modul face-detection
+     di atas, supaya lebih reliable ketimbang library pihak ketiga lain.
+     Loaded as a module; exposes window.bgRemovalAI for the main script.
+     ================================================================ -->
+<script type="module">
+import { ImageSegmenter, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+
+function setBgStatusMsg(msg){
+  const el = document.getElementById('aiEngineStatus');
+  if(el) el.textContent = msg;
+}
+
+window.bgRemovalAI = { model: null, ready: null, removeBackground: null };
+
+window.bgRemovalAI.ready = (async () => {
+  try{
+    setBgStatusMsg('⏳ Memuat model hapus background…');
+    const vision = await FilesetResolver.forVisionTasks(
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+    );
+    const model = await ImageSegmenter.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite",
+        delegate: "GPU"
+      },
+      runningMode: "IMAGE",
+      outputCategoryMask: false,
+      outputConfidenceMasks: true
+    });
+    window.bgRemovalAI.model = model;
+    setBgStatusMsg('✅ Model hapus background siap');
+  }catch(err){
+    setBgStatusMsg('❌ Gagal memuat model hapus background (cek koneksi internet)');
+    console.error('bgRemovalAI init error:', err);
+  }
+})();
+
+// imgEl: HTMLImageElement sudah loaded. Return: data URL PNG dengan alpha (background transparan)
+window.bgRemovalAI.removeBackground = function(imgEl){
+  if(!window.bgRemovalAI.model) throw new Error('Model belum siap');
+  const w = imgEl.naturalWidth, h = imgEl.naturalHeight;
+  const result = window.bgRemovalAI.model.segment(imgEl);
+  const mask = result.confidenceMasks[0];
+  try{
+    const maskData = mask.getAsFloat32Array();
+    const mw = mask.width, mh = mask.height;
+
+    // 1) Render mask (resolusi rendah dari model) sebagai citra grayscale terpisah
+    const maskCanvas = document.createElement('canvas');
+    maskCanvas.width = mw; maskCanvas.height = mh;
+    const mctx = maskCanvas.getContext('2d');
+    const maskImageData = mctx.createImageData(mw, mh);
+    for(let i=0; i<maskData.length; i++){
+      const v = Math.round(maskData[i]*255);
+      maskImageData.data[i*4]   = v;
+      maskImageData.data[i*4+1] = v;
+      maskImageData.data[i*4+2] = v;
+      maskImageData.data[i*4+3] = 255;
+    }
+    mctx.putImageData(maskImageData, 0, 0);
+
+    // 2) Upscale HANYA mask-nya ke resolusi penuh foto (dengan smoothing supaya tepi halus)
+    const maskFullCanvas = document.createElement('canvas');
+    maskFullCanvas.width = w; maskFullCanvas.height = h;
+    const mfctx = maskFullCanvas.getContext('2d');
+    mfctx.imageSmoothingEnabled = true;
+    mfctx.imageSmoothingQuality = 'high';
+    mfctx.drawImage(maskCanvas, 0, 0, w, h);
+    const maskFullData = mfctx.getImageData(0, 0, w, h).data;
+
+    // 3) Gambar foto ASLI di resolusi PENUH (tidak pernah diperkecil, jadi tetap tajam)
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = w; outCanvas.height = h;
+    const octx = outCanvas.getContext('2d');
+    octx.drawImage(imgEl, 0, 0, w, h);
+    const outImageData = octx.getImageData(0, 0, w, h);
+    const data = outImageData.data;
+
+    // 4) Tempelkan alpha dari mask yang sudah di-upscale ke foto resolusi penuh
+    for(let i=0; i<data.length/4; i++){
+      data[i*4+3] = maskFullData[i*4]; // pakai channel R dari mask grayscale sebagai alpha
+    }
+    octx.putImageData(outImageData, 0, 0);
+
+    return outCanvas.toDataURL('image/png');
+  } finally {
+    if(mask.close) mask.close();
+    if(result.close) result.close();
+  }
+};
+</script>
+
+<script>
+/* ================================================================
+   DOM REFS & HELPERS (must be first)
+   ================================================================ */
+const $=id=>document.getElementById(id);
+const previewCanvas=$('previewCanvas');
+
+const TRANSLATIONS = {
+  id: {
+    logoSubtitle: 'tata letak cetak pas photo',
+    toastNoImages: 'Belum ada foto dimuat',
+    toastFillLayout: '⚡ Layout diisi foto sesuai qty',
+    toastClearLayout: '✕ Layout dikosongkan',
+    statCols: 'Kotak/Hal:',
+    statTotal: 'Total Copy:',
+    statPages: 'Halaman:',
+    statEmpty: 'Slot Kosong:',
+    pageIndicator: 'Halaman {current} / {total}',
+    prevBtn: '‹ Prev',
+    nextBtn: 'Next ›',
+    
+    // Cards
+    cardSource: 'Foto Sumber',
+    cardFillMode: 'Mode Pengisian Lembar',
+    cardPaperSize: 'Ukuran Kertas',
+    cardBoxSize: 'Ukuran Kotak Foto',
+    cardGapMargin: 'Jarak & Margin Dalam',
+    cardGuides: 'Garis Potong & Tampilan',
+    cardSettings: 'Pengaturan',
+    cardPreview: 'Preview',
+    cardExport: 'Export',
+    mtabSettings: '⚙️ Pengaturan',
+    mtabCanvas: '🖼️ Canvas & Export',
+    
+    // Upload panel
+    dropzoneText: 'Klik atau seret gambar ke sini',
+    dropzoneSub: 'JPG / PNG — bisa pilih banyak file',
+    btnPickFiles: '📁 Pilih File',
+    btnPickFolder: '🗂 Muat Folder',
+    btnFillLayout: '⚡ Isi Foto',
+    btnClearLayout: '✕ Kosongkan Foto',
+    
+    // Fill mode panel
+    lblMode: 'Mode',
+    optStandard: 'Standar (gabung berurutan, campur foto)',
+    optBulk: 'Bulk: 1 Lembar = 1 File Foto',
+    optMixed: 'Ukuran Beragam (Mixed Size + Bulk)',
+    optMixedStandard: 'Campur Foto + Ukuran Beragam (Mixed Size)',
+    lblTargetPages: 'Target Jml Lembar (utk tombol 🗎 isi penuh)',
+    infoFillMode: '💡 <b>🗎</b> Tombol pada daftar foto akan mengisi foto hingga penuh sejumlah lembar target di atas. <b>Bulk</b>: tiap lembar otomatis diisi 1 file foto berbeda dan banyak.',
+    lblMixedList: 'Daftar Ukuran Kotak per Lembar (mm)',
+    lblMixedPreset: 'Klik preset untuk menambahkan:',
+    btnAddMixedSize: '+ Tambah Ukuran Custom',
+    lblRotateAllowed: 'Izinkan Rotasi (Landscape/Portrait Otomatis)',
+    infoMixedPacking: '✂️ Tiap lembar dipak otomatis dgn algoritma <i>skyline packing</i> (referensi CutOpt), mendukung rotasi kotak utk hasil maksimal. Tiap lembar = 1 foto (bulk), semua slot ukuran di atas diisi foto yang sama; foto berikutnya lanjut ke lembar berikutnya.',
+    
+    // Paper panel
+    lblPaperPreset: 'Preset Kertas',
+    lblPaperW: 'Lebar (mm)',
+    lblPaperH: 'Tinggi (mm)',
+    lblPaperMargin: 'Margin Kertas (mm)',
+    
+    // Box size panel
+    lblBoxW: 'Lebar (mm)',
+    lblBoxH: 'Tinggi (mm)',
+    
+    // Gap & inner margin panel
+    lblGap: 'Jarak Antar Kotak (mm)',
+    lblInnerMargin: 'Margin Foto di Dalam Kotak (mm)',
+    presetNone: 'Tanpa Margin',
+    presetPolaroid: 'Polaroid',
+    presetFrame: 'Bingkai Tipis',
+    lblFrameColor: 'Warna Bingkai / Margin',
+    lblPhotoBgColor: 'Warna Latar Foto Transparan',
+    
+    // Guides & Display panel
+    lblGuideStyle: 'Gaya Garis Potong',
+    optGuideNone: 'Tanpa garis',
+    optGuideBorder: 'Garis putus-putus (border)',
+    optGuideCorner: 'Tanda sudut (crop mark)',
+    optGuideBoth: 'Border + tanda sudut',
+    optGuideGapMid: 'Garis di Tengah Jarak Antar Kotak',
+    optGuideGapMidCorner: 'Tanda Sudut di Tengah Jarak Antar Kotak',
+    lblBorderColor: 'Warna Garis',
+    lblPageBg: 'Latar Halaman',
+    
+    // Settings panel
+    btnExportSettings: '⬆ Export Pengaturan',
+    btnImportSettings: '⬇ Import Pengaturan',
+    infoSettings: '💾 Export/import pengaturan layout (kertas, kotak, margin, garis potong, dll.) ke/dari file JSON. Foto tidak disertakan.',
+    
+    // Toolbar buttons
+    btnEditModeOn: '✏️ Edit Layout: ON',
+    btnEditModeOff: '✏️ Edit Layout: OFF',
+    optEditScopeCurrent: 'Halaman ini saja',
+    optEditScopeAll: 'Semua halaman',
+    btnRotateSel: '🔄 Rotate Kotak',
+    btnRotateImgSel: '🔄 Rotate Foto',
+    btnCropModeOn: '✥ Crop Drag: ON',
+    btnCropModeOff: '✥ Crop Drag',
+    btnHandModeOn: '🖐️ Hand Tool: ON',
+    btnHandModeOff: '🖐️ Hand Tool',
+    btnLayoutZoomIn: '🔍 Tampilan +',
+    btnLayoutZoomOut: '🔍 Tampilan -',
+    btnLayoutZoomReset: '🔍 Fit/100%',
+    btnZoomIn: '➕ Foto +',
+    btnZoomOut: '➖ Foto -',
+    btnResetPan: '🎯 Reset Foto Pan',
+    lblSnapBoxes: 'Snap Kotak',
+    lblSnapGrid: 'Snap Grid',
+    btnResetPos: '↺ Reset Terpilih',
+    btnResetAllPos: '↺ Reset Halaman Ini',
+    btnResetAllPages: '↺ Reset Semua Halaman',
+    btnClearSel: '✕ Hapus Pilihan',
+    noSelection: 'Tidak ada dipilih',
+    countSelection: '{n} dipilih',
+    btnSelectModeOn: '☰ Select: ON',
+    btnSelectModeOff: '☰ Select',
+    
+    // Preview bottom
+    warnBox: '⚠ Ukuran kotak foto (termasuk jarak) lebih besar dari area cetak kertas. Perkecil kotak, jarak, atau margin kertas.',
+    assignHint: '🖱️ <b>Klik</b> kotak = pilih 1. <b>Shift+Klik</b> = pilih banyak kotak. <b>Seret di area kosong</b> = pilih banyak kotak dgn kotak seleksi. Klik foto di "Foto Sumber" utk mengisi semua kotak terpilih. <b>Edit Layout</b>: seret kotak terpilih utk memindah posisinya. <b>Crop</b>: aktifkan lalu klik & seret di kotak utk geser gambar, scroll utk zoom.',
+    guideLegend: 'Preview dirender pada resolusi layar (150dpi). Hasil unduhan/PDF dirender ulang pada DPI yang dipilih di bawah agar tetap tajam.',
+    
+    // Export panel
+    lblDpi: 'Resolusi (DPI)',
+    lblDpiCustom: 'DPI Custom',
+    optDpi72: '72 dpi — layar',
+    optDpi150: '150 dpi — draft',
+    optDpi300: '300 dpi — cetak standar',
+    optDpi450: '450 dpi',
+    optDpi600: '600 dpi — cetak tinggi',
+    optDpiCustomOpt: 'Custom…',
+    lblImgFormat: 'Format Unduh Gambar',
+    lblJpgQuality: 'Kualitas JPG',
+    btnExportPdf: '⬇ Export PDF (semua halaman)',
+    btnDlPage: '⬇ Halaman Ini',
+    btnDlAll: '⬇ Semua Halaman',
+    btnDlAllZip: '⬇ Semua (ZIP)',
+    infoExport: '💡 Klik nama/thumbnail foto di panel kiri untuk mengatur zoom & posisi crop tiap foto.',
+    
+    // Stepper & Adjust
+    thumbTitle: 'Klik untuk atur crop',
+    btnDec: '−',
+    btnInc: '+',
+    btnFillsheets: '🗎',
+    btnAdjust: '⚙',
+    btnRemove: '✕',
+    titleFillsheets: 'Isi penuh sesuai target lembar',
+    titleAdjust: 'Atur crop',
+    titleRemove: 'Hapus',
+    lblZoom: 'Zoom',
+    lblPanX: 'Geser X',
+    lblPanY: 'Geser Y',
+    btnResetCrop: '↺ Reset Crop',
+    
+    // Toasts & Dialogs
+    toastNoFiles: 'Tidak ada file gambar yang valid',
+    toastLoaded: '✅ {n} foto dimuat',
+    toastAssigned: '✅ "{name}" dipasang ke {n} kotak terpilih',
+    toastFullFilled: '✅ "{name}" diisi penuh utk {n} lembar',
+    toastUndo: '↩ Undo',
+    toastRedo: '↪ Redo',
+    toastSelectFirst: 'Pilih kotak dulu',
+    toastResetAuto: '↺ Posisi & transformasi direset ke layout otomatis',
+    toastResetAllAuto: '↺ Semua kotak di halaman ini direset ke layout otomatis',
+    toastResetAllPagesAuto: '↺ Semua halaman direset ke layout otomatis',
+    toastRotatedCell: '🔄 {n} kotak diputar 90°',
+    toastRotatedImg: '🔄 {n} foto diputar 90° (ukuran kotak tetap)',
+    toastCropActive: '✥ Mode crop aktif — klik & seret di kotak untuk geser gambar, scroll untuk zoom',
+    toastHandActive: '🖐️ Hand Tool aktif — klik & seret di mana saja untuk geser tampilan layout',
+    toastZoomDisplay: '🔍 Zoom Tampilan: {n}%',
+    toastZoomDisplayFit: '🔍 Tampilan Otomatis (Muat Area)',
+    toastZoomDisplayReset: '🔍 Tampilan 100% (Ukuran Asli)',
+    toastResetPanCenter: '🎯 Posisi geser (pan) foto direset ke tengah',
+    toastZoomPhotoIn: '➕ Zoom Foto + pada kotak terpilih',
+    toastZoomPhotoOut: '➖ Zoom Foto - pada kotak terpilih',
+    toastWarnBoxOverlap: '⚠ Kotak lebih besar dari kertas',
+    toastDlPage: '⬇ Halaman diunduh',
+    toastDlAllStart: '⬇ Mengunduh {n} halaman…',
+    toastPdfSuccess: '✅ PDF {n} halaman diunduh',
+    toastPdfFailed: '❌ Gagal membuat PDF: ',
+    toastSettingsExport: '⬆ Pengaturan diekspor ke JSON',
+    toastSettingsImport: '⬇ Pengaturan diimpor dari JSON',
+    toastSettingsImportFailed: '❌ Gagal mengimpor: ',
+    toastAddedToList: '✅ {n} ditambahkan ke daftar',
+    toastBgModuleNotLoaded: '⚠️ Modul hapus background belum termuat',
+    toastBgModelFailed: '⚠️ Model hapus background gagal dimuat (cek koneksi internet)',
+    toastBgRemoved: '✅ Background dihapus: {name}',
+    toastBgRemoveFailed: '❌ Gagal menghapus background: {name}',
+    toastAiModuleNotLoaded: '⚠️ Modul AI belum termuat',
+    toastAiModelFailed: '⚠️ Model AI gagal dimuat (cek koneksi internet)',
+    toastFaceNotDetected: '⚠️ Wajah tidak terdeteksi: {name}',
+    toastAutoCropDone: '🤖 Auto crop selesai — {ok} berhasil, {fail} gagal',
+    toastSelectModeActive: '☰ Mode Pilih aktif — klik kotak untuk tambah/hapus pilihan; seret area untuk tambah ke pilihan',
+    toastZipNotFound: '⚠ JSZip tidak ditemukan',
+    toastZipDownloaded: '✅ ZIP {n} halaman diunduh',
+    toastZipFailed: '⚠ Gagal membuat ZIP',
+    toastAllPagesDownloaded: '⬇ {n} halaman diunduh'
+  },
+  en: {
+    logoSubtitle: 'passport / print photo layout engine',
+    toastNoImages: 'No photos loaded',
+    toastFillLayout: '⚡ Layout filled with photos according to qty',
+    toastClearLayout: '✕ Layout cleared',
+    statCols: 'Boxes/Page:',
+    statTotal: 'Total Copies:',
+    statPages: 'Pages:',
+    statEmpty: 'Empty Slots:',
+    pageIndicator: 'Page {current} / {total}',
+    prevBtn: '‹ Prev',
+    nextBtn: 'Next ›',
+    
+    // Cards
+    cardSource: 'Source Photos',
+    cardFillMode: 'Page Filling Mode',
+    cardPaperSize: 'Paper Size',
+    cardBoxSize: 'Photo Box Size',
+    cardGapMargin: 'Spacing & Inner Margins',
+    cardGuides: 'Cut Guides & Appearance',
+    cardSettings: 'Settings',
+    cardPreview: 'Preview',
+    cardExport: 'Export',
+    mtabSettings: '⚙️ Settings',
+    mtabCanvas: '🖼️ Canvas & Export',
+    
+    // Upload panel
+    dropzoneText: 'Click or drag images here',
+    dropzoneSub: 'JPG / PNG — supports multiple files',
+    btnPickFiles: '📁 Pick Files',
+    btnPickFolder: '🗂 Load Folder',
+    btnFillLayout: '⚡ Fill Photos',
+    btnClearLayout: '✕ Clear Photos',
+    
+    // Fill mode panel
+    lblMode: 'Mode',
+    optStandard: 'Standard (sequential mixing)',
+    optBulk: 'Bulk: 1 Page = 1 Photo File',
+    optMixed: 'Mixed Sizes (Mixed Size + Bulk)',
+    optMixedStandard: 'Mixed Sizes (Mixed Size + Standard Mixing)',
+    lblTargetPages: 'Target Page Count (for 🗎 full fill button)',
+    infoFillMode: '💡 <b>🗎</b> The button fills the entire template with this photo up to the target pages. <b>Bulk</b>: each page is automatically filled with a different photo file sequentially.',
+    lblMixedList: 'List of Box Sizes per Page (mm)',
+    lblMixedPreset: 'Click preset to add:',
+    btnAddMixedSize: '+ Add Custom Size',
+    lblRotateAllowed: 'Allow Rotation (Auto Landscape/Portrait)',
+    infoMixedPacking: '✂️ Each sheet is packed automatically using the skyline packing algorithm (CutOpt reference), supporting box rotation for maximum efficiency.',
+    
+    // Paper panel
+    lblPaperPreset: 'Paper Preset',
+    lblPaperW: 'Width (mm)',
+    lblPaperH: 'Height (mm)',
+    lblPaperMargin: 'Paper Margin (mm)',
+    
+    // Box size panel
+    lblBoxW: 'Width (mm)',
+    lblBoxH: 'Height (mm)',
+    
+    // Gap & inner margin panel
+    lblGap: 'Box Spacing (mm)',
+    lblInnerMargin: 'Inner Margins (mm)',
+    presetNone: 'No Margins',
+    presetPolaroid: 'Polaroid style',
+    presetFrame: 'Thin Frame',
+    lblFrameColor: 'Frame / Margin Color',
+    lblPhotoBgColor: 'Transparent Photo Fill Color',
+    
+    // Guides & Display panel
+    lblGuideStyle: 'Cut Guide Style',
+    optGuideNone: 'No guides',
+    optGuideBorder: 'Dashed line (border)',
+    optGuideCorner: 'Crop marks',
+    optGuideBoth: 'Border + Crop marks',
+    optGuideGapMid: 'Line in Middle of Spacing',
+    optGuideGapMidCorner: 'Crop Marks in Middle of Spacing',
+    lblBorderColor: 'Guide Color',
+    lblPageBg: 'Page Background',
+    
+    // Settings panel
+    btnExportSettings: '⬆ Export Settings',
+    btnImportSettings: '⬇ Import Settings',
+    infoSettings: '💾 Export/import layout settings (paper, box, margins, cut guides, etc.) to/from JSON. Photo data is not included.',
+    
+    // Toolbar buttons
+    btnEditModeOn: '✏️ Edit Layout: ON',
+    btnEditModeOff: '✏️ Edit Layout: OFF',
+    optEditScopeCurrent: 'This page only',
+    optEditScopeAll: 'All pages',
+    btnRotateSel: '🔄 Rotate Box',
+    btnRotateImgSel: '🔄 Rotate Photo',
+    btnCropModeOn: '✥ Crop Drag: ON',
+    btnCropModeOff: '✥ Crop Drag',
+    btnHandModeOn: '🖐️ Hand Tool: ON',
+    btnHandModeOff: '🖐️ Hand Tool',
+    btnLayoutZoomIn: '🔍 Zoom In',
+    btnLayoutZoomOut: '🔍 Zoom Out',
+    btnLayoutZoomReset: '🔍 Fit/100%',
+    btnZoomIn: '➕ Photo +',
+    btnZoomOut: '➖ Photo -',
+    btnResetPan: '🎯 Reset Photo Pan',
+    lblSnapBoxes: 'Snap Boxes',
+    lblSnapGrid: 'Snap Grid',
+    btnResetPos: '↺ Reset Selected',
+    btnResetAllPos: '↺ Reset Current Page',
+    btnResetAllPages: '↺ Reset All Pages',
+    btnClearSel: '✕ Clear Selection',
+    noSelection: 'No selection',
+    countSelection: '{n} selected',
+    btnSelectModeOn: '☰ Select: ON',
+    btnSelectModeOff: '☰ Select',
+    
+    // Preview bottom
+    warnBox: '⚠ Photo box size (including spacing) exceeds printable paper area. Reduce box size, spacing, or margins.',
+    assignHint: '🖱️ <b>Click</b> box = select. <b>Shift+Click</b> = select multiple. <b>Drag empty space</b> = select area. Click a source photo on left to fill selected boxes. Toggle <b>Edit Layout</b> to drag boxes. <b>Crop</b>: toggle and drag box to pan, scroll to zoom.',
+    guideLegend: 'Preview rendered at screen resolution (150dpi). PDF/downloads will render at selected high print DPI.',
+    
+    // Export panel
+    lblDpi: 'Resolution (DPI)',
+    lblDpiCustom: 'Custom DPI',
+    optDpi72: '72 dpi — screen',
+    optDpi150: '150 dpi — draft',
+    optDpi300: '300 dpi — standard print',
+    optDpi450: '450 dpi',
+    optDpi600: '600 dpi — high quality print',
+    optDpiCustomOpt: 'Custom…',
+    lblImgFormat: 'Image Format',
+    lblJpgQuality: 'JPG Quality',
+    btnExportPdf: '⬇ Export PDF (all pages)',
+    btnDlPage: '⬇ This Page',
+    btnDlAll: '⬇ All Pages',
+    btnDlAllZip: '⬇ All (ZIP)',
+    infoExport: '💡 Click photo name/thumbnail in left panel to adjust crop & zoom for each photo.',
+    
+    // Stepper & Adjust
+    thumbTitle: 'Click to adjust crop',
+    btnDec: '−',
+    btnInc: '+',
+    btnFillsheets: '🗎',
+    btnAdjust: '⚙',
+    btnRemove: '✕',
+    titleFillsheets: 'Fill entire sheets',
+    titleAdjust: 'Adjust Crop',
+    titleRemove: 'Delete',
+    lblZoom: 'Zoom',
+    lblPanX: 'Pan X',
+    lblPanY: 'Pan Y',
+    btnResetCrop: '↺ Reset Crop',
+    
+    // Toasts & Dialogs
+    toastNoFiles: 'No valid image files found',
+    toastLoaded: '✅ {n} photos loaded',
+    toastAssigned: '✅ Assigned "{name}" to {n} selected boxes',
+    toastFullFilled: '✅ Filled "{name}" to {n} pages',
+    toastUndo: '↩ Undo',
+    toastRedo: '↪ Redo',
+    toastSelectFirst: 'Select a box first',
+    toastResetAuto: '↺ Position & transform reset to auto-layout',
+    toastResetAllAuto: '↺ All boxes on this page reset to auto-layout',
+    toastResetAllPagesAuto: '↺ All pages reset to auto-layout',
+    toastRotatedCell: '🔄 {n} boxes rotated 90°',
+    toastRotatedImg: '🔄 {n} photos rotated 90° (box size preserved)',
+    toastCropActive: '✥ Crop mode active — click & drag inside boxes to pan, scroll to zoom',
+    toastHandActive: '🖐️ Hand Tool active — click & drag anywhere to pan layout view',
+    toastZoomDisplay: '🔍 Layout Zoom: {n}%',
+    toastZoomDisplayFit: '🔍 Auto Fit Layout',
+    toastZoomDisplayReset: '🔍 Original Size (100%)',
+    toastResetPanCenter: '🎯 Photo pan position reset to center',
+    toastZoomPhotoIn: '➕ Zoomed photo in on selected boxes',
+    toastZoomPhotoOut: '➖ Zoomed photo out on selected boxes',
+    toastWarnBoxOverlap: '⚠ Box size exceeds paper area',
+    toastDlPage: '⬇ Page downloaded',
+    toastDlAllStart: '⬇ Downloading {n} pages…',
+    toastPdfSuccess: '✅ PDF downloaded ({n} pages)',
+    toastPdfFailed: '❌ Failed to create PDF: ',
+    toastSettingsExport: '⬆ Settings exported to JSON',
+    toastSettingsImport: '⬇ Settings imported from JSON',
+    toastSettingsImportFailed: '❌ Import failed: ',
+    toastAddedToList: '✅ {n} added to list',
+    toastBgModuleNotLoaded: '⚠️ Background removal module not loaded',
+    toastBgModelFailed: '⚠️ Background removal model failed to load (check internet connection)',
+    toastBgRemoved: '✅ Background removed: {name}',
+    toastBgRemoveFailed: '❌ Failed to remove background: {name}',
+    toastAiModuleNotLoaded: '⚠️ AI module not loaded',
+    toastAiModelFailed: '⚠️ AI model failed to load (check internet connection)',
+    toastFaceNotDetected: '⚠️ Face not detected: {name}',
+    toastAutoCropDone: '🤖 Auto crop complete — {ok} succeeded, {fail} failed',
+    toastSelectModeActive: '☰ Select Mode active — click a box to add/remove selection; drag an area to add to selection',
+    toastZipNotFound: '⚠ JSZip not found',
+    toastZipDownloaded: '✅ ZIP downloaded ({n} pages)',
+    toastZipFailed: '⚠ Failed to create ZIP',
+    toastAllPagesDownloaded: '⬇ {n} pages downloaded'
+  }
+};
+
+function toast(msg){
+  const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toast._tm); toast._tm=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+/* ================================================================
+   STATE
+   ================================================================ */
+let imgSeq=0;
+const state={
+  lang:'id',
+  images:[],
+  paper:{w:102,h:152,name:'4R (10x15)'},
+  pageMargin:{t:5,r:5,b:5,l:5},
+  pmLinked:true,
+  box:{w:30,h:40},
+  gap:{x:3,y:3},
+  gapLinked:true,
+  innerMargin:{t:0,r:0,b:0,l:0},
+  imLinked:true,
+  frameColor:'#ffffff',
+  photoBgColor:'#ffffff',
+  guide:'border',
+  borderColor:'#999999',
+  pageBg:'#ffffff',
+  currentPage:0,
+  fillMode:'standard',
+  targetPages:1,
+  mixedBoxes:[{id:'mb1',w:30,h:40,qty:4},{id:'mb2',w:20,h:30,qty:4}],
+  rotateAllowed:true,
+  overrides:{},
+  posOverrides:{},
+  cellRotations:{},
+  imageRotations:{},
+  cellCropOverrides:{},
+  selection:new Set(),
+  editMode:false,
+  editScope:'current',
+  cropDragMode:false, selectMode:false,
+  handMode:false,
+  snapToBoxes:true,
+  snapToGrid:false,
+  snapGridSize:5,
+  _rubberRect:null
+};
+let mixedSeq=3;
+
+/* ================================================================
+   UNDO / REDO
+   ================================================================ */
+const MAX_UNDO=50;
+let undoStack=[], redoStack=[];
+let lastSnapshotStr='';
+let isRestoringSnapshot=false;
+let snapshotTimer=null;
+
+function captureSnapshot(){
+  return JSON.stringify({
+    paper:{...state.paper},
+    pageMargin:{...state.pageMargin}, pmLinked:state.pmLinked,
+    box:{...state.box},
+    gap:{...state.gap}, gapLinked:state.gapLinked,
+    innerMargin:{...state.innerMargin}, imLinked:state.imLinked,
+    frameColor:state.frameColor, photoBgColor:state.photoBgColor, guide:state.guide,
+    borderColor:state.borderColor, pageBg:state.pageBg,
+    fillMode:state.fillMode, targetPages:state.targetPages,
+    mixedBoxes:state.mixedBoxes.map(mb=>({...mb})),
+    rotateAllowed:state.rotateAllowed,
+    imageQtys:state.images.map(im=>({id:im.id,qty:im.qty,zoom:im.zoom,offX:im.offX,offY:im.offY,imgUrl:im.url,aiStatus:im.aiStatus})),
+    overrides:{...state.overrides},
+    posOverrides:JSON.parse(JSON.stringify(state.posOverrides)),
+    cellRotations:{...state.cellRotations},
+    imageRotations:{...state.imageRotations},
+    cellCropOverrides:JSON.parse(JSON.stringify(state.cellCropOverrides))
+  });
+}
+
+function restoreSnapshot(snap){
+  Object.assign(state.paper, snap.paper);
+  Object.assign(state.pageMargin, snap.pageMargin); state.pmLinked=snap.pmLinked;
+  Object.assign(state.box, snap.box);
+  Object.assign(state.gap, snap.gap); state.gapLinked=snap.gapLinked;
+  Object.assign(state.innerMargin, snap.innerMargin); state.imLinked=snap.imLinked;
+  state.frameColor=snap.frameColor; state.photoBgColor=snap.photoBgColor||'#ffffff'; state.guide=snap.guide;
+  state.borderColor=snap.borderColor; state.pageBg=snap.pageBg;
+  state.fillMode=snap.fillMode; state.targetPages=snap.targetPages;
+  state.mixedBoxes=snap.mixedBoxes.map(mb=>({...mb}));
+  state.rotateAllowed=snap.rotateAllowed;
+  if(snap.imageQtys){
+    snap.imageQtys.forEach(iq=>{
+      const im=state.images.find(x=>x.id===iq.id);
+      if(im){
+        im.qty=iq.qty; im.zoom=iq.zoom; im.offX=iq.offX; im.offY=iq.offY;
+        im.aiStatus=iq.aiStatus!==undefined?iq.aiStatus:im.aiStatus;
+        if(iq.imgUrl && iq.imgUrl!==im.url){
+          const cached=aiImageCache.get(iq.imgUrl);
+          if(cached){ im.img=cached; im.url=iq.imgUrl; }
+        }
+      }
+    });
+  }
+  state.overrides={...snap.overrides};
+  state.posOverrides=JSON.parse(JSON.stringify(snap.posOverrides));
+  state.cellRotations={...(snap.cellRotations||{})};
+  state.imageRotations={...(snap.imageRotations||{})};
+  state.cellCropOverrides=JSON.parse(JSON.stringify(snap.cellCropOverrides||{}));
+  /* Sync UI inputs */
+  syncPaperInputs(); syncBoxInputs();
+  $('pmLink').classList.toggle('active',state.pmLinked);
+  $('imLink').classList.toggle('active',state.imLinked);
+  $('gapLink').classList.toggle('active',state.gapLinked);
+  $('fillMode').value=state.fillMode;
+  $('mixedPanel').classList.toggle('hidden',state.fillMode!=='mixed' && state.fillMode!=='mixed_standard');
+  $('targetPages').value=state.targetPages;
+  $('rotateAllowed').checked=state.rotateAllowed;
+  $('frameColor').value=state.frameColor;
+  $('photoBgColor').value=state.photoBgColor;
+  $('guideStyle').value=state.guide;
+  $('borderColor').value=state.borderColor;
+  $('pageBg').value=state.pageBg;
+  rebuildPmGrid(); rebuildImGrid(); buildGapGrid(); renderMixedList(); renderImageList();
+}
+
+function autoSnapshot(){
+  clearTimeout(snapshotTimer);
+  snapshotTimer=setTimeout(()=>{
+    const snap=captureSnapshot();
+    if(snap!==lastSnapshotStr){
+      if(lastSnapshotStr){
+        undoStack.push(lastSnapshotStr);
+        if(undoStack.length>MAX_UNDO) undoStack.shift();
+        redoStack=[];
+      }
+      lastSnapshotStr=snap;
+      updateUndoRedoButtons();
+    }
+  },400);
+}
+
+function undo(){
+  if(!undoStack.length) return;
+  /* Save current state to redo */
+  const cur=captureSnapshot();
+  redoStack.push(cur);
+  const snap=undoStack.pop();
+  lastSnapshotStr=snap;
+  isRestoringSnapshot=true;
+  restoreSnapshot(JSON.parse(snap));
+  refreshAll();
+  isRestoringSnapshot=false;
+  updateUndoRedoButtons();
+  toast(TRANSLATIONS[state.lang||'id'].toastUndo);
+}
+
+function redo(){
+  if(!redoStack.length) return;
+  const cur=captureSnapshot();
+  undoStack.push(cur);
+  const snap=redoStack.pop();
+  lastSnapshotStr=snap;
+  isRestoringSnapshot=true;
+  restoreSnapshot(JSON.parse(snap));
+  refreshAll();
+  isRestoringSnapshot=false;
+  updateUndoRedoButtons();
+  toast(TRANSLATIONS[state.lang||'id'].toastRedo);
+}
+
+function updateUndoRedoButtons(){
+  $('btnUndo').disabled=!undoStack.length;
+  $('btnRedo').disabled=!redoStack.length;
+}
+
+$('btnUndo').onclick=undo;
+$('btnRedo').onclick=redo;
+
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'&&!e.shiftKey){ e.preventDefault(); undo(); }
+  if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.key==='z'&&e.shiftKey))){ e.preventDefault(); redo(); }
+  
+  // Arrow keys support when cropDragMode is active and elements are selected
+  if (state.cropDragMode && state.selection.size > 0 && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+    e.preventDefault();
+    let stepX = 0, stepY = 0;
+    const stepSize = 0.05; // adjust sensitivity
+    if (e.key === 'ArrowUp') stepY = -stepSize;
+    if (e.key === 'ArrowDown') stepY = stepSize;
+    if (e.key === 'ArrowLeft') stepX = -stepSize;
+    if (e.key === 'ArrowRight') stepX = stepSize;
+    
+    state.selection.forEach(idx => {
+      const key = `${state.currentPage}:${idx}`;
+      const cell = (lastMeta && lastMeta.pages[state.currentPage] || [])[idx];
+      if (!cell || !cell.image) return;
+      
+      const cellRot = getCellRotation(state.currentPage, idx);
+      const imgRot = getImgRotation(state.currentPage, idx);
+      const totalAngleRad = (cell.rotated ? 90 : 0) * Math.PI / 180 + cellRot * Math.PI / 180 + imgRot * Math.PI / 180;
+      const cosA = Math.cos(totalAngleRad);
+      const sinA = Math.sin(totalAngleRad);
+      const localStepX = stepX * cosA + stepY * sinA;
+      const localStepY = -stepX * sinA + stepY * cosA;
+
+      if (!state.cellCropOverrides[key]) {
+        state.cellCropOverrides[key] = { zoom: cell.image.zoom, offX: cell.image.offX, offY: cell.image.offY };
+      }
+      const co = state.cellCropOverrides[key];
+      co.offX = Math.max(-1, Math.min(1, co.offX + localStepX));
+      co.offY = Math.max(-1, Math.min(1, co.offY + localStepY));
+    });
+    refreshPreviewOnly();
+  }
+});
+
+/* ================================================================
+   PRESETS
+   ================================================================ */
+const PAPER_GROUPS=[
+  {label:'Kertas Foto', labelEN:'Photo Paper', sizes:[
+    {n:'2R (6x9)',w:60,h:90},{n:'3R (9x13)',w:89,h:127},{n:'4R (10x15)',w:102,h:152},
+    {n:'5R (13x18)',w:127,h:178},{n:'6R (15x20)',w:152,h:203},{n:'8R (20x25)',w:203,h:254},
+    {n:'8R+ (20x30)',w:203,h:305},{n:'10R (25x30)',w:254,h:305},{n:'10R+ (25x38)',w:254,h:381},
+    {n:'12R (30x38)',w:305,h:381},{n:'12R+ (30x45)',w:305,h:457},{n:'16R (40x50)',w:406,h:508},
+    {n:'20R (50x60)',w:508,h:609},{n:'24R (60x80)',w:609,h:800},
+    {n:'Postcard (10x15)',w:100,h:148}
+  ]},
+  {label:'Umum / Cetak Lebar', labelEN:'General / Wide Print', sizes:[
+    {n:'A3',w:297,h:420},{n:'A3+',w:329,h:483},{n:'A2',w:420,h:594},
+    {n:'A4',w:210,h:297},{n:'A5',w:148,h:210},{n:'A6',w:105,h:148},
+    {n:'F4',w:215,h:330},{n:'Letter',w:216,h:279},{n:'Legal',w:216,h:356}
+  ]},
+  {label:'Format Besar (Roll)', labelEN:'Large Format (Roll)', sizes:[
+    {n:'Roll 24" x 1 meter',w:610,h:1000},
+    {n:'Roll 36" x 1 meter',w:914,h:1000},
+    {n:'Roll 44" x 1 meter',w:1117,h:1000}
+  ]}
+];
+
+const BOX_PRESETS=[
+  {n:'1.5×2 cm',w:15,h:20},{n:'2×3 cm',w:20,h:30},{n:'3×3 cm',w:30,h:30},
+  {n:'3×4 cm',w:30,h:40},{n:'3.5×4.5 cm',w:35,h:45},{n:'4×4 cm',w:40,h:40},
+  {n:'4×6 cm',w:40,h:60},{n:'4.5×4.5 cm',w:45,h:45},{n:'5×5 cm',w:50,h:50},
+  {n:'2×2 in (US Visa)',w:50.8,h:50.8},{n:'ID / KTP / SIM (5.4×8.6)',w:54,h:85.6},
+  // Cetak Foto Preset
+  {n:'2R (6×9)',w:60,h:90},{n:'3R (9×13)',w:89,h:127},{n:'4R (10×15)',w:102,h:152},
+  {n:'5R (13×18)',w:127,h:178},{n:'6R (15×20)',w:152,h:203},{n:'8R (20×25)',w:203,h:254},
+  {n:'10R (25×30)',w:254,h:305},{n:'12R (30×38)',w:305,h:381}
+];
+
+/* (DOM refs moved to top of script) */
+
+/* ================================================================
+   INIT: PAPER SELECT
+   ================================================================ */
+function buildPaperSelect(){
+  const sel=$('paperSelect');
+  sel.innerHTML='';
+  PAPER_GROUPS.forEach(g=>{
+    const og=document.createElement('optgroup'); og.label=g.label;
+    g.sizes.forEach(s=>{
+      const o=document.createElement('option');
+      o.value=`${s.w}x${s.h}`; o.textContent=`${s.n} — ${s.w}×${s.h}mm`;
+      if(s.n===state.paper.name) o.selected=true;
+      og.appendChild(o);
+    });
+    sel.appendChild(og);
+  });
+  const custom=document.createElement('option');
+  custom.value='custom'; custom.textContent='Custom…';
+  sel.appendChild(custom);
+}
+buildPaperSelect();
+
+function buildBoxChips(){
+  const wrap=$('boxChips'); wrap.innerHTML='';
+  BOX_PRESETS.forEach(p=>{
+    const c=document.createElement('div');
+    c.className='chip'; c.textContent=p.n;
+    c.onclick=()=>{ state.box.w=p.w; state.box.h=p.h; syncBoxInputs(); markChip(wrap,c); refreshAll(); };
+    wrap.appendChild(c);
+  });
+  const cc=document.createElement('div'); cc.className='chip'; cc.textContent='Custom';
+  cc.onclick=()=>markChip(wrap,cc);
+  wrap.appendChild(cc);
+}
+function markChip(wrap,active){ [...wrap.children].forEach(c=>c.classList.remove('active')); active.classList.add('active'); }
+buildBoxChips();
+
+/* Build mixed preset chips */
+function buildMixedPresetChips(){
+  const wrap=$('mixedPresetChips'); wrap.innerHTML='';
+  BOX_PRESETS.forEach(p=>{
+    const c=document.createElement('div');
+    c.className='chip'; c.textContent=p.n;
+    c.onclick=()=>{
+      state.mixedBoxes.push({id:'mb'+(mixedSeq++), w:p.w, h:p.h, qty:1});
+      renderMixedList(); refreshAll();
+      toast(TRANSLATIONS[state.lang||'id'].toastAddedToList.replace('{n}', p.n));
+    };
+    wrap.appendChild(c);
+  });
+}
+buildMixedPresetChips();
+
+/* ================================================================
+   MARGIN / GAP EDITORS
+   ================================================================ */
+function buildMarginGrid(container, stateObj, linkedKey, onChange){
+  container.innerHTML='';
+  const linked = state[linkedKey];
+  if(linked){
+    const wrap=document.createElement('div'); wrap.className='mg-single';
+    const lbl=document.createElement('div'); lbl.className='mlbl'; lbl.textContent= (state.lang || 'id') === 'en' ? 'All sides' : 'Semua sisi';
+    const inp=document.createElement('input'); inp.type='number'; inp.step='0.1'; inp.min='0'; inp.value=stateObj.t;
+    inp.oninput=()=>{ const v=parseFloat(inp.value)||0; stateObj.t=stateObj.r=stateObj.b=stateObj.l=v; onChange(); };
+    wrap.appendChild(lbl); wrap.appendChild(inp);
+    container.appendChild(wrap);
+  } else {
+    const lang = state.lang || 'id';
+    const labels= lang === 'en' ? [['t','Top'],['r','Right'],['b','Bottom'],['l','Left']] : [['t','Atas'],['r','Kanan'],['b','Bawah'],['l','Kiri']];
+    labels.forEach(([k,lab])=>{
+      const wrap=document.createElement('div');
+      const lbl=document.createElement('div'); lbl.className='mlbl'; lbl.textContent=lab;
+      const inp=document.createElement('input'); inp.type='number'; inp.step='0.1'; inp.min='0'; inp.value=stateObj[k];
+      inp.oninput=()=>{ stateObj[k]=parseFloat(inp.value)||0; onChange(); };
+      wrap.appendChild(lbl); wrap.appendChild(inp);
+      container.appendChild(wrap);
+    });
+  }
+}
+function buildGapGrid(){
+  const container=$('gapGrid'); container.innerHTML='';
+  if(state.gapLinked){
+    const wrap=document.createElement('div');
+    const lbl=document.createElement('div'); lbl.className='mlbl'; lbl.textContent='X = Y';
+    const inp=document.createElement('input'); inp.type='number'; inp.step='0.1'; inp.min='0'; inp.value=state.gap.x;
+    inp.oninput=()=>{ const v=parseFloat(inp.value)||0; state.gap.x=state.gap.y=v; refreshAll(); };
+    wrap.appendChild(lbl); wrap.appendChild(inp);
+    container.appendChild(wrap);
+  } else {
+    const lang = state.lang || 'id';
+    [['x', lang === 'en' ? 'Gap X' : 'Gap X'],['y', lang === 'en' ? 'Gap Y' : 'Gap Y']].forEach(([k,lab])=>{
+      const wrap=document.createElement('div');
+      const lbl=document.createElement('div'); lbl.className='mlbl'; lbl.textContent=lab;
+      const inp=document.createElement('input'); inp.type='number'; inp.step='0.1'; inp.min='0'; inp.value=state.gap[k];
+      inp.oninput=()=>{ state.gap[k]=parseFloat(inp.value)||0; refreshAll(); };
+      wrap.appendChild(lbl); wrap.appendChild(inp);
+      container.appendChild(wrap);
+    });
+  }
+}
+function rebuildPmGrid(){ buildMarginGrid($('pmGrid'), state.pageMargin, 'pmLinked', refreshAll); }
+function rebuildImGrid(){ buildMarginGrid($('imGrid'), state.innerMargin, 'imLinked', refreshAll); }
+rebuildPmGrid(); rebuildImGrid(); buildGapGrid();
+
+$('pmLink').onclick=e=>{ state.pmLinked=!state.pmLinked; e.target.classList.toggle('active',state.pmLinked); rebuildPmGrid(); refreshAll(); };
+$('imLink').onclick=e=>{ state.imLinked=!state.imLinked; e.target.classList.toggle('active',state.imLinked); rebuildImGrid(); refreshAll(); };
+$('gapLink').onclick=e=>{ state.gapLinked=!state.gapLinked; e.target.classList.toggle('active',state.gapLinked); buildGapGrid(); refreshAll(); };
+
+/* ================================================================
+   PAPER INPUTS
+   ================================================================ */
+function syncPaperInputs(){ $('paperW').value=state.paper.w; $('paperH').value=state.paper.h; }
+function syncBoxInputs(){ $('boxW').value=state.box.w; $('boxH').value=state.box.h; }
+syncPaperInputs(); syncBoxInputs();
+
+$('paperSelect').onchange=e=>{
+  if(e.target.value==='custom') return;
+  const [w,h]=e.target.value.split('x').map(Number);
+  state.paper.w=w; state.paper.h=h;
+  syncPaperInputs(); refreshAll();
+};
+$('paperW').oninput=e=>{ state.paper.w=parseFloat(e.target.value)||state.paper.w; $('paperSelect').value='custom'; refreshAll(); };
+$('paperH').oninput=e=>{ state.paper.h=parseFloat(e.target.value)||state.paper.h; $('paperSelect').value='custom'; refreshAll(); };
+$('btnPaperSwap').onclick=()=>{ [state.paper.w,state.paper.h]=[state.paper.h,state.paper.w]; syncPaperInputs(); refreshAll(); };
+
+$('boxW').oninput=e=>{ state.box.w=parseFloat(e.target.value)||state.box.w; refreshAll(); };
+$('boxH').oninput=e=>{ state.box.h=parseFloat(e.target.value)||state.box.h; refreshAll(); };
+$('btnBoxSwap').onclick=()=>{ [state.box.w,state.box.h]=[state.box.h,state.box.w]; syncBoxInputs(); refreshAll(); };
+
+/* ================================================================
+   FILL MODE / MIXED SIZE
+   ================================================================ */
+$('fillMode').onchange=e=>{
+  state.fillMode=e.target.value;
+  $('mixedPanel').classList.toggle('hidden', state.fillMode!=='mixed' && state.fillMode!=='mixed_standard');
+  refreshAll();
+};
+$('targetPages').oninput=e=>{ state.targetPages=Math.max(1,parseInt(e.target.value)||1); };
+$('rotateAllowed').onchange=e=>{ state.rotateAllowed=e.target.checked; refreshAll(); };
+
+function renderMixedList(){
+  const wrap=$('mixedList'); wrap.innerHTML='';
+  if(!state.mixedBoxes.length){
+    wrap.innerHTML=`<div style="font-size:.72rem;color:var(--text-dim);text-align:center;padding:8px">Belum ada ukuran ditambahkan</div>`;
+    return;
+  }
+  state.mixedBoxes.forEach(mb=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:grid;grid-template-columns:1fr 1fr 1fr 30px;gap:6px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px';
+    row.innerHTML=`
+      <input type="number" step="0.1" min="5" value="${mb.w}" title="Lebar mm">
+      <input type="number" step="0.1" min="5" value="${mb.h}" title="Tinggi mm">
+      <input type="number" min="1" value="${mb.qty}" title="Jumlah kotak per lembar">
+      <button class="mini-btn danger" title="Hapus ukuran">✕</button>`;
+    const inputs=row.querySelectorAll('input');
+    const wIn=inputs[0], hIn=inputs[1], qIn=inputs[2];
+    wIn.oninput=()=>{ mb.w=parseFloat(wIn.value)||mb.w; refreshAll(); };
+    hIn.oninput=()=>{ mb.h=parseFloat(hIn.value)||mb.h; refreshAll(); };
+    qIn.oninput=()=>{ mb.qty=Math.max(0,parseInt(qIn.value)||0); refreshAll(); };
+    row.querySelector('button').onclick=()=>{ state.mixedBoxes=state.mixedBoxes.filter(x=>x!==mb); renderMixedList(); refreshAll(); };
+    wrap.appendChild(row);
+  });
+}
+$('btnAddMixedSize').onclick=()=>{
+  state.mixedBoxes.push({id:'mb'+(mixedSeq++), w:state.box.w, h:state.box.h, qty:1});
+  renderMixedList(); refreshAll();
+};
+renderMixedList();
+
+$('frameColor').oninput=e=>{ state.frameColor=e.target.value; refreshAll(); };
+$('photoBgColor').oninput=e=>{ state.photoBgColor=e.target.value; refreshAll(); };
+$('guideStyle').onchange=e=>{ state.guide=e.target.value; refreshAll(); };
+$('borderColor').oninput=e=>{ state.borderColor=e.target.value; refreshAll(); };
+$('pageBg').oninput=e=>{ state.pageBg=e.target.value; refreshAll(); };
+
+$('presetNone').onclick=()=>{ state.innerMargin={t:0,r:0,b:0,l:0}; state.imLinked=true; $('imLink').classList.add('active'); rebuildImGrid(); refreshAll(); };
+$('presetPolaroid').onclick=()=>{ state.innerMargin={t:3,r:3,b:14,l:3}; state.imLinked=false; $('imLink').classList.remove('active'); state.frameColor='#ffffff'; $('frameColor').value='#ffffff'; state.photoBgColor='#ffffff'; $('photoBgColor').value='#ffffff'; rebuildImGrid(); refreshAll(); };
+$('presetFrame').onclick=()=>{ state.innerMargin={t:2,r:2,b:2,l:2}; state.imLinked=true; $('imLink').classList.add('active'); rebuildImGrid(); refreshAll(); };
+
+/* ================================================================
+   IMAGE HANDLING — default qty changed to 1
+   ================================================================ */
+function loadImage(url){ return new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=url; }); }
+
+async function handleFiles(fileList){
+  const files=[...fileList].filter(f=>f.type && f.type.startsWith('image/'));
+  if(!files.length){ toast(TRANSLATIONS[state.lang||'id'].toastNoFiles); return; }
+  for(const f of files){
+    const url=URL.createObjectURL(f);
+    try{
+      const img=await loadImage(url);
+      state.images.push({id:'img'+(imgSeq++), name:f.name, img, origImg:img, url, qty:1, zoom:1, offX:0, offY:0, open:false, aiStatus:null, bgStatus:null});
+      aiImageCache.set(url, img);
+    }catch(e){ /* skip broken file */ }
+  }
+  renderImageList();
+  refreshAll();
+  toast(TRANSLATIONS[state.lang||'id'].toastLoaded.replace('{n}', files.length));
+}
+
+$('dropzone').onclick=()=>$('fileInput').click();
+$('btnPickFiles').onclick=()=>$('fileInput').click();
+$('btnPickFolder').onclick=()=>$('folderInput').click();
+$('btnFillLayout').onclick=()=>{
+  if(!state.images.length){ toast(TRANSLATIONS[state.lang].toastNoImages); return; }
+  state.images.forEach(im=>{
+    if(im.qty===0) im.qty=1;
+  });
+  state.overrides={};
+  renderImageList();
+  refreshAll();
+  toast(TRANSLATIONS[state.lang].toastFillLayout);
+};
+$('btnClearLayout').onclick=()=>{
+  state.images.forEach(im=>{ im.qty=0; });
+  state.overrides={};
+  renderImageList();
+  refreshAll();
+  toast(TRANSLATIONS[state.lang].toastClearLayout);
+};
+$('fileInput').onchange=e=>{ handleFiles(e.target.files); e.target.value=''; };
+$('folderInput').onchange=e=>{ handleFiles(e.target.files); e.target.value=''; };
+['dragover','dragenter'].forEach(ev=>$('dropzone').addEventListener(ev,e=>{ e.preventDefault(); $('dropzone').classList.add('drag'); }));
+['dragleave','drop'].forEach(ev=>$('dropzone').addEventListener(ev,e=>{ e.preventDefault(); $('dropzone').classList.remove('drag'); }));
+$('dropzone').addEventListener('drop',e=>{ if(e.dataTransfer.files.length) handleFiles(e.dataTransfer.files); });
+
+function renderImageList(){
+  const list=$('imgList');
+  const lang = state.lang || 'id';
+  const t = TRANSLATIONS[lang];
+  if(!state.images.length){
+    list.innerHTML=`<div class="empty-imgs"><div class="ei">🖼️</div><p>${lang==='id'?'Belum ada foto dimuat':'No photos loaded yet'}</p></div>`;
+    return;
+  }
+  list.innerHTML='';
+  state.images.forEach(im=>{
+    const row=document.createElement('div'); row.className='img-row';
+    row.innerHTML=`
+      <div class="img-row-main">
+        <img class="img-thumb" src="${im.url}" title="${t.thumbTitle}">
+        <div class="img-info">
+          <div class="img-name">${im.name}</div>
+          <div class="img-meta">${im.img.naturalWidth}×${im.img.naturalHeight}px ${aiBadge(im.aiStatus)} ${bgBadge(im.bgStatus)}</div>
+        </div>
+      </div>
+      <div class="img-row-controls">
+        <div class="qty-stepper">
+          <button data-act="dec">−</button>
+          <input type="number" min="0" value="${im.qty}">
+          <button data-act="inc">+</button>
+        </div>
+        <div class="img-row-actions">
+          <button class="mini-btn" data-act="autocrop" title="Auto crop wajah (AI) foto ini">🤖</button>
+          <button class="mini-btn" data-act="removebg" title="Hapus background foto ini (AI, transparan)">✂️</button>
+          ${im.origImg && im.img!==im.origImg ? `<button class="mini-btn" data-act="restoreOrig" title="Kembalikan ke foto asli (batalkan auto-crop/hapus-bg AI)">🗘</button>` : ''}
+          <button class="mini-btn" data-act="fillsheets" title="${t.titleFillsheets}">🗎</button>
+          <button class="mini-btn" data-act="adjust" title="${t.titleAdjust}">⚙</button>
+          <button class="mini-btn danger" data-act="remove" title="${t.titleRemove}">✕</button>
+        </div>
+      </div>
+      <div class="adjust-panel ${im.open?'':'hidden'}">
+        <div class="slider-row"><label>${t.lblZoom}</label><input type="range" min="1" max="3" step="0.05" value="${im.zoom}" data-act="zoom"><span class="val">${im.zoom.toFixed(2)}×</span></div>
+        <div class="slider-row"><label>${t.lblPanX}</label><input type="range" min="-1" max="1" step="0.02" value="${im.offX}" data-act="offX"><span class="val">${im.offX.toFixed(2)}</span></div>
+        <div class="slider-row"><label>${t.lblPanY}</label><input type="range" min="-1" max="1" step="0.02" value="${im.offY}" data-act="offY"><span class="val">${im.offY.toFixed(2)}</span></div>
+        <button class="btn btn-s btn-sm" data-act="reset">${t.btnResetCrop}</button>
+      </div>`;
+    const thumb=row.querySelector('.img-thumb');
+    function pickForAssign(){
+      if(!state.selection || state.selection.size===0) return false;
+      state.selection.forEach(idx=>{
+        state.overrides[`${state.currentPage}:${idx}`]=im.id;
+      });
+      const n=state.selection.size;
+      refreshAll();
+      toast(t.toastAssigned.replace('{name}', im.name).replace('{n}', n));
+      return true;
+    }
+    thumb.onclick=()=>{ if(pickForAssign()) return; im.open=!im.open; renderImageList(); };
+    row.querySelector('[data-act="adjust"]').onclick=()=>{ if(pickForAssign()) return; im.open=!im.open; renderImageList(); };
+    row.querySelector('[data-act="fillsheets"]').onclick=()=>{
+      const meta=lastMeta||computeLayoutMeta();
+      const target=Math.max(1,parseInt($('targetPages').value)||1);
+      im.qty = state.fillMode==='mixed' ? target : (meta.cellsPerPage||1)*target;
+      renderImageList(); refreshAll();
+      toast(t.toastFullFilled.replace('{name}', im.name).replace('{n}', target));
+    };
+    row.querySelector('[data-act="remove"]').onclick=()=>{ URL.revokeObjectURL(im.url); state.images=state.images.filter(x=>x!==im); renderImageList(); refreshAll(); };
+    row.querySelector('[data-act="dec"]').onclick=()=>{ im.qty=Math.max(0,im.qty-1); renderImageList(); refreshAll(); };
+    row.querySelector('[data-act="inc"]').onclick=()=>{ im.qty+=1; renderImageList(); refreshAll(); };
+    row.querySelector('.qty-stepper input').oninput=e=>{ im.qty=Math.max(0,parseInt(e.target.value)||0); refreshAll(); };
+    const zr=row.querySelector('[data-act="zoom"]'); if(zr) zr.oninput=e=>{ im.zoom=parseFloat(e.target.value); e.target.nextElementSibling.textContent=im.zoom.toFixed(2)+'×'; refreshPreviewOnly(); };
+    const ox=row.querySelector('[data-act="offX"]'); if(ox) ox.oninput=e=>{ im.offX=parseFloat(e.target.value); e.target.nextElementSibling.textContent=im.offX.toFixed(2); refreshPreviewOnly(); };
+    const oy=row.querySelector('[data-act="offY"]'); if(oy) oy.oninput=e=>{ im.offY=parseFloat(e.target.value); e.target.nextElementSibling.textContent=im.offY.toFixed(2); refreshPreviewOnly(); };
+    const rs=row.querySelector('[data-act="reset"]'); if(rs) rs.onclick=()=>{ im.zoom=1; im.offX=0; im.offY=0; renderImageList(); refreshAll(); };
+    const ac=row.querySelector('[data-act="autocrop"]'); if(ac) ac.onclick=async()=>{ im.aiStatus='detecting'; renderImageList(); await autoCropImage(im); };
+    const rb=row.querySelector('[data-act="removebg"]'); if(rb) rb.onclick=async()=>{ if(pickForAssign()) return; await removeBgImage(im); };
+    const ro=row.querySelector('[data-act="restoreOrig"]'); if(ro) ro.onclick=()=>{
+      if(im.origImg){ im.img=im.origImg; im.url=im.origImg.src; }
+      im.zoom=1; im.offX=0; im.offY=0; im.aiStatus=null; im.bgStatus=null;
+      renderImageList(); refreshAll();
+    };
+    list.appendChild(row);
+  });
+}
+function bgBadge(status){
+  if(status==='processing') return '<span title="Menghapus background…">✂️…</span>';
+  if(status==='ok') return '<span title="Background berhasil dihapus (transparan)">✂️✓</span>';
+  if(status==='fail') return '<span title="Gagal menghapus background">✂️⚠</span>';
+  return '';
+}
+async function removeBgImage(im){
+  if(!window.bgRemovalAI){ toast(TRANSLATIONS[state.lang||'id'].toastBgModuleNotLoaded); im.bgStatus='fail'; renderImageList(); return false; }
+  im.bgStatus='processing'; renderImageList();
+  await window.bgRemovalAI.ready;
+  if(!window.bgRemovalAI.model){ toast(TRANSLATIONS[state.lang||'id'].toastBgModelFailed); im.bgStatus='fail'; renderImageList(); return false; }
+  try{
+    const srcImg = im.img;
+    const newUrl = window.bgRemovalAI.removeBackground(srcImg);
+    const newImg = await loadImage(newUrl);
+    aiImageCache.set(newUrl, newImg);
+    im.img = newImg; im.url = newUrl;
+    im.bgStatus='ok';
+    renderImageList(); refreshAll();
+    toast(TRANSLATIONS[state.lang||'id'].toastBgRemoved.replace('{name}', im.name));
+    return true;
+  }catch(err){
+    console.error('removeBgImage error:', err);
+    im.bgStatus='fail'; renderImageList();
+    toast(TRANSLATIONS[state.lang||'id'].toastBgRemoveFailed.replace('{name}', im.name));
+    return false;
+  }
+}
+function aiBadge(status){
+  if(status==='detecting') return '<span title="Mendeteksi wajah…">🤖…</span>';
+  if(status==='ok') return '<span title="Auto crop AI berhasil">🤖✓</span>';
+  if(status==='ok-clamped') return '<span title="Auto crop AI berhasil (dibatasi zoom)">🤖✓*</span>';
+  if(status==='fail') return '<span title="Wajah tidak terdeteksi">🤖⚠</span>';
+  return '';
+}
+
+/* ================================================================
+   AI AUTO CROP — face detection, level & crop (integrated from
+   Pas Foto Auto Crop & Align)
+   ================================================================ */
+function aiRotateImageToCanvas(img, w, h, angleRad){
+  const cos=Math.abs(Math.cos(angleRad)), sin=Math.abs(Math.sin(angleRad));
+  const newW=Math.round(w*cos+h*sin), newH=Math.round(w*sin+h*cos);
+  const canvas=document.createElement('canvas'); canvas.width=newW; canvas.height=newH;
+  const c=canvas.getContext('2d');
+  c.translate(newW/2,newH/2); c.rotate(angleRad); c.drawImage(img,-w/2,-h/2);
+  return {canvas,w:newW,h:newH};
+}
+function aiTransformPoint(px,py,w,h,angleRad,newW,newH){
+  const x=px-w/2, y=py-h/2;
+  const cos=Math.cos(angleRad), sin=Math.sin(angleRad);
+  const rx=x*cos-y*sin, ry=x*sin+y*cos;
+  return {x:rx+newW/2, y:ry+newH/2};
+}
+function aiCanvasToImage(canvas){
+  return new Promise(res=>{ const im=new Image(); im.onload=()=>res(im); im.src=canvas.toDataURL('image/png'); });
+}
+/* Cache of url -> Image so undo/redo can restore auto-cropped photos synchronously
+   (undo snapshots only store the url string, since Image elements can't be JSON-serialized) */
+const aiImageCache=new Map();
+
+async function autoCropImage(im){
+  if(!window.faceAI){ toast(TRANSLATIONS[state.lang||'id'].toastAiModuleNotLoaded); im.aiStatus='fail'; renderImageList(); return false; }
+  await window.faceAI.ready;
+  if(!window.faceAI.model){ toast(TRANSLATIONS[state.lang||'id'].toastAiModelFailed); im.aiStatus='fail'; renderImageList(); return false; }
+
+  const src=im.origImg||im.img;
+  const w=src.naturalWidth, h=src.naturalHeight;
+  const lm=window.faceAI.detect(src);
+  if(!lm){
+    im.aiStatus='fail'; renderImageList();
+    toast(TRANSLATIONS[state.lang||'id'].toastFaceNotDetected.replace('{name}', im.name));
+    return false;
+  }
+
+  const px=i=>lm[i].x*w, py=i=>lm[i].y*h;
+  const lEye={x:px(468),y:py(468)}, rEye={x:px(473),y:py(473)};
+  const autoAngle=Math.atan2(rEye.y-lEye.y, rEye.x-lEye.x);
+  const correctionAngle=-autoAngle;
+  const rotated=aiRotateImageToCanvas(src,w,h,correctionAngle);
+
+  const forehead=aiTransformPoint(px(10),py(10),w,h,correctionAngle,rotated.w,rotated.h);
+  const chin=aiTransformPoint(px(152),py(152),w,h,correctionAngle,rotated.w,rotated.h);
+  const eyeL=aiTransformPoint(px(468),py(468),w,h,correctionAngle,rotated.w,rotated.h);
+  const eyeR=aiTransformPoint(px(473),py(473),w,h,correctionAngle,rotated.w,rotated.h);
+  const faceCenterX=(eyeL.x+eyeR.x)/2;
+
+  const headRatio=parseFloat($('aiHeadRatio').value)/100;
+  const topMargin=parseFloat($('aiTopMargin').value)/100;
+  const hairExt=parseFloat($('aiHairExt').value)/100;
+  const aspect=state.box.w/state.box.h;
+
+  const vx=forehead.x-chin.x, vy=forehead.y-chin.y;
+  const crown={x:forehead.x+vx*hairExt, y:forehead.y+vy*hairExt};
+  const headHeightPx=Math.hypot(chin.x-crown.x, chin.y-crown.y);
+  const outH=headHeightPx/headRatio;
+  const outW=outH*aspect;
+  const rect={x:faceCenterX-outW/2, y:crown.y-topMargin*outH, w:outW, h:outH};
+
+  const rx=Math.max(0,Math.min(rect.x,Math.max(0,rotated.w-rect.w)));
+  const ry=Math.max(0,Math.min(rect.y,Math.max(0,rotated.h-rect.h)));
+
+  const ir=rotated.w/rotated.h, dr=aspect;
+  let baseSw,baseSh;
+  if(ir>dr){ baseSh=rotated.h; baseSw=baseSh*dr; } else { baseSw=rotated.w; baseSh=baseSw/dr; }
+
+  let zoom=baseSw/rect.w, clamped=false;
+  if(!isFinite(zoom)||zoom<1){ zoom=1; clamped=true; }
+  if(zoom>3){ zoom=3; clamped=true; }
+
+  const sw=baseSw/zoom, sh=baseSh/zoom;
+  const slackX=rotated.w-sw, slackY=rotated.h-sh;
+  let offX=slackX>0.001 ? (2*rx/slackX-1) : 0;
+  let offY=slackY>0.001 ? (2*ry/slackY-1) : 0;
+  offX=Math.max(-1,Math.min(1,offX)); offY=Math.max(-1,Math.min(1,offY));
+
+  const correctedImg=await aiCanvasToImage(rotated.canvas);
+  aiImageCache.set(correctedImg.src, correctedImg);
+
+  im.img=correctedImg; im.url=correctedImg.src;
+  im.zoom=zoom; im.offX=offX; im.offY=offY;
+  im.aiStatus=clamped?'ok-clamped':'ok';
+  renderImageList(); refreshAll();
+  return true;
+}
+
+async function autoCropAllImages(){
+  if(!state.images.length){ toast(TRANSLATIONS[state.lang].toastNoImages); return; }
+  await window.faceAI.ready;
+  const btn=$('btnAutoCropAll'); const origLabel=btn.textContent;
+  btn.disabled=true;
+  let ok=0, fail=0;
+  for(const im of state.images){
+    im.aiStatus='detecting'; renderImageList();
+    btn.textContent=`⏳ Memproses… (${ok+fail+1}/${state.images.length})`;
+    const success=await autoCropImage(im);
+    if(success) ok++; else fail++;
+  }
+  btn.textContent=origLabel; btn.disabled=false;
+  toast(TRANSLATIONS[state.lang||'id'].toastAutoCropDone.replace('{ok}', ok).replace('{fail}', fail));
+}
+
+$('btnAutoCropAll').onclick=autoCropAllImages;
+['aiHeadRatio','aiTopMargin','aiHairExt'].forEach(id=>{
+  $(id).oninput=()=>{ $(id+'Val').textContent=$(id).value+'%'; };
+});
+
+renderImageList();
+
+/* ================================================================
+   LAYOUT ENGINE
+   ================================================================ */
+function computeGridDims(){
+  const paperW=state.paper.w, paperH=state.paper.h;
+  const pm=state.pageMargin;
+  const usableW=paperW-pm.l-pm.r;
+  const usableH=paperH-pm.t-pm.b;
+  const boxW=state.box.w, boxH=state.box.h;
+  const gapX=state.gap.x, gapY=state.gap.y;
+  let cols=Math.floor((usableW+gapX)/(boxW+gapX));
+  let rows=Math.floor((usableH+gapY)/(boxH+gapY));
+  cols=Math.max(0,isFinite(cols)?cols:0);
+  rows=Math.max(0,isFinite(rows)?rows:0);
+  const cellsPerPage=cols*rows;
+  const gridW=cols>0?cols*boxW+(cols-1)*gapX:0;
+  const gridH=rows>0?rows*boxH+(rows-1)*gapY:0;
+  const originX=pm.l+(usableW-gridW)/2;
+  const originY=pm.t+(usableH-gridH)/2;
+  return {usableW,usableH,cols,rows,cellsPerPage,originX,originY,gridW,gridH};
+}
+
+function makeGridCell(grid,idx,image){
+  const r=Math.floor(idx/grid.cols), c=idx%grid.cols;
+  const x=grid.originX+c*(state.box.w+state.gap.x);
+  const y=grid.originY+r*(state.box.h+state.gap.y);
+  return {x,y,w:state.box.w,h:state.box.h,image,row:r,col:c,rotated:false};
+}
+
+function computeStandardPages(grid){
+  const items=[];
+  state.images.forEach(im=>{ for(let i=0;i<im.qty;i++) items.push(im); });
+  const pages=[];
+  if(grid.cellsPerPage>0){
+    const nPages = items.length>0 ? Math.ceil(items.length/grid.cellsPerPage) : 1;
+    for(let p=0;p<nPages;p++){
+      const cells=[];
+      for(let idx=0; idx<grid.cellsPerPage; idx++){
+        const gi=p*grid.cellsPerPage+idx;
+        cells.push(makeGridCell(grid,idx, items[gi]||null));
+      }
+      pages.push(cells);
+    }
+  } else pages.push([]);
+  return pages;
+}
+
+function computeBulkPages(grid){
+  const pages=[];
+  if(grid.cellsPerPage<=0) return [[]];
+  state.images.forEach(im=>{
+    if(im.qty<=0) return;
+    for(let p=0;p<im.qty;p++){
+      const cells=[];
+      for(let idx=0; idx<grid.cellsPerPage; idx++){
+        cells.push(makeGridCell(grid, idx, im));
+      }
+      pages.push(cells);
+    }
+  });
+  if(!pages.length){
+    const cells=[]; for(let idx=0; idx<grid.cellsPerPage; idx++) cells.push(makeGridCell(grid,idx,null));
+    pages.push(cells);
+  }
+  return pages;
+}
+
+/* ── Skyline bin packer (referensi algoritma CutOpt, dgn dukungan rotasi) ── */
+class PackBin{
+  constructor(W,H,kx,ky){ this.W=W; this.H=H; this.kx=kx; this.ky=ky; this.pl=[]; this.sky=[{x:0,y:0,w:W}]; }
+  ins(pw,ph,rot){
+    let bestY=Infinity,bestX=-1,bestRot=false;
+    for(let rv=0; rv<(rot?2:1); rv++){
+      const [w,h]=rv?[ph,pw]:[pw,ph];
+      for(let i=0;i<this.sky.length;i++){
+        const{x,y}=this.sky[i];
+        if(x+w>this.W+1e-9) continue;
+        let maxY=y;
+        for(const s of this.sky){ if(s.x+s.w<=x+1e-9||s.x>=x+w+this.kx-1e-9) continue; maxY=Math.max(maxY,s.y); }
+        if(maxY+h>this.H+1e-9) continue;
+        if(maxY<bestY-1e-9||(Math.abs(maxY-bestY)<1e-9&&x<bestX)){ bestY=maxY; bestX=x; bestRot=rv===1; }
+      }
+    }
+    if(bestX<0) return null;
+    const [w,h]=bestRot?[ph,pw]:[pw,ph];
+    const placed={x:bestX,y:bestY,w,h,rotated:bestRot};
+    this.pl.push(placed);
+    const newSky=[];
+    const totalW = w + this.kx;
+    for(const s of this.sky){
+      if(s.x+s.w<=bestX||s.x>=bestX+totalW){ newSky.push(s); continue; }
+      if(s.x<bestX) newSky.push({x:s.x,y:s.y,w:bestX-s.x});
+      newSky.push({x:Math.max(s.x,bestX),y:bestY+h+this.ky,w:Math.min(s.x+s.w,bestX+totalW)-Math.max(s.x,bestX)});
+      if(s.x+s.w>bestX+totalW) newSky.push({x:bestX+totalW,y:s.y,w:s.x+s.w-(bestX+totalW)});
+    }
+    newSky.sort((a,b)=>a.x-b.x);
+    this.sky=newSky.filter(s=>s.w>1e-6).reduce((acc,s)=>{
+      if(!acc.length){ acc.push(s); return acc; }
+      const last=acc[acc.length-1];
+      if(Math.abs(last.y-s.y)<1e-9 && Math.abs(last.x+last.w-s.x)<1e-9){ last.w+=s.w; } else acc.push(s);
+      return acc;
+    },[]);
+    return placed;
+  }
+}
+function packRects(W,H,reqs,kx,ky,rotateAllowed){
+  const bin=new PackBin(W,H,kx,ky);
+  const out=[];
+  reqs.forEach(r=>{ const placed=bin.ins(r.w,r.h,rotateAllowed); if(placed) out.push(placed); });
+  return out;
+}
+
+function computeMixedPages(grid){
+  const pm=state.pageMargin;
+  const usableW=grid.usableW, usableH=grid.usableH;
+  const boxReqs=[];
+  state.mixedBoxes.forEach(mb=>{ for(let i=0;i<mb.qty;i++) boxReqs.push({w:mb.w,h:mb.h}); });
+  if(!boxReqs.length) return [[]];
+  boxReqs.sort((a,b)=>(b.w*b.h)-(a.w*a.h));
+  const packed=packRects(usableW,usableH,boxReqs,state.gap.x,state.gap.y,state.rotateAllowed);
+  if(!packed.length) return [[]];
+  const template=packed.map(p=>({x:pm.l+p.x, y:pm.t+p.y, w:p.w, h:p.h, rotated:p.rotated}));
+  const pages=[];
+  
+  if(state.fillMode==='mixed_standard'){
+    const items=[];
+    state.images.forEach(im=>{ for(let i=0;i<im.qty;i++) items.push(im); });
+    const nSlots=template.length;
+    if(nSlots>0){
+      const nPages = items.length>0 ? Math.ceil(items.length/nSlots) : 1;
+      for(let p=0;p<nPages;p++){
+        pages.push(template.map((t,idx)=>{
+          const gi=p*nSlots+idx;
+          return {...t, image: items[gi]||null};
+        }));
+      }
+    } else pages.push([]);
+  } else {
+    state.images.forEach(im=>{
+      if(im.qty<=0) return;
+      for(let p=0;p<im.qty;p++) pages.push(template.map(t=>({...t, image:im})));
+    });
+  }
+  
+  if(!pages.length) pages.push(template.map(t=>({...t,image:null})));
+  return pages;
+}
+
+function applyPosOverrides(pages){
+  pages.forEach((cells,pi)=>{
+    cells.forEach((cell,ci)=>{
+      let pos=state.posOverrides[`${pi}:${ci}`];
+      if(!pos && pi > 0){
+        pos = state.posOverrides[`0:${ci}`];
+      }
+      if(pos){ cell.x=pos.x; cell.y=pos.y; }
+    });
+  });
+}
+
+function applyOverrides(pages){
+  pages.forEach((cells,pi)=>{
+    cells.forEach((cell,ci)=>{
+      const key=`${pi}:${ci}`;
+      if(state.overrides[key]!==undefined){
+        const img=state.images.find(x=>x.id===state.overrides[key]);
+        if(img) cell.image=img; else delete state.overrides[key];
+      }
+    });
+  });
+}
+
+function computeLayoutMeta(){
+  const grid=computeGridDims();
+  let pages;
+  if(state.fillMode==='mixed' || state.fillMode==='mixed_standard') pages=computeMixedPages(grid);
+  else if(state.fillMode==='bulk') pages=computeBulkPages(grid);
+  else pages=computeStandardPages(grid);
+  applyPosOverrides(pages);
+  applyOverrides(pages);
+  const totalItems=pages.reduce((s,cells)=>s+cells.filter(c=>c.image).length,0);
+  return {
+    paperW:state.paper.w, paperH:state.paper.h,
+    cols:grid.cols, rows:grid.rows,
+    boxW:state.box.w, boxH:state.box.h, gapX:state.gap.x, gapY:state.gap.y,
+    originX:grid.originX, originY:grid.originY,
+    cellsPerPage:(pages[0]||[]).length,
+    pages, totalItems,
+    mixed: (state.fillMode==='mixed' || state.fillMode==='mixed_standard')
+  };
+}
+
+function getCellCrop(pageIdx, cellIdx, cell){
+  const key=`${pageIdx}:${cellIdx}`;
+  const co=state.cellCropOverrides[key];
+  if(co) return co;
+  if(cell.image) return {zoom:cell.image.zoom, offX:cell.image.offX, offY:cell.image.offY};
+  return {zoom:1, offX:0, offY:0};
+}
+
+function getCellRotation(pageIdx, cellIdx){
+  let rot = state.cellRotations[`${pageIdx}:${cellIdx}`];
+  if(rot === undefined && pageIdx > 0){
+    rot = state.cellRotations[`0:${cellIdx}`];
+  }
+  return rot || 0;
+}
+
+function getImgRotation(pageIdx, cellIdx){
+  let rot = state.imageRotations[`${pageIdx}:${cellIdx}`];
+  if(rot === undefined && pageIdx > 0){
+    rot = state.imageRotations[`0:${cellIdx}`];
+  }
+  return rot || 0;
+}
+
+function drawCover(ctx,img,dx,dy,dw,dh,zoom,offX,offY){
+  if(dw<=0||dh<=0) return;
+  const ir=img.naturalWidth/img.naturalHeight, dr=dw/dh;
+  let sw,sh;
+  if(ir>dr){ sh=img.naturalHeight; sw=sh*dr; } else { sw=img.naturalWidth; sh=sw/dr; }
+  zoom=Math.max(1,zoom||1);
+  sw=sw/zoom; sh=sh/zoom;
+  sw=Math.min(sw,img.naturalWidth); sh=Math.min(sh,img.naturalHeight);
+  const slackX=img.naturalWidth-sw, slackY=img.naturalHeight-sh;
+  let sx=slackX/2+(offX||0)*slackX/2;
+  let sy=slackY/2+(offY||0)*slackY/2;
+  sx=Math.max(0,Math.min(sx,slackX)); sy=Math.max(0,Math.min(sy,slackY));
+  ctx.drawImage(img,sx,sy,sw,sh,dx,dy,dw,dh);
+}
+
+/* ── Crop marks with overlap prevention ── */
+function drawCropMarks(ctx,x,y,w,h,len,gap,color,lw){
+  ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=lw; ctx.setLineDash([]);
+  function corner(cx,cy,dx,dy){
+    ctx.beginPath();
+    ctx.moveTo(cx+dx*gap,cy); ctx.lineTo(cx+dx*(gap+len),cy);
+    ctx.moveTo(cx,cy+dy*gap); ctx.lineTo(cx,cy+dy*(gap+len));
+    ctx.stroke();
+  }
+  corner(x,y,-1,-1); corner(x+w,y,1,-1); corner(x,y+h,-1,1); corner(x+w,y+h,1,1);
+  ctx.restore();
+}
+
+/* ── Gap-mid lines: outer boundary offset by half-gap ── */
+function drawGapMidLines(ctx,meta,scale){
+  if(meta.mixed) {
+    const cells = meta.pages[state.currentPage] || [];
+    if (!cells.length) return;
+    ctx.save(); ctx.strokeStyle=state.borderColor||'#999'; ctx.lineWidth=Math.max(1,0.12*scale);
+    ctx.setLineDash([1.2*scale,0.9*scale]);
+    const halfGX=state.gap.x/2, halfGY=state.gap.y/2;
+    cells.forEach(c => {
+      const bx=c.x*scale, by=c.y*scale, bw=c.w*scale, bh=c.h*scale;
+      const hgx=halfGX*scale, hgy=halfGY*scale;
+      // Draw mid-lines relative to each box boundary
+      ctx.beginPath();
+      // top
+      ctx.moveTo(bx - hgx, by - hgy); ctx.lineTo(bx + bw + hgx, by - hgy);
+      // bottom
+      ctx.moveTo(bx - hgx, by + bh + hgy); ctx.lineTo(bx + bw + hgx, by + bh + hgy);
+      // left
+      ctx.moveTo(bx - hgx, by - hgy); ctx.lineTo(bx - hgx, by + bh + hgy);
+      // right
+      ctx.moveTo(bx + bw + hgx, by - hgy); ctx.lineTo(bx + bw + hgx, by + bh + hgy);
+      ctx.stroke();
+    });
+    ctx.restore();
+    return;
+  }
+  if(meta.cols<=0||meta.rows<=0) return;
+  ctx.save(); ctx.strokeStyle=state.borderColor||'#999'; ctx.lineWidth=Math.max(1,0.12*scale);
+  ctx.setLineDash([1.2*scale,0.9*scale]);
+  const gridW=meta.cols*meta.boxW+(meta.cols-1)*meta.gapX;
+  const gridH=meta.rows*meta.boxH+(meta.rows-1)*meta.gapY;
+  const halfGX=meta.gapX/2, halfGY=meta.gapY/2;
+  /* Outer boundaries offset by half-gap, clamped to page margins */
+  const pmL=state.pageMargin.l, pmR=state.paper.w-state.pageMargin.r;
+  const pmT=state.pageMargin.t, pmB=state.paper.h-state.pageMargin.b;
+  const left=Math.max(pmL, meta.originX-halfGX)*scale;
+  const right=Math.min(pmR, meta.originX+gridW+halfGX)*scale;
+  const top=Math.max(pmT, meta.originY-halfGY)*scale;
+  const bottom=Math.min(pmB, meta.originY+gridH+halfGY)*scale;
+  ctx.beginPath();
+  ctx.moveTo(left,top); ctx.lineTo(left,bottom);
+  for(let c=0;c<meta.cols-1;c++){
+    const xMid=(meta.originX+meta.boxW+c*(meta.boxW+meta.gapX)+halfGX)*scale;
+    ctx.moveTo(xMid,top); ctx.lineTo(xMid,bottom);
+  }
+  ctx.moveTo(right,top); ctx.lineTo(right,bottom);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(left,top); ctx.lineTo(right,top);
+  for(let r=0;r<meta.rows-1;r++){
+    const yMid=(meta.originY+meta.boxH+r*(meta.boxH+meta.gapY)+halfGY)*scale;
+    ctx.moveTo(left,yMid); ctx.lineTo(right,yMid);
+  }
+  ctx.moveTo(left,bottom); ctx.lineTo(right,bottom);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* ── Corner marks at gap-mid intersections ── */
+function drawGapMidCorners(ctx,meta,scale){
+  if(meta.mixed) {
+    const cells = meta.pages[state.currentPage] || [];
+    if (!cells.length) return;
+    ctx.save(); ctx.strokeStyle=state.borderColor||'#999'; ctx.lineWidth=Math.max(1,0.15*scale);
+    ctx.setLineDash([]);
+    const halfGX=state.gap.x/2, halfGY=state.gap.y/2;
+    const maxLenX=halfGX>0.5?Math.min(halfGX*0.85,3):3;
+    const maxLenY=halfGY>0.5?Math.min(halfGY*0.85,3):3;
+    const markLen=Math.max(0.8,Math.min(maxLenX,maxLenY))*scale;
+    cells.forEach(c => {
+      const bx=c.x*scale, by=c.y*scale, bw=c.w*scale, bh=c.h*scale;
+      const hgx=halfGX*scale, hgy=halfGY*scale;
+      const ml=markLen;
+
+      // Draw corners at the half-gap outer boundaries of this cell
+      // Top-Left corner of boundaries
+      ctx.beginPath(); ctx.moveTo(bx - hgx, by - hgy); ctx.lineTo(bx - hgx + ml, by - hgy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(bx - hgx, by - hgy); ctx.lineTo(bx - hgx, by - hgy + ml); ctx.stroke();
+
+      // Top-Right corner of boundaries
+      ctx.beginPath(); ctx.moveTo(bx + bw + hgx, by - hgy); ctx.lineTo(bx + bw + hgx - ml, by - hgy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(bx + bw + hgx, by - hgy); ctx.lineTo(bx + bw + hgx, by - hgy + ml); ctx.stroke();
+
+      // Bottom-Left corner of boundaries
+      ctx.beginPath(); ctx.moveTo(bx - hgx, by + bh + hgy); ctx.lineTo(bx - hgx + ml, by + bh + hgy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(bx - hgx, by + bh + hgy); ctx.lineTo(bx - hgx, by + bh + hgy - ml); ctx.stroke();
+
+      // Bottom-Right corner of boundaries
+      ctx.beginPath(); ctx.moveTo(bx + bw + hgx, by + bh + hgy); ctx.lineTo(bx + bw + hgx - ml, by + bh + hgy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(bx + bw + hgx, by + bh + hgy); ctx.lineTo(bx + bw + hgx, by + bh + hgy - ml); ctx.stroke();
+    });
+    ctx.restore();
+    return;
+  }
+  if(meta.cols<=0||meta.rows<=0) return;
+  const halfGX=meta.gapX/2, halfGY=meta.gapY/2;
+  const gridW=meta.cols*meta.boxW+(meta.cols-1)*meta.gapX;
+  const gridH=meta.rows*meta.boxH+(meta.rows-1)*meta.gapY;
+  const pmL=state.pageMargin.l, pmR=state.paper.w-state.pageMargin.r;
+  const pmT=state.pageMargin.t, pmB=state.paper.h-state.pageMargin.b;
+  /* Vertical line positions */
+  const vx=[];
+  vx.push(Math.max(pmL,meta.originX-halfGX));
+  for(let c=0;c<meta.cols-1;c++) vx.push(meta.originX+meta.boxW+c*(meta.boxW+meta.gapX)+halfGX);
+  vx.push(Math.min(pmR,meta.originX+gridW+halfGX));
+  /* Horizontal line positions */
+  const hy=[];
+  hy.push(Math.max(pmT,meta.originY-halfGY));
+  for(let r=0;r<meta.rows-1;r++) hy.push(meta.originY+meta.boxH+r*(meta.boxH+meta.gapY)+halfGY);
+  hy.push(Math.min(pmB,meta.originY+gridH+halfGY));
+  /* Mark length: limited so marks don't overlap with photo boxes */
+  const maxLenX=halfGX>0.5?Math.min(halfGX*0.85,3):3;
+  const maxLenY=halfGY>0.5?Math.min(halfGY*0.85,3):3;
+  const markLen=Math.max(0.8,Math.min(maxLenX,maxLenY))*scale;
+  ctx.save();
+  ctx.strokeStyle=state.borderColor||'#999';
+  ctx.lineWidth=Math.max(1,0.15*scale);
+  ctx.setLineDash([]);
+  for(let i=0;i<vx.length;i++){
+    for(let j=0;j<hy.length;j++){
+      const px=vx[i]*scale, py=hy[j]*scale;
+      /* Draw L-marks for each quadrant that has a cell */
+      if(i<vx.length-1 && j<hy.length-1){ /* bottom-right quadrant */
+        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+markLen,py); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,py+markLen); ctx.stroke();
+      }
+      if(i>0 && j<hy.length-1){ /* bottom-left */
+        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px-markLen,py); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,py+markLen); ctx.stroke();
+      }
+      if(i<vx.length-1 && j>0){ /* top-right */
+        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+markLen,py); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,py-markLen); ctx.stroke();
+      }
+      if(i>0 && j>0){ /* top-left */
+        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px-markLen,py); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,py-markLen); ctx.stroke();
+      }
+    }
+  }
+  ctx.restore();
+}
+
+function renderPageCanvas(meta,pageIndex,dpi){
+  const scale=dpi/25.4;
+  const cv=document.createElement('canvas');
+  cv.width=Math.max(1,Math.round(meta.paperW*scale));
+  cv.height=Math.max(1,Math.round(meta.paperH*scale));
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle=state.pageBg||'#ffffff';
+  ctx.fillRect(0,0,cv.width,cv.height);
+  const cells=meta.pages[pageIndex]||[];
+  const im=state.innerMargin;
+  cells.forEach((cell,ci)=>{
+    const bx=cell.x*scale, by=cell.y*scale, bw=cell.w*scale, bh=cell.h*scale;
+    const cellRot=getCellRotation(pageIndex,ci);
+    const crop=getCellCrop(pageIndex,ci,cell);
+    ctx.save();
+    /* Step 1: normalize for the packer's own auto-rotation (landscape/portrait auto-fit),
+       establishing a local (cw,ch) frame whose (0,0)-(cw,ch) rectangle maps exactly onto
+       the box's reserved bx,by,bw,bh footprint on the page. */
+    let cw,ch;
+    if(cell.rotated){
+      cw=bh; ch=bw;
+      ctx.translate(bx+bw/2, by+bh/2);
+      ctx.rotate(Math.PI/2);
+      ctx.translate(-cw/2,-ch/2);
+    } else {
+      cw=bw; ch=bh;
+      ctx.translate(bx,by);
+    }
+    /* Step 2: apply the user's manual box rotation (🔄 Rotate). For 90°/270° this simply
+       swaps the box's own width/height (re-centered at the same point) — the frame and
+       border are then just drawn with the new cw,ch, no rotate transform needed for them.
+       Only the photo's pixel content needs an actual rotate, done below. */
+    const swap90=(cellRot===90||cellRot===270);
+    if(swap90){
+      const nw=ch, nh=cw;
+      ctx.translate(cw/2-nw/2, ch/2-nh/2);
+      cw=nw; ch=nh;
+    }
+    ctx.fillStyle=state.frameColor||'#ffffff'; ctx.fillRect(0,0,cw,ch);
+    {
+      const ix0=im.l*scale, iy0=im.t*scale;
+      const iw0=cw-(im.l+im.r)*scale, ih0=ch-(im.t+im.b)*scale;
+      if(iw0>0 && ih0>0){ ctx.fillStyle=state.photoBgColor||'#ffffff'; ctx.fillRect(ix0,iy0,iw0,ih0); }
+    }
+    if(cell.image){
+      const ix=im.l*scale, iy=im.t*scale;
+      const iw=cw-(im.l+im.r)*scale, ih=ch-(im.t+im.b)*scale;
+      const imgRot=getImgRotation(pageIndex,ci);
+      const totalPhotoRot=(cellRot+imgRot)%360;
+      if(totalPhotoRot){
+        const swapPhoto90=(totalPhotoRot===90||totalPhotoRot===270);
+        const dw=swapPhoto90?ih:iw, dh=swapPhoto90?iw:ih;
+        ctx.save();
+        ctx.translate(ix+iw/2, iy+ih/2);
+        ctx.rotate(totalPhotoRot*Math.PI/180);
+        ctx.translate(-dw/2,-dh/2);
+        drawCover(ctx,cell.image.img,0,0,dw,dh,crop.zoom,crop.offX,crop.offY);
+        ctx.restore();
+      } else {
+        drawCover(ctx,cell.image.img,ix,iy,iw,ih,crop.zoom,crop.offX,crop.offY);
+      }
+    }
+    /* Draw guides using the same cw,ch — always matches the box+photo shape */
+    if(state.guide==='border'||state.guide==='both'){
+      ctx.save(); ctx.strokeStyle=state.borderColor||'#999'; ctx.lineWidth=Math.max(1,0.12*scale);
+      ctx.setLineDash([1.2*scale,0.9*scale]);
+      ctx.strokeRect(0.5,0.5,cw-1,ch-1);
+      ctx.restore();
+    }
+    if(state.guide==='corner'||state.guide==='both'){
+      const maxExtent=Math.max(0.5, Math.min(meta.gapX||99, meta.gapY||99)/2);
+      const markGap=Math.min(0.8, maxExtent*0.15)*scale;
+      const markLen=Math.max(0.5, Math.min(2.5, maxExtent-0.8))*scale;
+      drawCropMarks(ctx,0,0,cw,ch,markLen,markGap,state.borderColor||'#999',Math.max(1,0.12*scale));
+    }
+    ctx.restore();
+  });
+  if(state.guide==='gapmid'){ drawGapMidLines(ctx,meta,scale); }
+  if(state.guide==='gapmid_corner'){ drawGapMidCorners(ctx,meta,scale); }
+  return cv;
+}
+
+/* ================================================================
+   PREVIEW / REFRESH
+   ================================================================ */
+// Preview dirender di resolusi lebih tinggi dari sebelumnya (150 -> 300 dpi dasar),
+// dan dikalikan lagi dengan devicePixelRatio layar supaya tampilan di layar
+// retina/high-dpi tidak diupscale oleh browser (yang menyebabkan blur).
+// Semua koordinat overlay/klik tetap konsisten karena memakai konstanta yang sama.
+const PREVIEW_DPI=Math.round(300*Math.min(2,Math.max(1,window.devicePixelRatio||1)));
+let lastMeta=null;
+let dragState=null;
+
+function refreshAll(){
+  lastMeta=computeLayoutMeta();
+  if(state.currentPage>=lastMeta.pages.length) state.currentPage=Math.max(0,lastMeta.pages.length-1);
+  updateStats(lastMeta);
+  renderPreview(lastMeta);
+  if(!isRestoringSnapshot) autoSnapshot();
+}
+function refreshPreviewOnly(){ if(!lastMeta) return refreshAll(); renderPreview(lastMeta); }
+
+function updateStats(meta){
+  const lang = state.lang || 'id';
+  const t = TRANSLATIONS[lang];
+  $('statCols').textContent = meta.mixed ? `${meta.cellsPerPage} pcs` : `${meta.cols}×${meta.rows}`;
+  $('statTotal').textContent=meta.totalItems;
+  $('statPages').textContent=meta.pages.length;
+  const lastPage=meta.pages[meta.pages.length-1]||[];
+  const emptySlots=meta.cellsPerPage>0 ? lastPage.filter(c=>!c.image).length : 0;
+  $('statEmpty').textContent = meta.totalItems>0 ? emptySlots : 0;
+  $('pageIndicator').textContent=t.pageIndicator.replace('{current}', meta.pages.length?state.currentPage+1:0).replace('{total}', meta.pages.length);
+  $('warnBox').classList.toggle('hidden', meta.cellsPerPage>0);
+}
+
+/* ================================================================
+   SELEKSI KOTAK, DRAG-SELECT, EDIT LAYOUT, CROP DRAG
+   ================================================================ */
+previewCanvas.style.cursor='pointer';
+
+function updateSelCount(){
+  const el=$('selCount'); if(!el) return;
+  const lang = state.lang || 'id';
+  const t = TRANSLATIONS[lang];
+  el.textContent = state.selection.size ? t.countSelection.replace('{n}', state.selection.size) : t.noSelection;
+}
+
+function clientToMM(e){
+  const rect=previewCanvas.getBoundingClientRect();
+  const scaleX=previewCanvas.width/rect.width, scaleY=previewCanvas.height/rect.height;
+  const px=(e.clientX-rect.left)*scaleX, py=(e.clientY-rect.top)*scaleY;
+  const scale=PREVIEW_DPI/25.4;
+  return {x:px/scale, y:py/scale};
+}
+
+/* Snap posisi grup terpilih ke tepi/tengah kotak lain, dan/atau ke grid */
+function snapDelta(origSelected, dx, dy, others){
+  let sdx=dx, sdy=dy;
+  if(state.snapToBoxes){
+    const minX=Math.min(...origSelected.map(o=>o.x)), maxX=Math.max(...origSelected.map(o=>o.x+o.w));
+    const minY=Math.min(...origSelected.map(o=>o.y)), maxY=Math.max(...origSelected.map(o=>o.y+o.h));
+    const tol=1.5;
+    const candX=[state.pageMargin.l, state.paper.w-state.pageMargin.r];
+    const candY=[state.pageMargin.t, state.paper.h-state.pageMargin.b];
+    others.forEach(o=>{ candX.push(o.x,o.x+o.w,o.x+o.w/2); candY.push(o.y,o.y+o.h,o.y+o.h/2); });
+    const newLeft=minX+dx, newRight=maxX+dx, newCX=(newLeft+newRight)/2;
+    let bestDX=null,bestDiffX=tol;
+    [newLeft,newRight,newCX].forEach(val=>{ candX.forEach(cx=>{ const diff=Math.abs(val-cx); if(diff<bestDiffX){ bestDiffX=diff; bestDX=cx-val; } }); });
+    if(bestDX!==null) sdx=dx+bestDX;
+    const newTop=minY+dy, newBottom=maxY+dy, newCY=(newTop+newBottom)/2;
+    let bestDY=null,bestDiffY=tol;
+    [newTop,newBottom,newCY].forEach(val=>{ candY.forEach(cy=>{ const diff=Math.abs(val-cy); if(diff<bestDiffY){ bestDiffY=diff; bestDY=cy-val; } }); });
+    if(bestDY!==null) sdy=dy+bestDY;
+  }
+  if(state.snapToGrid){
+    const g=Math.max(0.5,state.snapGridSize||5);
+    const first=origSelected[0];
+    if(first){
+      const newX=first.x+sdx, newY=first.y+sdy;
+      const snX=Math.round(newX/g)*g, snY=Math.round(newY/g)*g;
+      if(Math.abs(newX-snX)<g*0.5) sdx+=(snX-newX);
+      if(Math.abs(newY-snY)<g*0.5) sdy+=(snY-newY);
+    }
+  }
+  return [sdx,sdy];
+}
+
+previewCanvas.addEventListener('contextmenu', e => {
+  // Prevent context menu on right click inside canvas so right click drag is smooth
+  e.preventDefault();
+});
+
+previewCanvas.addEventListener('mousedown', e=>{
+  if(!lastMeta) return;
+  
+  // Right click (button 2) or Hand Mode (left click button 0 with handMode active)
+  if (e.button === 2 || (e.button === 0 && state.handMode)) {
+    dragState = {
+      type: 'pan-layout',
+      startX: e.clientX,
+      startY: e.clientY,
+      scrollLeft: $('previewWrap').scrollLeft,
+      scrollTop: $('previewWrap').scrollTop,
+      moved: false
+    };
+    previewCanvas.style.cursor = 'grabbing';
+    e.preventDefault();
+    return;
+  }
+
+  const pt=clientToMM(e);
+  const cells=lastMeta.pages[state.currentPage]||[];
+  const idx=cells.findIndex(c=>pt.x>=c.x&&pt.x<=c.x+c.w&&pt.y>=c.y&&pt.y<=c.y+c.h);
+
+  /* Clear any stale rubber rect */
+  state._rubberRect=null;
+
+  if(state.cropDragMode && idx>=0 && state.selection.has(idx)){
+    /* CROP DRAG MODE */
+    dragState={type:'crop', startX:e.clientX, startY:e.clientY, moved:false, idx};
+    return;
+  }
+
+  if(idx>=0){
+    /* Clicked on a box — always set selection immediately for single click */
+    if(!e.shiftKey && !state.selectMode && !state.selection.has(idx)){
+      state.selection=new Set([idx]);
+    }
+    const selArr=[...state.selection];
+    dragState={
+      type:'move', startX:pt.x, startY:pt.y, moved:false, shift:e.shiftKey, idx,
+      orig:selArr.map(i=>({idx:i,x:cells[i].x,y:cells[i].y,w:cells[i].w,h:cells[i].h})),
+      others:cells.map((c,i)=>({idx:i,x:c.x,y:c.y,w:c.w,h:c.h})).filter(c=>!selArr.includes(c.idx))
+    };
+  } else {
+    dragState={type:'rubber', startX:pt.x, startY:pt.y, moved:false, shift:e.shiftKey};
+    state._rubberRect={x:pt.x,y:pt.y,w:0,h:0};
+  }
+  updateSelCount();
+  renderPreview(lastMeta);
+});
+
+window.addEventListener('mousemove', e=>{
+  if(!dragState || !lastMeta) return;
+  if(dragState.type==='pan-layout'){
+    const dx=e.clientX-dragState.startX, dy=e.clientY-dragState.startY;
+    $('previewWrap').scrollLeft = dragState.scrollLeft - dx;
+    $('previewWrap').scrollTop = dragState.scrollTop - dy;
+    return;
+  }
+  if(dragState.type==='crop'){
+    const dx=e.clientX-dragState.startX, dy=e.clientY-dragState.startY;
+    if(Math.abs(dx)>2||Math.abs(dy)>2) dragState.moved=true;
+    if(dragState.moved){
+      const rect=previewCanvas.getBoundingClientRect();
+      const sensitivity=2.5/rect.width;
+      state.selection.forEach(idx=>{
+        const key=`${state.currentPage}:${idx}`;
+        const cell=(lastMeta.pages[state.currentPage]||[])[idx];
+        if(!cell||!cell.image) return;
+
+        const cellRot=getCellRotation(state.currentPage, idx);
+        const imgRot=getImgRotation(state.currentPage, idx);
+        const totalAngleRad=(cell.rotated?90:0)*Math.PI/180 + cellRot*Math.PI/180 + imgRot*Math.PI/180;
+        const cosA=Math.cos(totalAngleRad);
+        const sinA=Math.sin(totalAngleRad);
+        const localDx=dx*cosA + dy*sinA;
+        const localDy=-dx*sinA + dy*cosA;
+
+        const dOffX=localDx*sensitivity;
+        const dOffY=localDy*sensitivity;
+
+        if(!state.cellCropOverrides[key]){
+          state.cellCropOverrides[key]={zoom:cell.image.zoom, offX:cell.image.offX, offY:cell.image.offY};
+        }
+        const co=state.cellCropOverrides[key];
+        co.offX=Math.max(-1,Math.min(1,co.offX+dOffX));
+        co.offY=Math.max(-1,Math.min(1,co.offY+dOffY));
+      });
+      dragState.startX=e.clientX;
+      dragState.startY=e.clientY;
+      renderPreview(lastMeta);
+    }
+    return;
+  }
+  const pt=clientToMM(e);
+  const dx=pt.x-dragState.startX, dy=pt.y-dragState.startY;
+  if(Math.abs(dx)>1||Math.abs(dy)>1) dragState.moved=true;
+  if(dragState.type==='rubber'){
+    state._rubberRect={x:Math.min(dragState.startX,pt.x), y:Math.min(dragState.startY,pt.y), w:Math.abs(dx), h:Math.abs(dy)};
+    renderPreview(lastMeta);
+  } else if(dragState.type==='move' && state.editMode){
+    const [sdx,sdy]=snapDelta(dragState.orig, dx, dy, dragState.others);
+    const cells=lastMeta.pages[state.currentPage];
+    dragState.orig.forEach(o=>{ cells[o.idx].x=o.x+sdx; cells[o.idx].y=o.y+sdy; });
+    renderPreview(lastMeta);
+  }
+});
+
+/* Scroll wheel listener to zoom photo inside selected box (ONLY intercepts when Crop Mode is active) */
+previewCanvas.addEventListener('wheel', e => {
+  if (!state.cropDragMode || !lastMeta) return;
+  
+  const pt = clientToMM(e);
+  const cells = lastMeta.pages[state.currentPage] || [];
+  const idx = cells.findIndex(c => pt.x >= c.x && pt.x <= c.x + c.w && pt.y >= c.y && pt.y <= c.y + c.h);
+  
+  // If pointer is over a selected box, zoom it and prevent web page scroll
+  if (idx >= 0 && state.selection.has(idx)) {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.05 : 0.05;
+    state.selection.forEach(si => {
+      const key = `${state.currentPage}:${si}`;
+      const cell = cells[si];
+      if (!cell || !cell.image) return;
+      if (!state.cellCropOverrides[key]) {
+        state.cellCropOverrides[key] = { zoom: cell.image.zoom, offX: cell.image.offX, offY: cell.image.offY };
+      }
+      state.cellCropOverrides[key].zoom = Math.max(1, Math.min(3, state.cellCropOverrides[key].zoom + delta));
+    });
+    renderPreview(lastMeta);
+  }
+}, { passive: false });
+
+window.addEventListener('mouseup', ()=>{
+  if(!dragState || !lastMeta) return;
+  if(dragState.type==='pan-layout'){
+    dragState=null;
+    previewCanvas.style.cursor = state.handMode ? 'grab' : (state.cropDragMode ? 'grab' : 'pointer');
+    return;
+  }
+  if(dragState.type==='crop'){
+    if(dragState.moved) refreshAll();
+    dragState=null;
+    return;
+  }
+  if(dragState.type==='rubber'){
+    if(dragState.moved){
+      const r=state._rubberRect;
+      const cells=lastMeta.pages[state.currentPage]||[];
+      const hits=[];
+      cells.forEach((c,i)=>{
+        const overlap=!(c.x+c.w<r.x||c.x>r.x+r.w||c.y+c.h<r.y||c.y>r.y+r.h);
+        if(overlap) hits.push(i);
+      });
+      if(dragState.shift || state.selectMode) hits.forEach(i=>state.selection.add(i));
+      else state.selection=new Set(hits);
+    } else if(!dragState.shift && !state.selectMode){
+      state.selection.clear();
+    }
+    state._rubberRect=null;
+    renderPreview(lastMeta);
+  } else if(dragState.type==='move'){
+    if(state.editMode && dragState.moved){
+      const scope=state.editScope;
+      dragState.orig.forEach(o=>{
+        const cell=lastMeta.pages[state.currentPage][o.idx];
+        if(scope==='all'){
+          for(let p=0;p<lastMeta.pages.length;p++){
+            if(lastMeta.pages[p].length>o.idx){
+              state.posOverrides[`${p}:${o.idx}`]={x:cell.x,y:cell.y};
+            }
+          }
+        } else {
+          state.posOverrides[`${state.currentPage}:${o.idx}`]={x:cell.x,y:cell.y};
+        }
+      });
+      refreshAll();
+    } else if(!dragState.moved){
+      const idx=dragState.idx;
+      if(dragState.shift || state.selectMode){
+        if(state.selection.has(idx)) state.selection.delete(idx); else state.selection.add(idx);
+      } else {
+        if(state.selection.size===1 && state.selection.has(idx)) state.selection.clear();
+        else state.selection=new Set([idx]);
+      }
+      renderPreview(lastMeta);
+    }
+  }
+  dragState=null;
+  updateSelCount();
+});
+
+
+
+/* ── Edit mode ── */
+$('btnEditMode').onclick=()=>{
+  state.editMode=!state.editMode;
+  const b=$('btnEditMode');
+  b.textContent = state.editMode? '✏️ Edit Layout: ON' : '✏️ Edit Layout: OFF';
+  b.classList.toggle('btn-p', state.editMode);
+  b.classList.toggle('btn-s', !state.editMode);
+  if(lastMeta) renderPreview(lastMeta);
+};
+$('editScope').onchange=e=>{ state.editScope=e.target.value; };
+$('snapBoxes').onchange=e=>{ state.snapToBoxes=e.target.checked; };
+$('snapGrid').onchange=e=>{ state.snapToGrid=e.target.checked; };
+$('snapGridSize').oninput=e=>{ state.snapGridSize=parseFloat(e.target.value)||5; };
+$('btnResetPos').onclick=()=>{
+  if(!state.selection.size){ toast(TRANSLATIONS[state.lang||'id'].toastSelectFirst); return; }
+  state.selection.forEach(idx=>{
+    delete state.posOverrides[`${state.currentPage}:${idx}`];
+    delete state.cellRotations[`${state.currentPage}:${idx}`];
+    delete state.imageRotations[`${state.currentPage}:${idx}`];
+    delete state.cellCropOverrides[`${state.currentPage}:${idx}`];
+  });
+  refreshAll();
+  toast(TRANSLATIONS[state.lang||'id'].toastResetAuto);
+};
+$('btnResetAllPos').onclick=()=>{
+  const cells=(lastMeta && lastMeta.pages[state.currentPage]) || [];
+  cells.forEach((_, idx)=>{
+    delete state.posOverrides[`${state.currentPage}:${idx}`];
+    delete state.cellRotations[`${state.currentPage}:${idx}`];
+    delete state.imageRotations[`${state.currentPage}:${idx}`];
+    delete state.cellCropOverrides[`${state.currentPage}:${idx}`];
+  });
+  refreshAll();
+  toast(TRANSLATIONS[state.lang||'id'].toastResetAllAuto);
+};
+$('btnResetAllPages').onclick=()=>{
+  state.posOverrides={};
+  state.cellRotations={};
+  state.imageRotations={};
+  state.cellCropOverrides={};
+  refreshAll();
+  toast(TRANSLATIONS[state.lang||'id'].toastResetAllPagesAuto);
+};
+$('btnClearSel').onclick=()=>{ state.selection.clear(); updateSelCount(); if(lastMeta) renderPreview(lastMeta); };
+
+/* ── Select Mode Toggle ── */
+$('btnSelectMode').onclick=()=>{
+  state.selectMode=!state.selectMode;
+  const b=$('btnSelectMode');
+  b.classList.toggle('btn-p', state.selectMode);
+  b.classList.toggle('btn-s', !state.selectMode);
+  const lang = state.lang || 'id';
+  b.textContent = state.selectMode ? TRANSLATIONS[lang].btnSelectModeOn : TRANSLATIONS[lang].btnSelectModeOff;
+  if(state.selectMode) toast(TRANSLATIONS[state.lang||'id'].toastSelectModeActive);
+};
+
+/* ── Rotate selected cells ── */
+$('btnRotateSel').onclick=()=>{
+  if(!state.selection.size){ toast(TRANSLATIONS[state.lang||'id'].toastSelectFirst); return; }
+  state.selection.forEach(idx=>{
+    const key=`${state.currentPage}:${idx}`;
+    const cur=state.cellRotations[key]||0;
+    state.cellRotations[key]=(cur+90)%360;
+  });
+  refreshAll();
+  toast(TRANSLATIONS[state.lang||'id'].toastRotatedCell.replace('{n}', state.selection.size));
+};
+
+/* ── Rotate selected images inside cells ── */
+$('btnRotateImgSel').onclick=()=>{
+  if(!state.selection.size){ toast(TRANSLATIONS[state.lang||'id'].toastSelectFirst); return; }
+  state.selection.forEach(idx=>{
+    const key=`${state.currentPage}:${idx}`;
+    const cur=state.imageRotations[key]||0;
+    state.imageRotations[key]=(cur+90)%360;
+  });
+  refreshAll();
+  toast(TRANSLATIONS[state.lang||'id'].toastRotatedImg.replace('{n}', state.selection.size));
+};
+
+/* ── Crop drag mode toggle ── */
+$('btnCropMode').onclick=()=>{
+  state.cropDragMode=!state.cropDragMode;
+  if(state.cropDragMode && state.handMode) {
+    state.handMode = false;
+    $('btnHandMode').classList.remove('btn-p');
+    $('btnHandMode').classList.add('btn-s');
+  }
+  const b=$('btnCropMode');
+  b.classList.toggle('btn-p', state.cropDragMode);
+  b.classList.toggle('btn-s', !state.cropDragMode);
+  b.textContent = state.cropDragMode ? '✥ Crop Drag: ON' : '✥ Crop Drag';
+  previewCanvas.style.cursor = state.cropDragMode ? 'grab' : (state.handMode ? 'grab' : 'pointer');
+  if(state.cropDragMode) toast(TRANSLATIONS[state.lang||'id'].toastCropActive);
+};
+
+/* ── Hand Mode Toggle ── */
+$('btnHandMode').onclick=()=>{
+  state.handMode=!state.handMode;
+  if(state.handMode && state.cropDragMode) {
+    state.cropDragMode = false;
+    $('btnCropMode').classList.remove('btn-p');
+    $('btnCropMode').classList.add('btn-s');
+    $('btnCropMode').textContent = '✥ Crop Drag';
+  }
+  const b=$('btnHandMode');
+  b.classList.toggle('btn-p', state.handMode);
+  b.classList.toggle('btn-s', !state.handMode);
+  previewCanvas.style.cursor = state.handMode ? 'grab' : (state.cropDragMode ? 'grab' : 'pointer');
+  if(state.handMode) toast(TRANSLATIONS[state.lang||'id'].toastHandActive);
+};
+
+
+
+/* ── Canvas Layout Zoom Handlers ── */
+let currentLayoutZoom = 1.0;
+let isFitMode = true;
+
+function updateLayoutZoom() {
+  const wrap = $('previewWrap');
+  const container = $('previewCanvasContainer');
+  if (isFitMode && lastMeta) {
+    const wrapW = wrap.clientWidth - 32; // padding
+    const wrapH = wrap.clientHeight - 32;
+    const canvasW = previewCanvas.width;
+    const canvasH = previewCanvas.height;
+    if (canvasW > 0 && canvasH > 0) {
+      const scaleX = wrapW / canvasW;
+      const scaleY = wrapH / canvasH;
+      currentLayoutZoom = Math.min(scaleX, scaleY, 1.0);
+    }
+    wrap.style.overflow = 'hidden'; // No scrollbars in Fit Area mode
+    wrap.scrollLeft = 0;
+    wrap.scrollTop = 0;
+  } else {
+    wrap.style.overflow = 'auto'; // Enable scrollbars when zoomed/unfit
+  }
+  
+  // Set physical width/height directly in CSS pixels for the container & canvas
+  if (lastMeta) {
+    const w = previewCanvas.width * currentLayoutZoom;
+    const h = previewCanvas.height * currentLayoutZoom;
+    container.style.width = w + 'px';
+    container.style.height = h + 'px';
+    previewCanvas.style.width = w + 'px';
+    previewCanvas.style.height = h + 'px';
+  }
+}
+
+$('btnLayoutZoomIn').onclick=()=>{
+  isFitMode = false;
+  currentLayoutZoom = Math.min(2.5, currentLayoutZoom + 0.15);
+  updateLayoutZoom();
+  toast(TRANSLATIONS[state.lang||'id'].toastZoomDisplay.replace('{n}', Math.round(currentLayoutZoom * 100)));
+};
+
+$('btnLayoutZoomOut').onclick=()=>{
+  isFitMode = false;
+  currentLayoutZoom = Math.max(0.25, currentLayoutZoom - 0.15);
+  updateLayoutZoom();
+  toast(TRANSLATIONS[state.lang||'id'].toastZoomDisplay.replace('{n}', Math.round(currentLayoutZoom * 100)));
+};
+
+$('btnLayoutZoomReset').onclick=()=>{
+  isFitMode = !isFitMode;
+  if (isFitMode) {
+    updateLayoutZoom();
+    toast(TRANSLATIONS[state.lang||'id'].toastZoomDisplayFit);
+  } else {
+    currentLayoutZoom = 1.0;
+    updateLayoutZoom();
+    toast(TRANSLATIONS[state.lang||'id'].toastZoomDisplayReset);
+  }
+};
+
+// Auto fit on window resize
+window.addEventListener('resize', () => {
+  if (isFitMode) updateLayoutZoom();
+});
+
+/* ── Image Crop Zoom and Pan Handlers ── */
+$('btnZoomIn').onclick=()=>{
+  if(!state.selection.size){ toast(TRANSLATIONS[state.lang||'id'].toastSelectFirst); return; }
+  const cells=lastMeta.pages[state.currentPage]||[];
+  state.selection.forEach(idx=>{
+    const key=`${state.currentPage}:${idx}`;
+    const cell=cells[idx];
+    if(!cell||!cell.image) return;
+    if(!state.cellCropOverrides[key]){
+      state.cellCropOverrides[key]={zoom:cell.image.zoom, offX:cell.image.offX, offY:cell.image.offY};
+    }
+    state.cellCropOverrides[key].zoom=Math.min(3, state.cellCropOverrides[key].zoom + 0.1);
+  });
+  refreshAll();
+  toast(TRANSLATIONS[state.lang||'id'].toastZoomPhotoIn);
+};
+
+$('btnZoomOut').onclick=()=>{
+  if(!state.selection.size){ toast(TRANSLATIONS[state.lang||'id'].toastSelectFirst); return; }
+  const cells=lastMeta.pages[state.currentPage]||[];
+  state.selection.forEach(idx=>{
+    const key=`${state.currentPage}:${idx}`;
+    const cell=cells[idx];
+    if(!cell||!cell.image) return;
+    if(!state.cellCropOverrides[key]){
+      state.cellCropOverrides[key]={zoom:cell.image.zoom, offX:cell.image.offX, offY:cell.image.offY};
+    }
+    state.cellCropOverrides[key].zoom=Math.max(1, state.cellCropOverrides[key].zoom - 0.1);
+  });
+  refreshAll();
+  toast(TRANSLATIONS[state.lang||'id'].toastZoomPhotoOut);
+};
+
+$('btnResetPan').onclick=()=>{
+  if(!state.selection.size){ toast(TRANSLATIONS[state.lang||'id'].toastSelectFirst); return; }
+  const cells=lastMeta.pages[state.currentPage]||[];
+  state.selection.forEach(idx=>{
+    const key=`${state.currentPage}:${idx}`;
+    const cell=cells[idx];
+    if(!cell||!cell.image) return;
+    if(!state.cellCropOverrides[key]){
+      state.cellCropOverrides[key]={zoom:cell.image.zoom, offX:cell.image.offX, offY:cell.image.offY};
+    }
+    state.cellCropOverrides[key].offX = 0;
+    state.cellCropOverrides[key].offY = 0;
+  });
+  refreshAll();
+  toast(TRANSLATIONS[state.lang||'id'].toastResetPanCenter);
+};
+
+function drawSelectionOverlay(ctx,meta,scale){
+  const cells=meta.pages[state.currentPage]||[];
+  state.selection.forEach(idx=>{
+    const cell=cells[idx]; if(!cell) return;
+    const bx=cell.x*scale, by=cell.y*scale, bw=cell.w*scale, bh=cell.h*scale;
+    const cellRot=getCellRotation(state.currentPage,idx);
+    ctx.save();
+
+    let cw,ch;
+    if(cell.rotated){
+      cw=bh; ch=bw;
+      ctx.translate(bx+bw/2, by+bh/2);
+      ctx.rotate(Math.PI/2);
+      ctx.translate(-cw/2,-ch/2);
+    } else {
+      cw=bw; ch=bh;
+      ctx.translate(bx,by);
+    }
+    if(cellRot===90||cellRot===270){
+      const nw=ch, nh=cw;
+      ctx.translate(cw/2-nw/2, ch/2-nh/2);
+      cw=nw; ch=nh;
+    }
+    ctx.fillStyle='rgba(0,229,176,0.14)'; ctx.fillRect(0,0,cw,ch);
+    ctx.strokeStyle='#00e5b0'; ctx.lineWidth=Math.max(2,0.4*scale); ctx.setLineDash([4,3]);
+    ctx.strokeRect(1,1,cw-2,ch-2);
+
+    /* Show rotation badge if rotated */
+    if(cellRot){
+      ctx.setLineDash([]);
+      ctx.fillStyle='rgba(0,229,176,0.85)';
+      ctx.font=`bold ${Math.max(9,0.7*scale)}px ${getComputedStyle(document.body).fontFamily}`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(`${cellRot}°`, cw/2, ch/2);
+    }
+    ctx.restore();
+  });
+  if(state._rubberRect){
+    const r=state._rubberRect;
+    ctx.save();
+    ctx.fillStyle='rgba(255,201,77,0.12)'; ctx.fillRect(r.x*scale,r.y*scale,r.w*scale,r.h*scale);
+    ctx.strokeStyle='#ffc94d'; ctx.lineWidth=1; ctx.setLineDash([3,2]);
+    ctx.strokeRect(r.x*scale,r.y*scale,r.w*scale,r.h*scale);
+    ctx.restore();
+  }
+  if(state.editMode){
+    ctx.save(); ctx.strokeStyle='#ffc94d'; ctx.lineWidth=2; ctx.setLineDash([]);
+    ctx.strokeRect(1,1,ctx.canvas.width-2,ctx.canvas.height-2);
+    ctx.restore();
+  }
+}
+
+function renderPreview(meta){
+  if(meta.cellsPerPage===0){
+    const ctx=previewCanvas.getContext('2d');
+    previewCanvas.width=300; previewCanvas.height=300*(meta.paperH/meta.paperW||1);
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,previewCanvas.width,previewCanvas.height);
+    return;
+  }
+  const cv=renderPageCanvas(meta,state.currentPage,PREVIEW_DPI);
+  previewCanvas.width=cv.width; previewCanvas.height=cv.height;
+  const ctx=previewCanvas.getContext('2d');
+  ctx.drawImage(cv,0,0);
+  drawSelectionOverlay(ctx,meta,PREVIEW_DPI/25.4);
+  updateLayoutZoom();
+}
+
+$('btnPrevPage').onclick=()=>{ if(!lastMeta) return; state.currentPage=Math.max(0,state.currentPage-1); state.selection.clear(); updateSelCount(); updateStats(lastMeta); renderPreview(lastMeta); };
+$('btnNextPage').onclick=()=>{ if(!lastMeta) return; state.currentPage=Math.min(lastMeta.pages.length-1,state.currentPage+1); state.selection.clear(); updateSelCount(); updateStats(lastMeta); renderPreview(lastMeta); };
+
+/* ================================================================
+   DPI / FORMAT CONTROLS
+   ================================================================ */
+$('dpiSelect').onchange=e=>{ $('dpiCustom').disabled = e.target.value!=='custom'; };
+function getSelectedDPI(){
+  const v=$('dpiSelect').value;
+  if(v==='custom'){ return Math.max(30,Math.min(1200,parseInt($('dpiCustom').value)||300)); }
+  return parseInt(v);
+}
+$('imgFormat').onchange=e=>{ $('jpgQualityWrap').style.display = e.target.value==='jpeg'?'block':'none'; };
+
+/* ================================================================
+   EXPORT
+   ================================================================ */
+/* (toast moved to top of script) */
+
+/* ---- CRC32 (for PNG pHYs chunk) ---- */
+const CRC_TABLE=(()=>{ const t=new Uint32Array(256);
+  for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++){ c = (c&1)? (0xEDB88320 ^ (c>>>1)) : (c>>>1); } t[n]=c>>>0; }
+  return t;
+})();
+function crc32(bytes){
+  let c=0xFFFFFFFF;
+  for(let i=0;i<bytes.length;i++){ c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c>>>8); }
+  return (c ^ 0xFFFFFFFF)>>>0;
+}
+
+/* Inject a pHYs chunk (pixels-per-meter, from dpi) right after the fixed-size IHDR chunk. */
+function pngSetDpi(bytes,dpi){
+  const ppm=Math.round(dpi*39.3701);
+  const type=new Uint8Array([0x70,0x48,0x59,0x73]); // 'pHYs'
+  const data=new Uint8Array(9);
+  const ddv=new DataView(data.buffer);
+  ddv.setUint32(0,ppm); ddv.setUint32(4,ppm); data[8]=1; // unit=1 -> meters
+  const crcInput=new Uint8Array(4+9); crcInput.set(type,0); crcInput.set(data,4);
+  const crc=crc32(crcInput);
+  const chunk=new Uint8Array(4+4+9+4);
+  const cdv=new DataView(chunk.buffer);
+  cdv.setUint32(0,9); chunk.set(type,4); chunk.set(data,8); cdv.setUint32(17,crc);
+  const IHDR_END=33; // 8(sig)+4(len)+4('IHDR')+13(data)+4(crc)
+  const out=new Uint8Array(bytes.length+chunk.length);
+  out.set(bytes.subarray(0,IHDR_END),0);
+  out.set(chunk,IHDR_END);
+  out.set(bytes.subarray(IHDR_END),IHDR_END+chunk.length);
+  return out;
+}
+
+/* Overwrite the JFIF APP0 density fields (units=1 -> dpi) that canvas.toBlob always writes. */
+function jpegSetDpi(bytes,dpi){
+  if(!(bytes[0]===0xFF&&bytes[1]===0xD8&&bytes[2]===0xFF&&bytes[3]===0xE0)) return bytes;
+  const d=Math.max(1,Math.min(65535,Math.round(dpi)));
+  bytes[13]=1; // units: 1 = dots per inch
+  bytes[14]=(d>>8)&0xFF; bytes[15]=d&0xFF; // Xdensity
+  bytes[16]=(d>>8)&0xFF; bytes[17]=d&0xFF; // Ydensity
+  return bytes;
+}
+
+function canvasToDpiBlob(cv,dpi){
+  const fmt=$('imgFormat').value;
+  const mime=fmt==='jpeg'?'image/jpeg':'image/png';
+  const quality= fmt==='jpeg' ? (Math.max(10,Math.min(100,parseInt($('jpgQuality').value)||92))/100) : undefined;
+  return new Promise((resolve,reject)=>{
+    cv.toBlob(blob=>{
+      if(!blob){ reject(new Error('toBlob failed')); return; }
+      const reader=new FileReader();
+      reader.onload=()=>{
+        const bytes=new Uint8Array(reader.result);
+        const out = fmt==='jpeg' ? jpegSetDpi(bytes,dpi) : pngSetDpi(bytes,dpi);
+        resolve({blob:new Blob([out],{type:mime}), ext: fmt==='jpeg'?'jpg':'png'});
+      };
+      reader.onerror=reject;
+      reader.readAsArrayBuffer(blob);
+    },mime,quality);
+  });
+}
+
+async function downloadCanvas(cv,filename,dpi){
+  const {blob,ext}=await canvasToDpiBlob(cv,dpi);
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.download=`${filename}.${ext}`; a.href=url; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+}
+
+function sanitizeFilename(s){
+  return String(s||'')
+    .replace(/\.[^./\\]+$/,'')       // strip original extension
+    .replace(/[\\/:*?"<>|]+/g,'_')   // strip filesystem-unsafe chars
+    .replace(/\s+/g,'_')
+    .trim() || 'foto';
+}
+
+/* In bulk/mixed mode each sheet is filled with a single source photo, so the
+   downloaded filename can follow that photo's name. Falls back to the generic
+   "pasfoto-halaman-N" name for standard/mixed_standard pages (which can mix
+   multiple photos per sheet) or when a page has no assigned photo. */
+function buildPageFilenames(meta){
+  const useSourceName = (state.fillMode==='bulk' || state.fillMode==='mixed');
+  const bases = meta.pages.map(cells=>{
+    if(!useSourceName) return null;
+    const imgs = cells.map(c=>c.image).filter(Boolean);
+    if(imgs.length && imgs.every(im=>im.id===imgs[0].id)) return sanitizeFilename(imgs[0].name);
+    return null;
+  });
+  const totals={};
+  bases.forEach(b=>{ if(b) totals[b]=(totals[b]||0)+1; });
+  const seen={};
+  return bases.map((b,i)=>{
+    if(!b) return `pasfoto-halaman-${i+1}`;
+    let out=b;
+    if(totals[b]>1){ seen[b]=(seen[b]||0)+1; out=`${b}-${seen[b]}`; }
+    return `${out} - pasfoto`;
+  });
+}
+
+$('btnDlPage').onclick=async()=>{
+  const meta=computeLayoutMeta();
+  if(meta.cellsPerPage===0){ toast(TRANSLATIONS[state.lang||'id'].toastWarnBoxOverlap); return; }
+  const dpi=getSelectedDPI();
+  const filenames=buildPageFilenames(meta);
+  const cv=renderPageCanvas(meta,state.currentPage,dpi);
+  await downloadCanvas(cv,filenames[state.currentPage],dpi);
+  toast(TRANSLATIONS[state.lang||'id'].toastDlPage);
+};
+
+$('btnDlAll').onclick=async()=>{
+  const meta=computeLayoutMeta();
+  if(meta.cellsPerPage===0){ toast(TRANSLATIONS[state.lang||'id'].toastWarnBoxOverlap); return; }
+  const dpi=getSelectedDPI();
+  const filenames=buildPageFilenames(meta);
+  const btn=$('btnDlAll'); const orig=btn.textContent;
+  btn.disabled=true;
+  try{
+    for(let i=0;i<meta.pages.length;i++){
+      const cv=renderPageCanvas(meta,i,dpi);
+      await downloadCanvas(cv,filenames[i],dpi);
+      if(i<meta.pages.length-1) await new Promise(r=>setTimeout(r,220));
+    }
+    toast(TRANSLATIONS[state.lang||'id'].toastAllPagesDownloaded.replace('{n}', meta.pages.length));
+  }finally{
+    btn.disabled=false; btn.textContent=orig;
+  }
+};
+
+$('btnDlAllZip').onclick=async()=>{
+  const meta=computeLayoutMeta();
+  if(meta.cellsPerPage===0){ toast(TRANSLATIONS[state.lang||'id'].toastWarnBoxOverlap); return; }
+  if(typeof JSZip==='undefined'){ toast(TRANSLATIONS[state.lang||'id'].toastZipNotFound); return; }
+  const dpi=getSelectedDPI();
+  const filenames=buildPageFilenames(meta);
+  const btn=$('btnDlAllZip'); const orig=btn.textContent;
+  btn.disabled=true; btn.textContent='⏳ Menyiapkan ZIP…';
+  try{
+    const zip=new JSZip();
+    for(let i=0;i<meta.pages.length;i++){
+      const cv=renderPageCanvas(meta,i,dpi);
+      const {blob,ext}=await canvasToDpiBlob(cv,dpi);
+      zip.file(`${filenames[i]}.${ext}`,blob);
+      await new Promise(r=>setTimeout(r,0));
+    }
+    const zipBlob=await zip.generateAsync({type:'blob'});
+    const url=URL.createObjectURL(zipBlob);
+    const a=document.createElement('a'); a.download='pasfoto-halaman.zip'; a.href=url; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);
+    toast(TRANSLATIONS[state.lang||'id'].toastZipDownloaded.replace('{n}', meta.pages.length));
+  }catch(err){
+    console.error(err);
+    toast(TRANSLATIONS[state.lang||'id'].toastZipFailed);
+  }finally{
+    btn.disabled=false; btn.textContent=orig;
+  }
+};
+
+$('btnExportPdf').onclick=async()=>{
+  const meta=computeLayoutMeta();
+  if(meta.cellsPerPage===0){ toast(TRANSLATIONS[state.lang||'id'].toastWarnBoxOverlap); return; }
+  const dpi=getSelectedDPI();
+  const btn=$('btnExportPdf'); const orig=btn.textContent;
+  btn.disabled=true; btn.textContent='⏳ Membuat PDF…';
+  try{
+    const {jsPDF}=window.jspdf;
+    const orientation=meta.paperW>meta.paperH?'landscape':'portrait';
+    const doc=new jsPDF({orientation, unit:'mm', format:[meta.paperW,meta.paperH]});
+    for(let p=0;p<meta.pages.length;p++){
+      const cv=renderPageCanvas(meta,p,dpi);
+      const data=cv.toDataURL('image/jpeg',0.95);
+      if(p>0) doc.addPage([meta.paperW,meta.paperH],orientation);
+      doc.addImage(data,'JPEG',0,0,meta.paperW,meta.paperH);
+      await new Promise(r=>setTimeout(r,0));
+    }
+    doc.save('pasfoto-layout.pdf');
+    toast(TRANSLATIONS[state.lang||'id'].toastPdfSuccess.replace('{n}', meta.pages.length));
+  }catch(err){
+    toast(TRANSLATIONS[state.lang||'id'].toastPdfFailed+err.message);
+  }finally{
+    btn.disabled=false; btn.textContent=orig;
+  }
+};
+
+/* ================================================================
+   EXPORT / IMPORT SETTINGS (JSON)
+   ================================================================ */
+$('btnExportSettings').onclick=()=>{
+  const settings={
+    _format:'pasfoto-layout-settings',
+    _version:1,
+    paper:{...state.paper},
+    pageMargin:{...state.pageMargin}, pmLinked:state.pmLinked,
+    box:{...state.box},
+    gap:{...state.gap}, gapLinked:state.gapLinked,
+    innerMargin:{...state.innerMargin}, imLinked:state.imLinked,
+    frameColor:state.frameColor,
+    photoBgColor:state.photoBgColor,
+    guide:state.guide,
+    borderColor:state.borderColor,
+    pageBg:state.pageBg,
+    fillMode:state.fillMode,
+    targetPages:state.targetPages,
+    mixedBoxes:state.mixedBoxes.map(mb=>({w:mb.w,h:mb.h,qty:mb.qty})),
+    rotateAllowed:state.rotateAllowed,
+    posOverrides:state.posOverrides,
+    cellRotations:state.cellRotations,
+    imageRotations:state.imageRotations,
+    cellCropOverrides:state.cellCropOverrides,
+    overrides:state.overrides,
+    snapToBoxes:state.snapToBoxes,
+    snapToGrid:state.snapToGrid,
+    snapGridSize:state.snapGridSize,
+    aiHeadRatio:parseFloat($('aiHeadRatio').value),
+    aiTopMargin:parseFloat($('aiTopMargin').value),
+    aiHairExt:parseFloat($('aiHairExt').value)
+  };
+  const blob=new Blob([JSON.stringify(settings,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.download='pasfoto-settings.json'; a.href=url; a.click();
+  URL.revokeObjectURL(url);
+  toast(TRANSLATIONS[state.lang||'id'].toastSettingsExport);
+};
+
+$('btnImportSettings').onclick=()=>$('settingsFileInput').click();
+$('settingsFileInput').onchange=e=>{
+  const file=e.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const s=JSON.parse(ev.target.result);
+      if(s.paper) Object.assign(state.paper,s.paper);
+      if(s.pageMargin) Object.assign(state.pageMargin,s.pageMargin);
+      if(s.pmLinked!==undefined){ state.pmLinked=s.pmLinked; $('pmLink').classList.toggle('active',state.pmLinked); }
+      if(s.box) Object.assign(state.box,s.box);
+      if(s.gap) Object.assign(state.gap,s.gap);
+      if(s.gapLinked!==undefined){ state.gapLinked=s.gapLinked; $('gapLink').classList.toggle('active',state.gapLinked); }
+      if(s.innerMargin) Object.assign(state.innerMargin,s.innerMargin);
+      if(s.imLinked!==undefined){ state.imLinked=s.imLinked; $('imLink').classList.toggle('active',state.imLinked); }
+      if(s.frameColor){ state.frameColor=s.frameColor; $('frameColor').value=s.frameColor; }
+      if(s.photoBgColor){ state.photoBgColor=s.photoBgColor; $('photoBgColor').value=s.photoBgColor; }
+      if(s.guide){ state.guide=s.guide; $('guideStyle').value=s.guide; }
+      if(s.borderColor){ state.borderColor=s.borderColor; $('borderColor').value=s.borderColor; }
+      if(s.pageBg){ state.pageBg=s.pageBg; $('pageBg').value=s.pageBg; }
+      if(s.fillMode){ state.fillMode=s.fillMode; $('fillMode').value=s.fillMode; $('mixedPanel').classList.toggle('hidden',s.fillMode!=='mixed' && s.fillMode!=='mixed_standard'); }
+      if(s.targetPages){ state.targetPages=s.targetPages; $('targetPages').value=s.targetPages; }
+      if(s.mixedBoxes){
+        state.mixedBoxes=s.mixedBoxes.map((mb,i)=>({id:'mb'+(mixedSeq++),w:mb.w,h:mb.h,qty:mb.qty}));
+      }
+      if(s.rotateAllowed!==undefined){ state.rotateAllowed=s.rotateAllowed; $('rotateAllowed').checked=s.rotateAllowed; }
+      if(s.snapToBoxes!==undefined){ state.snapToBoxes=s.snapToBoxes; $('snapBoxes').checked=s.snapToBoxes; }
+      if(s.snapToGrid!==undefined){ state.snapToGrid=s.snapToGrid; $('snapGrid').checked=s.snapToGrid; }
+      if(s.snapGridSize!==undefined){ state.snapGridSize=s.snapGridSize; $('snapGridSize').value=s.snapGridSize; }
+      if(s.aiHeadRatio!==undefined){ $('aiHeadRatio').value=s.aiHeadRatio; $('aiHeadRatioVal').textContent=s.aiHeadRatio+'%'; }
+      if(s.aiTopMargin!==undefined){ $('aiTopMargin').value=s.aiTopMargin; $('aiTopMarginVal').textContent=s.aiTopMargin+'%'; }
+      if(s.aiHairExt!==undefined){ $('aiHairExt').value=s.aiHairExt; $('aiHairExtVal').textContent=s.aiHairExt+'%'; }
+      
+      // Load custom layout/coordinates/rotations if present, otherwise reset them to empty objects
+      state.posOverrides = s.posOverrides ? JSON.parse(JSON.stringify(s.posOverrides)) : {};
+      state.cellRotations = s.cellRotations ? {...s.cellRotations} : {};
+      state.imageRotations = s.imageRotations ? {...s.imageRotations} : {};
+      state.cellCropOverrides = s.cellCropOverrides ? JSON.parse(JSON.stringify(s.cellCropOverrides)) : {};
+      state.overrides = s.overrides ? {...s.overrides} : {};
+      
+      // Sync dropdown selections based on dimensions
+      let matchedPaper = false;
+      PAPER_GROUPS.forEach(g => {
+        g.sizes.forEach(sz => {
+          if (sz.w === state.paper.w && sz.h === state.paper.h) {
+            $('paperSelect').value = `${sz.w}x${sz.h}`;
+            matchedPaper = true;
+          }
+        });
+      });
+      if (!matchedPaper) {
+        $('paperSelect').value = 'custom';
+      }
+
+      syncPaperInputs(); syncBoxInputs();
+      rebuildPmGrid(); rebuildImGrid(); buildGapGrid();
+      renderMixedList(); refreshAll();
+      toast(TRANSLATIONS[state.lang||'id'].toastSettingsImport);
+    }catch(err){
+      toast(TRANSLATIONS[state.lang||'id'].toastSettingsImportFailed+err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value='';
+};
+
+
+
+function applyLanguage() {
+  const lang = state.lang || 'id';
+  const t = TRANSLATIONS[lang];
+  
+  $('langBtn').textContent = lang.toUpperCase();
+
+  if($('mtabBtnSettings')) $('mtabBtnSettings').textContent = t.mtabSettings;
+  if($('mtabBtnCanvas')) $('mtabBtnCanvas').textContent = t.mtabCanvas;
+  
+  const subtitle = document.querySelector('.logo small');
+  if(subtitle) subtitle.textContent = t.logoSubtitle;
+  
+  const titles = document.querySelectorAll('.card-title .t');
+  const cardKeys = ['cardSource', 'cardFillMode', 'cardPaperSize', 'cardBoxSize', 'cardGapMargin', 'cardGuides', 'cardSettings', 'cardPreview', 'cardExport'];
+  cardKeys.forEach((k, idx) => {
+    if(titles[idx]) titles[idx].textContent = t[k];
+  });
+  
+  const labelMappings = [
+    { sel: '#fillMode', key: 'lblMode', sibling: 'prev' },
+    { sel: '#targetPages', key: 'lblTargetPages', sibling: 'prev' },
+    { sel: '#paperSelect', key: 'lblPaperPreset', sibling: 'prev' },
+    { sel: '#paperW', key: 'lblPaperW', sibling: 'prev' },
+    { sel: '#paperH', key: 'lblPaperH', sibling: 'prev' },
+    { sel: '#boxW', key: 'lblBoxW', sibling: 'prev' },
+    { sel: '#boxH', key: 'lblBoxH', sibling: 'prev' },
+    { sel: '#dpiSelect', key: 'lblDpi', sibling: 'prev' },
+    { sel: '#dpiCustom', key: 'lblDpiCustom', sibling: 'prev' },
+    { sel: '#imgFormat', key: 'lblImgFormat', sibling: 'prev' },
+    { sel: '#jpgQuality', key: 'lblJpgQuality', sibling: 'prev' },
+    { sel: '#borderColor', key: 'lblBorderColor', sibling: 'prev' },
+    { sel: '#pageBg', key: 'lblPageBg', sibling: 'prev' },
+    { sel: '#guideStyle', key: 'lblGuideStyle', sibling: 'prev' }
+  ];
+  labelMappings.forEach(m => {
+    const el = document.querySelector(m.sel);
+    if(el) {
+      const lbl = m.sibling === 'prev' ? el.parentElement.querySelector('label') : null;
+      if(lbl) lbl.textContent = t[m.key];
+    }
+  });
+  
+  if($('lblPaperMarginTxt')) $('lblPaperMarginTxt').textContent = t.lblPaperMargin;
+  if($('lblGapTxt')) $('lblGapTxt').textContent = t.lblGap;
+  if($('lblInnerMarginTxt')) $('lblInnerMarginTxt').textContent = t.lblInnerMargin;
+  if($('lblFrameColorTxt')) $('lblFrameColorTxt').textContent = t.lblFrameColor;
+  if($('lblPhotoBgColorTxt')) $('lblPhotoBgColorTxt').textContent = t.lblPhotoBgColor;
+
+  const pmLabels = document.querySelectorAll('#pmGrid label');
+  const sideKeys = ['t', 'r', 'b', 'l'];
+  const sideLabels = { id: { t: 'Atas', r: 'Kanan', b: 'Bawah', l: 'Kiri' }, en: { t: 'Top', r: 'Right', b: 'Bottom', l: 'Left' } };
+  pmLabels.forEach((lbl, idx) => {
+    const k = sideKeys[idx];
+    if(k && lbl) lbl.textContent = sideLabels[lang][k];
+  });
+  const imLabels = document.querySelectorAll('#imGrid label');
+  imLabels.forEach((lbl, idx) => {
+    const k = sideKeys[idx];
+    if(k && lbl) lbl.textContent = sideLabels[lang][k];
+  });
+  const gapLabels = document.querySelectorAll('#gapGrid label');
+  const gapSides = { id: { x: 'Gap X', y: 'Gap Y' }, en: { x: 'Gap X', y: 'Gap Y' } };
+  gapLabels.forEach((lbl, idx) => {
+    const k = idx === 0 ? 'x' : 'y';
+    if(lbl) lbl.textContent = gapSides[lang][k];
+  });
+  
+
+
+  const dzP = document.querySelector('#dropzone p');
+  if(dzP) dzP.textContent = t.dropzoneText;
+  const dzSub = document.querySelector('#dropzone .sub');
+  if(dzSub) dzSub.textContent = t.dropzoneSub;
+  
+  if($('infoFillMode')) $('infoFillMode').innerHTML = t.infoFillMode;
+  if($('infoMixedPacking')) $('infoMixedPacking').innerHTML = t.infoMixedPacking;
+  if($('infoSettings')) $('infoSettings').innerHTML = t.infoSettings;
+  if($('infoExport')) $('infoExport').innerHTML = t.infoExport;
+  
+  const statsLabels = document.querySelectorAll('#headerStats .stat-label');
+  if(statsLabels[0]) statsLabels[0].textContent = t.statCols;
+  if(statsLabels[1]) statsLabels[1].textContent = t.statTotal;
+  if(statsLabels[2]) statsLabels[2].textContent = t.statPages;
+  if(statsLabels[3]) statsLabels[3].textContent = t.statEmpty;
+  
+  rebuildPmGrid(); rebuildImGrid(); buildGapGrid();
+  renderImageList();
+  
+  const optStd = document.querySelector('#fillMode option[value="standard"]');
+  if(optStd) optStd.textContent = t.optStandard;
+  const optBlk = document.querySelector('#fillMode option[value="bulk"]');
+  if(optBlk) optBlk.textContent = t.optBulk;
+  const optMix = document.querySelector('#fillMode option[value="mixed"]');
+  if(optMix) optMix.textContent = t.optMixed;
+  const optMixStd = document.querySelector('#fillMode option[value="mixed_standard"]');
+  if(optMixStd) optMixStd.textContent = t.optMixedStandard;
+  
+  const optGNone = document.querySelector('#guideStyle option[value="none"]');
+  if(optGNone) optGNone.textContent = t.optGuideNone;
+  const optGBorder = document.querySelector('#guideStyle option[value="border"]');
+  if(optGBorder) optGBorder.textContent = t.optGuideBorder;
+  const optGCorner = document.querySelector('#guideStyle option[value="corner"]');
+  if(optGCorner) optGCorner.textContent = t.optGuideCorner;
+  const optGBoth = document.querySelector('#guideStyle option[value="both"]');
+  if(optGBoth) optGBoth.textContent = t.optGuideBoth;
+  const optGGapMid = document.querySelector('#guideStyle option[value="gapmid"]');
+  if(optGGapMid) optGGapMid.textContent = t.optGuideGapMid;
+  const optGGapMidCorner = document.querySelector('#guideStyle option[value="gapmid_corner"]');
+  if(optGGapMidCorner) optGGapMidCorner.textContent = t.optGuideGapMidCorner;
+
+  if($('optDpi72')) $('optDpi72').textContent = t.optDpi72;
+  if($('optDpi150')) $('optDpi150').textContent = t.optDpi150;
+  if($('optDpi300')) $('optDpi300').textContent = t.optDpi300;
+  if($('optDpi450')) $('optDpi450').textContent = t.optDpi450;
+  if($('optDpi600')) $('optDpi600').textContent = t.optDpi600;
+  if($('optDpiCustomOpt')) $('optDpiCustomOpt').textContent = t.optDpiCustomOpt;
+
+  const paperOptgroups = document.querySelectorAll('#paperSelect optgroup');
+  paperOptgroups.forEach((og, idx) => {
+    const grp = PAPER_GROUPS[idx];
+    if(grp) og.label = lang === 'id' ? grp.label : grp.labelEN;
+  });
+
+  $('btnPickFiles').textContent = t.btnPickFiles;
+  $('btnPickFolder').textContent = t.btnPickFolder;
+  $('btnFillLayout').textContent = t.btnFillLayout;
+  $('btnClearLayout').textContent = t.btnClearLayout;
+  $('btnAddMixedSize').textContent = t.btnAddMixedSize;
+  $('btnExportSettings').textContent = t.btnExportSettings;
+  $('btnImportSettings').textContent = t.btnImportSettings;
+  $('btnExportPdf').textContent = t.btnExportPdf;
+  $('btnDlPage').textContent = t.btnDlPage;
+  $('btnDlAll').textContent = t.btnDlAll;
+  $('btnDlAllZip').textContent = t.btnDlAllZip;
+  
+  $('presetNone').textContent = t.presetNone;
+  $('presetPolaroid').textContent = t.presetPolaroid;
+  $('presetFrame').textContent = t.presetFrame;
+  
+  $('btnRotateSel').textContent = t.btnRotateSel;
+  $('btnRotateImgSel').textContent = t.btnRotateImgSel;
+  $('btnLayoutZoomIn').textContent = t.btnLayoutZoomIn;
+  $('btnLayoutZoomOut').textContent = t.btnLayoutZoomOut;
+  $('btnLayoutZoomReset').textContent = t.btnLayoutZoomReset;
+  $('btnZoomIn').textContent = t.btnZoomIn;
+  $('btnZoomOut').textContent = t.btnZoomOut;
+  $('btnResetPan').textContent = t.btnResetPan;
+  $('btnResetPos').textContent = t.btnResetPos;
+  $('btnResetAllPos').textContent = t.btnResetAllPos;
+  $('btnResetAllPages').textContent = t.btnResetAllPages;
+  $('btnClearSel').textContent = t.btnClearSel;
+  if($('btnSelectMode')) $('btnSelectMode').textContent = state.selectMode ? t.btnSelectModeOn : t.btnSelectModeOff;
+  
+  document.querySelector('#rotateAllowed').parentElement.lastChild.textContent = ' ' + t.lblRotateAllowed;
+  document.querySelector('#snapBoxes').parentElement.lastChild.textContent = ' ' + t.lblSnapBoxes;
+  document.querySelector('#snapGrid').parentElement.lastChild.textContent = ' ' + t.lblSnapGrid;
+  
+  $('btnEditMode').textContent = state.editMode ? t.btnEditModeOn : t.btnEditModeOff;
+  $('btnCropMode').textContent = state.cropDragMode ? t.btnCropModeOn : t.btnCropModeOff;
+  $('btnHandMode').textContent = state.handMode ? t.btnHandModeOn : t.btnHandModeOff;
+  
+  const optScopeCurrent = document.querySelector('#editScope option[value="current"]');
+  if(optScopeCurrent) optScopeCurrent.textContent = t.optEditScopeCurrent;
+  const optScopeAll = document.querySelector('#editScope option[value="all"]');
+  if(optScopeAll) optScopeAll.textContent = t.optEditScopeAll;
+  
+  $('warnBox').textContent = t.warnBox;
+  $('assignHint').innerHTML = t.assignHint;
+  document.querySelector('.guide-legend').textContent = t.guideLegend;
+  
+  const mixedPresetLabel = document.querySelectorAll('#mixedPanel label')[1];
+  if(mixedPresetLabel) mixedPresetLabel.textContent = t.lblMixedPreset;
+  
+  $('btnUndo').title = lang === 'id' ? 'Undo (Ctrl+Z)' : 'Undo (Ctrl+Z)';
+  $('btnRedo').title = lang === 'id' ? 'Redo (Ctrl+Y)' : 'Redo (Ctrl+Y)';
+  $('btnRotateSel').title = lang === 'id' ? 'Putar gambar 90° pada kotak terpilih' : 'Rotate cell 90° on selected boxes';
+  $('btnRotateImgSel').title = lang === 'id' ? 'Putar FOTO saja 90° pada kotak terpilih (ukuran kotak tetap)' : 'Rotate PHOTO only 90° on selected boxes (box size remains same)';
+  $('btnCropMode').title = lang === 'id' ? 'Aktifkan mode crop: klik & drag di kotak untuk atur posisi gambar' : 'Enable crop mode: click & drag inside boxes to pan image';
+  $('btnHandMode').title = lang === 'id' ? 'Aktifkan mode hand: seret di canvas untuk menggeser tampilan (bisa juga pakai klik kanan seret kapan saja)' : 'Enable hand mode: drag on canvas to pan layout view';
+  $('btnLayoutZoomIn').title = lang === 'id' ? 'Perbesar tampilan lembar preview' : 'Zoom in on sheet preview';
+  $('btnLayoutZoomOut').title = lang === 'id' ? 'Perkecil tampilan lembar preview' : 'Zoom out on sheet preview';
+  $('btnLayoutZoomReset').title = lang === 'id' ? 'Reset zoom tampilan lembar ke default' : 'Reset sheet zoom to default';
+  $('btnZoomIn').title = lang === 'id' ? 'Perbesar gambar pada kotak terpilih' : 'Zoom in photo inside selected boxes';
+  $('btnZoomOut').title = lang === 'id' ? 'Perkecil gambar pada kotak terpilih' : 'Zoom out photo inside selected boxes';
+  $('btnResetPan').title = lang === 'id' ? 'Reset posisi geser (pan) pada kotak terpilih' : 'Reset photo pan to center on selected boxes';
+  $('btnResetPos').title = lang === 'id' ? 'Reset posisi & transformasi kotak terpilih saja' : 'Reset position & transform of selected boxes';
+  $('btnResetAllPos').title = lang === 'id' ? 'Reset semua posisi & transformasi kotak di halaman aktif ini' : 'Reset all positions & transforms on this active page';
+  $('btnResetAllPages').title = lang === 'id' ? 'Reset semua posisi & transformasi kotak di semua halaman' : 'Reset all positions & transforms on all pages';
+  $('btnClearSel').title = lang === 'id' ? 'Hapus Pilihan' : 'Clear Selection';
+
+  document.querySelectorAll('[data-act="fillsheets"]').forEach(b => b.title = t.titleFillsheets);
+  document.querySelectorAll('[data-act="adjust"]').forEach(b => b.title = t.titleAdjust);
+  document.querySelectorAll('[data-act="remove"]').forEach(b => b.title = t.titleRemove);
+  
+  updateSelCount();
+  if(lastMeta) updateStats(lastMeta);
+}
+
+function applyTheme(t){ document.documentElement.setAttribute('data-theme',t); $('themeBtn').textContent = t==='light'?'☀':'🌙'; localStorage.setItem('pasfoto-theme',t); }
+$('themeBtn').onclick=()=>{ const cur=document.documentElement.getAttribute('data-theme')==='light'?'dark':'light'; applyTheme(cur); };
+applyTheme(localStorage.getItem('pasfoto-theme')||'dark');
+
+$('langBtn').onclick=()=>{
+  const cur = state.lang==='id'?'en':'id';
+  state.lang = cur;
+  localStorage.setItem('pasfoto-lang', cur);
+  applyLanguage();
+};
+state.lang = localStorage.getItem('pasfoto-lang')||'id';
+applyLanguage();
+
+/* ================================================================
+   MOBILE TAB SWITCHER
+   ================================================================ */
+document.querySelectorAll('.mtab-btn').forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll('.mtab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.col').forEach(c=>c.classList.remove('mtab-active'));
+    $(btn.dataset.target).classList.add('mtab-active');
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+});
+
+/* ================================================================
+   BOOT
+   ================================================================ */
+refreshAll();
+/* Initialize first snapshot for undo system */
+lastSnapshotStr=captureSnapshot();
+</script>
+</body>
+</html>
