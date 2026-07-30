@@ -1,9 +1,10 @@
 # List of .html Files
-Generation Time: 27/07/2026  7.09.58,92
+Generation Time: 29/07/2026 23.09.33,39
 
 https://dotslashgabut.github.io/advanced-image-comparison.html
 https://dotslashgabut.github.io/alpha-extractor-alt.html
 https://dotslashgabut.github.io/alpha-extractor.html
+https://dotslashgabut.github.io/autopasfoto.html
 https://dotslashgabut.github.io/character-counter.html
 https://dotslashgabut.github.io/chromaforge.html
 https://dotslashgabut.github.io/color-code-extractor-hex.html
