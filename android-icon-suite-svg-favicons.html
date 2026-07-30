@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Android Icon Suite & Vector Studio</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    :root {
+      /* Fluent Dark Color System */
+      --bg-base: #111111;
+      --bg-card: #1f1f1f;
+      --bg-card-hover: #262626;
+      --bg-input: #2b2b2b;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.15);
+      
+      --fluent-accent: #0078d4;
+      --fluent-accent-hover: #1086e0;
+      --fluent-accent-active: #005a9e;
+      --fluent-success: #107c41;
+      --fluent-success-hover: #0f8a47;
+      
+      --text-primary: #ffffff;
+      --text-secondary: #adadad;
+      --text-disabled: #636363;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      padding: 2rem;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 960px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    header h1 {
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+      letter-spacing: -0.02em;
+    }
+    
+    header p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.36);
+    }
+    
+    .grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 768px) { .grid-2col { grid-template-columns: 1fr; } }
+
+    .dropzone {
+      border: 1px dashed var(--border-strong);
+      border-radius: 6px;
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .dropzone:hover, .dropzone.active {
+      border-color: var(--fluent-accent);
+      background: rgba(0, 120, 212, 0.06);
+    }
+    .dropzone p { color: var(--text-secondary); font-size: 0.9rem; }
+
+    .form-group {
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    input[type="text"], input[type="number"], select, textarea {
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-strong);
+      color: var(--text-primary);
+      padding: 0.6rem 0.75rem;
+      border-radius: 4px;
+      outline: none;
+      font-size: 0.875rem;
+      width: 100%;
+      transition: border-color 0.15s ease;
+    }
+    input[type="text"]:focus, textarea:focus {
+      border-bottom: 2px solid var(--fluent-accent);
+    }
+    textarea { height: 100px; font-family: 'Consolas', monospace; resize: vertical; }
+
+    .control-row { display: flex; align-items: center; gap: 0.5rem; }
+    .slider-val { color: var(--fluent-accent); font-weight: 600; font-size: 0.85rem; }
+
+    /* Inline Reset Icon Buttons */
+    .btn-reset-inline {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      border-radius: 4px;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-reset-inline:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: var(--text-primary);
+    }
+
+    input[type="range"] {
+      flex: 1;
+      accent-color: var(--fluent-accent);
+      cursor: pointer;
+      height: 4px;
+      background: var(--bg-input);
+      border-radius: 2px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      gap: 1rem;
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: var(--text-primary);
+    }
+    .checkbox-item input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--fluent-accent);
+      cursor: pointer;
+    }
+
+    .color-picker-row { display: flex; align-items: center; gap: 0.75rem; }
+    .color-picker-row input[type="color"] {
+      padding: 0;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+    }
+
+    .button-group { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+    .btn {
+      color: #fff;
+      border: 1px solid var(--border-subtle);
+      font-weight: 500;
+      padding: 0.65rem 1.25rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+      flex: 1;
+      font-size: 0.875rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn-primary {
+      background: var(--fluent-accent);
+      border-color: var(--fluent-accent);
+    }
+    .btn-primary:hover { background: var(--fluent-accent-hover); }
+    .btn-primary:active { background: var(--fluent-accent-active); }
+
+    .btn-accent {
+      background: var(--fluent-success);
+      border-color: var(--fluent-success);
+    }
+    .btn-accent:hover { background: var(--fluent-success-hover); }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-primary);
+    }
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.09); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .live-preview-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 1.25rem;
+    }
+    .preview-canvas-container {
+      width: 192px;
+      height: 192px;
+      border-radius: 6px;
+      overflow: hidden;
+      background-image: linear-gradient(45deg, #181818 25%, transparent 25%), linear-gradient(-45deg, #181818 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #181818 75%), linear-gradient(-45deg, transparent 75%, #181818 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    canvas#liveCanvas { width: 100%; height: 100%; object-fit: contain; }
+
+    .preview-section { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
+    .preview-row-title { font-size: 0.85rem; color: var(--fluent-accent); font-weight: 600; margin-bottom: 0.5rem; }
+    .preview-grid { display: flex; gap: 0.75rem; overflow-x: auto; padding-bottom: 0.5rem; }
+    .preview-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--bg-base);
+      padding: 0.75rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-subtle);
+      min-width: 105px;
+    }
+    .preview-item img {
+      background-image: linear-gradient(45deg, #222 25%, transparent 25%), linear-gradient(-45deg, #222 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #222 75%), linear-gradient(-45deg, transparent 75%, #222 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+      border-radius: 4px;
+    }
+    .preview-item span { font-size: 0.75rem; color: var(--text-secondary); }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Android Icon Suite & Vector Studio</h1>
+    <p>Convert Vector XML/SVG into Mipmaps & SVG Favicons with dynamic transformation controls.</p>
+  </header>
+
+  <div class="grid-2col">
+    <!-- Left Column: Inputs & Controls -->
+    <div class="card">
+      <div class="dropzone" id="dropzone">
+        <p> Drag & Drop <b>.xml</b> or <b>.svg</b> file here, or click to browse</p>
+        <input type="file" id="fileInput" accept=".xml,.svg" class="hidden">
+      </div>
+
+      <div class="form-group">
+        <label>Or Paste Raw XML / SVG</label>
+        <textarea id="xmlInput" placeholder="<svg ... or <vector xmlns:android=..."></textarea>
+      </div>
+
+      <!-- Scale Slider -->
+      <div class="form-group">
+        <label>
+          Subject Scale:
+          <span class="slider-val" id="scaleVal">100%</span>
+        </label>
+        <div class="control-row">
+          <input type="range" id="scaleRange" min="20" max="150" value="100" list="scaleSnapTicks">
+          <button class="btn-reset-inline" id="resetScaleBtn" title="Reset Scale to 100%">↺</button>
+          <datalist id="scaleSnapTicks">
+            <option value="100"></option>
+          </datalist>
+        </div>
+      </div>
+
+      <!-- Rotation Slider -->
+      <div class="form-group">
+        <label>
+          Rotation:
+          <span class="slider-val" id="rotateVal">0°</span>
+        </label>
+        <div class="control-row">
+          <input type="range" id="rotateRange" min="0" max="360" value="0" list="rotateSnapTicks">
+          <button class="btn-reset-inline" id="resetRotateBtn" title="Reset Rotation to 0°">↺</button>
+          <datalist id="rotateSnapTicks">
+            <option value="0"></option>
+            <option value="90"></option>
+            <option value="180"></option>
+            <option value="270"></option>
+            <option value="360"></option>
+          </datalist>
+        </div>
+      </div>
+
+      <!-- Offset X/Y Sliders -->
+      <div class="form-group">
+        <label>
+          Position Offset X / Y:
+          <span class="slider-val" id="offsetVal">X: 0px, Y: 0px</span>
+        </label>
+        <div class="control-row">
+          <input type="range" id="offsetX" min="-50" max="50" value="0" title="Horizontal Offset" list="offsetSnapTicks">
+          <input type="range" id="offsetY" min="-50" max="50" value="0" title="Vertical Offset" list="offsetSnapTicks">
+          <button class="btn-reset-inline" id="resetOffsetBtn" title="Reset Offsets to 0px">↺</button>
+          <datalist id="offsetSnapTicks">
+            <option value="0"></option>
+          </datalist>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Background Color</label>
+        <div class="color-picker-row">
+          <input type="color" id="bgColorPicker" value="#ffffff">
+          <input type="text" id="bgColorText" value="#ffffff" placeholder="#ffffff or transparent">
+          <label class="checkbox-item">
+            <input type="checkbox" id="bgTransparent"> Transparent
+          </label>
+        </div>
+      </div>
+
+      <button id="resetAdjustments" class="btn btn-secondary" style="margin-top: 1.2rem; width: 100%;"> Reset All Controls</button>
+    </div>
+
+    <!-- Right Column: Interactive Canvas & Actions -->
+    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <h3 style="font-size: 1.1rem; font-weight: 600;">Live Interactive Preview</h3>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem; margin-bottom: 1rem;">
+          Real-time preview of rendered adaptive layers.
+        </p>
+
+        <div class="live-preview-box">
+          <div class="preview-canvas-container">
+            <canvas id="liveCanvas" width="216" height="216"></canvas>
+          </div>
+          <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.75rem;">Adaptive Canvas Scale (108dp Viewport)</p>
+        </div>
+
+        <div class="form-group" style="margin-top: 1.25rem;">
+          <label>Target Files for ZIP Package:</label>
+          <div class="checkbox-group">
+            <label class="checkbox-item">
+              <input type="checkbox" id="genForeground" checked>
+              <code>ic_launcher_foreground.png</code>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" id="genSquare" checked>
+              <code>ic_launcher.png</code>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" id="genRound" checked>
+              <code>ic_launcher_round.png</code>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" id="genSvgFavicons" checked>
+              <code>svg icon/</code>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button id="convertBtn" class="btn btn-primary"> Download ZIP</button>
+        <button id="exportXmlBtn" class="btn btn-accent"> Export XML</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="previewCard">
+    <h3 style="font-size: 1.1rem; font-weight: 600;">Generated Resource Package Previews</h3>
+    <div class="preview-section" id="previewContainer"></div>
+  </div>
+</div>
+
+<script>
+  const DENSITY_SCALES = {
+    'mipmap-mdpi': 1.0,
+    'mipmap-hdpi': 1.5,
+    'mipmap-xhdpi': 2.0,
+    'mipmap-xxhdpi': 3.0,
+    'mipmap-xxxhdpi': 4.0
+  };
+
+  const FAVICON_SIZES = [
+    { name: 'favicon-16x16.svg', size: 16 },
+    { name: 'favicon-32x32.svg', size: 32 },
+    { name: 'favicon-48x48.svg', size: 48 },
+    { name: 'apple-touch-icon-180x180.svg', size: 180 },
+    { name: 'android-chrome-192x192.svg', size: 192 },
+    { name: 'android-chrome-512x512.svg', size: 512 }
+  ];
+
+  // DOM Elements
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const xmlInput = document.getElementById('xmlInput');
+  const scaleRange = document.getElementById('scaleRange');
+  const scaleVal = document.getElementById('scaleVal');
+  const rotateRange = document.getElementById('rotateRange');
+  const rotateVal = document.getElementById('rotateVal');
+  const offsetX = document.getElementById('offsetX');
+  const offsetY = document.getElementById('offsetY');
+  const offsetVal = document.getElementById('offsetVal');
+  
+  const resetScaleBtn = document.getElementById('resetScaleBtn');
+  const resetRotateBtn = document.getElementById('resetRotateBtn');
+  const resetOffsetBtn = document.getElementById('resetOffsetBtn');
+  const resetAdjustments = document.getElementById('resetAdjustments');
+
+  const convertBtn = document.getElementById('convertBtn');
+  const exportXmlBtn = document.getElementById('exportXmlBtn');
+  const bgColorPicker = document.getElementById('bgColorPicker');
+  const bgColorText = document.getElementById('bgColorText');
+  const bgTransparent = document.getElementById('bgTransparent');
+  const liveCanvas = document.getElementById('liveCanvas');
+  const previewCard = document.getElementById('previewCard');
+  const previewContainer = document.getElementById('previewContainer');
+
+  let currentParsedSvg = null;
+  let cachedSvgImage = null;
+  let isRenderPending = false;
+
+  // Track pointer state so snapping only occurs during drag interactions, keeping arrow keys functional
+  let isDragging = false;
+  window.addEventListener('pointerdown', (e) => { if (e.target.type === 'range') isDragging = true; });
+  window.addEventListener('pointerup', () => { isDragging = false; });
+  window.addEventListener('pointercancel', () => { isDragging = false; });
+
+  // Helper for Magnet / Snap Values
+  function snapToDefault(inputEl, snapValues, threshold = 4) {
+    if (!isDragging) return; // Do not apply magnet snapping when adjusting via arrow keys
+    let val = parseFloat(inputEl.value);
+    for (let target of snapValues) {
+      if (Math.abs(val - target) <= threshold) {
+        inputEl.value = target;
+        break;
+      }
+    }
+  }
+
+  // Color Input Events
+  bgColorPicker.addEventListener('input', (e) => {
+    bgColorText.value = e.target.value;
+    bgTransparent.checked = false;
+    requestLivePreviewUpdate();
+  });
+  bgColorText.addEventListener('input', (e) => {
+    bgColorPicker.value = e.target.value;
+    bgTransparent.checked = false;
+    requestLivePreviewUpdate();
+  });
+  bgTransparent.addEventListener('change', requestLivePreviewUpdate);
+
+  // Range Controls with Snap Behavior & Throttling
+  scaleRange.addEventListener('input', () => {
+    snapToDefault(scaleRange, [100], 3);
+    scaleVal.textContent = scaleRange.value + '%';
+    requestLivePreviewUpdate();
+  });
+
+  rotateRange.addEventListener('input', () => {
+    snapToDefault(rotateRange, [0, 90, 180, 270, 360], 5);
+    rotateVal.textContent = rotateRange.value + '°';
+    requestLivePreviewUpdate();
+  });
+
+  const updateOffsetLabel = () => {
+    snapToDefault(offsetX, [0], 3);
+    snapToDefault(offsetY, [0], 3);
+    offsetVal.textContent = `X: ${offsetX.value}px, Y: ${offsetY.value}px`;
+    requestLivePreviewUpdate();
+  };
+  offsetX.addEventListener('input', updateOffsetLabel);
+  offsetY.addEventListener('input', updateOffsetLabel);
+
+  // Individual & Global Resets
+  resetScaleBtn.addEventListener('click', () => {
+    scaleRange.value = 100;
+    scaleVal.textContent = '100%';
+    requestLivePreviewUpdate();
+  });
+
+  resetRotateBtn.addEventListener('click', () => {
+    rotateRange.value = 0;
+    rotateVal.textContent = '0°';
+    requestLivePreviewUpdate();
+  });
+
+  resetOffsetBtn.addEventListener('click', () => {
+    offsetX.value = 0;
+    offsetY.value = 0;
+    offsetVal.textContent = 'X: 0px, Y: 0px';
+    requestLivePreviewUpdate();
+  });
+
+  resetAdjustments.addEventListener('click', () => {
+    scaleRange.value = 100;
+    scaleVal.textContent = '100%';
+    rotateRange.value = 0;
+    rotateVal.textContent = '0°';
+    offsetX.value = 0;
+    offsetY.value = 0;
+    offsetVal.textContent = 'X: 0px, Y: 0px';
+    requestLivePreviewUpdate();
+  });
+
+  // Drag and Drop Logic
+  dropzone.addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('active'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('active'));
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('active');
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length) handleFile(e.target.files[0]);
+  });
+
+  xmlInput.addEventListener('input', () => {
+    processRawInput();
+  });
+
+  function handleFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      xmlInput.value = e.target.result;
+      processRawInput();
+    };
+    reader.readAsText(file);
+  }
+
+  function processRawInput() {
+    const raw = xmlInput.value.trim();
+    if (!raw) return;
+    try {
+      currentParsedSvg = vectorXmlToSvg(raw);
+      preloadSvgImage(currentParsedSvg);
+    } catch (e) {
+      console.warn("Parsing error:", e);
+    }
+  }
+
+  function preloadSvgImage(svgStr) {
+    const img = new Image();
+    const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    img.onload = () => {
+      cachedSvgImage = img;
+      URL.revokeObjectURL(url);
+      requestLivePreviewUpdate();
+    };
+    img.src = url;
+  }
+
+  function requestLivePreviewUpdate() {
+    if (isRenderPending) return;
+    isRenderPending = true;
+    requestAnimationFrame(() => {
+      drawLivePreview();
+      isRenderPending = false;
+    });
+  }
+
+  function drawLivePreview() {
+    if (!cachedSvgImage) return;
+
+    const ctx = liveCanvas.getContext('2d');
+    const width = liveCanvas.width;
+    const height = liveCanvas.height;
+
+    ctx.clearRect(0, 0, width, height);
+
+    if (!bgTransparent.checked) {
+      ctx.fillStyle = bgColorText.value || '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    const scale = parseFloat(scaleRange.value) / 100;
+    const angleRad = (parseFloat(rotateRange.value) * Math.PI) / 180;
+    const offX = parseFloat(offsetX.value);
+    const offY = parseFloat(offsetY.value);
+
+    const targetW = width * scale;
+    const targetH = height * scale;
+
+    ctx.save();
+    ctx.translate(width / 2 + offX, height / 2 + offY);
+    ctx.rotate(angleRad);
+    ctx.drawImage(cachedSvgImage, -targetW / 2, -targetH / 2, targetW, targetH);
+    ctx.restore();
+  }
+
+  function vectorXmlToSvg(xmlStr) {
+    if (xmlStr.trim().startsWith('<svg')) return xmlStr;
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlStr, 'application/xml');
+    const vector = doc.querySelector('vector');
+
+    if (!vector) throw new Error('Invalid Android VectorDrawable XML structure.');
+
+    const vpWidth = vector.getAttribute('android:viewportWidth') || '108';
+    const vpHeight = vector.getAttribute('android:viewportHeight') || '108';
+
+    let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${vpWidth} ${vpHeight}" width="${vpWidth}" height="${vpHeight}">`;
+
+    function parseNodes(nodes) {
+      let result = '';
+      for (let node of nodes) {
+        if (node.nodeName === 'path') {
+          const d = node.getAttribute('android:pathData');
+          const fill = node.getAttribute('android:fillColor') || 'none';
+          const stroke = node.getAttribute('android:strokeColor') || 'none';
+          const strokeWidth = node.getAttribute('android:strokeWidth') || '0';
+          const fillAlpha = node.getAttribute('android:fillAlpha') || '1';
+          const strokeAlpha = node.getAttribute('android:strokeAlpha') || '1';
+
+          result += `<path d="${d}" fill="${cleanColor(fill)}" fill-opacity="${fillAlpha}" stroke="${cleanColor(stroke)}" stroke-width="${strokeWidth}" stroke-opacity="${strokeAlpha}"/>`;
+        } else if (node.nodeName === 'group') {
+          const pivotX = node.getAttribute('android:pivotX') || '0';
+          const pivotY = node.getAttribute('android:pivotY') || '0';
+          const rotation = node.getAttribute('android:rotation') || '0';
+          const scaleX = node.getAttribute('android:scaleX') || '1';
+          const scaleY = node.getAttribute('android:scaleY') || '1';
+          const translateX = node.getAttribute('android:translateX') || '0';
+          const translateY = node.getAttribute('android:translateY') || '0';
+
+          const transform = `translate(${translateX}, ${translateY}) translate(${pivotX}, ${pivotY}) rotate(${rotation}) scale(${scaleX}, ${scaleY}) translate(-${pivotX}, -${pivotY})`;
+          result += `<g transform="${transform}">${parseNodes(node.childNodes)}</g>`;
+        }
+      }
+      return result;
+    }
+
+    svg += parseNodes(vector.childNodes);
+    svg += `</svg>`;
+    return svg;
+  }
+
+  function cleanColor(color) {
+    if (!color || color === 'none') return 'none';
+    if (color.startsWith('#') && color.length === 9) {
+      const aa = color.slice(1, 3);
+      const rrggbb = color.slice(3);
+      return `#${rrggbb}${aa}`;
+    }
+    return color;
+  }
+
+  function svgToVectorXml(svgContent) {
+    const scale = parseFloat(scaleRange.value) / 100;
+    const rotation = parseFloat(rotateRange.value);
+    const offX = parseFloat(offsetX.value);
+    const offY = parseFloat(offsetY.value);
+
+    let rawSvg = vectorXmlToSvg(svgContent);
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(rawSvg, 'image/svg+xml');
+    const svg = doc.querySelector('svg');
+
+    if (!svg) throw new Error('Invalid SVG content.');
+
+    let viewBox = svg.getAttribute('viewBox');
+    let vpWidth = '108', vpHeight = '108';
+
+    if (viewBox) {
+      const parts = viewBox.split(/[\s,]+/).map(Number);
+      if (parts.length === 4) { vpWidth = parts[2]; vpHeight = parts[3]; }
+    }
+
+    let xml = `<?xml version="1.0" encoding="utf-8"?>\n`;
+    xml += `<vector xmlns:android="http://schemas.android.com/apk/res/android"\n`;
+    xml += `    android:width="108dp"\n`;
+    xml += `    android:height="108dp"\n`;
+    xml += `    android:viewportWidth="${vpWidth}"\n`;
+    xml += `    android:viewportHeight="${vpHeight}">\n`;
+
+    const pivotX = parseFloat(vpWidth) / 2;
+    const pivotY = parseFloat(vpHeight) / 2;
+
+    xml += `  <group\n`;
+    xml += `      android:pivotX="${pivotX}"\n`;
+    xml += `      android:pivotY="${pivotY}"\n`;
+    xml += `      android:rotation="${rotation}"\n`;
+    xml += `      android:scaleX="${scale}"\n`;
+    xml += `      android:scaleY="${scale}"\n`;
+    xml += `      android:translateX="${offX}"\n`;
+    xml += `      android:translateY="${offY}">\n`;
+
+    function parseElements(nodes, indent = '      ') {
+      let res = '';
+      for (let node of nodes) {
+        if (node.nodeType !== 1) continue;
+        const tagName = node.tagName.toLowerCase();
+
+        if (tagName === 'path') {
+          const d = node.getAttribute('d');
+          if (!d) continue;
+
+          const fill = node.getAttribute('fill') || '#000000';
+          const stroke = node.getAttribute('stroke');
+          const strokeWidth = node.getAttribute('stroke-width');
+
+          res += `${indent}<path\n`;
+          res += `${indent}    android:pathData="${d}"\n`;
+          if (fill && fill !== 'none') res += `${indent}    android:fillColor="${formatAndroidColor(fill)}"\n`;
+          if (stroke && stroke !== 'none') res += `${indent}    android:strokeColor="${formatAndroidColor(stroke)}"\n`;
+          if (strokeWidth) res += `${indent}    android:strokeWidth="${strokeWidth}"\n`;
+          res += `${indent}/>\n`;
+        } else if (tagName === 'g') {
+          res += parseElements(node.childNodes, indent);
+        }
+      }
+      return res;
+    }
+
+    xml += parseElements(svg.childNodes);
+    xml += `  </group>\n`;
+    xml += `</vector>`;
+    return xml;
+  }
+
+  function formatAndroidColor(colorStr) {
+    if (!colorStr || colorStr === 'none') return '#00000000';
+    if (colorStr.startsWith('#') && colorStr.length === 4) {
+      const r = colorStr[1], g = colorStr[2], b = colorStr[3];
+      return `#${r}${r}${g}${g}${b}${b}`;
+    }
+    return colorStr;
+  }
+
+  async function renderTransformedIcon(svgStr, targetPx, mode, bgColor) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = targetPx;
+        canvas.height = targetPx;
+        const ctx = canvas.getContext('2d');
+
+        if (mode === 'round') {
+          ctx.beginPath();
+          ctx.arc(targetPx / 2, targetPx / 2, targetPx / 2, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
+        }
+
+        if (mode !== 'foreground' && bgColor) {
+          ctx.fillStyle = bgColor;
+          ctx.fillRect(0, 0, targetPx, targetPx);
+        }
+
+        const scale = parseFloat(scaleRange.value) / 100;
+        const angleRad = (parseFloat(rotateRange.value) * Math.PI) / 180;
+        const offX = (parseFloat(offsetX.value) / 108) * targetPx;
+        const offY = (parseFloat(offsetY.value) / 108) * targetPx;
+
+        const targetW = targetPx * scale;
+        const targetH = targetPx * scale;
+
+        ctx.save();
+        ctx.translate(targetPx / 2 + offX, targetPx / 2 + offY);
+        ctx.rotate(angleRad);
+        ctx.drawImage(img, -targetW / 2, -targetH / 2, targetW, targetH);
+        ctx.restore();
+
+        URL.revokeObjectURL(url);
+        canvas.toBlob((b) => resolve(b), 'image/png');
+      };
+      img.onerror = (e) => reject(e);
+      img.src = url;
+    });
+  }
+
+  exportXmlBtn.addEventListener('click', () => {
+    const rawContent = xmlInput.value.trim();
+    if (!rawContent) return alert('Please upload or paste SVG content first.');
+
+    try {
+      const vectorXml = svgToVectorXml(rawContent);
+      const blob = new Blob([vectorXml], { type: 'text/xml;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'ic_launcher_foreground.xml';
+      a.click();
+    } catch (err) {
+      alert('Error converting SVG to Android Vector XML: ' + err.message);
+    }
+  });
+
+  convertBtn.addEventListener('click', async () => {
+    const rawXml = xmlInput.value.trim();
+    if (!rawXml) return alert('Please upload or paste an XML/SVG vector first.');
+
+    const genFg = document.getElementById('genForeground').checked;
+    const genSq = document.getElementById('genSquare').checked;
+    const genRd = document.getElementById('genRound').checked;
+    const genSvgFav = document.getElementById('genSvgFavicons').checked;
+
+    if (!genFg && !genSq && !genRd && !genSvgFav) {
+      return alert('Please select at least one icon target to generate.');
+    }
+
+    const bgColor = bgTransparent.checked ? null : bgColorText.value.trim();
+    const zip = new JSZip();
+    const resFolder = zip.folder('res');
+
+    previewContainer.innerHTML = '';
+    previewCard.classList.remove('hidden');
+    convertBtn.disabled = true;
+    convertBtn.textContent = 'Generating...';
+
+    try {
+      const svgStr = vectorXmlToSvg(rawXml);
+
+      const targets = [];
+      if (genFg) targets.push({ name: 'ic_launcher_foreground.png', baseDp: 108, mode: 'foreground' });
+      if (genSq) targets.push({ name: 'ic_launcher.png', baseDp: 48, mode: 'square' });
+      if (genRd) targets.push({ name: 'ic_launcher_round.png', baseDp: 48, mode: 'round' });
+
+      for (const target of targets) {
+        const row = document.createElement('div');
+        row.innerHTML = `<div class="preview-row-title">${target.name}</div>`;
+        const grid = document.createElement('div');
+        grid.className = 'preview-grid';
+
+        for (const [folderName, scale] of Object.entries(DENSITY_SCALES)) {
+          const px = Math.round(target.baseDp * scale);
+          const pngBlob = await renderTransformedIcon(svgStr, px, target.mode, bgColor);
+
+          resFolder.folder(folderName).file(target.name, pngBlob);
+
+          const imgUrl = URL.createObjectURL(pngBlob);
+          const item = document.createElement('div');
+          item.className = 'preview-item';
+          item.innerHTML = `
+            <img src="${imgUrl}" width="48" height="48" alt="${folderName}">
+            <span><b>${folderName}</b></span>
+            <span>${px}×${px}px</span>
+          `;
+          grid.appendChild(item);
+        }
+        row.appendChild(grid);
+        previewContainer.appendChild(row);
+      }
+
+      if (genSvgFav) {
+        const svgFolder = zip.folder('svg icon');
+        const row = document.createElement('div');
+        row.innerHTML = `<div class="preview-row-title">svg icon/ (SVG Favicons)</div>`;
+        const grid = document.createElement('div');
+        grid.className = 'preview-grid';
+
+        for (const fav of FAVICON_SIZES) {
+          const blob = await renderTransformedIcon(svgStr, fav.size, 'square', bgColor);
+          svgFolder.file(fav.name, blob);
+
+          const imgUrl = URL.createObjectURL(blob);
+          const item = document.createElement('div');
+          item.className = 'preview-item';
+          item.innerHTML = `
+            <img src="${imgUrl}" width="48" height="48" alt="${fav.name}">
+            <span><b>${fav.name}</b></span>
+            <span>${fav.size}×${fav.size} px</span>
+          `;
+          grid.appendChild(item);
+        }
+        row.appendChild(grid);
+        previewContainer.appendChild(row);
+      }
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(content);
+      a.download = 'icon_resources.zip';
+      a.click();
+    } catch (err) {
+      alert('Error rendering icons: ' + err.message);
+      console.error(err);
+    } finally {
+      convertBtn.disabled = false;
+      convertBtn.textContent = ' Download ZIP';
+    }
+  });
+</script>
+</body>
+</html>

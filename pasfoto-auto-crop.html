@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pas Foto Auto Crop &amp; Align</title>
+<style>
+  :root{
+    --bg: #14161a;
+    --panel: #1c1f26;
+    --panel-2: #23272f;
+    --border: #2f333d;
+    --text: #e8e9ec;
+    --text-dim: #9aa0ac;
+    --accent: #d9a441;
+    --accent-2: #4aa8a1;
+    --danger: #d9534f;
+    --ok: #4caf7d;
+    --radius: 10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+    font-size:14px;
+  }
+  #app{ display:grid; grid-template-columns: 260px 1fr 300px; grid-template-rows: 56px 1fr; height:100vh; }
+  header{
+    grid-column: 1 / 4; display:flex; align-items:center; gap:12px;
+    padding:0 16px; background:var(--panel); border-bottom:1px solid var(--border);
+  }
+  header h1{ font-size:15px; font-weight:600; margin:0; letter-spacing:.2px; }
+  header .status{ margin-left:auto; font-size:12px; color:var(--text-dim); }
+  .header-btn{
+    font-size:12px; padding:6px 10px; border-radius:6px; border:1px solid var(--border);
+    background:var(--panel-2); color:var(--text-dim); cursor:pointer; white-space:nowrap;
+  }
+  .header-btn:hover{ border-color:var(--accent); color:var(--text); }
+  #sidebar-left{
+    background:var(--panel); border-right:1px solid var(--border);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  #dropzone{
+    margin:12px; padding:16px; border:1.5px dashed var(--border); border-radius:var(--radius);
+    text-align:center; color:var(--text-dim); cursor:pointer; font-size:12.5px; transition:.15s;
+  }
+  #dropzone:hover, #dropzone.drag{ border-color:var(--accent); color:var(--text); background:#20242c; }
+  #thumbs{ flex:1; overflow-y:auto; padding:0 10px 10px; display:flex; flex-direction:column; gap:8px; }
+  .thumb{
+    display:flex; align-items:center; gap:8px; padding:6px; border-radius:8px; cursor:pointer;
+    border:1px solid transparent; background:var(--panel-2);
+  }
+  .thumb.active{ border-color:var(--accent); }
+  .thumb img{ width:40px; height:40px; object-fit:cover; border-radius:6px; background:#000; }
+  .thumb .name{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+  .thumb .removeBtn{
+    flex-shrink:0; width:20px; height:20px; border-radius:5px; border:none; background:transparent;
+    color:var(--text-dim); font-size:14px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .thumb .removeBtn:hover{ background:var(--danger); color:#fff; }
+  .thumb .badge{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .badge.pending{ background:#555; }
+  .badge.detecting{ background:var(--accent); animation:pulse 1s infinite; }
+  .badge.ok{ background:var(--ok); }
+  .badge.fail{ background:var(--danger); }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.3;} }
+  #batch-actions{ padding:10px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:8px; }
+
+  #main{ position:relative; overflow:auto; display:flex; align-items:center; justify-content:center; background:
+    repeating-conic-gradient(#1a1c21 0% 25%, #17181c 0% 50%) 50% / 20px 20px; }
+  #canvasWrap{ position:relative; box-shadow:0 4px 24px rgba(0,0,0,.5); }
+  #previewCanvas{ display:block; background:#000; cursor:grab; }
+  #previewCanvas.dragging{ cursor:grabbing; }
+  #empty-state{ color:var(--text-dim); text-align:center; max-width:320px; line-height:1.6; font-size:13px; }
+
+  #sidebar-right{
+    background:var(--panel); border-left:1px solid var(--border); overflow-y:auto; padding:14px;
+  }
+  .section{ margin-bottom:18px; }
+  .section h2{ font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--text-dim); margin:0 0 8px; }
+  label.field{ display:block; margin-bottom:10px; }
+  label.field span{ display:block; font-size:12px; color:var(--text-dim); margin-bottom:4px; }
+  select, input[type=number], input[type=text]{
+    width:100%; background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    border-radius:6px; padding:6px 8px; font-size:13px;
+  }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  input[type=range]{ width:100%; accent-color:var(--accent); }
+  .range-val{ float:right; color:var(--text-dim); font-variant-numeric:tabular-nums; }
+  button{
+    font-family:inherit; font-size:13px; border-radius:7px; border:1px solid var(--border);
+    background:var(--panel-2); color:var(--text); padding:8px 10px; cursor:pointer; transition:.15s;
+  }
+  button:hover{ border-color:var(--accent); }
+  button:disabled{ opacity:.4; cursor:not-allowed; }
+  button.primary{ background:var(--accent); border-color:var(--accent); color:#1a1a1a; font-weight:600; }
+  button.primary:hover{ filter:brightness(1.08); }
+  button.ghost{ background:transparent; }
+  button.block{ width:100%; }
+  .btnrow{ display:flex; gap:8px; }
+  .hint{ font-size:11.5px; color:var(--text-dim); line-height:1.5; margin-top:4px; }
+  .divider{ height:1px; background:var(--border); margin:14px 0; }
+  #logbox{ font-size:11.5px; color:var(--text-dim); max-height:80px; overflow-y:auto; white-space:pre-wrap; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Pas Foto — Auto Crop &amp; Align</h1>
+    <button type="button" class="header-btn" id="btnExportJson">📄 Export Pengaturan (JSON)</button>
+    <button type="button" class="header-btn" id="btnImportJson">📄 Import Pengaturan (JSON)</button>
+    <input type="file" id="jsonInput" accept="application/json,.json" style="display:none">
+    <span class="status" id="engineStatus">Memuat model deteksi wajah…</span>
+  </header>
+
+  <div id="sidebar-left">
+    <div id="dropzone">
+      <div>📷 Klik atau seret foto ke sini</div>
+      <div class="hint">Bisa banyak file sekaligus (JPG/PNG)</div>
+      <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+    </div>
+    <div id="thumbs"></div>
+    <div id="batch-actions">
+      <button type="button" class="block primary" id="btnProcessAll">⚙️ Proses Otomatis Semua</button>
+      <button type="button" class="block" id="btnExportAll">⬇️ Export Semua (ZIP)</button>
+      <div class="divider" style="margin:4px 0;"></div>
+      <button type="button" class="block ghost" id="btnClearAll" style="color:var(--danger); border-color:var(--danger);">🗑️ Hapus Semua Foto</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="empty-state">
+      Belum ada foto. Upload foto di panel kiri, lalu klik <b>Proses Otomatis Semua</b>.<br><br>
+      Aplikasi akan otomatis mendeteksi wajah, meluruskan kemiringan kepala, lalu memposisikan crop sesuai standar pas foto yang dipilih. Hasil auto-crop tetap bisa digeser/diskalakan manual per foto.
+    </div>
+    <div id="canvasWrap" style="display:none;">
+      <canvas id="previewCanvas"></canvas>
+    </div>
+  </div>
+
+  <div id="sidebar-right">
+    <div class="section">
+      <h2>Ukuran &amp; Standar</h2>
+      <label class="field"><span>Preset</span>
+        <select id="preset">
+          <option value="3x4">3 x 4 cm (Indonesia)</option>
+          <option value="4x6">4 x 6 cm (Indonesia)</option>
+          <option value="2x3">2 x 3 cm</option>
+          <option value="2x2in">2 x 2 inch (US Visa/Passport)</option>
+          <option value="custom">Custom…</option>
+        </select>
+      </label>
+      <div class="row2" id="customSizeRow" style="display:none;">
+        <label class="field"><span>Lebar (mm)</span><input type="number" id="customW" value="30" min="1" step="0.5"></label>
+        <label class="field"><span>Tinggi (mm)</span><input type="number" id="customH" value="40" min="1" step="0.5"></label>
+      </div>
+      <label class="field"><span>DPI Output</span>
+        <select id="dpi">
+          <option value="300">300</option>
+          <option value="600">600</option>
+          <option value="150">150</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="section">
+      <h2>Rasio Komposisi Wajah</h2>
+      <label class="field"><span>Tinggi kepala terhadap frame <span class="range-val" id="headRatioVal">75%</span></span>
+        <input type="range" id="headRatio" min="40" max="90" value="75">
+      </label>
+      <label class="field"><span>Margin atas (dagu-ke-ubun ke tepi atas) <span class="range-val" id="topMarginVal">10%</span></span>
+        <input type="range" id="topMargin" min="0" max="30" value="10">
+      </label>
+      <label class="field"><span>Estimasi rambut di atas dahi <span class="range-val" id="hairExtVal">35%</span></span>
+        <input type="range" id="hairExt" min="0" max="70" value="35">
+        <div class="hint">Titik landmark dahi bukan ubun-ubun asli (rambut tidak terdeteksi). Nilai ini menambah perkiraan tinggi kepala.</div>
+      </label>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section" id="activePhotoSection" style="display:none;">
+      <h2>Foto Aktif</h2>
+      <div class="btnrow">
+        <button type="button" id="btnRedetect" class="block">🔄 Deteksi Ulang</button>
+        <button type="button" id="btnResetAdjust" class="block">↺ Reset Geser</button>
+      </div>
+      <label class="field" style="margin-top:10px;"><span>Koreksi rotasi manual (°) <span class="range-val" id="manualRotVal">0°</span></span>
+        <input type="range" id="manualRot" min="-15" max="15" value="0" step="0.1">
+      </label>
+      <label class="field"><span>Skala crop <span class="range-val" id="scaleVal">100%</span></span>
+        <input type="range" id="scaleSlider" min="60" max="160" value="100">
+      </label>
+      <div class="hint">Geser langsung kotak crop di kanvas untuk reposisi. Scroll di kanvas untuk zoom kotak crop.</div>
+      <div class="divider"></div>
+      <button type="button" class="block primary" id="btnExportOne">⬇️ Export Foto Ini (PNG)</button>
+    </div>
+
+    <div class="section">
+      <h2>Log</h2>
+      <div id="logbox"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+
+/* ---------------- utils / log ---------------- */
+const logbox = document.getElementById('logbox');
+function log(msg){
+  const t = new Date().toLocaleTimeString();
+  logbox.textContent = `[${t}] ${msg}\n` + logbox.textContent;
+}
+function setEngineStatus(msg){ document.getElementById('engineStatus').textContent = msg; }
+
+/* ---------------- presets ---------------- */
+const PRESETS = {
+  '3x4':   { w:30, h:40, headRatio:75, topMargin:10 },
+  '4x6':   { w:40, h:60, headRatio:60, topMargin:12 },
+  '2x3':   { w:20, h:30, headRatio:70, topMargin:10 },
+  '2x2in': { w:50.8, h:50.8, headRatio:62, topMargin:17 },
+};
+
+/* ---------------- state ---------------- */
+let faceLandmarker = null;
+let photos = [];      // {id, file, name, img, w, h, status, autoAngleRad, corrected:{canvas,w,h}, points:{crown,chin,faceCenterX}, rect:{x,y,w,h}, manualDX, manualDY, manualScale, manualRotDeg}
+let activeId = null;
+
+const $ = (id) => document.getElementById(id);
+const els = {
+  dropzone: $('dropzone'), fileInput: $('fileInput'), thumbs: $('thumbs'),
+  canvasWrap: $('canvasWrap'), canvas: $('previewCanvas'), emptyState: $('empty-state'),
+  preset: $('preset'), customRow: $('customSizeRow'), customW: $('customW'), customH: $('customH'),
+  dpi: $('dpi'), headRatio: $('headRatio'), headRatioVal: $('headRatioVal'),
+  topMargin: $('topMargin'), topMarginVal: $('topMarginVal'), hairExt: $('hairExt'), hairExtVal: $('hairExtVal'),
+  activeSection: $('activePhotoSection'), manualRot: $('manualRot'), manualRotVal: $('manualRotVal'),
+  scaleSlider: $('scaleSlider'), scaleVal: $('scaleVal'),
+  btnProcessAll: $('btnProcessAll'), btnExportAll: $('btnExportAll'),
+  btnExportJson: $('btnExportJson'), btnImportJson: $('btnImportJson'), jsonInput: $('jsonInput'),
+  btnClearAll: $('btnClearAll'),
+  btnRedetect: $('btnRedetect'), btnResetAdjust: $('btnResetAdjust'), btnExportOne: $('btnExportOne'),
+};
+const ctx = els.canvas.getContext('2d');
+
+/* ---------------- init model ---------------- */
+async function initModel(){
+  try{
+    const vision = await FilesetResolver.forVisionTasks(
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+    );
+    faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+        delegate: "GPU"
+      },
+      runningMode: "IMAGE",
+      numFaces: 1,
+    });
+    setEngineStatus('Model siap ✓');
+    log('Model deteksi wajah berhasil dimuat.');
+  }catch(err){
+    setEngineStatus('Gagal memuat model (cek koneksi internet)');
+    log('ERROR memuat model: ' + err.message);
+  }
+}
+initModel();
+
+/* ---------------- file handling ---------------- */
+els.dropzone.addEventListener('click', () => els.fileInput.click());
+els.fileInput.addEventListener('change', e => addFiles(e.target.files));
+els.dropzone.addEventListener('dragover', e => { e.preventDefault(); els.dropzone.classList.add('drag'); });
+els.dropzone.addEventListener('dragleave', () => els.dropzone.classList.remove('drag'));
+els.dropzone.addEventListener('drop', e => {
+  e.preventDefault(); els.dropzone.classList.remove('drag');
+  addFiles(e.dataTransfer.files);
+});
+
+function addFiles(fileList){
+  const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+  files.forEach(file => {
+    const id = 'p' + Math.random().toString(36).slice(2, 10);
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      photos.push({
+        id, file, name: file.name, img, w: img.naturalWidth, h: img.naturalHeight,
+        status: 'pending', autoAngleRad: 0, corrected: null, points: null,
+        rect: null, manualDX: 0, manualDY: 0, manualScale: 1, manualRotDeg: 0,
+      });
+      renderThumbs();
+      if (!activeId) setActive(id);
+    };
+    img.src = url;
+  });
+}
+
+function renderThumbs(){
+  els.thumbs.innerHTML = '';
+  photos.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'thumb' + (p.id === activeId ? ' active' : '');
+    row.innerHTML = `<img src="${p.img.src}"><div class="name">${p.name}</div><div class="badge ${p.status}"></div><button type="button" class="removeBtn" title="Hapus foto ini">✕</button>`;
+    row.addEventListener('click', (e) => { if (e.target.closest('.removeBtn')) return; setActive(p.id); });
+    row.querySelector('.removeBtn').addEventListener('click', (e) => { e.stopPropagation(); removePhoto(p.id); });
+    els.thumbs.appendChild(row);
+  });
+}
+
+function removePhoto(id){
+  const idx = photos.findIndex(p => p.id === id);
+  if (idx === -1) return;
+  const [removed] = photos.splice(idx, 1);
+  try{ URL.revokeObjectURL(removed.img.src); }catch(err){}
+  log(`Foto dihapus: ${removed.name}`);
+  if (activeId === id){
+    activeId = null;
+    if (photos.length > 0){
+      const next = photos[Math.min(idx, photos.length - 1)];
+      setActive(next.id);
+    } else {
+      showEmptyState();
+    }
+  } else {
+    renderThumbs();
+  }
+}
+
+function showEmptyState(){
+  activeId = null;
+  els.canvasWrap.style.display = 'none';
+  els.emptyState.style.display = 'block';
+  els.activeSection.style.display = 'none';
+  renderThumbs();
+}
+
+els.btnClearAll.addEventListener('click', () => {
+  if (photos.length === 0) return;
+  if (!confirm(`Hapus semua ${photos.length} foto dari daftar? Tindakan ini tidak bisa dibatalkan.`)) return;
+  photos.forEach(p => { try{ URL.revokeObjectURL(p.img.src); }catch(err){} });
+  photos = [];
+  showEmptyState();
+  log('Semua foto dihapus dari daftar.');
+});
+
+function setActive(id){
+  activeId = id;
+  renderThumbs();
+  const p = getPhoto(id);
+  if (!p) return;
+  els.canvasWrap.style.display = 'block';
+  els.emptyState.style.display = 'none';
+  els.activeSection.style.display = 'block';
+  els.manualRot.value = p.manualRotDeg;
+  els.manualRotVal.textContent = p.manualRotDeg.toFixed(1) + '°';
+  els.scaleSlider.value = Math.round(p.manualScale * 100);
+  els.scaleVal.textContent = Math.round(p.manualScale * 100) + '%';
+  if (p.status === 'ok') drawPreview(p); else drawRaw(p);
+}
+function getPhoto(id){ return photos.find(p => p.id === id); }
+function activePhoto(){ return getPhoto(activeId); }
+
+/* ---------------- settings helpers ---------------- */
+els.preset.addEventListener('change', () => {
+  const v = els.preset.value;
+  els.customRow.style.display = (v === 'custom') ? 'grid' : 'none';
+  if (v !== 'custom') {
+    const pr = PRESETS[v];
+    els.headRatio.value = pr.headRatio;
+    els.topMargin.value = pr.topMargin;
+    syncRangeLabels();
+  }
+});
+function syncRangeLabels(){
+  els.headRatioVal.textContent = els.headRatio.value + '%';
+  els.topMarginVal.textContent = els.topMargin.value + '%';
+  els.hairExtVal.textContent = els.hairExt.value + '%';
+}
+[els.headRatio, els.topMargin, els.hairExt].forEach(r => r.addEventListener('input', syncRangeLabels));
+
+function getTargetSize(){
+  if (els.preset.value === 'custom') {
+    return { w: parseFloat(els.customW.value), h: parseFloat(els.customH.value) };
+  }
+  const pr = PRESETS[els.preset.value];
+  return { w: pr.w, h: pr.h };
+}
+function getParams(){
+  return {
+    headRatio: parseFloat(els.headRatio.value) / 100,
+    topMargin: parseFloat(els.topMargin.value) / 100,
+    hairExt: parseFloat(els.hairExt.value) / 100,
+    dpi: parseFloat(els.dpi.value),
+  };
+}
+
+/* ---------------- geometry: rotate image to level eyes ---------------- */
+function rotateImageToCanvas(img, w, h, angleRad){
+  const cos = Math.abs(Math.cos(angleRad)), sin = Math.abs(Math.sin(angleRad));
+  const newW = Math.round(w * cos + h * sin);
+  const newH = Math.round(w * sin + h * cos);
+  const canvas = document.createElement('canvas');
+  canvas.width = newW; canvas.height = newH;
+  const c = canvas.getContext('2d');
+  c.translate(newW / 2, newH / 2);
+  c.rotate(angleRad);
+  c.drawImage(img, -w / 2, -h / 2);
+  return { canvas, w: newW, h: newH };
+}
+function transformPoint(px, py, w, h, angleRad, newW, newH){
+  const x = px - w / 2, y = py - h / 2;
+  const cos = Math.cos(angleRad), sin = Math.sin(angleRad);
+  const rx = x * cos - y * sin, ry = x * sin + y * cos;
+  return { x: rx + newW / 2, y: ry + newH / 2 };
+}
+
+/* ---------------- face detection + geometry pipeline ---------------- */
+async function detectAndCompute(p){
+  if (!faceLandmarker){ log('Model belum siap.'); return false; }
+  p.status = 'detecting'; renderThumbs();
+  try{
+    const result = faceLandmarker.detect(p.img);
+    if (!result.faceLandmarks || result.faceLandmarks.length === 0){
+      p.status = 'fail'; renderThumbs();
+      log(`${p.name}: wajah tidak terdeteksi, gunakan mode manual.`);
+      // fallback: centered default rect on original image
+      p.corrected = { canvas: imgToCanvas(p.img, p.w, p.h), w: p.w, h: p.h };
+      p.points = null;
+      computeRectFallback(p);
+      return false;
+    }
+    const lm = result.faceLandmarks[0];
+    const px = i => lm[i].x * p.w, py = i => lm[i].y * p.h;
+
+    // eye centers (iris) for angle
+    const lEye = { x: px(468), y: py(468) };
+    const rEye = { x: px(473), y: py(473) };
+    const autoAngle = Math.atan2(rEye.y - lEye.y, rEye.x - lEye.x);
+    const manualRad = (p.manualRotDeg || 0) * Math.PI / 180;
+    const correctionAngle = -autoAngle - manualRad;
+
+    const rotated = rotateImageToCanvas(p.img, p.w, p.h, correctionAngle);
+
+    const forehead = transformPoint(px(10), py(10), p.w, p.h, correctionAngle, rotated.w, rotated.h);
+    const chin = transformPoint(px(152), py(152), p.w, p.h, correctionAngle, rotated.w, rotated.h);
+    const eyeL = transformPoint(px(468), py(468), p.w, p.h, correctionAngle, rotated.w, rotated.h);
+    const eyeR = transformPoint(px(473), py(473), p.w, p.h, correctionAngle, rotated.w, rotated.h);
+    const faceCenterX = (eyeL.x + eyeR.x) / 2;
+
+    p.autoAngleRad = autoAngle;
+    p.corrected = { canvas: rotated.canvas, w: rotated.w, h: rotated.h };
+    p.points = { forehead, chin, faceCenterX };
+    computeRect(p);
+    p.status = 'ok';
+    renderThumbs();
+    return true;
+  }catch(err){
+    p.status = 'fail'; renderThumbs();
+    log(`${p.name}: error deteksi — ${err.message}`);
+    return false;
+  }
+}
+function imgToCanvas(img, w, h){
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  c.getContext('2d').drawImage(img, 0, 0);
+  return c;
+}
+function computeRectFallback(p){
+  const target = getTargetSize();
+  const aspect = target.w / target.h;
+  const h = p.corrected.h * 0.8;
+  const w = h * aspect;
+  p.rect = { x: (p.corrected.w - w) / 2, y: (p.corrected.h - h) / 2, w, h };
+}
+function computeRect(p){
+  const params = getParams();
+  const target = getTargetSize();
+  const aspect = target.w / target.h;
+  const { forehead, chin, faceCenterX } = p.points;
+  const vx = forehead.x - chin.x, vy = forehead.y - chin.y;
+  const crown = { x: forehead.x + vx * params.hairExt, y: forehead.y + vy * params.hairExt };
+  const headHeightPx = Math.hypot(chin.x - crown.x, chin.y - crown.y);
+
+  const outH = headHeightPx / params.headRatio;
+  const outW = outH * aspect;
+  const top = crown.y - params.topMargin * outH;
+  const left = faceCenterX - outW / 2;
+
+  p.rect = { x: left, y: top, w: outW, h: outH };
+}
+
+/* ---------------- preview rendering ---------------- */
+let previewScale = 1;
+function drawRaw(p){
+  const maxW = 520, maxH = 640;
+  const scale = Math.min(maxW / p.w, maxH / p.h, 1);
+  els.canvas.width = p.w * scale; els.canvas.height = p.h * scale;
+  ctx.clearRect(0, 0, els.canvas.width, els.canvas.height);
+  ctx.drawImage(p.img, 0, 0, els.canvas.width, els.canvas.height);
+}
+function currentRect(p){
+  const r = p.rect;
+  const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+  const w = r.w * p.manualScale, h = r.h * p.manualScale;
+  return { x: cx - w / 2 + p.manualDX, y: cy - h / 2 + p.manualDY, w, h };
+}
+function drawPreview(p){
+  const maxW = 520, maxH = 640;
+  const cw = p.corrected.w, ch = p.corrected.h;
+  previewScale = Math.min(maxW / cw, maxH / ch, 1);
+  els.canvas.width = cw * previewScale; els.canvas.height = ch * previewScale;
+  ctx.clearRect(0, 0, els.canvas.width, els.canvas.height);
+  ctx.drawImage(p.corrected.canvas, 0, 0, els.canvas.width, els.canvas.height);
+
+  const r = currentRect(p);
+  const rx = r.x * previewScale, ry = r.y * previewScale, rw = r.w * previewScale, rh = r.h * previewScale;
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fillRect(0, 0, els.canvas.width, els.canvas.height);
+  ctx.clearRect(rx, ry, rw, rh);
+  ctx.drawImage(p.corrected.canvas, r.x, r.y, r.w, r.h, rx, ry, rw, rh);
+  ctx.restore();
+
+  ctx.strokeStyle = '#d9a441'; ctx.lineWidth = 2;
+  ctx.strokeRect(rx, ry, rw, rh);
+  // rule-of-thirds-ish guide lines
+  ctx.strokeStyle = 'rgba(217,164,65,0.4)'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(rx + rw / 2, ry); ctx.lineTo(rx + rw / 2, ry + rh);
+  ctx.stroke();
+}
+
+/* ---------------- drag / zoom crop box on canvas (pointer events: robust for mouse+touch) ---------------- */
+let dragging = false, dragStart = null, rectStart = null;
+els.canvas.addEventListener('pointerdown', e => {
+  const p = activePhoto(); if (!p || p.status !== 'ok') return;
+  dragging = true; els.canvas.classList.add('dragging');
+  els.canvas.setPointerCapture(e.pointerId);
+  const rect = els.canvas.getBoundingClientRect();
+  dragStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  rectStart = { dx: p.manualDX, dy: p.manualDY };
+});
+els.canvas.addEventListener('pointermove', e => {
+  if (!dragging) return;
+  const p = activePhoto(); if (!p) return;
+  const rect = els.canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const dx = (mx - dragStart.x) / previewScale, dy = (my - dragStart.y) / previewScale;
+  p.manualDX = rectStart.dx + dx; p.manualDY = rectStart.dy + dy;
+  drawPreview(p);
+});
+function endDrag(e){
+  if (!dragging) return;
+  dragging = false; els.canvas.classList.remove('dragging');
+  try{ els.canvas.releasePointerCapture(e.pointerId); }catch(err){}
+}
+els.canvas.addEventListener('pointerup', endDrag);
+els.canvas.addEventListener('pointercancel', endDrag);
+els.canvas.addEventListener('pointerleave', e => { if (!e.buttons) endDrag(e); });
+els.canvas.addEventListener('wheel', e => {
+  const p = activePhoto(); if (!p || p.status !== 'ok') return;
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? -0.03 : 0.03;
+  p.manualScale = Math.min(1.8, Math.max(0.4, p.manualScale + delta));
+  els.scaleSlider.value = Math.round(p.manualScale * 100);
+  els.scaleVal.textContent = Math.round(p.manualScale * 100) + '%';
+  drawPreview(p);
+}, { passive: false });
+
+/* ---------------- right panel controls for active photo ---------------- */
+els.manualRot.addEventListener('input', async () => {
+  const p = activePhoto(); if (!p) return;
+  p.manualRotDeg = parseFloat(els.manualRot.value);
+  els.manualRotVal.textContent = p.manualRotDeg.toFixed(1) + '°';
+  await detectAndCompute(p);
+  drawPreview(p);
+});
+els.scaleSlider.addEventListener('input', () => {
+  const p = activePhoto(); if (!p) return;
+  p.manualScale = parseFloat(els.scaleSlider.value) / 100;
+  els.scaleVal.textContent = els.scaleSlider.value + '%';
+  drawPreview(p);
+});
+els.btnRedetect.addEventListener('click', async () => {
+  const p = activePhoto(); if (!p) return;
+  p.manualDX = 0; p.manualDY = 0; p.manualScale = 1;
+  await detectAndCompute(p);
+  if (p.status === 'ok') drawPreview(p); else drawRaw(p);
+});
+els.btnResetAdjust.addEventListener('click', async () => {
+  const p = activePhoto(); if (!p) return;
+  p.manualDX = 0; p.manualDY = 0; p.manualScale = 1; p.manualRotDeg = 0;
+  els.scaleSlider.value = 100; els.scaleVal.textContent = '100%';
+  els.manualRot.value = 0; els.manualRotVal.textContent = '0.0°';
+  await detectAndCompute(p);
+  if (p.status === 'ok') drawPreview(p); else drawRaw(p);
+  log(`${p.name}: geser/rotasi manual direset ke posisi auto-detect.`);
+});
+
+/* ---------------- batch process ---------------- */
+els.btnProcessAll.addEventListener('click', async () => {
+  if (photos.length === 0){ log('Belum ada foto.'); return; }
+  els.btnProcessAll.disabled = true;
+  for (const p of photos){
+    await detectAndCompute(p);
+    if (p.id === activeId) { if (p.status === 'ok') drawPreview(p); else drawRaw(p); }
+  }
+  els.btnProcessAll.disabled = false;
+  log('Selesai memproses semua foto.');
+});
+
+/* ---------------- PNG DPI embedding (pHYs chunk) ---------------- */
+const CRC_TABLE = (() => {
+  const t = [];
+  for (let n = 0; n < 256; n++){
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(bytes){
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+async function embedPngDpi(blob, dpi){
+  const buf = new Uint8Array(await blob.arrayBuffer());
+  const ppm = Math.round(dpi / 0.0254); // pixels per meter
+  const chunkType = new TextEncoder().encode('pHYs');
+  const data = new Uint8Array(9);
+  const dv = new DataView(data.buffer);
+  dv.setUint32(0, ppm); dv.setUint32(4, ppm); data[8] = 1; // unit = meter
+  const crcInput = new Uint8Array(chunkType.length + data.length);
+  crcInput.set(chunkType, 0); crcInput.set(data, chunkType.length);
+  const crc = crc32(crcInput);
+  const lenBytes = new Uint8Array(4); new DataView(lenBytes.buffer).setUint32(0, data.length);
+  const crcBytes = new Uint8Array(4); new DataView(crcBytes.buffer).setUint32(0, crc);
+  const chunk = new Uint8Array(4 + 4 + data.length + 4);
+  chunk.set(lenBytes, 0); chunk.set(chunkType, 4); chunk.set(data, 8); chunk.set(crcBytes, 8 + data.length);
+
+  // insert right after IHDR chunk (first 8 bytes sig + 25 bytes IHDR chunk = offset 33)
+  const insertAt = 33;
+  const out = new Uint8Array(buf.length + chunk.length);
+  out.set(buf.subarray(0, insertAt), 0);
+  out.set(chunk, insertAt);
+  out.set(buf.subarray(insertAt), insertAt + chunk.length);
+  return new Blob([out], { type: 'image/png' });
+}
+
+/* ---------------- export ---------------- */
+function mmToPx(mm, dpi){ return Math.round((mm / 25.4) * dpi); }
+
+async function renderFinalBlob(p){
+  if (p.status !== 'ok' && p.status !== 'fail') await detectAndCompute(p);
+  if (!p.corrected) await detectAndCompute(p);
+  const target = getTargetSize();
+  const params = getParams();
+  const outW = mmToPx(target.w, params.dpi);
+  const outH = mmToPx(target.h, params.dpi);
+  const r = currentRect(p);
+  const out = document.createElement('canvas');
+  out.width = outW; out.height = outH;
+  const octx = out.getContext('2d');
+  octx.imageSmoothingQuality = 'high';
+  octx.drawImage(p.corrected.canvas, r.x, r.y, r.w, r.h, 0, 0, outW, outH);
+  const blob = await new Promise(res => out.toBlob(res, 'image/png'));
+  return embedPngDpi(blob, params.dpi);
+}
+
+function baseName(name){ return name.replace(/\.[^.]+$/, ''); }
+
+els.btnExportOne.addEventListener('click', async () => {
+  const p = activePhoto(); if (!p) return;
+  const blob = await renderFinalBlob(p);
+  downloadBlob(blob, `${baseName(p.name)}_pasfoto.png`);
+});
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+els.btnExportAll.addEventListener('click', async () => {
+  if (photos.length === 0){ log('Belum ada foto.'); return; }
+  els.btnExportAll.disabled = true;
+  log('Menyiapkan ZIP…');
+  try{
+    const jszipMod = await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm');
+    const JSZip = jszipMod.default;
+    const zip = new JSZip();
+    for (const p of photos){
+      const blob = await renderFinalBlob(p);
+      zip.file(`${baseName(p.name)}_pasfoto.png`, blob);
+    }
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    downloadBlob(zipBlob, 'pasfoto_hasil.zip');
+    log('ZIP berhasil diunduh.');
+  }catch(err){
+    log('ERROR export ZIP: ' + err.message);
+  }
+  els.btnExportAll.disabled = false;
+});
+
+/* ---------------- export / import settings as JSON ---------------- */
+function collectSettingsJson(){
+  return {
+    _type: 'pasfoto-auto-crop-project',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    settings: {
+      preset: els.preset.value,
+      customW: els.customW.value,
+      customH: els.customH.value,
+      dpi: els.dpi.value,
+      headRatio: els.headRatio.value,
+      topMargin: els.topMargin.value,
+      hairExt: els.hairExt.value,
+    },
+    photos: photos.map(p => ({
+      name: p.name,
+      manualDX: p.manualDX,
+      manualDY: p.manualDY,
+      manualScale: p.manualScale,
+      manualRotDeg: p.manualRotDeg,
+    })),
+  };
+}
+
+els.btnExportJson.addEventListener('click', () => {
+  const data = collectSettingsJson();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  downloadBlob(blob, 'pasfoto_settings.json');
+  log(`Pengaturan diekspor (${data.photos.length} foto, global settings termasuk).`);
+});
+
+els.btnImportJson.addEventListener('click', () => els.jsonInput.click());
+els.jsonInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  els.jsonInput.value = '';
+  if (!file) return;
+  let data;
+  try{
+    const text = await file.text();
+    data = JSON.parse(text);
+  }catch(err){
+    log('ERROR: file JSON tidak valid — ' + err.message);
+    return;
+  }
+  if (!data || typeof data !== 'object' || !data.settings){
+    log('ERROR: struktur JSON tidak dikenali.');
+    return;
+  }
+
+  // apply global settings
+  const s = data.settings;
+  if (s.preset !== undefined){ els.preset.value = s.preset; els.customRow.style.display = (s.preset === 'custom') ? 'grid' : 'none'; }
+  if (s.customW !== undefined) els.customW.value = s.customW;
+  if (s.customH !== undefined) els.customH.value = s.customH;
+  if (s.dpi !== undefined) els.dpi.value = s.dpi;
+  if (s.headRatio !== undefined) els.headRatio.value = s.headRatio;
+  if (s.topMargin !== undefined) els.topMargin.value = s.topMargin;
+  if (s.hairExt !== undefined) els.hairExt.value = s.hairExt;
+  syncRangeLabels();
+
+  // apply per-photo adjustments, matched by filename against currently loaded photos
+  const entries = Array.isArray(data.photos) ? data.photos : [];
+  let matched = 0, unmatched = 0;
+  for (const entry of entries){
+    const p = photos.find(ph => ph.name === entry.name);
+    if (!p){ unmatched++; continue; }
+    matched++;
+    p.manualDX = entry.manualDX ?? 0;
+    p.manualDY = entry.manualDY ?? 0;
+    p.manualScale = entry.manualScale ?? 1;
+    p.manualRotDeg = entry.manualRotDeg ?? 0;
+    await detectAndCompute(p);
+  }
+  renderThumbs();
+  const p = activePhoto();
+  if (p){
+    els.manualRot.value = p.manualRotDeg; els.manualRotVal.textContent = p.manualRotDeg.toFixed(1) + '°';
+    els.scaleSlider.value = Math.round(p.manualScale * 100); els.scaleVal.textContent = Math.round(p.manualScale * 100) + '%';
+    if (p.status === 'ok') drawPreview(p); else drawRaw(p);
+  }
+  log(`Pengaturan diimpor: ${matched} foto cocok diterapkan${unmatched ? `, ${unmatched} entri tidak ditemukan (nama file beda/belum diupload)` : ''}.`);
+  if (unmatched && photos.length === 0){
+    log('Tips: upload dulu foto-foto yang sama (nama file harus sama persis) sebelum import JSON.');
+  }
+});
+
+syncRangeLabels();
+</script>
+</body>
+</html>
