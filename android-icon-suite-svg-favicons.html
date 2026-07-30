@@ -762,6 +762,68 @@
     return colorStr;
   }
 
+  // Builds an actual vector SVG file (paths copied in, transform applied via <g>),
+  // instead of rasterizing to a canvas/PNG. This is what genSvgFav should use.
+  function buildFaviconSvgString(svgStr, targetPx, mode, bgColor) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svgStr, 'image/svg+xml');
+    const src = doc.querySelector('svg');
+    if (!src) throw new Error('Invalid SVG content.');
+
+    if (src.querySelector('parsererror')) {
+      throw new Error('Could not parse source SVG.');
+    }
+
+    let vpWidth = 108, vpHeight = 108;
+    const viewBoxAttr = src.getAttribute('viewBox');
+    if (viewBoxAttr) {
+      const parts = viewBoxAttr.split(/[\s,]+/).map(Number);
+      if (parts.length === 4) { vpWidth = parts[2]; vpHeight = parts[3]; }
+    } else {
+      vpWidth = parseFloat(src.getAttribute('width')) || 108;
+      vpHeight = parseFloat(src.getAttribute('height')) || 108;
+    }
+
+    // Serialize just the inner content (paths/groups) of the source SVG
+    let innerContent = '';
+    for (const child of src.childNodes) {
+      innerContent += new XMLSerializer().serializeToString(child);
+    }
+
+    const scale = parseFloat(scaleRange.value) / 100;
+    const rotation = parseFloat(rotateRange.value);
+    const offX = (parseFloat(offsetX.value) / 108) * targetPx;
+    const offY = (parseFloat(offsetY.value) / 108) * targetPx;
+
+    // Fit the source viewport into the target square, then apply user scale
+    const fitScale = targetPx / Math.max(vpWidth, vpHeight);
+    const totalScale = fitScale * scale;
+
+    const cx = targetPx / 2 + offX;
+    const cy = targetPx / 2 + offY;
+
+    let out = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+    out += `<svg xmlns="http://www.w3.org/2000/svg" width="${targetPx}" height="${targetPx}" viewBox="0 0 ${targetPx} ${targetPx}">\n`;
+
+    if (mode === 'round') {
+      out += `  <defs><clipPath id="clip-round"><circle cx="${targetPx / 2}" cy="${targetPx / 2}" r="${targetPx / 2}"/></clipPath></defs>\n`;
+    }
+
+    const clipAttr = mode === 'round' ? ` clip-path="url(#clip-round)"` : '';
+    out += `  <g${clipAttr}>\n`;
+
+    if (mode !== 'foreground' && bgColor) {
+      out += `    <rect x="0" y="0" width="${targetPx}" height="${targetPx}" fill="${bgColor}"/>\n`;
+    }
+
+    const transform = `translate(${cx} ${cy}) rotate(${rotation}) scale(${totalScale}) translate(${-vpWidth / 2} ${-vpHeight / 2})`;
+    out += `    <g transform="${transform}">${innerContent}</g>\n`;
+    out += `  </g>\n`;
+    out += `</svg>`;
+
+    return out;
+  }
+
   async function renderTransformedIcon(svgStr, targetPx, mode, bgColor) {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -888,10 +950,11 @@
         grid.className = 'preview-grid';
 
         for (const fav of FAVICON_SIZES) {
-          const blob = await renderTransformedIcon(svgStr, fav.size, 'square', bgColor);
-          svgFolder.file(fav.name, blob);
+          const svgFaviconStr = buildFaviconSvgString(svgStr, fav.size, 'square', bgColor);
+          svgFolder.file(fav.name, svgFaviconStr);
 
-          const imgUrl = URL.createObjectURL(blob);
+          const svgBlob = new Blob([svgFaviconStr], { type: 'image/svg+xml;charset=utf-8' });
+          const imgUrl = URL.createObjectURL(svgBlob);
           const item = document.createElement('div');
           item.className = 'preview-item';
           item.innerHTML = `
