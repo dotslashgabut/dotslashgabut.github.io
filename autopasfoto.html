@@ -85,7 +85,7 @@ select{cursor:pointer}
 .qty-stepper{display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;flex-shrink:0}
 .qty-stepper button{width:24px;height:26px;background:var(--surface);border:none;color:var(--text-muted);cursor:pointer;font-size:.85rem}
 .qty-stepper button:hover{color:var(--accent)}
-.qty-stepper input{width:44px;height:26px;border:none;text-align:center;background:var(--surface);color:var(--text);font-family:var(--mono);font-size:.75rem;padding:0}
+.qty-stepper input{width:64px;height:26px;border:none;text-align:center;background:var(--surface);color:var(--text);font-family:var(--mono);font-size:.75rem;padding:0}
 .img-row-actions{display:flex;gap:4px;flex-wrap:wrap;flex-shrink:0}
 .mini-btn{width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;font-size:.75rem;display:grid;place-items:center;transition:all .2s}
 .mini-btn:hover{border-color:var(--accent);color:var(--accent)}
@@ -107,10 +107,21 @@ select{cursor:pointer}
 .preview-wrap{border:1px solid var(--border);border-radius:8px;overflow:auto;background:#33384a;padding:16px;min-height:400px;max-height:900px;position:relative;display:grid;justify-content:safe center;align-content:safe center}
 .preview-canvas-container{position:relative;display:block;flex-shrink:0}
 .preview-wrap canvas{display:block;max-width:none;height:auto;box-shadow:0 8px 30px rgba(0,0,0,.45);background:#fff}
+.zoom-control{display:flex;align-items:stretch;gap:0;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;flex-shrink:0;background:var(--surface2)}
+.zoom-control button{width:26px;height:26px;background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:.95rem;line-height:1;display:grid;place-items:center;transition:all .15s;font-family:var(--sans)}
+.zoom-control button:hover:not(:disabled){color:var(--accent);background:rgba(0,229,176,.1)}
+.zoom-control button:active:not(:disabled){transform:scale(.92)}
+.zoom-control button:disabled{opacity:.3;cursor:not-allowed}
+.zoom-display{min-width:52px;height:26px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.68rem;font-weight:600;color:var(--text);cursor:pointer;border-left:1px solid var(--border);border-right:1px solid var(--border);padding:0 6px;user-select:none;transition:color .15s,background .15s;background:transparent}
+.zoom-display:hover{color:var(--accent);background:rgba(0,229,176,.06)}
+.zoom-display.is-fit{color:var(--accent3)}
 .warn-box{display:flex;gap:8px;align-items:flex-start;background:rgba(255,92,92,.08);border:1px solid rgba(255,92,92,.2);border-radius:var(--radius-sm);padding:10px 13px;font-size:.75rem;color:var(--accent2);margin-top:10px}
 .info-box{display:block;background:rgba(0,229,176,.07);border:1px solid rgba(0,229,176,.18);border-radius:var(--radius-sm);padding:9px 13px;font-size:.73rem;color:var(--text-muted);margin-top:12px;line-height:1.5}
 .export-actions{display:flex;flex-direction:column;gap:8px;margin-top:14px}
 .export-actions .row2{gap:8px}
+.export-group{display:flex;flex-direction:column;gap:8px}
+.export-group+.export-group{margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)}
+.export-group-label{display:flex;align-items:center;gap:6px;font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
 .toast{position:fixed;bottom:22px;right:22px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);padding:12px 18px;border-radius:var(--radius-sm);font-size:.82rem;z-index:999;box-shadow:var(--shadow);color:var(--text);transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none;max-width:320px}
 .toast.show{transform:none;opacity:1}
 .hidden{display:none!important}
@@ -220,6 +231,7 @@ select{cursor:pointer}
         <div class="upload-row" style="margin-top: 10px;">
           <button class="btn btn-s btn-sm" style="flex:1; font-weight:700;" id="btnFillLayout" title="Isi kotak-kotak layout dengan foto (qty default 1 jika qty 0)">⚡ Isi Foto</button>
           <button class="btn btn-s btn-sm" style="flex:1; font-weight:700; color:var(--accent2); border-color:var(--border);" id="btnClearLayout" title="Kosongkan foto di layout (qty jadi 0)">✕ Kosongkan Foto</button>
+          <button class="btn btn-s btn-sm" style="flex:1; font-weight:700; color:var(--accent2); border-color:var(--border);" id="btnRemoveAllPhotos" title="Hapus semua foto yang sudah diupload">🗑️ Hapus Semua</button>
         </div>
       </div>
 
@@ -369,7 +381,9 @@ select{cursor:pointer}
           <select id="guideStyle">
             <option value="none">Tanpa garis</option>
             <option value="border" selected>Garis putus-putus (border)</option>
+            <option value="border_solid">Garis penuh (border)</option>
             <option value="corner">Tanda sudut (crop mark)</option>
+            <option value="boxcorner">Tanda Sudut di Kotak Foto</option>
             <option value="both">Border + tanda sudut</option>
             <option value="gapmid">Garis di Tengah Jarak Antar Kotak</option>
             <option value="gapmid_corner">Tanda Sudut di Tengah Jarak Antar Kotak</option>
@@ -423,9 +437,11 @@ select{cursor:pointer}
           <button class="btn btn-s btn-sm" id="btnCropMode" title="Aktifkan mode crop: klik & drag di kotak untuk atur posisi gambar">✥ Crop Drag</button>
           <button class="btn btn-s btn-sm" id="btnHandMode" title="Aktifkan mode hand: seret di canvas untuk menggeser tampilan (bisa juga pakai klik kanan seret kapan saja)">🖐️ Hand Tool</button>
           <div class="sep"></div>
-          <button class="btn btn-s btn-sm" id="btnLayoutZoomIn" title="Perbesar tampilan lembar preview">🔍 Tampilan +</button>
-          <button class="btn btn-s btn-sm" id="btnLayoutZoomOut" title="Perkecil tampilan lembar preview">🔍 Tampilan -</button>
-          <button class="btn btn-s btn-sm" id="btnLayoutZoomReset" title="Reset zoom tampilan lembar ke default">🔍 Fit/100%</button>
+          <div class="zoom-control" title="Ctrl+Scroll pada preview juga bisa zoom">
+            <button id="btnLayoutZoomOut" title="Perkecil tampilan lembar (Ctrl -)">−</button>
+            <span class="zoom-display" id="btnLayoutZoomReset" title="Klik untuk beralih Muat Area ⇄ 100%">Fit</span>
+            <button id="btnLayoutZoomIn" title="Perbesar tampilan lembar (Ctrl +)">+</button>
+          </div>
           <div class="sep"></div>
           <button class="btn btn-s btn-sm" id="btnZoomIn" title="Perbesar gambar pada kotak terpilih">➕ Foto +</button>
           <button class="btn btn-s btn-sm" id="btnZoomOut" title="Perkecil gambar pada kotak terpilih">➖ Foto -</button>
@@ -433,7 +449,7 @@ select{cursor:pointer}
           <div class="sep"></div>
           <label style="display:flex;align-items:center;gap:5px;font-size:.7rem;color:var(--text-muted);cursor:pointer"><input type="checkbox" id="snapBoxes" checked style="width:auto">Snap Kotak</label>
           <label style="display:flex;align-items:center;gap:5px;font-size:.7rem;color:var(--text-muted);cursor:pointer"><input type="checkbox" id="snapGrid" style="width:auto">Snap Grid</label>
-          <input type="number" id="snapGridSize" value="5" min="0.5" step="0.5" style="width:56px" title="Jarak snap grid (mm)">
+          <input type="number" id="snapGridSize" value="5" min="0.5" step="0.5" style="width:72px" title="Jarak snap grid (mm)">
           <div class="sep"></div>
           <button class="btn btn-s btn-sm" id="btnResetPos" title="Reset posisi & transformasi kotak terpilih saja">↺ Reset Terpilih</button>
           <button class="btn btn-s btn-sm" id="btnResetAllPos" title="Reset semua posisi & transformasi kotak di halaman aktif ini">↺ Reset Halaman Ini</button>
@@ -487,11 +503,20 @@ select{cursor:pointer}
         </div>
 
         <div class="export-actions">
-          <button class="btn btn-p btn-full" id="btnExportPdf">⬇ Export PDF (semua halaman)</button>
-          <button class="btn btn-s btn-full" id="btnDlPage">⬇ Halaman Ini</button>
-          <div class="row2">
-            <button class="btn btn-s" id="btnDlAll">⬇ Semua Halaman</button>
-            <button class="btn btn-s" id="btnDlAllZip">⬇ Semua (ZIP)</button>
+          <div class="export-group">
+            <div class="export-group-label" id="lblExportPdfGroup">📄 Export PDF</div>
+            <div class="row2">
+              <button class="btn btn-p" id="btnExportPdfPage" title="Export halaman yang sedang aktif sebagai satu file PDF">⬇ Halaman Ini</button>
+              <button class="btn btn-p" id="btnExportPdf" title="Export semua halaman sebagai satu file PDF">⬇ Semua Halaman</button>
+            </div>
+          </div>
+          <div class="export-group">
+            <div class="export-group-label" id="lblExportImgGroup">🖼️ Export Gambar (PNG/JPG)</div>
+            <div class="row2">
+              <button class="btn btn-s" id="btnDlPage" title="Unduh halaman aktif sebagai file gambar">⬇ Halaman Ini</button>
+              <button class="btn btn-s" id="btnDlAll" title="Unduh semua halaman sebagai file gambar terpisah">⬇ Semua Halaman</button>
+            </div>
+            <button class="btn btn-s btn-full" id="btnDlAllZip" title="Unduh semua halaman sebagai gambar, dikemas dalam satu file ZIP">⬇ Semua Halaman (ZIP)</button>
           </div>
         </div>
         <div class="info-box" id="infoExport">💡 Klik nama/thumbnail foto di panel kiri untuk mengatur zoom &amp; posisi crop tiap foto.</div>
@@ -671,6 +696,7 @@ const TRANSLATIONS = {
     
     // Cards
     cardSource: 'Foto Sumber',
+    cardAutoCrop: '🤖 Auto Crop Wajah (AI)',
     cardFillMode: 'Mode Pengisian Lembar',
     cardPaperSize: 'Ukuran Kertas',
     cardBoxSize: 'Ukuran Kotak Foto',
@@ -689,6 +715,9 @@ const TRANSLATIONS = {
     btnPickFolder: '🗂 Muat Folder',
     btnFillLayout: '⚡ Isi Foto',
     btnClearLayout: '✕ Kosongkan Foto',
+    btnRemoveAllPhotos: '🗑️ Hapus Semua',
+    confirmRemoveAllPhotos: 'Yakin ingin menghapus SEMUA foto yang sudah diupload? Tindakan ini tidak bisa dibatalkan.',
+    toastRemoveAllPhotos: '🗑️ Semua foto telah dihapus',
     
     // Fill mode panel
     lblMode: 'Mode',
@@ -727,10 +756,12 @@ const TRANSLATIONS = {
     lblGuideStyle: 'Gaya Garis Potong',
     optGuideNone: 'Tanpa garis',
     optGuideBorder: 'Garis putus-putus (border)',
+    optGuideBorderSolid: 'Garis penuh (border)',
     optGuideCorner: 'Tanda sudut (crop mark)',
     optGuideBoth: 'Border + tanda sudut',
     optGuideGapMid: 'Garis di Tengah Jarak Antar Kotak',
     optGuideGapMidCorner: 'Tanda Sudut di Tengah Jarak Antar Kotak',
+    optGuideBoxCorner: 'Tanda Sudut di Kotak Foto',
     lblBorderColor: 'Warna Garis',
     lblPageBg: 'Latar Halaman',
     
@@ -783,10 +814,13 @@ const TRANSLATIONS = {
     optDpiCustomOpt: 'Custom…',
     lblImgFormat: 'Format Unduh Gambar',
     lblJpgQuality: 'Kualitas JPG',
-    btnExportPdf: '⬇ Export PDF (semua halaman)',
+    lblExportPdfGroup: '📄 Export PDF',
+    lblExportImgGroup: '🖼️ Export Gambar (PNG/JPG)',
+    btnExportPdf: '⬇ Semua Halaman',
+    btnExportPdfPage: '⬇ Halaman Ini',
     btnDlPage: '⬇ Halaman Ini',
     btnDlAll: '⬇ Semua Halaman',
-    btnDlAllZip: '⬇ Semua (ZIP)',
+    btnDlAllZip: '⬇ Semua Halaman (ZIP)',
     infoExport: '💡 Klik nama/thumbnail foto di panel kiri untuk mengatur zoom & posisi crop tiap foto.',
     
     // Stepper & Adjust
@@ -829,6 +863,7 @@ const TRANSLATIONS = {
     toastDlPage: '⬇ Halaman diunduh',
     toastDlAllStart: '⬇ Mengunduh {n} halaman…',
     toastPdfSuccess: '✅ PDF {n} halaman diunduh',
+    toastPdfPageSuccess: '✅ PDF halaman ini diunduh',
     toastPdfFailed: '❌ Gagal membuat PDF: ',
     toastSettingsExport: '⬆ Pengaturan diekspor ke JSON',
     toastSettingsImport: '⬇ Pengaturan diimpor dari JSON',
@@ -863,6 +898,7 @@ const TRANSLATIONS = {
     
     // Cards
     cardSource: 'Source Photos',
+    cardAutoCrop: '🤖 Auto Face Crop (AI)',
     cardFillMode: 'Page Filling Mode',
     cardPaperSize: 'Paper Size',
     cardBoxSize: 'Photo Box Size',
@@ -881,6 +917,9 @@ const TRANSLATIONS = {
     btnPickFolder: '🗂 Load Folder',
     btnFillLayout: '⚡ Fill Photos',
     btnClearLayout: '✕ Clear Photos',
+    btnRemoveAllPhotos: '🗑️ Remove All',
+    confirmRemoveAllPhotos: 'Are you sure you want to remove ALL uploaded photos? This action cannot be undone.',
+    toastRemoveAllPhotos: '🗑️ All photos removed',
     
     // Fill mode panel
     lblMode: 'Mode',
@@ -919,10 +958,12 @@ const TRANSLATIONS = {
     lblGuideStyle: 'Cut Guide Style',
     optGuideNone: 'No guides',
     optGuideBorder: 'Dashed line (border)',
+    optGuideBorderSolid: 'Solid line (border)',
     optGuideCorner: 'Crop marks',
     optGuideBoth: 'Border + Crop marks',
     optGuideGapMid: 'Line in Middle of Spacing',
     optGuideGapMidCorner: 'Crop Marks in Middle of Spacing',
+    optGuideBoxCorner: 'Corner Marks at Photo Box',
     lblBorderColor: 'Guide Color',
     lblPageBg: 'Page Background',
     
@@ -975,10 +1016,13 @@ const TRANSLATIONS = {
     optDpiCustomOpt: 'Custom…',
     lblImgFormat: 'Image Format',
     lblJpgQuality: 'JPG Quality',
-    btnExportPdf: '⬇ Export PDF (all pages)',
+    lblExportPdfGroup: '📄 Export PDF',
+    lblExportImgGroup: '🖼️ Export Image (PNG/JPG)',
+    btnExportPdf: '⬇ All Pages',
+    btnExportPdfPage: '⬇ This Page',
     btnDlPage: '⬇ This Page',
     btnDlAll: '⬇ All Pages',
-    btnDlAllZip: '⬇ All (ZIP)',
+    btnDlAllZip: '⬇ All Pages (ZIP)',
     infoExport: '💡 Click photo name/thumbnail in left panel to adjust crop & zoom for each photo.',
     
     // Stepper & Adjust
@@ -1021,6 +1065,7 @@ const TRANSLATIONS = {
     toastDlPage: '⬇ Page downloaded',
     toastDlAllStart: '⬇ Downloading {n} pages…',
     toastPdfSuccess: '✅ PDF downloaded ({n} pages)',
+    toastPdfPageSuccess: '✅ Page PDF downloaded',
     toastPdfFailed: '❌ Failed to create PDF: ',
     toastSettingsExport: '⬆ Settings exported to JSON',
     toastSettingsImport: '⬇ Settings imported from JSON',
@@ -1513,6 +1558,18 @@ $('btnClearLayout').onclick=()=>{
   refreshAll();
   toast(TRANSLATIONS[state.lang].toastClearLayout);
 };
+$('btnRemoveAllPhotos').onclick=()=>{
+  const t = TRANSLATIONS[state.lang||'id'];
+  if(!state.images.length){ toast(t.toastNoImages); return; }
+  const ok = confirm(t.confirmRemoveAllPhotos);
+  if(!ok) return;
+  state.images.forEach(im=>{ try{ URL.revokeObjectURL(im.url); }catch(e){} });
+  state.images=[];
+  state.overrides={};
+  renderImageList();
+  refreshAll();
+  toast(t.toastRemoveAllPhotos);
+};
 $('fileInput').onchange=e=>{ handleFiles(e.target.files); e.target.value=''; };
 $('folderInput').onchange=e=>{ handleFiles(e.target.files); e.target.value=''; };
 ['dragover','dragenter'].forEach(ev=>$('dropzone').addEventListener(ev,e=>{ e.preventDefault(); $('dropzone').classList.add('drag'); }));
@@ -1990,146 +2047,107 @@ function drawCropMarks(ctx,x,y,w,h,len,gap,color,lw){
   ctx.restore();
 }
 
+/* ── Helper: effective on-page rect of a cell, accounting for manual box
+   rotation (🔄 Rotate Kotak). A 90°/270° manual rotation swaps the box's
+   width/height re-centered on the same center point (see renderPageCanvas's
+   swap90 logic), WITHOUT changing the footprint reserved by the layout
+   packer itself (cell.rotated only rotates content in-place, footprint
+   stays cell.x/y/w/h). This must match that logic exactly so guide lines
+   always track the box as actually drawn. ── */
+function getCellEffectiveRect(pageIndex,ci,cell){
+  const rot=getCellRotation(pageIndex,ci);
+  const swap=(rot===90||rot===270);
+  const cx=cell.x+cell.w/2, cy=cell.y+cell.h/2;
+  const ew=swap?cell.h:cell.w, eh=swap?cell.w:cell.h;
+  return {x:cx-ew/2, y:cy-eh/2, w:ew, h:eh};
+}
+
 /* ── Gap-mid lines: outer boundary offset by half-gap ── */
-function drawGapMidLines(ctx,meta,scale){
-  if(meta.mixed) {
-    const cells = meta.pages[state.currentPage] || [];
-    if (!cells.length) return;
-    ctx.save(); ctx.strokeStyle=state.borderColor||'#999'; ctx.lineWidth=Math.max(1,0.12*scale);
-    ctx.setLineDash([1.2*scale,0.9*scale]);
-    const halfGX=state.gap.x/2, halfGY=state.gap.y/2;
-    cells.forEach(c => {
-      const bx=c.x*scale, by=c.y*scale, bw=c.w*scale, bh=c.h*scale;
-      const hgx=halfGX*scale, hgy=halfGY*scale;
-      // Draw mid-lines relative to each box boundary
-      ctx.beginPath();
-      // top
-      ctx.moveTo(bx - hgx, by - hgy); ctx.lineTo(bx + bw + hgx, by - hgy);
-      // bottom
-      ctx.moveTo(bx - hgx, by + bh + hgy); ctx.lineTo(bx + bw + hgx, by + bh + hgy);
-      // left
-      ctx.moveTo(bx - hgx, by - hgy); ctx.lineTo(bx - hgx, by + bh + hgy);
-      // right
-      ctx.moveTo(bx + bw + hgx, by - hgy); ctx.lineTo(bx + bw + hgx, by + bh + hgy);
-      ctx.stroke();
-    });
-    ctx.restore();
-    return;
-  }
-  if(meta.cols<=0||meta.rows<=0) return;
+function drawGapMidLines(ctx,meta,scale,pageIndex){
+  const cells = meta.pages[pageIndex] || [];
+  if (!cells.length) return;
   ctx.save(); ctx.strokeStyle=state.borderColor||'#999'; ctx.lineWidth=Math.max(1,0.12*scale);
   ctx.setLineDash([1.2*scale,0.9*scale]);
-  const gridW=meta.cols*meta.boxW+(meta.cols-1)*meta.gapX;
-  const gridH=meta.rows*meta.boxH+(meta.rows-1)*meta.gapY;
-  const halfGX=meta.gapX/2, halfGY=meta.gapY/2;
-  /* Outer boundaries offset by half-gap, clamped to page margins */
-  const pmL=state.pageMargin.l, pmR=state.paper.w-state.pageMargin.r;
-  const pmT=state.pageMargin.t, pmB=state.paper.h-state.pageMargin.b;
-  const left=Math.max(pmL, meta.originX-halfGX)*scale;
-  const right=Math.min(pmR, meta.originX+gridW+halfGX)*scale;
-  const top=Math.max(pmT, meta.originY-halfGY)*scale;
-  const bottom=Math.min(pmB, meta.originY+gridH+halfGY)*scale;
-  ctx.beginPath();
-  ctx.moveTo(left,top); ctx.lineTo(left,bottom);
-  for(let c=0;c<meta.cols-1;c++){
-    const xMid=(meta.originX+meta.boxW+c*(meta.boxW+meta.gapX)+halfGX)*scale;
-    ctx.moveTo(xMid,top); ctx.lineTo(xMid,bottom);
-  }
-  ctx.moveTo(right,top); ctx.lineTo(right,bottom);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(left,top); ctx.lineTo(right,top);
-  for(let r=0;r<meta.rows-1;r++){
-    const yMid=(meta.originY+meta.boxH+r*(meta.boxH+meta.gapY)+halfGY)*scale;
-    ctx.moveTo(left,yMid); ctx.lineTo(right,yMid);
-  }
-  ctx.moveTo(left,bottom); ctx.lineTo(right,bottom);
-  ctx.stroke();
+  const halfGX=state.gap.x/2, halfGY=state.gap.y/2;
+  /* Clamp to the PHYSICAL PAGE edges, not the margin boundary. Clamping to the margin
+     was the actual bug: when the box grid fills the usable area exactly (very common),
+     edge boxes sit flush against pmL/pmR/pmT/pmB, so any half-gap offset toward the
+     margin got clipped straight back to the box's own edge — silently discarding the
+     Box Spacing for that side. Margin whitespace is blank paper, so it's safe to let
+     the guide extend into it; only the physical sheet edge is a hard limit. */
+  const pageL=0, pageR=state.paper.w*scale;
+  const pageT=0, pageB=state.paper.h*scale;
+  const clampX=v=>Math.max(pageL,Math.min(pageR,v));
+  const clampY=v=>Math.max(pageT,Math.min(pageB,v));
+  cells.forEach((c,ci) => {
+    const r=getCellEffectiveRect(pageIndex,ci,c);
+    const bx=r.x*scale, by=r.y*scale, bw=r.w*scale, bh=r.h*scale;
+    const hgx=halfGX*scale, hgy=halfGY*scale;
+    const left=clampX(bx-hgx), right=clampX(bx+bw+hgx);
+    const top=clampY(by-hgy), bottom=clampY(by+bh+hgy);
+    // Draw mid-lines relative to each box's actual (rotation-aware) boundary
+    ctx.beginPath();
+    // top
+    ctx.moveTo(left, top); ctx.lineTo(right, top);
+    // bottom
+    ctx.moveTo(left, bottom); ctx.lineTo(right, bottom);
+    // left
+    ctx.moveTo(left, top); ctx.lineTo(left, bottom);
+    // right
+    ctx.moveTo(right, top); ctx.lineTo(right, bottom);
+    ctx.stroke();
+  });
   ctx.restore();
 }
 
 /* ── Corner marks at gap-mid intersections ── */
-function drawGapMidCorners(ctx,meta,scale){
-  if(meta.mixed) {
-    const cells = meta.pages[state.currentPage] || [];
-    if (!cells.length) return;
-    ctx.save(); ctx.strokeStyle=state.borderColor||'#999'; ctx.lineWidth=Math.max(1,0.15*scale);
-    ctx.setLineDash([]);
-    const halfGX=state.gap.x/2, halfGY=state.gap.y/2;
-    const maxLenX=halfGX>0.5?Math.min(halfGX*0.85,3):3;
-    const maxLenY=halfGY>0.5?Math.min(halfGY*0.85,3):3;
-    const markLen=Math.max(0.8,Math.min(maxLenX,maxLenY))*scale;
-    cells.forEach(c => {
-      const bx=c.x*scale, by=c.y*scale, bw=c.w*scale, bh=c.h*scale;
-      const hgx=halfGX*scale, hgy=halfGY*scale;
-      const ml=markLen;
-
-      // Draw corners at the half-gap outer boundaries of this cell
-      // Top-Left corner of boundaries
-      ctx.beginPath(); ctx.moveTo(bx - hgx, by - hgy); ctx.lineTo(bx - hgx + ml, by - hgy); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(bx - hgx, by - hgy); ctx.lineTo(bx - hgx, by - hgy + ml); ctx.stroke();
-
-      // Top-Right corner of boundaries
-      ctx.beginPath(); ctx.moveTo(bx + bw + hgx, by - hgy); ctx.lineTo(bx + bw + hgx - ml, by - hgy); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(bx + bw + hgx, by - hgy); ctx.lineTo(bx + bw + hgx, by - hgy + ml); ctx.stroke();
-
-      // Bottom-Left corner of boundaries
-      ctx.beginPath(); ctx.moveTo(bx - hgx, by + bh + hgy); ctx.lineTo(bx - hgx + ml, by + bh + hgy); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(bx - hgx, by + bh + hgy); ctx.lineTo(bx - hgx, by + bh + hgy - ml); ctx.stroke();
-
-      // Bottom-Right corner of boundaries
-      ctx.beginPath(); ctx.moveTo(bx + bw + hgx, by + bh + hgy); ctx.lineTo(bx + bw + hgx - ml, by + bh + hgy); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(bx + bw + hgx, by + bh + hgy); ctx.lineTo(bx + bw + hgx, by + bh + hgy - ml); ctx.stroke();
-    });
-    ctx.restore();
-    return;
-  }
-  if(meta.cols<=0||meta.rows<=0) return;
-  const halfGX=meta.gapX/2, halfGY=meta.gapY/2;
-  const gridW=meta.cols*meta.boxW+(meta.cols-1)*meta.gapX;
-  const gridH=meta.rows*meta.boxH+(meta.rows-1)*meta.gapY;
-  const pmL=state.pageMargin.l, pmR=state.paper.w-state.pageMargin.r;
-  const pmT=state.pageMargin.t, pmB=state.paper.h-state.pageMargin.b;
-  /* Vertical line positions */
-  const vx=[];
-  vx.push(Math.max(pmL,meta.originX-halfGX));
-  for(let c=0;c<meta.cols-1;c++) vx.push(meta.originX+meta.boxW+c*(meta.boxW+meta.gapX)+halfGX);
-  vx.push(Math.min(pmR,meta.originX+gridW+halfGX));
-  /* Horizontal line positions */
-  const hy=[];
-  hy.push(Math.max(pmT,meta.originY-halfGY));
-  for(let r=0;r<meta.rows-1;r++) hy.push(meta.originY+meta.boxH+r*(meta.boxH+meta.gapY)+halfGY);
-  hy.push(Math.min(pmB,meta.originY+gridH+halfGY));
-  /* Mark length: limited so marks don't overlap with photo boxes */
-  const maxLenX=halfGX>0.5?Math.min(halfGX*0.85,3):3;
-  const maxLenY=halfGY>0.5?Math.min(halfGY*0.85,3):3;
-  const markLen=Math.max(0.8,Math.min(maxLenX,maxLenY))*scale;
-  ctx.save();
-  ctx.strokeStyle=state.borderColor||'#999';
-  ctx.lineWidth=Math.max(1,0.15*scale);
+function drawGapMidCorners(ctx,meta,scale,pageIndex){
+  const cells = meta.pages[pageIndex] || [];
+  if (!cells.length) return;
+  ctx.save(); ctx.strokeStyle=state.borderColor||'#999'; ctx.lineWidth=Math.max(1,0.15*scale);
   ctx.setLineDash([]);
-  for(let i=0;i<vx.length;i++){
-    for(let j=0;j<hy.length;j++){
-      const px=vx[i]*scale, py=hy[j]*scale;
-      /* Draw L-marks for each quadrant that has a cell */
-      if(i<vx.length-1 && j<hy.length-1){ /* bottom-right quadrant */
-        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+markLen,py); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,py+markLen); ctx.stroke();
-      }
-      if(i>0 && j<hy.length-1){ /* bottom-left */
-        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px-markLen,py); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,py+markLen); ctx.stroke();
-      }
-      if(i<vx.length-1 && j>0){ /* top-right */
-        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+markLen,py); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,py-markLen); ctx.stroke();
-      }
-      if(i>0 && j>0){ /* top-left */
-        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px-markLen,py); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,py-markLen); ctx.stroke();
-      }
-    }
-  }
+  const halfGX=state.gap.x/2, halfGY=state.gap.y/2;
+  /* Mark length must always stay within the actual half-gap (85% max), never a fixed
+     fallback — otherwise on tight Box Spacing the mark overshoots past the midpoint
+     and visibly overlaps the photo box instead of sitting in the middle of the gap. */
+  const maxLenX=Math.min(halfGX*0.85,3);
+  const maxLenY=Math.min(halfGY*0.85,3);
+  const markLen=Math.min(maxLenX,maxLenY)*scale;
+  /* Clamp to the PHYSICAL PAGE edges, not the margin boundary. Clamping to the margin
+     was the actual bug: when the box grid fills the usable area exactly (very common),
+     edge boxes sit flush against pmL/pmR/pmT/pmB, so any half-gap offset toward the
+     margin got clipped straight back to the box's own edge — silently discarding the
+     Box Spacing for that side. Margin whitespace is blank paper, so it's safe to let
+     the guide extend into it; only the physical sheet edge is a hard limit. */
+  const pageL=0, pageR=state.paper.w*scale;
+  const pageT=0, pageB=state.paper.h*scale;
+  const clampX=v=>Math.max(pageL,Math.min(pageR,v));
+  const clampY=v=>Math.max(pageT,Math.min(pageB,v));
+  cells.forEach((c,ci) => {
+    const r=getCellEffectiveRect(pageIndex,ci,c);
+    const bx=r.x*scale, by=r.y*scale, bw=r.w*scale, bh=r.h*scale;
+    const hgx=halfGX*scale, hgy=halfGY*scale;
+    const ml=markLen;
+    const xL=clampX(bx-hgx), xR=clampX(bx+bw+hgx);
+    const yT=clampY(by-hgy), yB=clampY(by+bh+hgy);
+
+    // Draw corners at the half-gap outer boundaries of this cell
+    // Top-Left corner of boundaries
+    ctx.beginPath(); ctx.moveTo(xL, yT); ctx.lineTo(xL + ml, yT); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xL, yT); ctx.lineTo(xL, yT + ml); ctx.stroke();
+
+    // Top-Right corner of boundaries
+    ctx.beginPath(); ctx.moveTo(xR, yT); ctx.lineTo(xR - ml, yT); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xR, yT); ctx.lineTo(xR, yT + ml); ctx.stroke();
+
+    // Bottom-Left corner of boundaries
+    ctx.beginPath(); ctx.moveTo(xL, yB); ctx.lineTo(xL + ml, yB); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xL, yB); ctx.lineTo(xL, yB - ml); ctx.stroke();
+
+    // Bottom-Right corner of boundaries
+    ctx.beginPath(); ctx.moveTo(xR, yB); ctx.lineTo(xR - ml, yB); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xR, yB); ctx.lineTo(xR, yB - ml); ctx.stroke();
+  });
   ctx.restore();
 }
 
@@ -2202,16 +2220,45 @@ function renderPageCanvas(meta,pageIndex,dpi){
       ctx.strokeRect(0.5,0.5,cw-1,ch-1);
       ctx.restore();
     }
+    if(state.guide==='border_solid'){
+      ctx.save(); ctx.strokeStyle=state.borderColor||'#999'; ctx.lineWidth=Math.max(1,0.12*scale);
+      ctx.setLineDash([]);
+      ctx.strokeRect(0.5,0.5,cw-1,ch-1);
+      ctx.restore();
+    }
     if(state.guide==='corner'||state.guide==='both'){
       const maxExtent=Math.max(0.5, Math.min(meta.gapX||99, meta.gapY||99)/2);
       const markGap=Math.min(0.8, maxExtent*0.15)*scale;
       const markLen=Math.max(0.5, Math.min(2.5, maxExtent-0.8))*scale;
       drawCropMarks(ctx,0,0,cw,ch,markLen,markGap,state.borderColor||'#999',Math.max(1,0.12*scale));
     }
+    if(state.guide==='boxcorner'){
+      /* Same solid style as "Garis penuh (border)", but only drawn as short
+         L-brackets sitting on the box's own edge at each corner (no protrusion
+         into the gap). Mark length matches "Tanda Sudut di Tengah Jarak Antar
+         Kotak" (drawGapMidCorners) so both corner-style guides look consistent. */
+      ctx.save(); ctx.strokeStyle=state.borderColor||'#999'; ctx.lineWidth=Math.max(1,0.12*scale);
+      ctx.setLineDash([]);
+      const halfGX=state.gap.x/2, halfGY=state.gap.y/2;
+      const maxLenX=halfGX>0.5?Math.min(halfGX*0.85,3):3;
+      const maxLenY=halfGY>0.5?Math.min(halfGY*0.85,3):3;
+      const markLen=Math.max(0.8,Math.min(maxLenX,maxLenY))*scale;
+      const cornerSeg=(cx,cy,dx,dy)=>{
+        ctx.beginPath();
+        ctx.moveTo(cx,cy); ctx.lineTo(cx+dx*markLen,cy);
+        ctx.moveTo(cx,cy); ctx.lineTo(cx,cy+dy*markLen);
+        ctx.stroke();
+      };
+      cornerSeg(0.5,0.5,1,1);
+      cornerSeg(cw-0.5,0.5,-1,1);
+      cornerSeg(0.5,ch-0.5,1,-1);
+      cornerSeg(cw-0.5,ch-0.5,-1,-1);
+      ctx.restore();
+    }
     ctx.restore();
   });
-  if(state.guide==='gapmid'){ drawGapMidLines(ctx,meta,scale); }
-  if(state.guide==='gapmid_corner'){ drawGapMidCorners(ctx,meta,scale); }
+  if(state.guide==='gapmid'){ drawGapMidLines(ctx,meta,scale,pageIndex); }
+  if(state.guide==='gapmid_corner'){ drawGapMidCorners(ctx,meta,scale,pageIndex); }
   return cv;
 }
 
@@ -2414,6 +2461,7 @@ window.addEventListener('mousemove', e=>{
 
 /* Scroll wheel listener to zoom photo inside selected box (ONLY intercepts when Crop Mode is active) */
 previewCanvas.addEventListener('wheel', e => {
+  if (e.ctrlKey || e.metaKey) return; // Ctrl/Cmd+scroll is reserved for layout zoom (see below)
   if (!state.cropDragMode || !lastMeta) return;
   
   const pt = clientToMM(e);
@@ -2613,6 +2661,9 @@ $('btnHandMode').onclick=()=>{
 
 
 /* ── Canvas Layout Zoom Handlers ── */
+const LAYOUT_ZOOM_MIN = 0.25;
+const LAYOUT_ZOOM_MAX = 2.5;
+const LAYOUT_ZOOM_STEP = 0.15;
 let currentLayoutZoom = 1.0;
 let isFitMode = true;
 
@@ -2645,23 +2696,24 @@ function updateLayoutZoom() {
     previewCanvas.style.width = w + 'px';
     previewCanvas.style.height = h + 'px';
   }
+
+  // Keep the zoom pill in sync: live percentage / Fit label + disabled state at bounds
+  const disp = $('btnLayoutZoomReset');
+  if (disp) {
+    disp.textContent = isFitMode ? 'Fit' : Math.round(currentLayoutZoom * 100) + '%';
+    disp.classList.toggle('is-fit', isFitMode);
+  }
+  $('btnLayoutZoomOut').disabled = !isFitMode && currentLayoutZoom <= LAYOUT_ZOOM_MIN + 1e-6;
+  $('btnLayoutZoomIn').disabled = !isFitMode && currentLayoutZoom >= LAYOUT_ZOOM_MAX - 1e-6;
 }
 
-$('btnLayoutZoomIn').onclick=()=>{
+function layoutZoomBy(step) {
   isFitMode = false;
-  currentLayoutZoom = Math.min(2.5, currentLayoutZoom + 0.15);
+  currentLayoutZoom = Math.max(LAYOUT_ZOOM_MIN, Math.min(LAYOUT_ZOOM_MAX, currentLayoutZoom + step));
   updateLayoutZoom();
-  toast(TRANSLATIONS[state.lang||'id'].toastZoomDisplay.replace('{n}', Math.round(currentLayoutZoom * 100)));
-};
+}
 
-$('btnLayoutZoomOut').onclick=()=>{
-  isFitMode = false;
-  currentLayoutZoom = Math.max(0.25, currentLayoutZoom - 0.15);
-  updateLayoutZoom();
-  toast(TRANSLATIONS[state.lang||'id'].toastZoomDisplay.replace('{n}', Math.round(currentLayoutZoom * 100)));
-};
-
-$('btnLayoutZoomReset').onclick=()=>{
+function layoutZoomToggleFit() {
   isFitMode = !isFitMode;
   if (isFitMode) {
     updateLayoutZoom();
@@ -2671,11 +2723,42 @@ $('btnLayoutZoomReset').onclick=()=>{
     updateLayoutZoom();
     toast(TRANSLATIONS[state.lang||'id'].toastZoomDisplayReset);
   }
-};
+}
+
+$('btnLayoutZoomIn').onclick = () => layoutZoomBy(LAYOUT_ZOOM_STEP);
+$('btnLayoutZoomOut').onclick = () => layoutZoomBy(-LAYOUT_ZOOM_STEP);
+$('btnLayoutZoomReset').onclick = layoutZoomToggleFit;
 
 // Auto fit on window resize
 window.addEventListener('resize', () => {
   if (isFitMode) updateLayoutZoom();
+});
+
+// Ctrl/Cmd + Scroll on the preview area zooms in/out, anchored on the cursor position
+$('previewWrap').addEventListener('wheel', e => {
+  if (!(e.ctrlKey || e.metaKey) || !lastMeta) return;
+  e.preventDefault();
+  const wrap = $('previewWrap');
+  const rect = wrap.getBoundingClientRect();
+  const prevZoom = currentLayoutZoom;
+  // Point under the cursor, in unzoomed canvas pixels
+  const anchorX = (wrap.scrollLeft + e.clientX - rect.left) / prevZoom;
+  const anchorY = (wrap.scrollTop + e.clientY - rect.top) / prevZoom;
+  isFitMode = false;
+  const step = e.deltaY > 0 ? -LAYOUT_ZOOM_STEP : LAYOUT_ZOOM_STEP;
+  currentLayoutZoom = Math.max(LAYOUT_ZOOM_MIN, Math.min(LAYOUT_ZOOM_MAX, currentLayoutZoom + step));
+  updateLayoutZoom();
+  // Re-anchor scroll so the same canvas point stays under the cursor
+  wrap.scrollLeft = anchorX * currentLayoutZoom - (e.clientX - rect.left);
+  wrap.scrollTop = anchorY * currentLayoutZoom - (e.clientY - rect.top);
+}, { passive: false });
+
+// Keyboard shortcuts: Ctrl/Cmd + "+"/"-" to zoom, Ctrl/Cmd + 0 to toggle Fit/100%
+document.addEventListener('keydown', e => {
+  if (!(e.ctrlKey || e.metaKey)) return;
+  if (e.key === '+' || e.key === '=') { e.preventDefault(); layoutZoomBy(LAYOUT_ZOOM_STEP); }
+  else if (e.key === '-' || e.key === '_') { e.preventDefault(); layoutZoomBy(-LAYOUT_ZOOM_STEP); }
+  else if (e.key === '0') { e.preventDefault(); layoutZoomToggleFit(); }
 });
 
 /* ── Image Crop Zoom and Pan Handlers ── */
@@ -2970,6 +3053,29 @@ $('btnDlAllZip').onclick=async()=>{
   }
 };
 
+$('btnExportPdfPage').onclick=async()=>{
+  const meta=computeLayoutMeta();
+  if(meta.cellsPerPage===0){ toast(TRANSLATIONS[state.lang||'id'].toastWarnBoxOverlap); return; }
+  const dpi=getSelectedDPI();
+  const filenames=buildPageFilenames(meta);
+  const btn=$('btnExportPdfPage'); const orig=btn.textContent;
+  btn.disabled=true; btn.textContent='⏳ Membuat PDF…';
+  try{
+    const {jsPDF}=window.jspdf;
+    const orientation=meta.paperW>meta.paperH?'landscape':'portrait';
+    const doc=new jsPDF({orientation, unit:'mm', format:[meta.paperW,meta.paperH]});
+    const cv=renderPageCanvas(meta,state.currentPage,dpi);
+    const data=cv.toDataURL('image/jpeg',0.95);
+    doc.addImage(data,'JPEG',0,0,meta.paperW,meta.paperH);
+    doc.save(`${filenames[state.currentPage]}.pdf`);
+    toast(TRANSLATIONS[state.lang||'id'].toastPdfPageSuccess);
+  }catch(err){
+    toast(TRANSLATIONS[state.lang||'id'].toastPdfFailed+err.message);
+  }finally{
+    btn.disabled=false; btn.textContent=orig;
+  }
+};
+
 $('btnExportPdf').onclick=async()=>{
   const meta=computeLayoutMeta();
   if(meta.cellsPerPage===0){ toast(TRANSLATIONS[state.lang||'id'].toastWarnBoxOverlap); return; }
@@ -3118,7 +3224,7 @@ function applyLanguage() {
   if(subtitle) subtitle.textContent = t.logoSubtitle;
   
   const titles = document.querySelectorAll('.card-title .t');
-  const cardKeys = ['cardSource', 'cardFillMode', 'cardPaperSize', 'cardBoxSize', 'cardGapMargin', 'cardGuides', 'cardSettings', 'cardPreview', 'cardExport'];
+  const cardKeys = ['cardSource', 'cardAutoCrop', 'cardFillMode', 'cardPaperSize', 'cardBoxSize', 'cardGapMargin', 'cardGuides', 'cardSettings', 'cardPreview', 'cardExport'];
   cardKeys.forEach((k, idx) => {
     if(titles[idx]) titles[idx].textContent = t[k];
   });
@@ -3206,6 +3312,8 @@ function applyLanguage() {
   if(optGNone) optGNone.textContent = t.optGuideNone;
   const optGBorder = document.querySelector('#guideStyle option[value="border"]');
   if(optGBorder) optGBorder.textContent = t.optGuideBorder;
+  const optGBorderSolid = document.querySelector('#guideStyle option[value="border_solid"]');
+  if(optGBorderSolid) optGBorderSolid.textContent = t.optGuideBorderSolid;
   const optGCorner = document.querySelector('#guideStyle option[value="corner"]');
   if(optGCorner) optGCorner.textContent = t.optGuideCorner;
   const optGBoth = document.querySelector('#guideStyle option[value="both"]');
@@ -3214,6 +3322,8 @@ function applyLanguage() {
   if(optGGapMid) optGGapMid.textContent = t.optGuideGapMid;
   const optGGapMidCorner = document.querySelector('#guideStyle option[value="gapmid_corner"]');
   if(optGGapMidCorner) optGGapMidCorner.textContent = t.optGuideGapMidCorner;
+  const optGBoxCorner = document.querySelector('#guideStyle option[value="boxcorner"]');
+  if(optGBoxCorner) optGBoxCorner.textContent = t.optGuideBoxCorner;
 
   if($('optDpi72')) $('optDpi72').textContent = t.optDpi72;
   if($('optDpi150')) $('optDpi150').textContent = t.optDpi150;
@@ -3232,10 +3342,14 @@ function applyLanguage() {
   $('btnPickFolder').textContent = t.btnPickFolder;
   $('btnFillLayout').textContent = t.btnFillLayout;
   $('btnClearLayout').textContent = t.btnClearLayout;
+  $('btnRemoveAllPhotos').textContent = t.btnRemoveAllPhotos;
   $('btnAddMixedSize').textContent = t.btnAddMixedSize;
   $('btnExportSettings').textContent = t.btnExportSettings;
   $('btnImportSettings').textContent = t.btnImportSettings;
+  if($('lblExportPdfGroup')) $('lblExportPdfGroup').textContent = t.lblExportPdfGroup;
+  if($('lblExportImgGroup')) $('lblExportImgGroup').textContent = t.lblExportImgGroup;
   $('btnExportPdf').textContent = t.btnExportPdf;
+  $('btnExportPdfPage').textContent = t.btnExportPdfPage;
   $('btnDlPage').textContent = t.btnDlPage;
   $('btnDlAll').textContent = t.btnDlAll;
   $('btnDlAllZip').textContent = t.btnDlAllZip;
@@ -3246,9 +3360,8 @@ function applyLanguage() {
   
   $('btnRotateSel').textContent = t.btnRotateSel;
   $('btnRotateImgSel').textContent = t.btnRotateImgSel;
-  $('btnLayoutZoomIn').textContent = t.btnLayoutZoomIn;
-  $('btnLayoutZoomOut').textContent = t.btnLayoutZoomOut;
-  $('btnLayoutZoomReset').textContent = t.btnLayoutZoomReset;
+  // Zoom pill icons stay static; only refresh its live Fit/% display + tooltips below
+  if (typeof updateLayoutZoom === 'function' && typeof lastMeta !== 'undefined' && lastMeta) updateLayoutZoom();
   $('btnZoomIn').textContent = t.btnZoomIn;
   $('btnZoomOut').textContent = t.btnZoomOut;
   $('btnResetPan').textContent = t.btnResetPan;
@@ -3284,9 +3397,9 @@ function applyLanguage() {
   $('btnRotateImgSel').title = lang === 'id' ? 'Putar FOTO saja 90° pada kotak terpilih (ukuran kotak tetap)' : 'Rotate PHOTO only 90° on selected boxes (box size remains same)';
   $('btnCropMode').title = lang === 'id' ? 'Aktifkan mode crop: klik & drag di kotak untuk atur posisi gambar' : 'Enable crop mode: click & drag inside boxes to pan image';
   $('btnHandMode').title = lang === 'id' ? 'Aktifkan mode hand: seret di canvas untuk menggeser tampilan (bisa juga pakai klik kanan seret kapan saja)' : 'Enable hand mode: drag on canvas to pan layout view';
-  $('btnLayoutZoomIn').title = lang === 'id' ? 'Perbesar tampilan lembar preview' : 'Zoom in on sheet preview';
-  $('btnLayoutZoomOut').title = lang === 'id' ? 'Perkecil tampilan lembar preview' : 'Zoom out on sheet preview';
-  $('btnLayoutZoomReset').title = lang === 'id' ? 'Reset zoom tampilan lembar ke default' : 'Reset sheet zoom to default';
+  $('btnLayoutZoomIn').title = lang === 'id' ? 'Perbesar tampilan lembar preview (Ctrl +)' : 'Zoom in on sheet preview (Ctrl +)';
+  $('btnLayoutZoomOut').title = lang === 'id' ? 'Perkecil tampilan lembar preview (Ctrl -)' : 'Zoom out on sheet preview (Ctrl -)';
+  $('btnLayoutZoomReset').title = lang === 'id' ? 'Klik utk beralih Muat Area ⇄ 100% (Ctrl+0). Ctrl+Scroll di preview juga bisa zoom.' : 'Click to toggle Fit ⇄ 100% (Ctrl+0). Ctrl+Scroll on the preview also zooms.';
   $('btnZoomIn').title = lang === 'id' ? 'Perbesar gambar pada kotak terpilih' : 'Zoom in photo inside selected boxes';
   $('btnZoomOut').title = lang === 'id' ? 'Perkecil gambar pada kotak terpilih' : 'Zoom out photo inside selected boxes';
   $('btnResetPan').title = lang === 'id' ? 'Reset posisi geser (pan) pada kotak terpilih' : 'Reset photo pan to center on selected boxes';
