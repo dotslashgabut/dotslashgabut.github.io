@@ -1,9 +1,10 @@
 # List of .html Files
-Generation Time: 29/07/2026 23.09.33,39
+Generation Time: 30/07/2026 21.45.13,07
 
 https://dotslashgabut.github.io/advanced-image-comparison.html
 https://dotslashgabut.github.io/alpha-extractor-alt.html
 https://dotslashgabut.github.io/alpha-extractor.html
+https://dotslashgabut.github.io/android-icon-suite-svg-favicons.html
 https://dotslashgabut.github.io/autopasfoto.html
 https://dotslashgabut.github.io/character-counter.html
 https://dotslashgabut.github.io/chromaforge.html
@@ -25,6 +26,7 @@ https://dotslashgabut.github.io/compact-audiomotion-analyzer-deepseek-edit.html
 https://dotslashgabut.github.io/compact-audiomotion-analyzer-grok.html
 https://dotslashgabut.github.io/compact-audiomotion-analyzer-kimi-edit.html
 https://dotslashgabut.github.io/compact-audiomotion-analyzer.html
+https://dotslashgabut.github.io/crop-studio.html
 https://dotslashgabut.github.io/custom-password-generator.html
 https://dotslashgabut.github.io/cut-optimization-calculator.html
 https://dotslashgabut.github.io/cutopt-alt.html
@@ -56,6 +58,7 @@ https://dotslashgabut.github.io/network-calculator.html
 https://dotslashgabut.github.io/paper-cut-optimizer.html
 https://dotslashgabut.github.io/paper-cutting-optimizer.html
 https://dotslashgabut.github.io/pasfoto-alt.html
+https://dotslashgabut.github.io/pasfoto-auto-crop.html
 https://dotslashgabut.github.io/pasfoto-id.html
 https://dotslashgabut.github.io/pasfoto.html
 https://dotslashgabut.github.io/pixel-coordinates-to-color-codes.html
