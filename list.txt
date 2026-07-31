@@ -1,5 +1,5 @@
 # List of .html Files
-Generation Time: 30/07/2026 21.45.13,07
+Generation Time: 31/07/2026  9.58.34,15
 
 https://dotslashgabut.github.io/advanced-image-comparison.html
 https://dotslashgabut.github.io/alpha-extractor-alt.html
@@ -44,6 +44,7 @@ https://dotslashgabut.github.io/image-comparison-app-fullscreen.html
 https://dotslashgabut.github.io/image-comparison-app-old.html
 https://dotslashgabut.github.io/image-comparison-app.html
 https://dotslashgabut.github.io/index.html
+https://dotslashgabut.github.io/milk-player.html
 https://dotslashgabut.github.io/minimalist-audio-compare-alt1.html
 https://dotslashgabut.github.io/minimalist-audio-compare-alt2.html
 https://dotslashgabut.github.io/minimalist-audio-compare.html
