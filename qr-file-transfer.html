@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QR File Transfer — Encode / Decode File ke Video QR</title>
+<title>QR File Transfer — Encode / Decode File to QR Video</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
@@ -126,7 +126,7 @@
   <header>
     <div class="eyebrow">file ↔ base64 ↔ animated qr ↔ video</div>
     <h1>QR File Transfer</h1>
-    <p class="sub">Encode file apapun jadi rangkaian QR-code yang dianimasikan lalu direkam ke video. Decode video itu balik jadi file aslinya — semuanya di browser, tanpa server.</p>
+    <p class="sub">Encode any file into a sequence of animated QR codes and record it as a video. Decode that video back into the original file — all in the browser, no server involved.</p>
     <div class="modstrip" id="modstrip"></div>
   </header>
 
@@ -138,51 +138,51 @@
   <!-- ENCODE -->
   <section class="panel active" id="panel-encode">
     <div class="card">
-      <h2>Sumber file</h2>
-      <p class="hint">File akan dibaca sebagai base64, dipecah jadi beberapa bagian, tiap bagian jadi 1 frame QR.</p>
+      <h2>Source file</h2>
+      <p class="hint">The file will be read as base64, split into parts, and each part becomes one QR frame.</p>
       <div class="filedrop" id="encDrop">
         <input type="file" id="encFile">
-        <span id="encFileLabel">Klik untuk pilih file, atau drag &amp; drop di sini</span>
+        <span id="encFileLabel">Click to choose a file, or drag &amp; drop here</span>
       </div>
     </div>
 
     <div class="card">
-      <h2>Pengaturan encode</h2>
+      <h2>Encode settings</h2>
       <div class="field-row">
         <div class="field">
-          <label>Ukuran chunk (karakter)</label>
+          <label>Chunk size (characters)</label>
           <input type="number" id="chunkSize" value="900" min="100" max="2800" step="50">
         </div>
         <div class="field">
           <label>Error correction</label>
           <select id="ecLevel">
-            <option value="L">L — kapasitas maks</option>
-            <option value="M" selected>M — seimbang</option>
-            <option value="Q">Q — lebih tahan noise</option>
-            <option value="H">H — paling tahan noise</option>
+            <option value="L">L — max capacity</option>
+            <option value="M" selected>M — balanced</option>
+            <option value="Q">Q — more noise-resistant</option>
+            <option value="H">H — most noise-resistant</option>
           </select>
         </div>
         <div class="field">
-          <label>Ukuran QR (px)</label>
+          <label>QR size (px)</label>
           <input type="number" id="qrSize" value="480" min="200" max="1000" step="20">
         </div>
       </div>
       <div class="field-row">
         <div class="field">
-          <label>Frame rate video (fps)</label>
+          <label>Video frame rate (fps)</label>
           <input type="number" id="fps" value="5" min="1" max="30">
         </div>
         <div class="field">
-          <label>Ulangi rangkaian (loop)</label>
+          <label>Repeat sequence (loop)</label>
           <input type="number" id="repeatCount" value="3" min="1" max="20">
         </div>
       </div>
-      <p class="note">Kapasitas QR per chunk tergantung error correction: <b>L≈2900</b>, <b>M≈2300</b>, <b>Q≈1600</b>, <b>H≈1250</b> karakter (sudah termasuk sedikit overhead header). Loop lebih banyak = video lebih tahan terhadap frame yang gagal ke-decode saat proses decode nanti.</p>
+      <p class="note">QR capacity per chunk depends on error correction: <b>L≈2900</b>, <b>M≈2300</b>, <b>Q≈1600</b>, <b>H≈1250</b> characters (already includes a bit of header overhead). More loops = the video is more resilient to frames that fail to decode later.</p>
 
-      <button class="action" id="btnEncode">Mulai Encode → Video</button>
+      <button class="action" id="btnEncode">Start Encode → Video</button>
 
       <div class="progress-outer"><div class="progress-inner" id="encProgress"></div></div>
-      <div class="progress-label" id="encProgressLabel">Menunggu file...</div>
+      <div class="progress-label" id="encProgressLabel">Waiting for file...</div>
 
       <div class="stage">
         <canvas id="encCanvas" width="220" height="220"></canvas>
@@ -196,28 +196,28 @@
   <!-- DECODE -->
   <section class="panel" id="panel-decode">
     <div class="card">
-      <h2>Video QR</h2>
-      <p class="hint">Upload video hasil encode (atau video hasil rekam ulang layar). Tiap frame akan dibaca dan QR-nya di-decode.</p>
+      <h2>QR video</h2>
+      <p class="hint">Upload the encoded video (or a screen-recorded copy of it). Each frame will be read and its QR code decoded.</p>
       <div class="filedrop" id="decDrop">
         <input type="file" id="decFile" accept="video/*">
-        <span id="decFileLabel">Klik untuk pilih video, atau drag &amp; drop di sini</span>
+        <span id="decFileLabel">Click to choose a video, or drag &amp; drop here</span>
       </div>
     </div>
 
     <div class="card">
-      <h2>Pengaturan decode</h2>
+      <h2>Decode settings</h2>
       <div class="field-row">
         <div class="field">
-          <label>Sample rate baca frame (fps)</label>
+          <label>Frame sampling rate (fps)</label>
           <input type="number" id="decFps" value="10" min="1" max="60">
         </div>
       </div>
-      <p class="note">Sample rate sebaiknya ≥ fps yang dipakai saat encode, supaya tidak ada frame QR yang terlewat. Kalau ada chunk yang hilang setelah proses selesai, naikkan angka ini lalu coba lagi.</p>
+      <p class="note">The sampling rate should be ≥ the fps used during encoding, so no QR frame gets skipped. If any chunks are missing after the process finishes, raise this value and try again.</p>
 
-      <button class="action" id="btnDecode">Mulai Decode Video</button>
+      <button class="action" id="btnDecode">Start Decoding Video</button>
 
       <div class="progress-outer"><div class="progress-inner" id="decProgress"></div></div>
-      <div class="progress-label" id="decProgressLabel">Menunggu video...</div>
+      <div class="progress-label" id="decProgressLabel">Waiting for video...</div>
 
       <div class="stage">
         <video id="decVideo" controls></video>
@@ -225,12 +225,12 @@
         <div class="log" id="decLog"></div>
       </div>
 
-      <a class="dl" id="decDownload" download>Download file hasil</a>
+      <a class="dl" id="decDownload" download>Download result file</a>
       <img id="decPreviewImg" alt="preview">
     </div>
   </section>
 
-  <footer>single-file html · qrcodejs + jsQR · tidak ada data yang dikirim ke server manapun</footer>
+  <footer>single-file html · qrcodejs + jsQR · no data is ever sent to any server</footer>
 </div>
 
 <script>
@@ -332,7 +332,7 @@ document.getElementById('btnEncode').addEventListener('click', async ()=>{
   document.getElementById('encLog').innerHTML = '';
   document.getElementById('encDownload').style.display = 'none';
 
-  if(!file){ logEncode('Pilih file dulu.', 'err'); return; }
+  if(!file){ logEncode('Choose a file first.', 'err'); return; }
 
   const chunkSize = parseInt(document.getElementById('chunkSize').value) || 900;
   const ecLevel = document.getElementById('ecLevel').value;
@@ -342,16 +342,16 @@ document.getElementById('btnEncode').addEventListener('click', async ()=>{
 
   const maxCap = QR_CAPACITY[ecLevel] - 20;
   if(chunkSize > maxCap){
-    logEncode(`Ukuran chunk (${chunkSize}) melebihi kapasitas aman untuk level ${ecLevel} (~${maxCap}). Turunkan ukuran chunk atau pilih level EC lebih rendah.`, 'err');
+    logEncode(`Chunk size (${chunkSize}) exceeds the safe capacity for level ${ecLevel} (~${maxCap}). Lower the chunk size or choose a lower EC level.`, 'err');
     return;
   }
 
   btn.disabled = true;
   try{
-    logEncode('Membaca file...');
+    logEncode('Reading file...');
     const arrayBuffer = await file.arrayBuffer();
     const base64 = arrayBufferToBase64(arrayBuffer);
-    logEncode(`File dibaca: ${humanSize(file.size)} → base64 ${base64.length} karakter.`);
+    logEncode(`File read: ${humanSize(file.size)} → base64 ${base64.length} characters.`);
 
     const totalChunks = Math.ceil(base64.length / chunkSize);
     const chunks = [];
@@ -362,10 +362,10 @@ document.getElementById('btnEncode').addEventListener('click', async ()=>{
     const metaPayload = `META|${encodeURIComponent(file.name)}|${encodeURIComponent(file.type||'application/octet-stream')}|${totalChunks}|${base64.length}`;
     const frames = [metaPayload, ...chunks.map((c,i)=>`D|${i}|${totalChunks}|${c}`)];
 
-    logEncode(`${totalChunks} chunk data + 1 frame metadata = ${frames.length} frame per putaran. Diulang ${repeat}x.`);
+    logEncode(`${totalChunks} data chunks + 1 metadata frame = ${frames.length} frames per cycle. Repeated ${repeat}x.`);
 
     const canvases = await renderAllQRCodes(frames, qrSize, ecLevel);
-    logEncode('Semua QR ter-generate. Mulai animasi & rekam video...', 'ok');
+    logEncode('All QR codes generated. Starting animation & recording video...', 'ok');
 
     await animateAndRecord(canvases, fps, repeat, file.name);
   }catch(err){
@@ -388,7 +388,7 @@ function renderQR(text, size, ecLevelStr){
         const srcCanvas = div.querySelector('canvas');
         if(!srcCanvas){
           document.body.removeChild(div);
-          reject(new Error('Gagal render QR, data mungkin terlalu besar untuk 1 chunk.'));
+          reject(new Error('Failed to render QR, the data may be too large for one chunk.'));
           return;
         }
         const out = document.createElement('canvas');
@@ -409,7 +409,7 @@ async function renderAllQRCodes(frames, size, ecLevel){
   for(let i=0;i<frames.length;i++){
     const c = await renderQR(frames[i], size, ecLevel);
     canvases.push(c);
-    setProgress('encProgress','encProgressLabel', (i+1)/frames.length*50, `Generate QR ${i+1}/${frames.length}`);
+    setProgress('encProgress','encProgressLabel', (i+1)/frames.length*50, `Generating QR ${i+1}/${frames.length}`);
     await sleep(0);
   }
   return canvases;
@@ -429,7 +429,7 @@ async function animateAndRecord(canvases, fps, repeat, originalFilename){
 
   const stream = displayCanvas.captureStream(fps);
   const mimeType = pickSupportedMime();
-  if(!mimeType){ throw new Error('Browser tidak mendukung MediaRecorder untuk video.'); }
+  if(!mimeType){ throw new Error('Browser does not support MediaRecorder for video.'); }
 
   const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 10000000 });
   const recordedChunks = [];
@@ -447,7 +447,7 @@ async function animateAndRecord(canvases, fps, repeat, originalFilename){
       ctx.clearRect(0,0,size,size);
       ctx.drawImage(canvases[i], 0, 0);
       frameCount++;
-      setProgress('encProgress','encProgressLabel', 50 + frameCount/totalFrames*50, `Merekam frame ${frameCount}/${totalFrames} (putaran ${r+1}/${repeat})`);
+      setProgress('encProgress','encProgressLabel', 50 + frameCount/totalFrames*50, `Recording frame ${frameCount}/${totalFrames} (cycle ${r+1}/${repeat})`);
       await sleep(frameDuration);
     }
   }
@@ -463,8 +463,8 @@ async function animateAndRecord(canvases, fps, repeat, originalFilename){
   a.download = `qrvideo_${originalFilename}.${ext}`;
   a.style.display = 'inline-block';
   a.textContent = `Download video (${humanSize(blob.size)})`;
-  setProgress('encProgress','encProgressLabel', 100, 'Selesai.');
-  logEncode('Video siap diunduh.', 'ok');
+  setProgress('encProgress','encProgressLabel', 100, 'Done.');
+  logEncode('Video is ready to download.', 'ok');
 }
 
 /* =======================================================
@@ -480,7 +480,7 @@ document.getElementById('btnDecode').addEventListener('click', async ()=>{
   document.getElementById('decDownload').style.display = 'none';
   document.getElementById('decPreviewImg').style.display = 'none';
 
-  if(!file){ logDecode('Pilih file video dulu.', 'err'); return; }
+  if(!file){ logDecode('Choose a video file first.', 'err'); return; }
 
   decState = { chunks:{}, totalChunks:null, meta:null, foundIndices:new Set() };
   btn.disabled = true;
@@ -491,7 +491,7 @@ document.getElementById('btnDecode').addEventListener('click', async ()=>{
     video.muted = true;
     await new Promise((res,rej)=>{
       video.onloadedmetadata = res;
-      video.onerror = ()=>rej(new Error('Gagal memuat video.'));
+      video.onerror = ()=>rej(new Error('Failed to load video.'));
     });
 
     const stepFps = Math.max(1, parseInt(document.getElementById('decFps').value) || 10);
@@ -503,7 +503,7 @@ document.getElementById('btnDecode').addEventListener('click', async ()=>{
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d', { willReadFrequently:true });
 
-    logDecode(`Durasi ${duration.toFixed(2)}s, resolusi ${video.videoWidth}x${video.videoHeight}, sampling @ ${stepFps}fps`);
+    logDecode(`Duration ${duration.toFixed(2)}s, resolution ${video.videoWidth}x${video.videoHeight}, sampling @ ${stepFps}fps`);
 
     let t = 0;
     let scanned = 0;
@@ -517,16 +517,16 @@ document.getElementById('btnDecode').addEventListener('click', async ()=>{
         processDecodedFrame(code.data);
       }
       setProgress('decProgress','decProgressLabel', Math.min(100, t/duration*100),
-        `Scan ${t.toFixed(2)}s / ${duration.toFixed(2)}s · ${decState.foundIndices.size}${decState.totalChunks?('/'+decState.totalChunks):''} chunk ditemukan`);
+        `Scanning ${t.toFixed(2)}s / ${duration.toFixed(2)}s · ${decState.foundIndices.size}${decState.totalChunks?('/'+decState.totalChunks):''} chunks found`);
 
       if(decState.totalChunks !== null && decState.foundIndices.size === decState.totalChunks){
-        logDecode('Semua chunk sudah ditemukan, berhenti lebih awal.', 'ok');
+        logDecode('All chunks found, stopping early.', 'ok');
         break;
       }
       t += step;
     }
 
-    logDecode(`Selesai scan (${scanned} frame diperiksa).`);
+    logDecode(`Scan complete (${scanned} frames checked).`);
     finalizeDecode();
   }catch(err){
     console.error(err);
@@ -557,7 +557,7 @@ function processDecodedFrame(data){
       const length = parseInt(parts[4]);
       decState.meta = { name, type, total, length };
       if(decState.totalChunks === null) decState.totalChunks = total;
-      logDecode(`Metadata ditemukan: "${name}" (${type}), ${total} chunk diharapkan.`, 'ok');
+      logDecode(`Metadata found: "${name}" (${type}), ${total} chunks expected.`, 'ok');
     }
   }else if(parts[0] === 'D'){
     const idx = parseInt(parts[1]);
@@ -567,14 +567,14 @@ function processDecodedFrame(data){
       decState.chunks[idx] = data2;
       decState.foundIndices.add(idx);
       if(decState.totalChunks === null) decState.totalChunks = total;
-      logDecode(`Chunk ${idx+1}/${total} diterima  (${decState.foundIndices.size}/${decState.totalChunks} total)`);
+      logDecode(`Chunk ${idx+1}/${total} received  (${decState.foundIndices.size}/${decState.totalChunks} total)`);
     }
   }
 }
 
 function finalizeDecode(){
   if(!decState.totalChunks){
-    logDecode('Gagal: tidak ada QR yang berhasil terbaca sama sekali. Coba naikkan sample rate decode.', 'err');
+    logDecode('Failed: no QR code could be read at all. Try raising the decode sample rate.', 'err');
     return;
   }
   const missing = [];
@@ -582,7 +582,7 @@ function finalizeDecode(){
     if(!(i in decState.chunks)) missing.push(i);
   }
   if(missing.length > 0){
-    logDecode(`Gagal: ${missing.length} chunk hilang (index: ${missing.slice(0,15).join(',')}${missing.length>15?', ...':''}). Naikkan sample rate decode lalu coba lagi.`, 'err');
+    logDecode(`Failed: ${missing.length} chunks missing (index: ${missing.slice(0,15).join(',')}${missing.length>15?', ...':''}). Raise the decode sample rate and try again.`, 'err');
     return;
   }
 
@@ -590,7 +590,7 @@ function finalizeDecode(){
   for(let i=0;i<decState.totalChunks;i++) base64 += decState.chunks[i];
 
   if(decState.meta && decState.meta.length && base64.length !== decState.meta.length){
-    logDecode(`Peringatan: panjang base64 hasil gabungan (${base64.length}) tidak sama dengan metadata (${decState.meta.length}).`, 'warn');
+    logDecode(`Warning: combined base64 length (${base64.length}) doesn't match metadata (${decState.meta.length}).`, 'warn');
   }
 
   try{
@@ -606,7 +606,7 @@ function finalizeDecode(){
     a.style.display = 'inline-block';
     a.textContent = `Download ${name} (${humanSize(blob.size)})`;
 
-    logDecode(`Berhasil merekonstruksi file: ${name} (${humanSize(blob.size)})`, 'ok');
+    logDecode(`File reconstructed successfully: ${name} (${humanSize(blob.size)})`, 'ok');
 
     if(type.startsWith('image/')){
       const img = document.getElementById('decPreviewImg');
@@ -614,7 +614,7 @@ function finalizeDecode(){
       img.style.display = 'block';
     }
   }catch(e){
-    logDecode('Gagal decode base64 → file: ' + e.message, 'err');
+    logDecode('Failed to decode base64 → file: ' + e.message, 'err');
   }
 }
 </script>
