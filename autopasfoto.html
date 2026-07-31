@@ -32,6 +32,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:14p
 .logo small{display:block;font-family:var(--mono);font-size:.62rem;color:var(--text-muted);font-weight:400;letter-spacing:.02em}
 .btn-icon{width:36px;height:36px;border:1px solid var(--border);background:var(--surface2);border-radius:var(--radius-sm);cursor:pointer;color:var(--text);display:grid;place-items:center;font-size:.95rem;transition:all .2s}
 .btn-icon:hover{border-color:var(--accent);color:var(--accent)}
+.btn-icon-active{border-color:var(--accent);color:var(--accent);background:rgba(0,229,176,.12)}
 .container{flex:1;overflow:hidden;padding:0 18px}
 .layout{display:grid;grid-template-columns:460px 1fr;gap:18px;align-items:stretch;height:100%}
 .col{display:flex;flex-direction:column;gap:16px;overflow-y:auto;padding:18px 6px 60px 0}
@@ -128,7 +129,8 @@ select{cursor:pointer}
 .hidden{display:none!important}
 ::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-track{background:var(--surface);border-radius:5px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px;border:2px solid transparent;background-clip:padding-box}::-webkit-scrollbar-thumb:hover{background:var(--accent)}
 .guide-legend{font-size:.68rem;color:var(--text-dim);margin-top:8px;line-height:1.5}
-.edit-toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm)}
+.canvas-toolbar-bar{flex-shrink:0;padding:10px 22px;background:var(--surface);border-bottom:1px solid var(--border);max-height:42vh;overflow-y:auto}
+.edit-toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm)}
 .edit-toolbar .sep{width:1px;height:24px;background:var(--border);flex-shrink:0;margin:0 2px}
 .undo-redo-bar{display:flex;gap:6px;align-items:center}
 .undo-redo-bar button{height:26px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;font-family:var(--sans);font-weight:700;transition:all .2s}
@@ -142,6 +144,7 @@ select{cursor:pointer}
   html,body{height:auto;min-height:100vh;overflow-y:auto;overflow-x:hidden}
   .app-wrap{height:auto;min-height:100vh;overflow:visible}
   header{position:sticky;top:0;flex-wrap:wrap;row-gap:8px;padding:10px 14px}
+  .canvas-toolbar-bar{padding:10px 14px;max-height:none}
   .container{flex:none;height:auto;overflow:visible}
   .layout{grid-template-columns:minmax(0,1fr);height:auto;overflow:visible}
   .col{overflow-x:hidden;overflow-y:visible;max-height:none;padding:18px 14px 24px;min-width:0}
@@ -179,7 +182,7 @@ select{cursor:pointer}
 <header>
   <div class="logo">
     <div class="logo-icon">🪪</div>
-    <div>Auto<span>PasFoto</span><small>tata letak cetak pas photo</small></div>
+    <div>Auto<span>PasFoto</span> Layout<small>tata letak cetak pas photo</small></div>
   </div>
   
   <!-- Stats Grid placed in Header so it is always visible on scroll -->
@@ -197,10 +200,81 @@ select{cursor:pointer}
       <span id="pageIndicator" style="padding: 0 4px;">Halaman 1 / 1</span>
       <button class="btn btn-s btn-sm" id="btnNextPage" style="height: 30px; font-weight: 700;">Next ›</button>
     </div>
+    <button class="btn-icon" id="btnToggleToolbar" title="Sembunyikan/Tampilkan Toolbar Edit / Show-hide Edit Toolbar">🧰</button>
     <button class="btn-icon" id="langBtn" title="Ganti bahasa / Switch language" style="font-size: 0.72rem; font-weight: 700; font-family: var(--sans);">ID</button>
     <button class="btn-icon" id="themeBtn" title="Ganti tema">🌙</button>
   </div>
 </header>
+
+<div class="canvas-toolbar-bar" id="canvasToolbarBar">
+        <div class="edit-toolbar">
+          <div class="undo-redo-bar" style="margin-right: 4px;">
+            <button id="btnUndo" title="Undo (Ctrl+Z)" disabled style="width: auto; height: 26px; padding: 0 10px; font-size: 0.72rem;">↩ Undo</button>
+            <button id="btnRedo" title="Redo (Ctrl+Y)" disabled style="width: auto; height: 26px; padding: 0 10px; font-size: 0.72rem;">Redo ↪</button>
+          </div>
+          <div class="sep"></div>
+          <button class="btn btn-s btn-sm" id="btnEditMode">✏️ Edit Layout: OFF</button>
+          <select id="editScope" style="width:auto;padding:5px 8px;font-size:.7rem" title="Terapkan perubahan ke…">
+            <option value="current">Halaman ini saja</option>
+            <option value="all">Semua halaman</option>
+          </select>
+          <div class="sep"></div>
+          <button class="btn btn-s btn-sm" id="btnRotateSel" title="Putar gambar 90° pada kotak terpilih">🔄 Rotate Kotak</button>
+          <button class="btn btn-s btn-sm" id="btnRotateImgSel" title="Putar FOTO saja 90° pada kotak terpilih (ukuran kotak tetap)">🔄 Rotate Foto</button>
+          <button class="btn btn-s btn-sm" id="btnFlipHSel" title="Cerminkan FOTO horizontal (kiri-kanan) pada kotak terpilih">↔ Flip Foto H</button>
+          <button class="btn btn-s btn-sm" id="btnFlipVSel" title="Cerminkan FOTO vertikal (atas-bawah) pada kotak terpilih">↕ Flip Foto V</button>
+          <button class="btn btn-s btn-sm" id="btnCropMode" title="Aktifkan mode crop: klik & drag di kotak untuk atur posisi gambar">✥ Crop Drag</button>
+          <button class="btn btn-s btn-sm" id="btnHandMode" title="Aktifkan mode hand: seret di canvas untuk menggeser tampilan (bisa juga pakai klik kanan seret kapan saja)">🖐️ Hand Tool</button>
+          <div class="sep"></div>
+          <div class="zoom-control" title="Ctrl+Scroll pada preview juga bisa zoom">
+            <button id="btnLayoutZoomOut" title="Perkecil tampilan lembar (Ctrl -)">−</button>
+            <span class="zoom-display" id="btnLayoutZoomReset" title="Klik untuk beralih Muat Area ⇄ 100%">Fit</span>
+            <button id="btnLayoutZoomIn" title="Perbesar tampilan lembar (Ctrl +)">+</button>
+          </div>
+          <div class="sep"></div>
+          <button class="btn btn-s btn-sm" id="btnZoomIn" title="Perbesar gambar pada kotak terpilih">➕ Foto +</button>
+          <button class="btn btn-s btn-sm" id="btnZoomOut" title="Perkecil gambar pada kotak terpilih">➖ Foto -</button>
+          <button class="btn btn-s btn-sm" id="btnResetPan" title="Reset posisi geser (pan) pada kotak terpilih">🎯 Reset Foto Pan</button>
+          <div class="sep"></div>
+          <label style="display:flex;align-items:center;gap:5px;font-size:.7rem;color:var(--text-muted);cursor:pointer"><input type="checkbox" id="snapBoxes" checked style="width:auto">Snap Kotak</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:.7rem;color:var(--text-muted);cursor:pointer"><input type="checkbox" id="snapGrid" style="width:auto">Snap Grid</label>
+          <input type="number" id="snapGridSize" value="5" min="0.5" step="0.5" style="width:72px" title="Jarak snap grid (mm)">
+          <label style="display:flex;align-items:center;gap:5px;font-size:.7rem;color:var(--text-muted);cursor:pointer" title="Snap ke posisi garis potong tengah-jarak (cocok dipakai bersama Cut Guide Style 'Garis di Tengah Jarak' / 'Tanda Potong di Tengah Jarak') — menjaga jarak antar kotak tetap sama persis dgn Box Spacing supaya garis potong lurus & rata"><input type="checkbox" id="snapCutGuide" style="width:auto">📐 Snap Cut-Guide</label>
+          <div class="sep"></div>
+          <button class="btn btn-s btn-sm" id="btnResetPos" title="Reset posisi & transformasi kotak terpilih saja">↺ Reset Terpilih</button>
+          <button class="btn btn-s btn-sm" id="btnResetAllPos" title="Reset semua posisi & transformasi kotak di halaman aktif ini">↺ Reset Halaman Ini</button>
+          <button class="btn btn-s btn-sm" id="btnResetAllPages" title="Reset semua posisi & transformasi kotak di semua halaman">↺ Reset Semua Halaman</button>
+          <div class="sep"></div>
+          <span id="lblAlignGroup" style="font-size:.7rem;color:var(--text-muted)">Ratakan:</span>
+          <button class="btn btn-s btn-sm" id="btnAlignLeft" title="Ratakan sisi kiri kotak-kotak terpilih (min. 2 kotak)">⇤ Kiri</button>
+          <button class="btn btn-s btn-sm" id="btnAlignHCenter" title="Ratakan tengah horizontal kotak-kotak terpilih (min. 2 kotak)">↔ Tengah H</button>
+          <button class="btn btn-s btn-sm" id="btnAlignRight" title="Ratakan sisi kanan kotak-kotak terpilih (min. 2 kotak)">⇥ Kanan</button>
+          <button class="btn btn-s btn-sm" id="btnAlignTop" title="Ratakan sisi atas kotak-kotak terpilih (min. 2 kotak)">⤒ Atas</button>
+          <button class="btn btn-s btn-sm" id="btnAlignVCenter" title="Ratakan tengah vertikal kotak-kotak terpilih (min. 2 kotak)">↕ Tengah V</button>
+          <button class="btn btn-s btn-sm" id="btnAlignBottom" title="Ratakan sisi bawah kotak-kotak terpilih (min. 2 kotak)">⤓ Bawah</button>
+          <button class="btn btn-s btn-sm" id="btnDistributeH" title="Sebar jarak horizontal merata antar kotak terpilih (min. 3 kotak)">⇹ Sebar H</button>
+          <button class="btn btn-s btn-sm" id="btnDistributeV" title="Sebar jarak vertikal merata antar kotak terpilih (min. 3 kotak)">⇳ Sebar V</button>
+          <div class="sep"></div>
+          <span id="lblAlignPageGroup" style="font-size:.7rem;color:var(--text-muted)">Ratakan ke Kertas:</span>
+          <label style="display:flex;align-items:center;gap:5px;font-size:.7rem;color:var(--text-muted);cursor:pointer" title="Jika aktif, kotak-kotak terpilih diratakan BERSAMA sebagai satu grup (posisi relatif antar kotak tetap terjaga). Jika tidak aktif, tiap kotak diratakan sendiri-sendiri ke tepi/tengah kertas."><input type="checkbox" id="alignPageAsGroup" style="width:auto">Sebagai Grup</label>
+          <button class="btn btn-s btn-sm" id="btnAlignPageLeft" title="Ratakan kotak-kotak terpilih ke tepi kiri margin kertas (masing-masing kotak, min. 1 kotak)">⇤ Kiri Kertas</button>
+          <button class="btn btn-s btn-sm" id="btnAlignPageHCenter" title="Ratakan kotak-kotak terpilih ke tengah horizontal area cetak kertas (masing-masing kotak, min. 1 kotak)">↔ Tengah H Kertas</button>
+          <button class="btn btn-s btn-sm" id="btnAlignPageRight" title="Ratakan kotak-kotak terpilih ke tepi kanan margin kertas (masing-masing kotak, min. 1 kotak)">⇥ Kanan Kertas</button>
+          <button class="btn btn-s btn-sm" id="btnAlignPageTop" title="Ratakan kotak-kotak terpilih ke tepi atas margin kertas (masing-masing kotak, min. 1 kotak)">⤒ Atas Kertas</button>
+          <button class="btn btn-s btn-sm" id="btnAlignPageVCenter" title="Ratakan kotak-kotak terpilih ke tengah vertikal area cetak kertas (masing-masing kotak, min. 1 kotak)">↕ Tengah V Kertas</button>
+          <button class="btn btn-s btn-sm" id="btnAlignPageBottom" title="Ratakan kotak-kotak terpilih ke tepi bawah margin kertas (masing-masing kotak, min. 1 kotak)">⤓ Bawah Kertas</button>
+          <div class="sep"></div>
+          <span id="lblArrangeGroup" style="font-size:.7rem;color:var(--text-muted)">Urutan:</span>
+          <button class="btn btn-s btn-sm" id="btnArrangeFront" title="Pindahkan kotak terpilih ke paling depan (atas tumpukan)">⏫ Paling Depan</button>
+          <button class="btn btn-s btn-sm" id="btnArrangeForward" title="Majukan kotak terpilih 1 tingkat ke depan">🔼 Maju 1</button>
+          <button class="btn btn-s btn-sm" id="btnArrangeBackward" title="Mundurkan kotak terpilih 1 tingkat ke belakang">🔽 Mundur 1</button>
+          <button class="btn btn-s btn-sm" id="btnArrangeBack" title="Pindahkan kotak terpilih ke paling belakang (bawah tumpukan)">⏬ Paling Belakang</button>
+          <div class="sep"></div>
+          <button class="btn btn-s btn-sm" id="btnClearSel">✕ Hapus Pilihan</button>
+          <button class="btn btn-s btn-sm" id="btnSelectMode" title="Mode Seleksi Multi: klik kotak menambah/mengurangi pilihan (seperti Shift+Klik selalu aktif). Drag area tetap bekerja.">☰ Select</button>
+          <span id="selCount" style="font-size:.7rem;color:var(--accent);margin-left:auto;font-family:var(--mono)">Tidak ada dipilih</span>
+        </div>
+</div>
 
 <div class="container">
   <div class="layout">
@@ -230,9 +304,9 @@ select{cursor:pointer}
         </div>
         <div class="img-list" id="imgList"></div>
         <div class="upload-row" style="margin-top: 10px;">
-          <button class="btn btn-s btn-sm" style="flex:1; font-weight:700;" id="btnFillLayout" title="Isi kotak-kotak layout dengan foto (qty default 1 jika qty 0)">⚡ Isi Foto</button>
-          <button class="btn btn-s btn-sm" style="flex:1; font-weight:700; color:var(--accent2); border-color:var(--border);" id="btnClearLayout" title="Kosongkan foto di layout (qty jadi 0)">✕ Kosongkan Foto</button>
           <button class="btn btn-s btn-sm" style="flex:1; font-weight:700; color:var(--accent2); border-color:var(--border);" id="btnRemoveAllPhotos" title="Hapus semua foto yang sudah diupload">🗑️ Hapus Semua</button>
+          <button class="btn btn-s btn-sm" style="flex:1; font-weight:700; color:var(--accent2); border-color:var(--border);" id="btnClearLayout" title="Kosongkan foto di layout (qty jadi 0)">✕ Kosongkan Foto</button>
+          <button class="btn btn-s btn-sm" style="flex:1; font-weight:700;" id="btnFillLayout" title="Isi kotak-kotak layout dengan foto (qty default 1 jika qty 0)">⚡ Isi Foto</button>
         </div>
       </div>
 
@@ -266,6 +340,7 @@ select{cursor:pointer}
             <option value="bulk">Bulk: 1 Lembar = 1 File Foto</option>
             <option value="mixed">Ukuran Beragam (Mixed Size + Bulk)</option>
             <option value="mixed_standard">Campur Foto + Ukuran Beragam (Mixed Size)</option>
+            <option value="custom">Custom Layout (Isi Foto Manual)</option>
           </select>
         </div>
         <div class="form-group">
@@ -420,45 +495,6 @@ select{cursor:pointer}
 
       <div class="card">
         <div class="card-title"><div class="t">Preview</div></div>
-
-        <div class="edit-toolbar">
-          <div class="undo-redo-bar" style="margin-right: 4px;">
-            <button id="btnUndo" title="Undo (Ctrl+Z)" disabled style="width: auto; height: 26px; padding: 0 10px; font-size: 0.72rem;">↩ Undo</button>
-            <button id="btnRedo" title="Redo (Ctrl+Y)" disabled style="width: auto; height: 26px; padding: 0 10px; font-size: 0.72rem;">Redo ↪</button>
-          </div>
-          <div class="sep"></div>
-          <button class="btn btn-s btn-sm" id="btnEditMode">✏️ Edit Layout: OFF</button>
-          <select id="editScope" style="width:auto;padding:5px 8px;font-size:.7rem" title="Terapkan perubahan ke…">
-            <option value="current">Halaman ini saja</option>
-            <option value="all">Semua halaman</option>
-          </select>
-          <div class="sep"></div>
-          <button class="btn btn-s btn-sm" id="btnRotateSel" title="Putar gambar 90° pada kotak terpilih">🔄 Rotate Kotak</button>
-          <button class="btn btn-s btn-sm" id="btnRotateImgSel" title="Putar FOTO saja 90° pada kotak terpilih (ukuran kotak tetap)">🔄 Rotate Foto</button>
-          <button class="btn btn-s btn-sm" id="btnCropMode" title="Aktifkan mode crop: klik & drag di kotak untuk atur posisi gambar">✥ Crop Drag</button>
-          <button class="btn btn-s btn-sm" id="btnHandMode" title="Aktifkan mode hand: seret di canvas untuk menggeser tampilan (bisa juga pakai klik kanan seret kapan saja)">🖐️ Hand Tool</button>
-          <div class="sep"></div>
-          <div class="zoom-control" title="Ctrl+Scroll pada preview juga bisa zoom">
-            <button id="btnLayoutZoomOut" title="Perkecil tampilan lembar (Ctrl -)">−</button>
-            <span class="zoom-display" id="btnLayoutZoomReset" title="Klik untuk beralih Muat Area ⇄ 100%">Fit</span>
-            <button id="btnLayoutZoomIn" title="Perbesar tampilan lembar (Ctrl +)">+</button>
-          </div>
-          <div class="sep"></div>
-          <button class="btn btn-s btn-sm" id="btnZoomIn" title="Perbesar gambar pada kotak terpilih">➕ Foto +</button>
-          <button class="btn btn-s btn-sm" id="btnZoomOut" title="Perkecil gambar pada kotak terpilih">➖ Foto -</button>
-          <button class="btn btn-s btn-sm" id="btnResetPan" title="Reset posisi geser (pan) pada kotak terpilih">🎯 Reset Foto Pan</button>
-          <div class="sep"></div>
-          <label style="display:flex;align-items:center;gap:5px;font-size:.7rem;color:var(--text-muted);cursor:pointer"><input type="checkbox" id="snapBoxes" checked style="width:auto">Snap Kotak</label>
-          <label style="display:flex;align-items:center;gap:5px;font-size:.7rem;color:var(--text-muted);cursor:pointer"><input type="checkbox" id="snapGrid" style="width:auto">Snap Grid</label>
-          <input type="number" id="snapGridSize" value="5" min="0.5" step="0.5" style="width:72px" title="Jarak snap grid (mm)">
-          <div class="sep"></div>
-          <button class="btn btn-s btn-sm" id="btnResetPos" title="Reset posisi & transformasi kotak terpilih saja">↺ Reset Terpilih</button>
-          <button class="btn btn-s btn-sm" id="btnResetAllPos" title="Reset semua posisi & transformasi kotak di halaman aktif ini">↺ Reset Halaman Ini</button>
-          <button class="btn btn-s btn-sm" id="btnResetAllPages" title="Reset semua posisi & transformasi kotak di semua halaman">↺ Reset Semua Halaman</button>
-          <button class="btn btn-s btn-sm" id="btnClearSel">✕ Hapus Pilihan</button>
-          <button class="btn btn-s btn-sm" id="btnSelectMode" title="Mode Seleksi Multi: klik kotak menambah/mengurangi pilihan (seperti Shift+Klik selalu aktif). Drag area tetap bekerja.">☰ Select</button>
-          <span id="selCount" style="font-size:.7rem;color:var(--accent);margin-left:auto;font-family:var(--mono)">Tidak ada dipilih</span>
-        </div>
 
         <div class="preview-wrap" id="previewWrap">
           <div class="preview-canvas-container" id="previewCanvasContainer">
@@ -728,6 +764,7 @@ const TRANSLATIONS = {
     optBulk: 'Bulk: 1 Lembar = 1 File Foto',
     optMixed: 'Ukuran Beragam (Mixed Size + Bulk)',
     optMixedStandard: 'Campur Foto + Ukuran Beragam (Mixed Size)',
+    optCustom: 'Custom Layout (Isi Foto Manual)',
     lblTargetPages: 'Target Jml Lembar (utk tombol 🗎 isi penuh)',
     infoFillMode: '💡 <b>🗎</b> Tombol pada daftar foto akan mengisi foto hingga penuh sejumlah lembar target di atas. <b>Bulk</b>: tiap lembar otomatis diisi 1 file foto berbeda dan banyak.',
     lblMixedList: 'Daftar Ukuran Kotak per Lembar (mm)',
@@ -780,6 +817,8 @@ const TRANSLATIONS = {
     optEditScopeAll: 'Semua halaman',
     btnRotateSel: '🔄 Rotate Kotak',
     btnRotateImgSel: '🔄 Rotate Foto',
+    btnFlipHSel: '↔ Flip Foto H',
+    btnFlipVSel: '↕ Flip Foto V',
     btnCropModeOn: '✥ Crop Drag: ON',
     btnCropModeOff: '✥ Crop Drag',
     btnHandModeOn: '🖐️ Hand Tool: ON',
@@ -792,9 +831,58 @@ const TRANSLATIONS = {
     btnResetPan: '🎯 Reset Foto Pan',
     lblSnapBoxes: 'Snap Kotak',
     lblSnapGrid: 'Snap Grid',
+    lblSnapCutGuide: '📐 Snap Cut-Guide',
+    titleSnapCutGuide: "Snap ke posisi garis potong tengah-jarak (cocok dipakai bersama Cut Guide Style 'Garis di Tengah Jarak' / 'Tanda Potong di Tengah Jarak') — menjaga jarak antar kotak tetap sama persis dgn Box Spacing supaya garis potong lurus & rata",
     btnResetPos: '↺ Reset Terpilih',
     btnResetAllPos: '↺ Reset Halaman Ini',
     btnResetAllPages: '↺ Reset Semua Halaman',
+    lblAlignGroup: 'Ratakan:',
+    btnAlignLeft: '⇤ Kiri',
+    btnAlignHCenter: '↔ Tengah H',
+    btnAlignRight: '⇥ Kanan',
+    btnAlignTop: '⤒ Atas',
+    btnAlignVCenter: '↕ Tengah V',
+    btnAlignBottom: '⤓ Bawah',
+    btnDistributeH: '⇹ Sebar H',
+    btnDistributeV: '⇳ Sebar V',
+    titleAlignLeft: 'Ratakan sisi kiri kotak-kotak terpilih (min. 2 kotak)',
+    titleAlignHCenter: 'Ratakan tengah horizontal kotak-kotak terpilih (min. 2 kotak)',
+    titleAlignRight: 'Ratakan sisi kanan kotak-kotak terpilih (min. 2 kotak)',
+    titleAlignTop: 'Ratakan sisi atas kotak-kotak terpilih (min. 2 kotak)',
+    titleAlignVCenter: 'Ratakan tengah vertikal kotak-kotak terpilih (min. 2 kotak)',
+    titleAlignBottom: 'Ratakan sisi bawah kotak-kotak terpilih (min. 2 kotak)',
+    titleDistributeH: 'Sebar jarak horizontal merata antar kotak terpilih (min. 3 kotak)',
+    titleDistributeV: 'Sebar jarak vertikal merata antar kotak terpilih (min. 3 kotak)',
+    toastAlignNeedTwo: 'Pilih minimal 2 kotak untuk meratakan',
+    toastAligned: '📐 {n} kotak diratakan',
+    toastDistributeNeedThree: 'Pilih minimal 3 kotak untuk menyebar jarak',
+    toastDistributed: '📐 {n} kotak disebar merata',
+    lblAlignPageGroup: 'Ratakan ke Kertas:',
+    lblAlignPageAsGroup: 'Sebagai Grup',
+    titleAlignPageAsGroup: 'Jika aktif, kotak-kotak terpilih diratakan BERSAMA sebagai satu grup (posisi relatif antar kotak tetap terjaga). Jika tidak aktif, tiap kotak diratakan sendiri-sendiri ke tepi/tengah kertas.',
+    btnAlignPageLeft: '⇤ Kiri Kertas',
+    btnAlignPageHCenter: '↔ Tengah H Kertas',
+    btnAlignPageRight: '⇥ Kanan Kertas',
+    btnAlignPageTop: '⤒ Atas Kertas',
+    btnAlignPageVCenter: '↕ Tengah V Kertas',
+    btnAlignPageBottom: '⤓ Bawah Kertas',
+    titleAlignPageLeft: 'Ratakan kotak-kotak terpilih ke tepi kiri margin kertas (masing-masing kotak, min. 1 kotak)',
+    titleAlignPageHCenter: 'Ratakan kotak-kotak terpilih ke tengah horizontal area cetak kertas (masing-masing kotak, min. 1 kotak)',
+    titleAlignPageRight: 'Ratakan kotak-kotak terpilih ke tepi kanan margin kertas (masing-masing kotak, min. 1 kotak)',
+    titleAlignPageTop: 'Ratakan kotak-kotak terpilih ke tepi atas margin kertas (masing-masing kotak, min. 1 kotak)',
+    titleAlignPageVCenter: 'Ratakan kotak-kotak terpilih ke tengah vertikal area cetak kertas (masing-masing kotak, min. 1 kotak)',
+    titleAlignPageBottom: 'Ratakan kotak-kotak terpilih ke tepi bawah margin kertas (masing-masing kotak, min. 1 kotak)',
+    toastAlignedPage: '📐 {n} kotak diratakan ke kertas',
+    lblArrangeGroup: 'Urutan:',
+    btnArrangeFront: '⏫ Paling Depan',
+    btnArrangeForward: '🔼 Maju 1',
+    btnArrangeBackward: '🔽 Mundur 1',
+    btnArrangeBack: '⏬ Paling Belakang',
+    titleArrangeFront: 'Pindahkan kotak terpilih ke paling depan (atas tumpukan)',
+    titleArrangeForward: 'Majukan kotak terpilih 1 tingkat ke depan',
+    titleArrangeBackward: 'Mundurkan kotak terpilih 1 tingkat ke belakang',
+    titleArrangeBack: 'Pindahkan kotak terpilih ke paling belakang (bawah tumpukan)',
+    toastArranged: '📚 Urutan tumpukan {n} kotak diubah',
     btnClearSel: '✕ Hapus Pilihan',
     noSelection: 'Tidak ada dipilih',
     countSelection: '{n} dipilih',
@@ -840,6 +928,7 @@ const TRANSLATIONS = {
     lblPanX: 'Geser X',
     lblPanY: 'Geser Y',
     btnResetCrop: '↺ Reset Crop',
+    lblRotate: 'Putar (Miring)',
     
     // Toasts & Dialogs
     toastNoFiles: 'Tidak ada file gambar yang valid',
@@ -854,6 +943,9 @@ const TRANSLATIONS = {
     toastResetAllPagesAuto: '↺ Semua halaman direset ke layout otomatis',
     toastRotatedCell: '🔄 {n} kotak diputar 90°',
     toastRotatedImg: '🔄 {n} foto diputar 90° (ukuran kotak tetap)',
+    toastFlippedImgH: '↔ {n} foto dicerminkan horizontal',
+    toastFlippedImgV: '↕ {n} foto dicerminkan vertikal',
+    toastCustomLayoutActive: '✏️ Custom Layout aktif — kotak kosong, pasang foto manual: pilih kotak lalu klik foto di daftar. Edit Layout & Select otomatis ON.',
     toastCropActive: '✥ Mode crop aktif — klik & seret di kotak untuk geser gambar, scroll untuk zoom',
     toastHandActive: '🖐️ Hand Tool aktif — klik & seret di mana saja untuk geser tampilan layout',
     toastZoomDisplay: '🔍 Zoom Tampilan: {n}%',
@@ -930,6 +1022,7 @@ const TRANSLATIONS = {
     optBulk: 'Bulk: 1 Page = 1 Photo File',
     optMixed: 'Mixed Sizes (Mixed Size + Bulk)',
     optMixedStandard: 'Mixed Sizes (Mixed Size + Standard Mixing)',
+    optCustom: 'Custom Layout (Manual Photo Fill)',
     lblTargetPages: 'Target Page Count (for 🗎 full fill button)',
     infoFillMode: '💡 <b>🗎</b> The button fills the entire template with this photo up to the target pages. <b>Bulk</b>: each page is automatically filled with a different photo file sequentially.',
     lblMixedList: 'List of Box Sizes per Page (mm)',
@@ -982,6 +1075,8 @@ const TRANSLATIONS = {
     optEditScopeAll: 'All pages',
     btnRotateSel: '🔄 Rotate Box',
     btnRotateImgSel: '🔄 Rotate Photo',
+    btnFlipHSel: '↔ Flip Photo H',
+    btnFlipVSel: '↕ Flip Photo V',
     btnCropModeOn: '✥ Crop Drag: ON',
     btnCropModeOff: '✥ Crop Drag',
     btnHandModeOn: '🖐️ Hand Tool: ON',
@@ -994,9 +1089,58 @@ const TRANSLATIONS = {
     btnResetPan: '🎯 Reset Photo Pan',
     lblSnapBoxes: 'Snap Boxes',
     lblSnapGrid: 'Snap Grid',
+    lblSnapCutGuide: '📐 Snap Cut-Guide',
+    titleSnapCutGuide: "Snap to the cut-guide midline position (best used with Cut Guide Style 'Line in Middle of Spacing' / 'Crop Marks in Middle of Spacing') — keeps the gap between boxes exactly equal to Box Spacing so cut guide lines stay straight & even",
     btnResetPos: '↺ Reset Selected',
     btnResetAllPos: '↺ Reset Current Page',
     btnResetAllPages: '↺ Reset All Pages',
+    lblAlignGroup: 'Align:',
+    btnAlignLeft: '⇤ Left',
+    btnAlignHCenter: '↔ Center H',
+    btnAlignRight: '⇥ Right',
+    btnAlignTop: '⤒ Top',
+    btnAlignVCenter: '↕ Middle V',
+    btnAlignBottom: '⤓ Bottom',
+    btnDistributeH: '⇹ Distribute H',
+    btnDistributeV: '⇳ Distribute V',
+    titleAlignLeft: 'Align left edges of selected boxes (min. 2 boxes)',
+    titleAlignHCenter: 'Align horizontal center of selected boxes (min. 2 boxes)',
+    titleAlignRight: 'Align right edges of selected boxes (min. 2 boxes)',
+    titleAlignTop: 'Align top edges of selected boxes (min. 2 boxes)',
+    titleAlignVCenter: 'Align vertical center of selected boxes (min. 2 boxes)',
+    titleAlignBottom: 'Align bottom edges of selected boxes (min. 2 boxes)',
+    titleDistributeH: 'Distribute horizontal spacing evenly between selected boxes (min. 3 boxes)',
+    titleDistributeV: 'Distribute vertical spacing evenly between selected boxes (min. 3 boxes)',
+    toastAlignNeedTwo: 'Select at least 2 boxes to align',
+    toastAligned: '📐 {n} boxes aligned',
+    toastDistributeNeedThree: 'Select at least 3 boxes to distribute',
+    toastDistributed: '📐 {n} boxes distributed evenly',
+    lblAlignPageGroup: 'Align to Paper:',
+    lblAlignPageAsGroup: 'As Group',
+    titleAlignPageAsGroup: 'When checked, the selected boxes are aligned TOGETHER as one group (relative positions between boxes are preserved). When unchecked, each box is aligned individually to the paper edge/center.',
+    btnAlignPageLeft: '⇤ Left Paper',
+    btnAlignPageHCenter: '↔ Center H Paper',
+    btnAlignPageRight: '⇥ Right Paper',
+    btnAlignPageTop: '⤒ Top Paper',
+    btnAlignPageVCenter: '↕ Middle V Paper',
+    btnAlignPageBottom: '⤓ Bottom Paper',
+    titleAlignPageLeft: 'Align selected boxes to the paper margin left edge (each box independently, min. 1 box)',
+    titleAlignPageHCenter: 'Align selected boxes to the horizontal center of the printable area (each box independently, min. 1 box)',
+    titleAlignPageRight: 'Align selected boxes to the paper margin right edge (each box independently, min. 1 box)',
+    titleAlignPageTop: 'Align selected boxes to the paper margin top edge (each box independently, min. 1 box)',
+    titleAlignPageVCenter: 'Align selected boxes to the vertical center of the printable area (each box independently, min. 1 box)',
+    titleAlignPageBottom: 'Align selected boxes to the paper margin bottom edge (each box independently, min. 1 box)',
+    toastAlignedPage: '📐 {n} boxes aligned to paper',
+    lblArrangeGroup: 'Order:',
+    btnArrangeFront: '⏫ Bring to Front',
+    btnArrangeForward: '🔼 Forward 1',
+    btnArrangeBackward: '🔽 Backward 1',
+    btnArrangeBack: '⏬ Send to Back',
+    titleArrangeFront: 'Move selected boxes to the very front (top of the stack)',
+    titleArrangeForward: 'Bring selected boxes forward one level',
+    titleArrangeBackward: 'Send selected boxes backward one level',
+    titleArrangeBack: 'Move selected boxes to the very back (bottom of the stack)',
+    toastArranged: '📚 Stacking order changed for {n} boxes',
     btnClearSel: '✕ Clear Selection',
     noSelection: 'No selection',
     countSelection: '{n} selected',
@@ -1042,6 +1186,7 @@ const TRANSLATIONS = {
     lblPanX: 'Pan X',
     lblPanY: 'Pan Y',
     btnResetCrop: '↺ Reset Crop',
+    lblRotate: 'Rotate (Tilt)',
     
     // Toasts & Dialogs
     toastNoFiles: 'No valid image files found',
@@ -1056,6 +1201,9 @@ const TRANSLATIONS = {
     toastResetAllPagesAuto: '↺ All pages reset to auto-layout',
     toastRotatedCell: '🔄 {n} boxes rotated 90°',
     toastRotatedImg: '🔄 {n} photos rotated 90° (box size preserved)',
+    toastFlippedImgH: '↔ {n} photos flipped horizontally',
+    toastFlippedImgV: '↕ {n} photos flipped vertically',
+    toastCustomLayoutActive: '✏️ Custom Layout active — boxes start empty, assign photos manually: select a box then click a photo in the list. Edit Layout & Select turned ON automatically.',
     toastCropActive: '✥ Crop mode active — click & drag inside boxes to pan, scroll to zoom',
     toastHandActive: '🖐️ Hand Tool active — click & drag anywhere to pan layout view',
     toastZoomDisplay: '🔍 Layout Zoom: {n}%',
@@ -1124,6 +1272,7 @@ const state={
   posOverrides:{},
   cellRotations:{},
   imageRotations:{},
+  imageFlips:{},
   cellCropOverrides:{},
   selection:new Set(),
   editMode:false,
@@ -1133,6 +1282,9 @@ const state={
   snapToBoxes:true,
   snapToGrid:false,
   snapGridSize:5,
+  snapToCutGuide:false,
+  alignPageAsGroup:false,
+  zOrder:{},
   _rubberRect:null
 };
 let mixedSeq=3;
@@ -1158,12 +1310,14 @@ function captureSnapshot(){
     fillMode:state.fillMode, targetPages:state.targetPages,
     mixedBoxes:state.mixedBoxes.map(mb=>({...mb})),
     rotateAllowed:state.rotateAllowed,
-    imageQtys:state.images.map(im=>({id:im.id,qty:im.qty,zoom:im.zoom,offX:im.offX,offY:im.offY,imgUrl:im.url,aiStatus:im.aiStatus})),
+    imageQtys:state.images.map(im=>({id:im.id,qty:im.qty,zoom:im.zoom,offX:im.offX,offY:im.offY,rotation:im.rotation,imgUrl:im.url,aiStatus:im.aiStatus})),
     overrides:{...state.overrides},
     posOverrides:JSON.parse(JSON.stringify(state.posOverrides)),
     cellRotations:{...state.cellRotations},
     imageRotations:{...state.imageRotations},
-    cellCropOverrides:JSON.parse(JSON.stringify(state.cellCropOverrides))
+    imageFlips:{...state.imageFlips},
+    cellCropOverrides:JSON.parse(JSON.stringify(state.cellCropOverrides)),
+    zOrder:JSON.parse(JSON.stringify(state.zOrder||{}))
   });
 }
 
@@ -1182,7 +1336,7 @@ function restoreSnapshot(snap){
     snap.imageQtys.forEach(iq=>{
       const im=state.images.find(x=>x.id===iq.id);
       if(im){
-        im.qty=iq.qty; im.zoom=iq.zoom; im.offX=iq.offX; im.offY=iq.offY;
+        im.qty=iq.qty; im.zoom=iq.zoom; im.offX=iq.offX; im.offY=iq.offY; im.rotation=iq.rotation!==undefined?iq.rotation:(im.rotation||0);
         im.aiStatus=iq.aiStatus!==undefined?iq.aiStatus:im.aiStatus;
         if(iq.imgUrl && iq.imgUrl!==im.url){
           const cached=aiImageCache.get(iq.imgUrl);
@@ -1195,7 +1349,9 @@ function restoreSnapshot(snap){
   state.posOverrides=JSON.parse(JSON.stringify(snap.posOverrides));
   state.cellRotations={...(snap.cellRotations||{})};
   state.imageRotations={...(snap.imageRotations||{})};
+  state.imageFlips={...(snap.imageFlips||{})};
   state.cellCropOverrides=JSON.parse(JSON.stringify(snap.cellCropOverrides||{}));
+  state.zOrder=JSON.parse(JSON.stringify(snap.zOrder||{}));
   /* Sync UI inputs */
   syncPaperInputs(); syncBoxInputs();
   $('pmLink').classList.toggle('active',state.pmLinked);
@@ -1287,11 +1443,14 @@ document.addEventListener('keydown',e=>{
       
       const cellRot = getCellRotation(state.currentPage, idx);
       const imgRot = getImgRotation(state.currentPage, idx);
+      const flip = getImgFlip(state.currentPage, idx);
       const totalAngleRad = (cell.rotated ? 90 : 0) * Math.PI / 180 + cellRot * Math.PI / 180 + imgRot * Math.PI / 180;
       const cosA = Math.cos(totalAngleRad);
       const sinA = Math.sin(totalAngleRad);
-      const localStepX = stepX * cosA + stepY * sinA;
-      const localStepY = -stepX * sinA + stepY * cosA;
+      let localStepX = stepX * cosA + stepY * sinA;
+      let localStepY = -stepX * sinA + stepY * cosA;
+      if(flip.fx) localStepX = -localStepX;
+      if(flip.fy) localStepY = -localStepY;
 
       if (!state.cellCropOverrides[key]) {
         state.cellCropOverrides[key] = { zoom: cell.image.zoom, offX: cell.image.offX, offY: cell.image.offY };
@@ -1476,6 +1635,22 @@ $('btnBoxSwap').onclick=()=>{ [state.box.w,state.box.h]=[state.box.h,state.box.w
 $('fillMode').onchange=e=>{
   state.fillMode=e.target.value;
   $('mixedPanel').classList.toggle('hidden', state.fillMode!=='mixed' && state.fillMode!=='mixed_standard');
+  if(state.fillMode==='custom'){
+    if(!state.editMode){
+      state.editMode=true;
+      const be=$('btnEditMode');
+      be.textContent = '✏️ Edit Layout: ON';
+      be.classList.add('btn-p'); be.classList.remove('btn-s');
+    }
+    if(!state.selectMode){
+      state.selectMode=true;
+      const bs=$('btnSelectMode');
+      const lang=state.lang||'id';
+      bs.textContent = TRANSLATIONS[lang].btnSelectModeOn;
+      bs.classList.add('btn-p'); bs.classList.remove('btn-s');
+    }
+    toast(TRANSLATIONS[state.lang||'id'].toastCustomLayoutActive);
+  }
   refreshAll();
 };
 $('targetPages').oninput=e=>{ state.targetPages=Math.max(1,parseInt(e.target.value)||1); };
@@ -1532,7 +1707,7 @@ async function handleFiles(fileList){
     const url=URL.createObjectURL(f);
     try{
       const img=await loadImage(url);
-      state.images.push({id:'img'+(imgSeq++), name:f.name, img, origImg:img, url, qty:1, zoom:1, offX:0, offY:0, open:false, aiStatus:null, bgStatus:null});
+      state.images.push({id:'img'+(imgSeq++), name:f.name, img, origImg:img, url, qty:1, zoom:1, offX:0, offY:0, rotation:0, open:false, aiStatus:null, bgStatus:null});
       aiImageCache.set(url, img);
     }catch(e){ /* skip broken file */ }
   }
@@ -1614,6 +1789,7 @@ function renderImageList(){
         </div>
       </div>
       <div class="adjust-panel ${im.open?'':'hidden'}">
+        <div class="slider-row"><label>${t.lblRotate}</label><input type="range" min="-180" max="180" step="1" value="${im.rotation||0}" data-act="rotation"><span class="val">${(im.rotation||0).toFixed(0)}°</span></div>
         <div class="slider-row"><label>${t.lblZoom}</label><input type="range" min="1" max="3" step="0.05" value="${im.zoom}" data-act="zoom"><span class="val">${im.zoom.toFixed(2)}×</span></div>
         <div class="slider-row"><label>${t.lblPanX}</label><input type="range" min="-1" max="1" step="0.02" value="${im.offX}" data-act="offX"><span class="val">${im.offX.toFixed(2)}</span></div>
         <div class="slider-row"><label>${t.lblPanY}</label><input type="range" min="-1" max="1" step="0.02" value="${im.offY}" data-act="offY"><span class="val">${im.offY.toFixed(2)}</span></div>
@@ -1643,15 +1819,16 @@ function renderImageList(){
     row.querySelector('[data-act="dec"]').onclick=()=>{ im.qty=Math.max(0,im.qty-1); renderImageList(); refreshAll(); };
     row.querySelector('[data-act="inc"]').onclick=()=>{ im.qty+=1; renderImageList(); refreshAll(); };
     row.querySelector('.qty-stepper input').oninput=e=>{ im.qty=Math.max(0,parseInt(e.target.value)||0); refreshAll(); };
+    const rt=row.querySelector('[data-act="rotation"]'); if(rt) rt.oninput=e=>{ im.rotation=parseFloat(e.target.value); e.target.nextElementSibling.textContent=im.rotation.toFixed(0)+'°'; refreshPreviewOnly(); };
     const zr=row.querySelector('[data-act="zoom"]'); if(zr) zr.oninput=e=>{ im.zoom=parseFloat(e.target.value); e.target.nextElementSibling.textContent=im.zoom.toFixed(2)+'×'; refreshPreviewOnly(); };
     const ox=row.querySelector('[data-act="offX"]'); if(ox) ox.oninput=e=>{ im.offX=parseFloat(e.target.value); e.target.nextElementSibling.textContent=im.offX.toFixed(2); refreshPreviewOnly(); };
     const oy=row.querySelector('[data-act="offY"]'); if(oy) oy.oninput=e=>{ im.offY=parseFloat(e.target.value); e.target.nextElementSibling.textContent=im.offY.toFixed(2); refreshPreviewOnly(); };
-    const rs=row.querySelector('[data-act="reset"]'); if(rs) rs.onclick=()=>{ im.zoom=1; im.offX=0; im.offY=0; renderImageList(); refreshAll(); };
+    const rs=row.querySelector('[data-act="reset"]'); if(rs) rs.onclick=()=>{ im.zoom=1; im.offX=0; im.offY=0; im.rotation=0; renderImageList(); refreshAll(); };
     const ac=row.querySelector('[data-act="autocrop"]'); if(ac) ac.onclick=async()=>{ im.aiStatus='detecting'; renderImageList(); await autoCropImage(im); };
     const rb=row.querySelector('[data-act="removebg"]'); if(rb) rb.onclick=async()=>{ if(pickForAssign()) return; await removeBgImage(im); };
     const ro=row.querySelector('[data-act="restoreOrig"]'); if(ro) ro.onclick=()=>{
       if(im.origImg){ im.img=im.origImg; im.url=im.origImg.src; }
-      im.zoom=1; im.offX=0; im.offY=0; im.aiStatus=null; im.bgStatus=null;
+      im.zoom=1; im.offX=0; im.offY=0; im.rotation=0; im.aiStatus=null; im.bgStatus=null;
       renderImageList(); refreshAll();
     };
     list.appendChild(row);
@@ -1718,6 +1895,8 @@ function aiCanvasToImage(canvas){
    (undo snapshots only store the url string, since Image elements can't be JSON-serialized) */
 const aiImageCache=new Map();
 
+
+
 async function autoCropImage(im){
   if(!window.faceAI){ toast(TRANSLATIONS[state.lang||'id'].toastAiModuleNotLoaded); im.aiStatus='fail'; renderImageList(); return false; }
   await window.faceAI.ready;
@@ -1777,7 +1956,7 @@ async function autoCropImage(im){
   aiImageCache.set(correctedImg.src, correctedImg);
 
   im.img=correctedImg; im.url=correctedImg.src;
-  im.zoom=zoom; im.offX=offX; im.offY=offY;
+  im.zoom=zoom; im.offX=offX; im.offY=offY; im.rotation=0;
   im.aiStatus=clamped?'ok-clamped':'ok';
   renderImageList(); refreshAll();
   return true;
@@ -1870,6 +2049,26 @@ function computeBulkPages(grid){
     const cells=[]; for(let idx=0; idx<grid.cellsPerPage; idx++) cells.push(makeGridCell(grid,idx,null));
     pages.push(cells);
   }
+  return pages;
+}
+
+/* ── Custom Layout / manual filling: cells are laid out on the auto grid like
+   Standard mode, but NO photo is auto-assigned — every cell starts empty so
+   the user places photos manually (select box → click a photo in the list),
+   free to rotate box/photo and rearrange via Edit Layout. Page count comes
+   from the "Target Jml Lembar" field since there is no photo queue to size it. ── */
+function computeCustomPages(grid){
+  const pages=[];
+  if(grid.cellsPerPage>0){
+    const nPages=Math.max(1, parseInt(state.targetPages)||1);
+    for(let p=0;p<nPages;p++){
+      const cells=[];
+      for(let idx=0; idx<grid.cellsPerPage; idx++){
+        cells.push(makeGridCell(grid, idx, null));
+      }
+      pages.push(cells);
+    }
+  } else pages.push([]);
   return pages;
 }
 
@@ -1983,6 +2182,7 @@ function computeLayoutMeta(){
   let pages;
   if(state.fillMode==='mixed' || state.fillMode==='mixed_standard') pages=computeMixedPages(grid);
   else if(state.fillMode==='bulk') pages=computeBulkPages(grid);
+  else if(state.fillMode==='custom') pages=computeCustomPages(grid);
   else pages=computeStandardPages(grid);
   applyPosOverrides(pages);
   applyOverrides(pages);
@@ -2022,6 +2222,14 @@ function getImgRotation(pageIdx, cellIdx){
   return rot || 0;
 }
 
+function getImgFlip(pageIdx, cellIdx){
+  let fl = state.imageFlips[`${pageIdx}:${cellIdx}`];
+  if(fl === undefined && pageIdx > 0){
+    fl = state.imageFlips[`0:${cellIdx}`];
+  }
+  return fl || {fx:false, fy:false};
+}
+
 function drawCover(ctx,img,dx,dy,dw,dh,zoom,offX,offY){
   if(dw<=0||dh<=0) return;
   const ir=img.naturalWidth/img.naturalHeight, dr=dw/dh;
@@ -2035,6 +2243,38 @@ function drawCover(ctx,img,dx,dy,dw,dh,zoom,offX,offY){
   let sy=slackY/2+(offY||0)*slackY/2;
   sx=Math.max(0,Math.min(sx,slackX)); sy=Math.max(0,Math.min(sy,slackY));
   ctx.drawImage(img,sx,sy,sw,sh,dx,dy,dw,dh);
+}
+
+/* Same as drawCover, but additionally rotates the photo (in fine, continuous degrees)
+   around the center of its own destination rect — this is the live "Putar (Miring)"
+   / "Rotate (Tilt)" slider in the per-photo adjust-panel. Non-destructive: nothing is
+   baked into the source image, it's just a transform applied at draw time, so it stays
+   editable at full quality and updates the preview instantly while dragging the slider.
+   The box's own background fill (photoBgColor), already painted before this runs, shows
+   through in any corner the tilted photo doesn't cover — clip() keeps it confined to the
+   box so a tilt never bleeds onto the frame/border or neighboring boxes.
+
+   Auto-compensation: rotating a dw×dh rectangle in place around its own center always
+   leaves the box's own corners uncovered (a rotated rectangle can never fully contain the
+   axis-aligned box it started from) — that's the diagonal background/white triangles at
+   the corners. To prevent that, the destination rect the photo is fit into is scaled up by
+   `s` before rotating, exactly enough that the rotated rectangle still fully covers the
+   box at any angle (same idea as Lightroom/Photoshop's auto-scale-on-straighten). Derived
+   from requiring both box corners' local-frame coordinates to stay within the scaled
+   rect's half-extents: s = |cos θ| + max(dw/dh, dh/dw) * |sin θ|. */
+function drawCoverRotated(ctx,img,dx,dy,dw,dh,zoom,offX,offY,rotDeg){
+  if(!rotDeg){ drawCover(ctx,img,dx,dy,dw,dh,zoom,offX,offY); return; }
+  const rad=rotDeg*Math.PI/180;
+  const cosA=Math.abs(Math.cos(rad)), sinA=Math.abs(Math.sin(rad));
+  const ratio=Math.max(dw/dh, dh/dw);
+  const s=cosA + ratio*sinA;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(dx,dy,dw,dh); ctx.clip();
+  ctx.translate(dx+dw/2, dy+dh/2);
+  ctx.rotate(rad);
+  const cw=dw*s, ch=dh*s;
+  drawCover(ctx,img,-cw/2,-ch/2,cw,ch,zoom,offX,offY);
+  ctx.restore();
 }
 
 /* ── Crop marks with overlap prevention ── */
@@ -2154,6 +2394,36 @@ function drawGapMidCorners(ctx,meta,scale,pageIndex){
   ctx.restore();
 }
 
+/* ── Stacking order (front/back) helpers ──
+   state.zOrder[pageIndex] holds a permutation of cell indices (0..count-1)
+   describing DRAW order for that page: earlier = drawn first = further back,
+   later = drawn last = on top. Cell indices themselves never change (all the
+   posOverrides/cellRotations/etc keys still reference the original index),
+   only the order they're painted in and the order used for topmost hit-testing. */
+function getZOrderArr(pageIndex, count){
+  const arr = state.zOrder && state.zOrder[pageIndex];
+  if(arr && arr.length===count) return arr.slice();
+  const def=[]; for(let i=0;i<count;i++) def.push(i);
+  return def;
+}
+function setZOrderArr(pageIndex, arr){
+  if(!state.zOrder) state.zOrder={};
+  state.zOrder[pageIndex]=arr;
+}
+function getDrawOrder(pageIndex, count){
+  return getZOrderArr(pageIndex, count);
+}
+/* Hit-test in reverse draw order so the visually topmost box wins when boxes overlap. */
+function findTopCellAt(cells, pageIndex, pt){
+  const order=getDrawOrder(pageIndex, cells.length);
+  for(let i=order.length-1;i>=0;i--){
+    const ci=order[i];
+    const c=cells[ci];
+    if(c && pt.x>=c.x&&pt.x<=c.x+c.w&&pt.y>=c.y&&pt.y<=c.y+c.h) return ci;
+  }
+  return -1;
+}
+
 function renderPageCanvas(meta,pageIndex,dpi){
   const scale=dpi/25.4;
   const cv=document.createElement('canvas');
@@ -2164,7 +2434,9 @@ function renderPageCanvas(meta,pageIndex,dpi){
   ctx.fillRect(0,0,cv.width,cv.height);
   const cells=meta.pages[pageIndex]||[];
   const im=state.innerMargin;
-  cells.forEach((cell,ci)=>{
+  const drawOrder=getDrawOrder(pageIndex, cells.length);
+  drawOrder.forEach(ci=>{
+    const cell=cells[ci];
     const bx=cell.x*scale, by=cell.y*scale, bw=cell.w*scale, bh=cell.h*scale;
     const cellRot=getCellRotation(pageIndex,ci);
     const crop=getCellCrop(pageIndex,ci,cell);
@@ -2203,17 +2475,26 @@ function renderPageCanvas(meta,pageIndex,dpi){
       const iw=cw-(im.l+im.r)*scale, ih=ch-(im.t+im.b)*scale;
       const imgRot=getImgRotation(pageIndex,ci);
       const totalPhotoRot=(cellRot+imgRot)%360;
+      const flip=getImgFlip(pageIndex,ci);
       if(totalPhotoRot){
         const swapPhoto90=(totalPhotoRot===90||totalPhotoRot===270);
         const dw=swapPhoto90?ih:iw, dh=swapPhoto90?iw:ih;
         ctx.save();
         ctx.translate(ix+iw/2, iy+ih/2);
         ctx.rotate(totalPhotoRot*Math.PI/180);
+        ctx.scale(flip.fx?-1:1, flip.fy?-1:1);
         ctx.translate(-dw/2,-dh/2);
-        drawCover(ctx,cell.image.img,0,0,dw,dh,crop.zoom,crop.offX,crop.offY);
+        drawCoverRotated(ctx,cell.image.img,0,0,dw,dh,crop.zoom,crop.offX,crop.offY,cell.image.rotation||0);
+        ctx.restore();
+      } else if(flip.fx||flip.fy){
+        ctx.save();
+        ctx.translate(ix+iw/2, iy+ih/2);
+        ctx.scale(flip.fx?-1:1, flip.fy?-1:1);
+        ctx.translate(-iw/2,-ih/2);
+        drawCoverRotated(ctx,cell.image.img,0,0,iw,ih,crop.zoom,crop.offX,crop.offY,cell.image.rotation||0);
         ctx.restore();
       } else {
-        drawCover(ctx,cell.image.img,ix,iy,iw,ih,crop.zoom,crop.offX,crop.offY);
+        drawCoverRotated(ctx,cell.image.img,ix,iy,iw,ih,crop.zoom,crop.offX,crop.offY,cell.image.rotation||0);
       }
     }
     /* Draw guides using the same cw,ch — always matches the box+photo shape */
@@ -2321,13 +2602,24 @@ function clientToMM(e){
 /* Snap posisi grup terpilih ke tepi/tengah kotak lain, dan/atau ke grid */
 function snapDelta(origSelected, dx, dy, others){
   let sdx=dx, sdy=dy;
-  if(state.snapToBoxes){
+  if(state.snapToBoxes || state.snapToCutGuide){
     const minX=Math.min(...origSelected.map(o=>o.x)), maxX=Math.max(...origSelected.map(o=>o.x+o.w));
     const minY=Math.min(...origSelected.map(o=>o.y)), maxY=Math.max(...origSelected.map(o=>o.y+o.h));
     const tol=1.5;
-    const candX=[state.pageMargin.l, state.paper.w-state.pageMargin.r];
-    const candY=[state.pageMargin.t, state.paper.h-state.pageMargin.b];
-    others.forEach(o=>{ candX.push(o.x,o.x+o.w,o.x+o.w/2); candY.push(o.y,o.y+o.h,o.y+o.h/2); });
+    const candX=[], candY=[];
+    if(state.snapToBoxes){
+      candX.push(state.pageMargin.l, state.paper.w-state.pageMargin.r);
+      candY.push(state.pageMargin.t, state.paper.h-state.pageMargin.b);
+    }
+    others.forEach(o=>{
+      if(state.snapToBoxes){ candX.push(o.x,o.x+o.w,o.x+o.w/2); candY.push(o.y,o.y+o.h,o.y+o.h/2); }
+      /* Cut-guide snap: keep exactly Box Spacing distance from the neighbor so the
+         gap-mid cut line lands evenly between the two boxes (edge = neighbor edge
+         ± configured spacing) instead of merely touching flush. This is what keeps
+         "Line in Middle of Spacing" / "Crop Marks in Middle of Spacing" guides
+         straight & evenly spaced after boxes are dragged manually. */
+      if(state.snapToCutGuide){ candX.push(o.x-state.gap.x, o.x+o.w+state.gap.x); candY.push(o.y-state.gap.y, o.y+o.h+state.gap.y); }
+    });
     const newLeft=minX+dx, newRight=maxX+dx, newCX=(newLeft+newRight)/2;
     let bestDX=null,bestDiffX=tol;
     [newLeft,newRight,newCX].forEach(val=>{ candX.forEach(cx=>{ const diff=Math.abs(val-cx); if(diff<bestDiffX){ bestDiffX=diff; bestDX=cx-val; } }); });
@@ -2375,7 +2667,7 @@ previewCanvas.addEventListener('mousedown', e=>{
 
   const pt=clientToMM(e);
   const cells=lastMeta.pages[state.currentPage]||[];
-  const idx=cells.findIndex(c=>pt.x>=c.x&&pt.x<=c.x+c.w&&pt.y>=c.y&&pt.y<=c.y+c.h);
+  const idx=findTopCellAt(cells, state.currentPage, pt);
 
   /* Clear any stale rubber rect */
   state._rubberRect=null;
@@ -2426,11 +2718,14 @@ window.addEventListener('mousemove', e=>{
 
         const cellRot=getCellRotation(state.currentPage, idx);
         const imgRot=getImgRotation(state.currentPage, idx);
+        const flip=getImgFlip(state.currentPage, idx);
         const totalAngleRad=(cell.rotated?90:0)*Math.PI/180 + cellRot*Math.PI/180 + imgRot*Math.PI/180;
         const cosA=Math.cos(totalAngleRad);
         const sinA=Math.sin(totalAngleRad);
-        const localDx=dx*cosA + dy*sinA;
-        const localDy=-dx*sinA + dy*cosA;
+        let localDx=dx*cosA + dy*sinA;
+        let localDy=-dx*sinA + dy*cosA;
+        if(flip.fx) localDx=-localDx;
+        if(flip.fy) localDy=-localDy;
 
         const dOffX=localDx*sensitivity;
         const dOffY=localDy*sensitivity;
@@ -2469,7 +2764,7 @@ previewCanvas.addEventListener('wheel', e => {
   
   const pt = clientToMM(e);
   const cells = lastMeta.pages[state.currentPage] || [];
-  const idx = cells.findIndex(c => pt.x >= c.x && pt.x <= c.x + c.w && pt.y >= c.y && pt.y <= c.y + c.h);
+  const idx = findTopCellAt(cells, state.currentPage, pt);
   
   // If pointer is over a selected box, zoom it and prevent web page scroll
   if (idx >= 0 && state.selection.has(idx)) {
@@ -2562,12 +2857,15 @@ $('editScope').onchange=e=>{ state.editScope=e.target.value; };
 $('snapBoxes').onchange=e=>{ state.snapToBoxes=e.target.checked; };
 $('snapGrid').onchange=e=>{ state.snapToGrid=e.target.checked; };
 $('snapGridSize').oninput=e=>{ state.snapGridSize=parseFloat(e.target.value)||5; };
+$('snapCutGuide').onchange=e=>{ state.snapToCutGuide=e.target.checked; };
+$('alignPageAsGroup').onchange=e=>{ state.alignPageAsGroup=e.target.checked; };
 $('btnResetPos').onclick=()=>{
   if(!state.selection.size){ toast(TRANSLATIONS[state.lang||'id'].toastSelectFirst); return; }
   state.selection.forEach(idx=>{
     delete state.posOverrides[`${state.currentPage}:${idx}`];
     delete state.cellRotations[`${state.currentPage}:${idx}`];
     delete state.imageRotations[`${state.currentPage}:${idx}`];
+    delete state.imageFlips[`${state.currentPage}:${idx}`];
     delete state.cellCropOverrides[`${state.currentPage}:${idx}`];
   });
   refreshAll();
@@ -2579,8 +2877,10 @@ $('btnResetAllPos').onclick=()=>{
     delete state.posOverrides[`${state.currentPage}:${idx}`];
     delete state.cellRotations[`${state.currentPage}:${idx}`];
     delete state.imageRotations[`${state.currentPage}:${idx}`];
+    delete state.imageFlips[`${state.currentPage}:${idx}`];
     delete state.cellCropOverrides[`${state.currentPage}:${idx}`];
   });
+  if(state.zOrder) delete state.zOrder[state.currentPage];
   refreshAll();
   toast(TRANSLATIONS[state.lang||'id'].toastResetAllAuto);
 };
@@ -2588,11 +2888,190 @@ $('btnResetAllPages').onclick=()=>{
   state.posOverrides={};
   state.cellRotations={};
   state.imageRotations={};
+  state.imageFlips={};
   state.cellCropOverrides={};
+  state.zOrder={};
   refreshAll();
   toast(TRANSLATIONS[state.lang||'id'].toastResetAllPagesAuto);
 };
 $('btnClearSel').onclick=()=>{ state.selection.clear(); updateSelCount(); if(lastMeta) renderPreview(lastMeta); };
+
+/* ── Align & Distribute selected boxes ──
+   Uses each box's effective on-page rect (same getCellEffectiveRect helper the
+   cut-guide drawing code uses, so it accounts for manual 90°/270° box rotation)
+   so alignment matches what's actually rendered, not just the raw footprint.
+   Position changes are committed via posOverrides using the same "this page /
+   all pages" editScope semantics as drag-move, to stay consistent with the
+   rest of the tool. */
+function commitCellPos(idx,x,y){
+  if(state.editScope==='all'){
+    for(let p=0;p<lastMeta.pages.length;p++){
+      if(lastMeta.pages[p].length>idx) state.posOverrides[`${p}:${idx}`]={x,y};
+    }
+  } else {
+    state.posOverrides[`${state.currentPage}:${idx}`]={x,y};
+  }
+}
+function getSelectedRects(){
+  if(!lastMeta) return [];
+  const cells=lastMeta.pages[state.currentPage]||[];
+  return [...state.selection].filter(i=>cells[i]).map(idx=>({idx, cell:cells[idx], r:getCellEffectiveRect(state.currentPage, idx, cells[idx])}));
+}
+function applyAlign(mode){
+  const items=getSelectedRects();
+  if(items.length<2){ toast(TRANSLATIONS[state.lang||'id'].toastAlignNeedTwo); return; }
+  let target;
+  if(mode==='left') target=Math.min(...items.map(o=>o.r.x));
+  else if(mode==='right') target=Math.max(...items.map(o=>o.r.x+o.r.w));
+  else if(mode==='hcenter'){ const a=Math.min(...items.map(o=>o.r.x)), b=Math.max(...items.map(o=>o.r.x+o.r.w)); target=(a+b)/2; }
+  else if(mode==='top') target=Math.min(...items.map(o=>o.r.y));
+  else if(mode==='bottom') target=Math.max(...items.map(o=>o.r.y+o.r.h));
+  else if(mode==='vcenter'){ const a=Math.min(...items.map(o=>o.r.y)), b=Math.max(...items.map(o=>o.r.y+o.r.h)); target=(a+b)/2; }
+  items.forEach(o=>{
+    let nx=o.cell.x, ny=o.cell.y;
+    if(mode==='left') nx=o.cell.x+(target-o.r.x);
+    else if(mode==='right') nx=o.cell.x+(target-(o.r.x+o.r.w));
+    else if(mode==='hcenter') nx=o.cell.x+(target-(o.r.x+o.r.w/2));
+    else if(mode==='top') ny=o.cell.y+(target-o.r.y);
+    else if(mode==='bottom') ny=o.cell.y+(target-(o.r.y+o.r.h));
+    else if(mode==='vcenter') ny=o.cell.y+(target-(o.r.y+o.r.h/2));
+    commitCellPos(o.idx,nx,ny);
+  });
+  refreshAll();
+  toast(TRANSLATIONS[state.lang||'id'].toastAligned.replace('{n}', items.length));
+}
+function applyDistribute(axis){
+  const items=getSelectedRects();
+  if(items.length<3){ toast(TRANSLATIONS[state.lang||'id'].toastDistributeNeedThree); return; }
+  if(axis==='h'){
+    items.sort((a,b)=>a.r.x-b.r.x);
+    const first=items[0], last=items[items.length-1];
+    const span=(last.r.x+last.r.w)-first.r.x;
+    const totalW=items.reduce((s,o)=>s+o.r.w,0);
+    const gap=(span-totalW)/(items.length-1);
+    let cursor=first.r.x+first.r.w+gap;
+    for(let i=1;i<items.length-1;i++){
+      const o=items[i];
+      const nx=o.cell.x+(cursor-o.r.x);
+      commitCellPos(o.idx,nx,o.cell.y);
+      cursor+=o.r.w+gap;
+    }
+  } else {
+    items.sort((a,b)=>a.r.y-b.r.y);
+    const first=items[0], last=items[items.length-1];
+    const span=(last.r.y+last.r.h)-first.r.y;
+    const totalH=items.reduce((s,o)=>s+o.r.h,0);
+    const gap=(span-totalH)/(items.length-1);
+    let cursor=first.r.y+first.r.h+gap;
+    for(let i=1;i<items.length-1;i++){
+      const o=items[i];
+      const ny=o.cell.y+(cursor-o.r.y);
+      commitCellPos(o.idx,o.cell.x,ny);
+      cursor+=o.r.h+gap;
+    }
+  }
+  refreshAll();
+  toast(TRANSLATIONS[state.lang||'id'].toastDistributed.replace('{n}', items.length));
+}
+$('btnAlignLeft').onclick=()=>applyAlign('left');
+$('btnAlignHCenter').onclick=()=>applyAlign('hcenter');
+$('btnAlignRight').onclick=()=>applyAlign('right');
+$('btnAlignTop').onclick=()=>applyAlign('top');
+$('btnAlignVCenter').onclick=()=>applyAlign('vcenter');
+$('btnAlignBottom').onclick=()=>applyAlign('bottom');
+$('btnDistributeH').onclick=()=>applyDistribute('h');
+$('btnDistributeV').onclick=()=>applyDistribute('v');
+
+/* ── Align selected boxes to the paper's printable area (margin) ──
+   Unlike applyAlign() above (which aligns boxes relative to each other),
+   by default each selected box here aligns independently to the same page
+   edge/center, so it works with just a single box selected too.
+   If "Sebagai Grup" / "As Group" is checked, the whole selection is instead
+   treated as one rigid block: the block's own bounding box is aligned to the
+   page edge/center, and every selected box shifts by the SAME delta — so
+   relative positions/spacing between the selected boxes are preserved. */
+function applyAlignToPage(mode){
+  const items=getSelectedRects();
+  if(!items.length){ toast(TRANSLATIONS[state.lang||'id'].toastSelectFirst); return; }
+  const areaL=state.pageMargin.l, areaR=state.paper.w-state.pageMargin.r;
+  const areaT=state.pageMargin.t, areaB=state.paper.h-state.pageMargin.b;
+  const asGroup=state.alignPageAsGroup;
+  if(asGroup){
+    const minX=Math.min(...items.map(o=>o.r.x)), maxX=Math.max(...items.map(o=>o.r.x+o.r.w));
+    const minY=Math.min(...items.map(o=>o.r.y)), maxY=Math.max(...items.map(o=>o.r.y+o.r.h));
+    let dx=0, dy=0;
+    if(mode==='left') dx=areaL-minX;
+    else if(mode==='right') dx=areaR-maxX;
+    else if(mode==='hcenter') dx=((areaL+areaR)/2)-((minX+maxX)/2);
+    else if(mode==='top') dy=areaT-minY;
+    else if(mode==='bottom') dy=areaB-maxY;
+    else if(mode==='vcenter') dy=((areaT+areaB)/2)-((minY+maxY)/2);
+    items.forEach(o=>{ commitCellPos(o.idx, o.cell.x+dx, o.cell.y+dy); });
+  } else {
+    items.forEach(o=>{
+      let nx=o.cell.x, ny=o.cell.y;
+      if(mode==='left') nx=o.cell.x+(areaL-o.r.x);
+      else if(mode==='right') nx=o.cell.x+(areaR-(o.r.x+o.r.w));
+      else if(mode==='hcenter') nx=o.cell.x+(((areaL+areaR)/2)-(o.r.x+o.r.w/2));
+      else if(mode==='top') ny=o.cell.y+(areaT-o.r.y);
+      else if(mode==='bottom') ny=o.cell.y+(areaB-(o.r.y+o.r.h));
+      else if(mode==='vcenter') ny=o.cell.y+(((areaT+areaB)/2)-(o.r.y+o.r.h/2));
+      commitCellPos(o.idx,nx,ny);
+    });
+  }
+  refreshAll();
+  toast(TRANSLATIONS[state.lang||'id'].toastAlignedPage.replace('{n}', items.length));
+}
+$('btnAlignPageLeft').onclick=()=>applyAlignToPage('left');
+$('btnAlignPageHCenter').onclick=()=>applyAlignToPage('hcenter');
+$('btnAlignPageRight').onclick=()=>applyAlignToPage('right');
+$('btnAlignPageTop').onclick=()=>applyAlignToPage('top');
+$('btnAlignPageVCenter').onclick=()=>applyAlignToPage('vcenter');
+$('btnAlignPageBottom').onclick=()=>applyAlignToPage('bottom');
+
+/* ── Arrange stacking order (front/back) of selected boxes ──
+   Operates on state.zOrder (see getZOrderArr/setZOrderArr near renderPageCanvas).
+   'front'/'back' move all selected boxes to the very top/bottom of the stack
+   (their own relative order among themselves is preserved). 'forward'/'backward'
+   nudge each selected box past its single nearest non-selected neighbor, same
+   algorithm classic vector editors use for "Bring Forward" / "Send Backward".
+   Respects editScope ('current' vs 'all') like the other layout tools. */
+function applyArrange(mode){
+  if(!lastMeta) return;
+  if(!state.selection.size){ toast(TRANSLATIONS[state.lang||'id'].toastSelectFirst); return; }
+  const cells=lastMeta.pages[state.currentPage]||[];
+  const count=cells.length;
+  const sel=state.selection;
+  let order=getZOrderArr(state.currentPage,count);
+  if(mode==='front'){
+    order = order.filter(ci=>!sel.has(ci)).concat(order.filter(ci=>sel.has(ci)));
+  } else if(mode==='back'){
+    order = order.filter(ci=>sel.has(ci)).concat(order.filter(ci=>!sel.has(ci)));
+  } else if(mode==='forward'){
+    for(let i=order.length-2;i>=0;i--){
+      if(sel.has(order[i]) && !sel.has(order[i+1])){
+        const tmp=order[i]; order[i]=order[i+1]; order[i+1]=tmp;
+      }
+    }
+  } else if(mode==='backward'){
+    for(let i=1;i<order.length;i++){
+      if(sel.has(order[i]) && !sel.has(order[i-1])){
+        const tmp=order[i]; order[i]=order[i-1]; order[i-1]=tmp;
+      }
+    }
+  }
+  if(state.editScope==='all'){
+    lastMeta.pages.forEach((pg,pi)=>{ if(pg.length===count) setZOrderArr(pi, order.slice()); });
+  } else {
+    setZOrderArr(state.currentPage, order);
+  }
+  refreshAll();
+  toast(TRANSLATIONS[state.lang||'id'].toastArranged.replace('{n}', sel.size));
+}
+$('btnArrangeFront').onclick=()=>applyArrange('front');
+$('btnArrangeForward').onclick=()=>applyArrange('forward');
+$('btnArrangeBackward').onclick=()=>applyArrange('backward');
+$('btnArrangeBack').onclick=()=>applyArrange('back');
 
 /* ── Select Mode Toggle ── */
 $('btnSelectMode').onclick=()=>{
@@ -2627,6 +3106,28 @@ $('btnRotateImgSel').onclick=()=>{
   });
   refreshAll();
   toast(TRANSLATIONS[state.lang||'id'].toastRotatedImg.replace('{n}', state.selection.size));
+};
+
+/* ── Flip selected images inside cells (photo only, box untouched) — works in any Page Filling Mode ── */
+$('btnFlipHSel').onclick=()=>{
+  if(!state.selection.size){ toast(TRANSLATIONS[state.lang||'id'].toastSelectFirst); return; }
+  state.selection.forEach(idx=>{
+    const key=`${state.currentPage}:${idx}`;
+    const cur=state.imageFlips[key] || {fx:false, fy:false};
+    state.imageFlips[key]={fx:!cur.fx, fy:cur.fy};
+  });
+  refreshAll();
+  toast(TRANSLATIONS[state.lang||'id'].toastFlippedImgH.replace('{n}', state.selection.size));
+};
+$('btnFlipVSel').onclick=()=>{
+  if(!state.selection.size){ toast(TRANSLATIONS[state.lang||'id'].toastSelectFirst); return; }
+  state.selection.forEach(idx=>{
+    const key=`${state.currentPage}:${idx}`;
+    const cur=state.imageFlips[key] || {fx:false, fy:false};
+    state.imageFlips[key]={fx:cur.fx, fy:!cur.fy};
+  });
+  refreshAll();
+  toast(TRANSLATIONS[state.lang||'id'].toastFlippedImgV.replace('{n}', state.selection.size));
 };
 
 /* ── Crop drag mode toggle ── */
@@ -3129,11 +3630,15 @@ $('btnExportSettings').onclick=()=>{
     posOverrides:state.posOverrides,
     cellRotations:state.cellRotations,
     imageRotations:state.imageRotations,
+    imageFlips:state.imageFlips,
     cellCropOverrides:state.cellCropOverrides,
     overrides:state.overrides,
     snapToBoxes:state.snapToBoxes,
     snapToGrid:state.snapToGrid,
     snapGridSize:state.snapGridSize,
+    snapToCutGuide:state.snapToCutGuide,
+    alignPageAsGroup:state.alignPageAsGroup,
+    zOrder:state.zOrder,
     aiHeadRatio:parseFloat($('aiHeadRatio').value),
     aiTopMargin:parseFloat($('aiTopMargin').value),
     aiHairExt:parseFloat($('aiHairExt').value)
@@ -3175,6 +3680,9 @@ $('settingsFileInput').onchange=e=>{
       if(s.snapToBoxes!==undefined){ state.snapToBoxes=s.snapToBoxes; $('snapBoxes').checked=s.snapToBoxes; }
       if(s.snapToGrid!==undefined){ state.snapToGrid=s.snapToGrid; $('snapGrid').checked=s.snapToGrid; }
       if(s.snapGridSize!==undefined){ state.snapGridSize=s.snapGridSize; $('snapGridSize').value=s.snapGridSize; }
+      if(s.snapToCutGuide!==undefined){ state.snapToCutGuide=s.snapToCutGuide; $('snapCutGuide').checked=s.snapToCutGuide; }
+      if(s.alignPageAsGroup!==undefined){ state.alignPageAsGroup=s.alignPageAsGroup; $('alignPageAsGroup').checked=s.alignPageAsGroup; }
+      if(s.zOrder!==undefined){ state.zOrder=JSON.parse(JSON.stringify(s.zOrder)); }
       if(s.aiHeadRatio!==undefined){ $('aiHeadRatio').value=s.aiHeadRatio; $('aiHeadRatioVal').textContent=s.aiHeadRatio+'%'; }
       if(s.aiTopMargin!==undefined){ $('aiTopMargin').value=s.aiTopMargin; $('aiTopMarginVal').textContent=s.aiTopMargin+'%'; }
       if(s.aiHairExt!==undefined){ $('aiHairExt').value=s.aiHairExt; $('aiHairExtVal').textContent=s.aiHairExt+'%'; }
@@ -3183,6 +3691,7 @@ $('settingsFileInput').onchange=e=>{
       state.posOverrides = s.posOverrides ? JSON.parse(JSON.stringify(s.posOverrides)) : {};
       state.cellRotations = s.cellRotations ? {...s.cellRotations} : {};
       state.imageRotations = s.imageRotations ? {...s.imageRotations} : {};
+      state.imageFlips = s.imageFlips ? {...s.imageFlips} : {};
       state.cellCropOverrides = s.cellCropOverrides ? JSON.parse(JSON.stringify(s.cellCropOverrides)) : {};
       state.overrides = s.overrides ? {...s.overrides} : {};
       
@@ -3310,6 +3819,8 @@ function applyLanguage() {
   if(optMix) optMix.textContent = t.optMixed;
   const optMixStd = document.querySelector('#fillMode option[value="mixed_standard"]');
   if(optMixStd) optMixStd.textContent = t.optMixedStandard;
+  const optCustom = document.querySelector('#fillMode option[value="custom"]');
+  if(optCustom) optCustom.textContent = t.optCustom;
   
   const optGNone = document.querySelector('#guideStyle option[value="none"]');
   if(optGNone) optGNone.textContent = t.optGuideNone;
@@ -3363,6 +3874,8 @@ function applyLanguage() {
   
   $('btnRotateSel').textContent = t.btnRotateSel;
   $('btnRotateImgSel').textContent = t.btnRotateImgSel;
+  if($('btnFlipHSel')) $('btnFlipHSel').textContent = t.btnFlipHSel;
+  if($('btnFlipVSel')) $('btnFlipVSel').textContent = t.btnFlipVSel;
   // Zoom pill icons stay static; only refresh its live Fit/% display + tooltips below
   if (typeof updateLayoutZoom === 'function' && typeof lastMeta !== 'undefined' && lastMeta) updateLayoutZoom();
   $('btnZoomIn').textContent = t.btnZoomIn;
@@ -3377,6 +3890,49 @@ function applyLanguage() {
   document.querySelector('#rotateAllowed').parentElement.lastChild.textContent = ' ' + t.lblRotateAllowed;
   document.querySelector('#snapBoxes').parentElement.lastChild.textContent = ' ' + t.lblSnapBoxes;
   document.querySelector('#snapGrid').parentElement.lastChild.textContent = ' ' + t.lblSnapGrid;
+  document.querySelector('#snapCutGuide').parentElement.lastChild.textContent = ' ' + t.lblSnapCutGuide;
+  document.querySelector('#snapCutGuide').parentElement.title = t.titleSnapCutGuide;
+  $('lblAlignGroup').textContent = t.lblAlignGroup;
+  $('btnAlignLeft').textContent = t.btnAlignLeft;
+  $('btnAlignHCenter').textContent = t.btnAlignHCenter;
+  $('btnAlignRight').textContent = t.btnAlignRight;
+  $('btnAlignTop').textContent = t.btnAlignTop;
+  $('btnAlignVCenter').textContent = t.btnAlignVCenter;
+  $('btnAlignBottom').textContent = t.btnAlignBottom;
+  $('btnDistributeH').textContent = t.btnDistributeH;
+  $('btnDistributeV').textContent = t.btnDistributeV;
+  $('btnAlignLeft').title = t.titleAlignLeft;
+  $('btnAlignHCenter').title = t.titleAlignHCenter;
+  $('btnAlignRight').title = t.titleAlignRight;
+  $('btnAlignTop').title = t.titleAlignTop;
+  $('btnAlignVCenter').title = t.titleAlignVCenter;
+  $('btnAlignBottom').title = t.titleAlignBottom;
+  $('btnDistributeH').title = t.titleDistributeH;
+  $('btnDistributeV').title = t.titleDistributeV;
+  $('lblAlignPageGroup').textContent = t.lblAlignPageGroup;
+  document.querySelector('#alignPageAsGroup').parentElement.lastChild.textContent = t.lblAlignPageAsGroup;
+  document.querySelector('#alignPageAsGroup').parentElement.title = t.titleAlignPageAsGroup;
+  $('btnAlignPageLeft').textContent = t.btnAlignPageLeft;
+  $('btnAlignPageHCenter').textContent = t.btnAlignPageHCenter;
+  $('btnAlignPageRight').textContent = t.btnAlignPageRight;
+  $('btnAlignPageTop').textContent = t.btnAlignPageTop;
+  $('btnAlignPageVCenter').textContent = t.btnAlignPageVCenter;
+  $('btnAlignPageBottom').textContent = t.btnAlignPageBottom;
+  $('btnAlignPageLeft').title = t.titleAlignPageLeft;
+  $('btnAlignPageHCenter').title = t.titleAlignPageHCenter;
+  $('btnAlignPageRight').title = t.titleAlignPageRight;
+  $('btnAlignPageTop').title = t.titleAlignPageTop;
+  $('btnAlignPageVCenter').title = t.titleAlignPageVCenter;
+  $('btnAlignPageBottom').title = t.titleAlignPageBottom;
+  $('lblArrangeGroup').textContent = t.lblArrangeGroup;
+  $('btnArrangeFront').textContent = t.btnArrangeFront;
+  $('btnArrangeForward').textContent = t.btnArrangeForward;
+  $('btnArrangeBackward').textContent = t.btnArrangeBackward;
+  $('btnArrangeBack').textContent = t.btnArrangeBack;
+  $('btnArrangeFront').title = t.titleArrangeFront;
+  $('btnArrangeForward').title = t.titleArrangeForward;
+  $('btnArrangeBackward').title = t.titleArrangeBackward;
+  $('btnArrangeBack').title = t.titleArrangeBack;
   
   $('btnEditMode').textContent = state.editMode ? t.btnEditModeOn : t.btnEditModeOff;
   $('btnCropMode').textContent = state.cropDragMode ? t.btnCropModeOn : t.btnCropModeOff;
@@ -3398,6 +3954,8 @@ function applyLanguage() {
   $('btnRedo').title = lang === 'id' ? 'Redo (Ctrl+Y)' : 'Redo (Ctrl+Y)';
   $('btnRotateSel').title = lang === 'id' ? 'Putar gambar 90° pada kotak terpilih' : 'Rotate cell 90° on selected boxes';
   $('btnRotateImgSel').title = lang === 'id' ? 'Putar FOTO saja 90° pada kotak terpilih (ukuran kotak tetap)' : 'Rotate PHOTO only 90° on selected boxes (box size remains same)';
+  if($('btnFlipHSel')) $('btnFlipHSel').title = lang === 'id' ? 'Cerminkan FOTO horizontal (kiri-kanan) pada kotak terpilih' : 'Flip PHOTO horizontally (left-right) on selected boxes';
+  if($('btnFlipVSel')) $('btnFlipVSel').title = lang === 'id' ? 'Cerminkan FOTO vertikal (atas-bawah) pada kotak terpilih' : 'Flip PHOTO vertically (top-bottom) on selected boxes';
   $('btnCropMode').title = lang === 'id' ? 'Aktifkan mode crop: klik & drag di kotak untuk atur posisi gambar' : 'Enable crop mode: click & drag inside boxes to pan image';
   $('btnHandMode').title = lang === 'id' ? 'Aktifkan mode hand: seret di canvas untuk menggeser tampilan (bisa juga pakai klik kanan seret kapan saja)' : 'Enable hand mode: drag on canvas to pan layout view';
   $('btnLayoutZoomIn').title = lang === 'id' ? 'Perbesar tampilan lembar preview (Ctrl +)' : 'Zoom in on sheet preview (Ctrl +)';
@@ -3422,6 +3980,18 @@ function applyLanguage() {
 function applyTheme(t){ document.documentElement.setAttribute('data-theme',t); $('themeBtn').textContent = t==='light'?'☀':'🌙'; localStorage.setItem('pasfoto-theme',t); }
 $('themeBtn').onclick=()=>{ const cur=document.documentElement.getAttribute('data-theme')==='light'?'dark':'light'; applyTheme(cur); };
 applyTheme(localStorage.getItem('pasfoto-theme')||'dark');
+
+/* ── Toggle show/hide the canvas edit toolbar bar (under header) ── */
+function applyToolbarVisibility(hidden){
+  const bar=$('canvasToolbarBar'), btn=$('btnToggleToolbar');
+  bar.classList.toggle('hidden', hidden);
+  btn.classList.toggle('btn-icon-active', !hidden);
+  localStorage.setItem('pasfoto-toolbar-hidden', hidden?'1':'0');
+}
+$('btnToggleToolbar').onclick=()=>{
+  applyToolbarVisibility(!$('canvasToolbarBar').classList.contains('hidden'));
+};
+applyToolbarVisibility(localStorage.getItem('pasfoto-toolbar-hidden')==='1');
 
 $('langBtn').onclick=()=>{
   const cur = state.lang==='id'?'en':'id';
