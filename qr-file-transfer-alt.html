@@ -6,7 +6,6 @@
 <title>QR File Transfer — Encode / Decode File to QR Video</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/webm-muxer@5.1.4/build/webm-muxer.js"></script>
 <style>
   :root{
     --bg:#0b0e13;
@@ -155,7 +154,7 @@
   <header>
     <div class="eyebrow">file ↔ base64 ↔ animated qr ↔ video</div>
     <h1>QR File Transfer</h1>
-    <p class="sub">Encode any file into a sequence of animated QR codes and record it as a video. Decode that video back into the original file — all in the browser, no server involved. Video rendering uses a fast WebCodecs encoder when available (no realtime wait), falling back to a standard recorder otherwise.</p>
+    <p class="sub">Encode any file into a sequence of animated QR codes and record it as a video. Decode that video back into the original file — all in the browser, no server involved.</p>
     <div class="modstrip" id="modstrip"></div>
   </header>
 
@@ -526,96 +525,7 @@ function pickSupportedMime(){
   return '';
 }
 
-/* ---------- fast path: WebCodecs VideoEncoder + webm-muxer ----------
-   Encodes frames back-to-back as fast as the CPU/GPU allow, instead of
-   MediaRecorder's captureStream() which is locked to real playback time
-   (an N-second video takes N real seconds no matter what). ------------- */
-async function pickWebCodecsConfig(size){
-  if(typeof VideoEncoder === 'undefined' || typeof WebMMuxer === 'undefined') return null;
-  const candidates = [
-    { muxerCodec:'V_VP9', encoderCodec:'vp09.00.10.08' },
-    { muxerCodec:'V_VP8', encoderCodec:'vp08.00.10.08' }
-  ];
-  for(const c of candidates){
-    try{
-      const support = await VideoEncoder.isConfigSupported({
-        codec: c.encoderCodec, width: size, height: size, bitrate: 10_000_000
-      });
-      if(support && support.supported) return c;
-    }catch(e){ /* try next candidate */ }
-  }
-  return null;
-}
-
-async function animateAndRecordFast(canvases, fps, repeat, originalFilename, config){
-  const displayCanvas = document.getElementById('encCanvas');
-  const size = canvases[0].width;
-  displayCanvas.width = size; displayCanvas.height = size;
-  const ctx = displayCanvas.getContext('2d');
-
-  const muxer = new WebMMuxer.Muxer({
-    target: new WebMMuxer.ArrayBufferTarget(),
-    video: { codec: config.muxerCodec, width: size, height: size, frameRate: fps }
-  });
-
-  let encoderError = null;
-  const videoEncoder = new VideoEncoder({
-    output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
-    error: e => { encoderError = e; }
-  });
-  videoEncoder.configure({ codec: config.encoderCodec, width: size, height: size, bitrate: 10_000_000, framerate: fps });
-
-  const totalFrames = canvases.length * repeat;
-  let frameCount = 0;
-  const frameDurationUs = 1_000_000 / fps;
-  const keyFrameEvery = Math.max(1, Math.round(fps * 2)); // one keyframe roughly every 2s of footage
-
-  const abort = async ()=>{
-    try{ videoEncoder.close(); }catch(e){}
-    throw new AbortError('Encoding aborted during recording.');
-  };
-
-  for(let r=0; r<repeat; r++){
-    for(let i=0;i<canvases.length;i++){
-      if(encAbortRequested) await abort();
-      if(encoderError) throw new Error('Video encoder error: ' + encoderError.message);
-
-      ctx.clearRect(0,0,size,size);
-      ctx.drawImage(canvases[i], 0, 0);
-
-      const frame = new VideoFrame(displayCanvas, {
-        timestamp: Math.round(frameCount * frameDurationUs),
-        duration: Math.round(frameDurationUs)
-      });
-      videoEncoder.encode(frame, { keyFrame: frameCount % keyFrameEvery === 0 });
-      frame.close();
-      frameCount++;
-
-      // keep the encoder's internal queue from growing unbounded, and keep the UI responsive
-      if(videoEncoder.encodeQueueSize > 8){
-        await new Promise(res=>{
-          const check = ()=> (videoEncoder.encodeQueueSize <= 4) ? res() : setTimeout(check, 0);
-          check();
-        });
-      }
-      if(frameCount % 10 === 0) await sleep(0);
-
-      setProgress('encProgress','encProgressLabel', 50 + frameCount/totalFrames*50, `Encoding frame ${frameCount}/${totalFrames} (cycle ${r+1}/${repeat})`);
-    }
-  }
-
-  if(encAbortRequested) await abort();
-  await videoEncoder.flush();
-  videoEncoder.close();
-  muxer.finalize();
-
-  const { buffer } = muxer.target;
-  const blob = new Blob([buffer], { type: 'video/webm' });
-  finishEncodedVideo(blob, 'webm', displayCanvas, originalFilename);
-}
-
-/* ---------- fallback path: realtime MediaRecorder capture ---------- */
-async function animateAndRecordRealtime(canvases, fps, repeat, originalFilename){
+async function animateAndRecord(canvases, fps, repeat, originalFilename){
   const displayCanvas = document.getElementById('encCanvas');
   const size = canvases[0].width;
   displayCanvas.width = size; displayCanvas.height = size;
@@ -655,12 +565,8 @@ async function animateAndRecordRealtime(canvases, fps, repeat, originalFilename)
   await donePromise;
 
   const blob = new Blob(recordedChunks, { type: mimeType });
-  const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
-  finishEncodedVideo(blob, ext, displayCanvas, originalFilename);
-}
-
-function finishEncodedVideo(blob, ext, displayCanvas, originalFilename){
   const url = URL.createObjectURL(blob);
+  const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
   const a = document.getElementById('encDownload');
   a.href = url;
   a.download = `qrvideo_${originalFilename}.${ext}`;
@@ -674,24 +580,6 @@ function finishEncodedVideo(blob, ext, displayCanvas, originalFilename){
   previewVideo.style.display = 'block';
   displayCanvas.style.display = 'none';
   previewVideo.play().catch(()=>{ /* autoplay may need a user gesture on some browsers */ });
-}
-
-async function animateAndRecord(canvases, fps, repeat, originalFilename){
-  const size = canvases[0].width;
-  const fastConfig = await pickWebCodecsConfig(size);
-  if(fastConfig){
-    logEncode(`Using fast WebCodecs encoder (${fastConfig.muxerCodec}) — no realtime wait.`, 'ok');
-    try{
-      await animateAndRecordFast(canvases, fps, repeat, originalFilename, fastConfig);
-      return;
-    }catch(err){
-      if(err instanceof AbortError) throw err;
-      logEncode('Fast encoder failed (' + err.message + '), falling back to realtime recorder.', 'warn');
-    }
-  }else{
-    logEncode('WebCodecs VideoEncoder not available in this browser — using realtime recorder instead.', 'warn');
-  }
-  await animateAndRecordRealtime(canvases, fps, repeat, originalFilename);
 }
 
 /* =======================================================
