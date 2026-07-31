@@ -86,6 +86,9 @@
   }
   button.action:disabled{background:var(--line);color:var(--muted);cursor:not-allowed;}
   button.action:hover:not(:disabled){background:#42e6bc;}
+  button.action.aborting{background:var(--err);color:#fff;}
+  button.action.aborting:hover:not(:disabled){background:#ff6b52;}
+  button.action.aborting:disabled{background:var(--err);color:#fff;opacity:.6;}
 
   .progress-outer{height:6px;background:var(--panel-2);border-radius:3px;overflow:hidden;margin:16px 0 4px;border:1px solid var(--line);}
   .progress-inner{height:100%;width:0%;background:var(--accent);transition:width .15s linear;}
@@ -244,7 +247,7 @@
           </div>
         </div>
         <p class="note">The sampling rate should be ≥ the fps used during encoding, so no QR frame gets skipped. If any chunks are missing after the process finishes, raise this value and try again.</p>
-        <button class="action" id="btnDecode">Start Decoding Video</button>
+        <button class="action" id="btnDecode">Start Decoding → Video</button>
         <video id="decVideo" controls style="display:none;"></video>
       </div>
 
@@ -350,6 +353,10 @@ function humanSize(bytes){
 }
 function sleep(ms){ return new Promise(res=>setTimeout(res, ms)); }
 
+class AbortError extends Error{
+  constructor(msg){ super(msg); this.name = 'AbortError'; }
+}
+
 /* ---------- shared log/progress ---------- */
 function logTo(elId, msg, cls){
   const el = document.getElementById(elId);
@@ -388,8 +395,19 @@ function base64ToArrayBuffer(base64){
    ======================================================= */
 const QR_CAPACITY = { L:2953, M:2331, Q:1663, H:1273 };
 
+let encRunning = false;
+let encAbortRequested = false;
+
 document.getElementById('btnEncode').addEventListener('click', async ()=>{
   const btn = document.getElementById('btnEncode');
+
+  if(encRunning){
+    encAbortRequested = true;
+    btn.disabled = true;
+    btn.textContent = 'Aborting...';
+    return;
+  }
+
   const fileInput = document.getElementById('encFile');
   const file = fileInput.files[0];
   document.getElementById('encLog').innerHTML = '';
@@ -414,7 +432,10 @@ document.getElementById('btnEncode').addEventListener('click', async ()=>{
     return;
   }
 
-  btn.disabled = true;
+  encRunning = true;
+  encAbortRequested = false;
+  btn.textContent = 'Abort Encoding';
+  btn.classList.add('aborting');
   try{
     logEncode('Reading file...');
     const arrayBuffer = await file.arrayBuffer();
@@ -437,10 +458,19 @@ document.getElementById('btnEncode').addEventListener('click', async ()=>{
 
     await animateAndRecord(canvases, fps, repeat, file.name);
   }catch(err){
-    console.error(err);
-    logEncode('Error: ' + err.message, 'err');
+    if(err instanceof AbortError){
+      logEncode('Encoding aborted by user.', 'warn');
+      setProgress('encProgress','encProgressLabel', 0, 'Aborted.');
+    }else{
+      console.error(err);
+      logEncode('Error: ' + err.message, 'err');
+    }
   }finally{
+    encRunning = false;
+    encAbortRequested = false;
     btn.disabled = false;
+    btn.textContent = 'Start Encode → Video';
+    btn.classList.remove('aborting');
   }
 });
 
@@ -478,6 +508,7 @@ async function renderAllQRCodes(frames, size, ecLevel){
   previewCanvas.width = size; previewCanvas.height = size;
   const previewCtx = previewCanvas.getContext('2d');
   for(let i=0;i<frames.length;i++){
+    if(encAbortRequested) throw new AbortError('Encoding aborted during QR generation.');
     const c = await renderQR(frames[i], size, ecLevel);
     canvases.push(c);
     previewCtx.clearRect(0, 0, size, size);
@@ -517,6 +548,11 @@ async function animateAndRecord(canvases, fps, repeat, originalFilename){
 
   for(let r=0; r<repeat; r++){
     for(let i=0;i<canvases.length;i++){
+      if(encAbortRequested){
+        recorder.stop();
+        await donePromise;
+        throw new AbortError('Encoding aborted during recording.');
+      }
       ctx.clearRect(0,0,size,size);
       ctx.drawImage(canvases[i], 0, 0);
       frameCount++;
@@ -550,9 +586,19 @@ async function animateAndRecord(canvases, fps, repeat, originalFilename){
    DECODE
    ======================================================= */
 let decState = null;
+let decFileRunning = false;
+let decFileAbortRequested = false;
 
 document.getElementById('btnDecode').addEventListener('click', async ()=>{
   const btn = document.getElementById('btnDecode');
+
+  if(decFileRunning){
+    decFileAbortRequested = true;
+    btn.disabled = true;
+    btn.textContent = 'Aborting...';
+    return;
+  }
+
   const fileInput = document.getElementById('decFile');
   const file = fileInput.files[0];
   document.getElementById('decLog').innerHTML = '';
@@ -562,7 +608,10 @@ document.getElementById('btnDecode').addEventListener('click', async ()=>{
   if(!file){ logDecode('Choose a video file first.', 'err'); return; }
 
   decState = { chunks:{}, totalChunks:null, meta:null, foundIndices:new Set() };
-  btn.disabled = true;
+  decFileRunning = true;
+  decFileAbortRequested = false;
+  btn.textContent = 'Abort Decoding';
+  btn.classList.add('aborting');
 
   try{
     const video = document.getElementById('decVideo');
@@ -587,6 +636,7 @@ document.getElementById('btnDecode').addEventListener('click', async ()=>{
     let t = 0;
     let scanned = 0;
     while(t <= duration){
+      if(decFileAbortRequested) throw new AbortError('Decoding aborted during scan.');
       await seekTo(video, t);
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
@@ -608,10 +658,19 @@ document.getElementById('btnDecode').addEventListener('click', async ()=>{
     logDecode(`Scan complete (${scanned} frames checked).`);
     finalizeDecode();
   }catch(err){
-    console.error(err);
-    logDecode('Error: ' + err.message, 'err');
+    if(err instanceof AbortError){
+      logDecode('Decoding aborted by user.', 'warn');
+      setProgress('decProgress','decProgressLabel', 0, 'Aborted.');
+    }else{
+      console.error(err);
+      logDecode('Error: ' + err.message, 'err');
+    }
   }finally{
+    decFileRunning = false;
+    decFileAbortRequested = false;
     btn.disabled = false;
+    btn.textContent = 'Start Decoding → Video';
+    btn.classList.remove('aborting');
   }
 });
 
