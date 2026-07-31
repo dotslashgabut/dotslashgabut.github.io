@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR File Transfer — Encode / Decode File ke Video QR</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<style>
+  :root{
+    --bg:#0b0e13;
+    --panel:#12161f;
+    --panel-2:#171c27;
+    --line:#232938;
+    --text:#e7ebf0;
+    --muted:#7c8699;
+    --accent:#35d0a8;
+    --accent-dim:#1d6f5c;
+    --warn:#f0a23c;
+    --err:#f0563c;
+    --mono: 'JetBrains Mono','IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans: 'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);}
+  body{
+    min-height:100vh;
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(53,208,168,0.06), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(53,208,168,0.04), transparent 40%);
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:36px 20px 80px;}
+
+  /* header + signature module strip */
+  header{margin-bottom:28px;}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--accent);text-transform:uppercase;margin-bottom:10px;}
+  h1{font-family:var(--mono);font-size:28px;font-weight:700;margin:0 0 6px;letter-spacing:-0.01em;}
+  .sub{color:var(--muted);font-size:14px;line-height:1.5;max-width:620px;}
+  .modstrip{display:flex;gap:3px;margin:18px 0 4px;height:10px;}
+  .modstrip i{flex:1;background:var(--line);border-radius:1px;animation:pulse 2.4s ease-in-out infinite;}
+  .modstrip i:nth-child(3n){background:var(--accent-dim);}
+  @keyframes pulse{
+    0%,100%{opacity:.25;}
+    50%{opacity:1;}
+  }
+  @media (prefers-reduced-motion: reduce){ .modstrip i{animation:none;opacity:.6;} }
+
+  /* tabs */
+  .tabs{display:flex;gap:8px;margin-bottom:18px;border-bottom:1px solid var(--line);}
+  .tab-btn{
+    background:none;border:none;color:var(--muted);font-family:var(--mono);font-size:13px;
+    padding:10px 4px;cursor:pointer;position:relative;letter-spacing:.02em;
+  }
+  .tab-btn.active{color:var(--text);}
+  .tab-btn.active::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--accent);}
+  .tab-btn+.tab-btn{margin-left:22px;}
+
+  section.panel{display:none;}
+  section.panel.active{display:block;}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px;margin-bottom:16px;}
+  .card h2{font-size:14px;font-family:var(--mono);margin:0 0 4px;color:var(--text);}
+  .card .hint{font-size:12.5px;color:var(--muted);margin:0 0 16px;line-height:1.5;}
+
+  .field-row{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:14px;}
+  .field{flex:1;min-width:150px;}
+  .field label{display:block;font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;}
+  .field select,.field input[type=number]{
+    width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);
+    padding:9px 10px;border-radius:6px;font-family:var(--mono);font-size:13px;
+  }
+  .field select:focus,.field input:focus{outline:none;border-color:var(--accent);}
+
+  .filedrop{
+    border:1px dashed var(--line);border-radius:8px;padding:22px;text-align:center;
+    color:var(--muted);font-size:13px;cursor:pointer;background:var(--panel-2);transition:border-color .15s;
+  }
+  .filedrop:hover{border-color:var(--accent-dim);}
+  .filedrop.has-file{border-color:var(--accent);color:var(--text);}
+  .filedrop input{display:none;}
+
+  button.action{
+    background:var(--accent);color:#06231c;border:none;font-family:var(--mono);font-weight:700;
+    font-size:13px;padding:11px 20px;border-radius:6px;cursor:pointer;letter-spacing:.02em;
+    margin-top:6px;
+  }
+  button.action:disabled{background:var(--line);color:var(--muted);cursor:not-allowed;}
+  button.action:hover:not(:disabled){background:#42e6bc;}
+
+  .progress-outer{height:6px;background:var(--panel-2);border-radius:3px;overflow:hidden;margin:16px 0 4px;border:1px solid var(--line);}
+  .progress-inner{height:100%;width:0%;background:var(--accent);transition:width .15s linear;}
+  .progress-label{font-family:var(--mono);font-size:11px;color:var(--muted);}
+
+  .stage{display:flex;gap:20px;flex-wrap:wrap;margin-top:16px;align-items:flex-start;}
+  canvas{background:#000;border-radius:6px;display:block;}
+  #encCanvas{width:220px;height:220px;border:1px solid var(--line);}
+  #decVideo{width:260px;border-radius:6px;border:1px solid var(--line);background:#000;}
+  #decCanvas{display:none;}
+
+  .log{
+    flex:1;min-width:260px;background:#080a0e;border:1px solid var(--line);border-radius:6px;
+    font-family:var(--mono);font-size:11.5px;color:#8fa3ad;padding:12px;height:220px;overflow-y:auto;
+    white-space:pre-wrap;line-height:1.6;
+  }
+  .log .warn{color:var(--warn);}
+  .log .err{color:var(--err);}
+  .log .ok{color:var(--accent);}
+
+  a.dl{
+    display:none;margin-top:16px;background:var(--panel-2);border:1px solid var(--accent-dim);
+    color:var(--accent);font-family:var(--mono);font-size:13px;padding:10px 16px;border-radius:6px;
+    text-decoration:none;
+  }
+  a.dl:hover{border-color:var(--accent);}
+
+  img#decPreviewImg{display:none;max-width:220px;border-radius:6px;margin-top:14px;border:1px solid var(--line);}
+
+  .note{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.6;}
+  .note b{color:var(--text);}
+
+  footer{margin-top:40px;color:var(--muted);font-size:11.5px;font-family:var(--mono);text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">file ↔ base64 ↔ animated qr ↔ video</div>
+    <h1>QR File Transfer</h1>
+    <p class="sub">Encode file apapun jadi rangkaian QR-code yang dianimasikan lalu direkam ke video. Decode video itu balik jadi file aslinya — semuanya di browser, tanpa server.</p>
+    <div class="modstrip" id="modstrip"></div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="encode">01 · ENCODE</button>
+    <button class="tab-btn" data-tab="decode">02 · DECODE</button>
+  </div>
+
+  <!-- ENCODE -->
+  <section class="panel active" id="panel-encode">
+    <div class="card">
+      <h2>Sumber file</h2>
+      <p class="hint">File akan dibaca sebagai base64, dipecah jadi beberapa bagian, tiap bagian jadi 1 frame QR.</p>
+      <div class="filedrop" id="encDrop">
+        <input type="file" id="encFile">
+        <span id="encFileLabel">Klik untuk pilih file, atau drag &amp; drop di sini</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Pengaturan encode</h2>
+      <div class="field-row">
+        <div class="field">
+          <label>Ukuran chunk (karakter)</label>
+          <input type="number" id="chunkSize" value="900" min="100" max="2800" step="50">
+        </div>
+        <div class="field">
+          <label>Error correction</label>
+          <select id="ecLevel">
+            <option value="L">L — kapasitas maks</option>
+            <option value="M" selected>M — seimbang</option>
+            <option value="Q">Q — lebih tahan noise</option>
+            <option value="H">H — paling tahan noise</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Ukuran QR (px)</label>
+          <input type="number" id="qrSize" value="480" min="200" max="1000" step="20">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Frame rate video (fps)</label>
+          <input type="number" id="fps" value="5" min="1" max="30">
+        </div>
+        <div class="field">
+          <label>Ulangi rangkaian (loop)</label>
+          <input type="number" id="repeatCount" value="3" min="1" max="20">
+        </div>
+      </div>
+      <p class="note">Kapasitas QR per chunk tergantung error correction: <b>L≈2900</b>, <b>M≈2300</b>, <b>Q≈1600</b>, <b>H≈1250</b> karakter (sudah termasuk sedikit overhead header). Loop lebih banyak = video lebih tahan terhadap frame yang gagal ke-decode saat proses decode nanti.</p>
+
+      <button class="action" id="btnEncode">Mulai Encode → Video</button>
+
+      <div class="progress-outer"><div class="progress-inner" id="encProgress"></div></div>
+      <div class="progress-label" id="encProgressLabel">Menunggu file...</div>
+
+      <div class="stage">
+        <canvas id="encCanvas" width="220" height="220"></canvas>
+        <div class="log" id="encLog"></div>
+      </div>
+
+      <a class="dl" id="encDownload" download>Download video</a>
+    </div>
+  </section>
+
+  <!-- DECODE -->
+  <section class="panel" id="panel-decode">
+    <div class="card">
+      <h2>Video QR</h2>
+      <p class="hint">Upload video hasil encode (atau video hasil rekam ulang layar). Tiap frame akan dibaca dan QR-nya di-decode.</p>
+      <div class="filedrop" id="decDrop">
+        <input type="file" id="decFile" accept="video/*">
+        <span id="decFileLabel">Klik untuk pilih video, atau drag &amp; drop di sini</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Pengaturan decode</h2>
+      <div class="field-row">
+        <div class="field">
+          <label>Sample rate baca frame (fps)</label>
+          <input type="number" id="decFps" value="10" min="1" max="60">
+        </div>
+      </div>
+      <p class="note">Sample rate sebaiknya ≥ fps yang dipakai saat encode, supaya tidak ada frame QR yang terlewat. Kalau ada chunk yang hilang setelah proses selesai, naikkan angka ini lalu coba lagi.</p>
+
+      <button class="action" id="btnDecode">Mulai Decode Video</button>
+
+      <div class="progress-outer"><div class="progress-inner" id="decProgress"></div></div>
+      <div class="progress-label" id="decProgressLabel">Menunggu video...</div>
+
+      <div class="stage">
+        <video id="decVideo" controls></video>
+        <canvas id="decCanvas"></canvas>
+        <div class="log" id="decLog"></div>
+      </div>
+
+      <a class="dl" id="decDownload" download>Download file hasil</a>
+      <img id="decPreviewImg" alt="preview">
+    </div>
+  </section>
+
+  <footer>single-file html · qrcodejs + jsQR · tidak ada data yang dikirim ke server manapun</footer>
+</div>
+
+<script>
+/* ---------- signature module strip ---------- */
+(function(){
+  const strip = document.getElementById('modstrip');
+  for(let i=0;i<48;i++){
+    const el = document.createElement('i');
+    el.style.animationDelay = (Math.random()*2.4).toFixed(2)+'s';
+    strip.appendChild(el);
+  }
+})();
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ---------- filedrop helpers ---------- */
+function wireFileDrop(dropId, inputId, labelId, onFile){
+  const drop = document.getElementById(dropId);
+  const input = document.getElementById(inputId);
+  const label = document.getElementById(labelId);
+  drop.addEventListener('click', ()=>input.click());
+  input.addEventListener('change', ()=>{
+    if(input.files[0]){
+      label.textContent = input.files[0].name + '  ·  ' + humanSize(input.files[0].size);
+      drop.classList.add('has-file');
+      onFile && onFile(input.files[0]);
+    }
+  });
+  ['dragover','dragenter'].forEach(evt=>drop.addEventListener(evt, e=>{e.preventDefault();drop.style.borderColor='var(--accent)';}));
+  ['dragleave','drop'].forEach(evt=>drop.addEventListener(evt, e=>{e.preventDefault();drop.style.borderColor='';}));
+  drop.addEventListener('drop', e=>{
+    e.preventDefault();
+    if(e.dataTransfer.files[0]){
+      input.files = e.dataTransfer.files;
+      input.dispatchEvent(new Event('change'));
+    }
+  });
+}
+wireFileDrop('encDrop','encFile','encFileLabel');
+wireFileDrop('decDrop','decFile','decFileLabel');
+
+function humanSize(bytes){
+  if(bytes<1024) return bytes+' B';
+  if(bytes<1024*1024) return (bytes/1024).toFixed(1)+' KB';
+  return (bytes/1024/1024).toFixed(2)+' MB';
+}
+function sleep(ms){ return new Promise(res=>setTimeout(res, ms)); }
+
+/* ---------- shared log/progress ---------- */
+function logTo(elId, msg, cls){
+  const el = document.getElementById(elId);
+  const line = document.createElement('div');
+  if(cls) line.className = cls;
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+function logEncode(msg, cls){ logTo('encLog', msg, cls); }
+function logDecode(msg, cls){ logTo('decLog', msg, cls); }
+function setProgress(barId, labelId, pct, labelText){
+  document.getElementById(barId).style.width = Math.max(0,Math.min(100,pct)) + '%';
+  if(labelText !== undefined) document.getElementById(labelId).textContent = labelText;
+}
+
+/* ---------- base64 helpers ---------- */
+function arrayBufferToBase64(buffer){
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  for(let i=0;i<bytes.length;i+=chunkSize){
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i+chunkSize));
+  }
+  return btoa(binary);
+}
+function base64ToArrayBuffer(base64){
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+
+/* =======================================================
+   ENCODE
+   ======================================================= */
+const QR_CAPACITY = { L:2953, M:2331, Q:1663, H:1273 };
+
+document.getElementById('btnEncode').addEventListener('click', async ()=>{
+  const btn = document.getElementById('btnEncode');
+  const fileInput = document.getElementById('encFile');
+  const file = fileInput.files[0];
+  document.getElementById('encLog').innerHTML = '';
+  document.getElementById('encDownload').style.display = 'none';
+
+  if(!file){ logEncode('Pilih file dulu.', 'err'); return; }
+
+  const chunkSize = parseInt(document.getElementById('chunkSize').value) || 900;
+  const ecLevel = document.getElementById('ecLevel').value;
+  const qrSize = parseInt(document.getElementById('qrSize').value) || 480;
+  const fps = Math.max(1, parseInt(document.getElementById('fps').value) || 5);
+  const repeat = Math.max(1, parseInt(document.getElementById('repeatCount').value) || 3);
+
+  const maxCap = QR_CAPACITY[ecLevel] - 20;
+  if(chunkSize > maxCap){
+    logEncode(`Ukuran chunk (${chunkSize}) melebihi kapasitas aman untuk level ${ecLevel} (~${maxCap}). Turunkan ukuran chunk atau pilih level EC lebih rendah.`, 'err');
+    return;
+  }
+
+  btn.disabled = true;
+  try{
+    logEncode('Membaca file...');
+    const arrayBuffer = await file.arrayBuffer();
+    const base64 = arrayBufferToBase64(arrayBuffer);
+    logEncode(`File dibaca: ${humanSize(file.size)} → base64 ${base64.length} karakter.`);
+
+    const totalChunks = Math.ceil(base64.length / chunkSize);
+    const chunks = [];
+    for(let i=0;i<totalChunks;i++){
+      chunks.push(base64.slice(i*chunkSize, (i+1)*chunkSize));
+    }
+
+    const metaPayload = `META|${encodeURIComponent(file.name)}|${encodeURIComponent(file.type||'application/octet-stream')}|${totalChunks}|${base64.length}`;
+    const frames = [metaPayload, ...chunks.map((c,i)=>`D|${i}|${totalChunks}|${c}`)];
+
+    logEncode(`${totalChunks} chunk data + 1 frame metadata = ${frames.length} frame per putaran. Diulang ${repeat}x.`);
+
+    const canvases = await renderAllQRCodes(frames, qrSize, ecLevel);
+    logEncode('Semua QR ter-generate. Mulai animasi & rekam video...', 'ok');
+
+    await animateAndRecord(canvases, fps, repeat, file.name);
+  }catch(err){
+    console.error(err);
+    logEncode('Error: ' + err.message, 'err');
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+function renderQR(text, size, ecLevelStr){
+  return new Promise((resolve, reject)=>{
+    const div = document.createElement('div');
+    div.style.position='fixed'; div.style.left='-9999px'; div.style.top='-9999px';
+    document.body.appendChild(div);
+    try{
+      const correctLevel = QRCode.CorrectLevel[ecLevelStr] ?? QRCode.CorrectLevel.M;
+      new QRCode(div, { text, width:size, height:size, correctLevel });
+      setTimeout(()=>{
+        const srcCanvas = div.querySelector('canvas');
+        if(!srcCanvas){
+          document.body.removeChild(div);
+          reject(new Error('Gagal render QR, data mungkin terlalu besar untuk 1 chunk.'));
+          return;
+        }
+        const out = document.createElement('canvas');
+        out.width = size; out.height = size;
+        out.getContext('2d').drawImage(srcCanvas, 0, 0, size, size);
+        document.body.removeChild(div);
+        resolve(out);
+      }, 15);
+    }catch(e){
+      document.body.removeChild(div);
+      reject(e);
+    }
+  });
+}
+
+async function renderAllQRCodes(frames, size, ecLevel){
+  const canvases = [];
+  for(let i=0;i<frames.length;i++){
+    const c = await renderQR(frames[i], size, ecLevel);
+    canvases.push(c);
+    setProgress('encProgress','encProgressLabel', (i+1)/frames.length*50, `Generate QR ${i+1}/${frames.length}`);
+    await sleep(0);
+  }
+  return canvases;
+}
+
+function pickSupportedMime(){
+  const candidates = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4'];
+  for(const c of candidates){ if(MediaRecorder.isTypeSupported(c)) return c; }
+  return '';
+}
+
+async function animateAndRecord(canvases, fps, repeat, originalFilename){
+  const displayCanvas = document.getElementById('encCanvas');
+  const size = canvases[0].width;
+  displayCanvas.width = size; displayCanvas.height = size;
+  const ctx = displayCanvas.getContext('2d');
+
+  const stream = displayCanvas.captureStream(fps);
+  const mimeType = pickSupportedMime();
+  if(!mimeType){ throw new Error('Browser tidak mendukung MediaRecorder untuk video.'); }
+
+  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 10000000 });
+  const recordedChunks = [];
+  recorder.ondataavailable = e=>{ if(e.data.size>0) recordedChunks.push(e.data); };
+  const donePromise = new Promise(resolve=>{ recorder.onstop = resolve; });
+
+  recorder.start();
+
+  const totalFrames = canvases.length * repeat;
+  let frameCount = 0;
+  const frameDuration = 1000/fps;
+
+  for(let r=0; r<repeat; r++){
+    for(let i=0;i<canvases.length;i++){
+      ctx.clearRect(0,0,size,size);
+      ctx.drawImage(canvases[i], 0, 0);
+      frameCount++;
+      setProgress('encProgress','encProgressLabel', 50 + frameCount/totalFrames*50, `Merekam frame ${frameCount}/${totalFrames} (putaran ${r+1}/${repeat})`);
+      await sleep(frameDuration);
+    }
+  }
+
+  recorder.stop();
+  await donePromise;
+
+  const blob = new Blob(recordedChunks, { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+  const a = document.getElementById('encDownload');
+  a.href = url;
+  a.download = `qrvideo_${originalFilename}.${ext}`;
+  a.style.display = 'inline-block';
+  a.textContent = `Download video (${humanSize(blob.size)})`;
+  setProgress('encProgress','encProgressLabel', 100, 'Selesai.');
+  logEncode('Video siap diunduh.', 'ok');
+}
+
+/* =======================================================
+   DECODE
+   ======================================================= */
+let decState = null;
+
+document.getElementById('btnDecode').addEventListener('click', async ()=>{
+  const btn = document.getElementById('btnDecode');
+  const fileInput = document.getElementById('decFile');
+  const file = fileInput.files[0];
+  document.getElementById('decLog').innerHTML = '';
+  document.getElementById('decDownload').style.display = 'none';
+  document.getElementById('decPreviewImg').style.display = 'none';
+
+  if(!file){ logDecode('Pilih file video dulu.', 'err'); return; }
+
+  decState = { chunks:{}, totalChunks:null, meta:null, foundIndices:new Set() };
+  btn.disabled = true;
+
+  try{
+    const video = document.getElementById('decVideo');
+    video.src = URL.createObjectURL(file);
+    video.muted = true;
+    await new Promise((res,rej)=>{
+      video.onloadedmetadata = res;
+      video.onerror = ()=>rej(new Error('Gagal memuat video.'));
+    });
+
+    const stepFps = Math.max(1, parseInt(document.getElementById('decFps').value) || 10);
+    const step = 1/stepFps;
+    const duration = video.duration;
+
+    const canvas = document.getElementById('decCanvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d', { willReadFrequently:true });
+
+    logDecode(`Durasi ${duration.toFixed(2)}s, resolusi ${video.videoWidth}x${video.videoHeight}, sampling @ ${stepFps}fps`);
+
+    let t = 0;
+    let scanned = 0;
+    while(t <= duration){
+      await seekTo(video, t);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
+      const code = jsQR(imgData.data, imgData.width, imgData.height);
+      scanned++;
+      if(code && code.data){
+        processDecodedFrame(code.data);
+      }
+      setProgress('decProgress','decProgressLabel', Math.min(100, t/duration*100),
+        `Scan ${t.toFixed(2)}s / ${duration.toFixed(2)}s · ${decState.foundIndices.size}${decState.totalChunks?('/'+decState.totalChunks):''} chunk ditemukan`);
+
+      if(decState.totalChunks !== null && decState.foundIndices.size === decState.totalChunks){
+        logDecode('Semua chunk sudah ditemukan, berhenti lebih awal.', 'ok');
+        break;
+      }
+      t += step;
+    }
+
+    logDecode(`Selesai scan (${scanned} frame diperiksa).`);
+    finalizeDecode();
+  }catch(err){
+    console.error(err);
+    logDecode('Error: ' + err.message, 'err');
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+function seekTo(video, t){
+  return new Promise(resolve=>{
+    function onSeeked(){
+      video.removeEventListener('seeked', onSeeked);
+      resolve();
+    }
+    video.addEventListener('seeked', onSeeked);
+    video.currentTime = Math.min(t, video.duration);
+  });
+}
+
+function processDecodedFrame(data){
+  const parts = data.split('|');
+  if(parts[0] === 'META'){
+    if(!decState.meta){
+      const name = decodeURIComponent(parts[1]);
+      const type = decodeURIComponent(parts[2]);
+      const total = parseInt(parts[3]);
+      const length = parseInt(parts[4]);
+      decState.meta = { name, type, total, length };
+      if(decState.totalChunks === null) decState.totalChunks = total;
+      logDecode(`Metadata ditemukan: "${name}" (${type}), ${total} chunk diharapkan.`, 'ok');
+    }
+  }else if(parts[0] === 'D'){
+    const idx = parseInt(parts[1]);
+    const total = parseInt(parts[2]);
+    const data2 = parts.slice(3).join('|');
+    if(!decState.foundIndices.has(idx)){
+      decState.chunks[idx] = data2;
+      decState.foundIndices.add(idx);
+      if(decState.totalChunks === null) decState.totalChunks = total;
+      logDecode(`Chunk ${idx+1}/${total} diterima  (${decState.foundIndices.size}/${decState.totalChunks} total)`);
+    }
+  }
+}
+
+function finalizeDecode(){
+  if(!decState.totalChunks){
+    logDecode('Gagal: tidak ada QR yang berhasil terbaca sama sekali. Coba naikkan sample rate decode.', 'err');
+    return;
+  }
+  const missing = [];
+  for(let i=0;i<decState.totalChunks;i++){
+    if(!(i in decState.chunks)) missing.push(i);
+  }
+  if(missing.length > 0){
+    logDecode(`Gagal: ${missing.length} chunk hilang (index: ${missing.slice(0,15).join(',')}${missing.length>15?', ...':''}). Naikkan sample rate decode lalu coba lagi.`, 'err');
+    return;
+  }
+
+  let base64 = '';
+  for(let i=0;i<decState.totalChunks;i++) base64 += decState.chunks[i];
+
+  if(decState.meta && decState.meta.length && base64.length !== decState.meta.length){
+    logDecode(`Peringatan: panjang base64 hasil gabungan (${base64.length}) tidak sama dengan metadata (${decState.meta.length}).`, 'warn');
+  }
+
+  try{
+    const buffer = base64ToArrayBuffer(base64);
+    const type = decState.meta ? decState.meta.type : 'application/octet-stream';
+    const name = decState.meta ? decState.meta.name : 'output.bin';
+    const blob = new Blob([buffer], { type });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.getElementById('decDownload');
+    a.href = url;
+    a.download = name;
+    a.style.display = 'inline-block';
+    a.textContent = `Download ${name} (${humanSize(blob.size)})`;
+
+    logDecode(`Berhasil merekonstruksi file: ${name} (${humanSize(blob.size)})`, 'ok');
+
+    if(type.startsWith('image/')){
+      const img = document.getElementById('decPreviewImg');
+      img.src = url;
+      img.style.display = 'block';
+    }
+  }catch(e){
+    logDecode('Gagal decode base64 → file: ' + e.message, 'err');
+  }
+}
+</script>
+</body>
+</html>
