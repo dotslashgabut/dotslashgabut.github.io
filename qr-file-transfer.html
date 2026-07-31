@@ -243,11 +243,21 @@
         </div>
         <div class="field-row" style="margin-top:14px;">
           <div class="field">
-            <label>Frame sampling rate (fps)</label>
+            <label>Playback speed (fast decode)</label>
+            <select id="decSpeed">
+              <option value="1" selected>1× (safest)</option>
+              <option value="2">2×</option>
+              <option value="4">4×</option>
+              <option value="8">8×</option>
+              <option value="16">16× (may drop frames)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Fallback sampling rate (fps)</label>
             <input type="number" id="decFps" value="10" min="1" max="60">
           </div>
         </div>
-        <p class="note">The sampling rate should be ≥ the fps used during encoding, so no QR frame gets skipped. If any chunks are missing after the process finishes, raise this value and try again.</p>
+        <p class="note">On supported browsers, decoding plays the video through once and reads every real decoded frame as it arrives (via <b>requestVideoFrameCallback</b>) — much faster than seeking to each sample point, since seeking has to re-decode from the last keyframe every time. Higher playback speeds decode faster but risk the browser skipping frames to keep up; drop back to 1× if chunks go missing. The fallback fps field is only used on browsers without frame-callback support.</p>
         <button class="action" id="btnDecode">Start Decoding → Video</button>
         <video id="decVideo" controls style="display:none;"></video>
       </div>
@@ -734,37 +744,21 @@ document.getElementById('btnDecode').addEventListener('click', async ()=>{
       video.onerror = ()=>rej(new Error('Failed to load video.'));
     });
 
-    const stepFps = Math.max(1, parseInt(document.getElementById('decFps').value) || 10);
-    const step = 1/stepFps;
     const duration = video.duration;
-
     const canvas = document.getElementById('decCanvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d', { willReadFrequently:true });
 
-    logDecode(`Duration ${duration.toFixed(2)}s, resolution ${video.videoWidth}x${video.videoHeight}, sampling @ ${stepFps}fps`);
-
-    let t = 0;
-    let scanned = 0;
-    while(t <= duration){
-      if(decFileAbortRequested) throw new AbortError('Decoding aborted during scan.');
-      await seekTo(video, t);
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
-      const code = jsQR(imgData.data, imgData.width, imgData.height);
-      scanned++;
-      if(code && code.data){
-        processDecodedFrame(code.data);
-      }
-      setProgress('decProgress','decProgressLabel', Math.min(100, t/duration*100),
-        `Scanning ${t.toFixed(2)}s / ${duration.toFixed(2)}s · ${decState.foundIndices.size}${decState.totalChunks?('/'+decState.totalChunks):''} chunks found`);
-
-      if(decState.totalChunks !== null && decState.foundIndices.size === decState.totalChunks){
-        logDecode('All chunks found, stopping early.', 'ok');
-        break;
-      }
-      t += step;
+    let scanned;
+    if(typeof video.requestVideoFrameCallback === 'function'){
+      const speed = parseFloat(document.getElementById('decSpeed').value) || 1;
+      logDecode(`Duration ${duration.toFixed(2)}s, resolution ${video.videoWidth}x${video.videoHeight}, fast scan @ ${speed}x (requestVideoFrameCallback)`);
+      scanned = await scanVideoFast(video, canvas, ctx, speed);
+    }else{
+      const stepFps = Math.max(1, parseInt(document.getElementById('decFps').value) || 10);
+      logDecode(`Duration ${duration.toFixed(2)}s, resolution ${video.videoWidth}x${video.videoHeight}, requestVideoFrameCallback unsupported — falling back to seeking @ ${stepFps}fps`, 'warn');
+      scanned = await scanVideoBySeeking(video, canvas, ctx, stepFps, duration);
     }
 
     logDecode(`Scan complete (${scanned} frames checked).`);
@@ -795,6 +789,79 @@ function seekTo(video, t){
     video.addEventListener('seeked', onSeeked);
     video.currentTime = Math.min(t, video.duration);
   });
+}
+
+/* ---------- fast path: play once, read every decoded frame as it arrives ----------
+   Seeking to N sample points (the old method) forces the decoder to jump back to
+   the nearest keyframe and re-decode forward for EVERY sample — with a keyframe
+   roughly every 2s of footage, that's a lot of repeated work. Playing the video
+   through once and grabbing each frame via requestVideoFrameCallback decodes every
+   frame exactly one time, in order, so it's dramatically faster (and can be sped
+   up further with playbackRate). --------------------------------------------------- */
+function scanVideoFast(video, canvas, ctx, speed){
+  return new Promise((resolve, reject)=>{
+    let scanned = 0;
+    let settled = false;
+    const finish = ()=>{
+      if(settled) return;
+      settled = true;
+      video.pause();
+      resolve(scanned);
+    };
+
+    video.playbackRate = speed;
+
+    function onFrame(now, metadata){
+      if(settled) return;
+      if(decFileAbortRequested){ settled = true; video.pause(); reject(new AbortError('Decoding aborted during scan.')); return; }
+
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
+      const code = jsQR(imgData.data, imgData.width, imgData.height);
+      scanned++;
+      if(code && code.data) processDecodedFrame(code.data);
+
+      const t = metadata.mediaTime;
+      setProgress('decProgress','decProgressLabel', Math.min(100, t/video.duration*100),
+        `Scanning ${t.toFixed(2)}s / ${video.duration.toFixed(2)}s · ${decState.foundIndices.size}${decState.totalChunks?('/'+decState.totalChunks):''} chunks found`);
+
+      if(decState.totalChunks !== null && decState.foundIndices.size === decState.totalChunks){
+        logDecode('All chunks found, stopping early.', 'ok');
+        finish();
+        return;
+      }
+      video.requestVideoFrameCallback(onFrame);
+    }
+
+    video.addEventListener('ended', finish, { once:true });
+    video.requestVideoFrameCallback(onFrame);
+    video.play().catch(reject);
+  });
+}
+
+/* ---------- fallback path: seek to sampled timestamps (used when
+   requestVideoFrameCallback isn't available in this browser) ---------- */
+async function scanVideoBySeeking(video, canvas, ctx, stepFps, duration){
+  const step = 1/stepFps;
+  let t = 0;
+  let scanned = 0;
+  while(t <= duration){
+    if(decFileAbortRequested) throw new AbortError('Decoding aborted during scan.');
+    await seekTo(video, t);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
+    const code = jsQR(imgData.data, imgData.width, imgData.height);
+    scanned++;
+    if(code && code.data) processDecodedFrame(code.data);
+    setProgress('decProgress','decProgressLabel', Math.min(100, t/duration*100),
+      `Scanning ${t.toFixed(2)}s / ${duration.toFixed(2)}s · ${decState.foundIndices.size}${decState.totalChunks?('/'+decState.totalChunks):''} chunks found`);
+    if(decState.totalChunks !== null && decState.foundIndices.size === decState.totalChunks){
+      logDecode('All chunks found, stopping early.', 'ok');
+      break;
+    }
+    t += step;
+  }
+  return scanned;
 }
 
 function processDecodedFrame(data){
