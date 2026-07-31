@@ -1,5 +1,5 @@
 # List of .html Files
-Generation Time: 31/07/2026  9.58.34,15
+Generation Time: 31/07/2026 12.54.52,49
 
 https://dotslashgabut.github.io/advanced-image-comparison.html
 https://dotslashgabut.github.io/alpha-extractor-alt.html
@@ -70,6 +70,7 @@ https://dotslashgabut.github.io/png-pixel-replacer-with-ascii-text-input.html
 https://dotslashgabut.github.io/qr-code-generator-alt.html
 https://dotslashgabut.github.io/qr-code-generator-and-reader.html
 https://dotslashgabut.github.io/qr-code-generator.html
+https://dotslashgabut.github.io/qr-file-transfer.html
 https://dotslashgabut.github.io/qr-generator-pro-claude-kimi.html
 https://dotslashgabut.github.io/qr-generator-pro-claude.html
 https://dotslashgabut.github.io/random-color-palette-generator.html
