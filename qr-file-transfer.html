@@ -94,6 +94,7 @@
   .stage{display:flex;gap:20px;flex-wrap:wrap;margin-top:16px;align-items:flex-start;}
   canvas{background:#000;border-radius:6px;display:block;}
   #encCanvas{width:220px;height:220px;border:1px solid var(--line);}
+  #encPreviewVideo{width:220px;height:220px;border:1px solid var(--accent-dim);border-radius:6px;object-fit:contain;background:#000;}
   #decVideo{width:260px;border-radius:6px;border:1px solid var(--line);background:#000;}
   #decCanvas{display:none;}
 
@@ -209,7 +210,11 @@
       <div class="progress-label" id="encProgressLabel">Waiting for file...</div>
 
       <div class="stage">
-        <canvas id="encCanvas" width="220" height="220"></canvas>
+        <div>
+          <div class="progress-label" style="margin-bottom:8px;">Live preview</div>
+          <canvas id="encCanvas" width="220" height="220"></canvas>
+          <video id="encPreviewVideo" muted loop playsinline style="display:none;"></video>
+        </div>
         <div class="log" id="encLog"></div>
       </div>
 
@@ -389,6 +394,11 @@ document.getElementById('btnEncode').addEventListener('click', async ()=>{
   const file = fileInput.files[0];
   document.getElementById('encLog').innerHTML = '';
   document.getElementById('encDownload').style.display = 'none';
+  const previewVideoReset = document.getElementById('encPreviewVideo');
+  previewVideoReset.pause();
+  previewVideoReset.removeAttribute('src');
+  previewVideoReset.style.display = 'none';
+  document.getElementById('encCanvas').style.display = 'block';
 
   if(!file){ logEncode('Choose a file first.', 'err'); return; }
 
@@ -464,9 +474,14 @@ function renderQR(text, size, ecLevelStr){
 
 async function renderAllQRCodes(frames, size, ecLevel){
   const canvases = [];
+  const previewCanvas = document.getElementById('encCanvas');
+  previewCanvas.width = size; previewCanvas.height = size;
+  const previewCtx = previewCanvas.getContext('2d');
   for(let i=0;i<frames.length;i++){
     const c = await renderQR(frames[i], size, ecLevel);
     canvases.push(c);
+    previewCtx.clearRect(0, 0, size, size);
+    previewCtx.drawImage(c, 0, 0);
     setProgress('encProgress','encProgressLabel', (i+1)/frames.length*50, `Generating QR ${i+1}/${frames.length}`);
     await sleep(0);
   }
@@ -523,6 +538,12 @@ async function animateAndRecord(canvases, fps, repeat, originalFilename){
   a.textContent = `Download video (${humanSize(blob.size)})`;
   setProgress('encProgress','encProgressLabel', 100, 'Done.');
   logEncode('Video is ready to download.', 'ok');
+
+  const previewVideo = document.getElementById('encPreviewVideo');
+  previewVideo.src = url;
+  previewVideo.style.display = 'block';
+  displayCanvas.style.display = 'none';
+  previewVideo.play().catch(()=>{ /* autoplay may need a user gesture on some browsers */ });
 }
 
 /* =======================================================
