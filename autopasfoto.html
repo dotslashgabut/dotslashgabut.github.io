@@ -77,9 +77,10 @@ select{cursor:pointer}
 .img-list{display:flex;flex-direction:column;gap:8px;margin-top:12px;max-height:420px;overflow-y:auto;padding-right:2px}
 .img-row{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;animation:si .2s ease}
 @keyframes si{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
-.img-row-main{display:flex;align-items:center;gap:10px}
-.img-row-controls{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}
-.img-thumb{width:44px;height:44px;border-radius:6px;object-fit:cover;flex-shrink:0;border:1px solid var(--border);background:var(--bg)}
+.img-row-main{display:flex;align-items:stretch;gap:10px}
+.img-row-right{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;gap:6px}
+.img-row-controls{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px}
+.img-thumb{width:72px;height:auto;align-self:stretch;min-height:56px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid var(--border);background:var(--bg);cursor:pointer}
 .img-info{flex:1;min-width:0}
 .img-name{font-size:.74rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
 .img-meta{font-size:.63rem;color:var(--text-dim);font-family:var(--mono)}
@@ -93,9 +94,9 @@ select{cursor:pointer}
 .mini-btn.danger:hover{border-color:var(--accent2);color:var(--accent2)}
 .adjust-panel{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
 .slider-row{display:flex;align-items:center;gap:8px}
-.slider-row label{width:52px;flex-shrink:0;margin:0;font-size:.63rem}
-.slider-row input[type="range"]{flex:1;accent-color:var(--accent)}
-.slider-row .val{width:36px;text-align:right;font-family:var(--mono);font-size:.65rem;color:var(--text-muted);flex-shrink:0}
+.slider-row label{width:52px;flex-shrink:0;margin:0;font-size:.63rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slider-row input[type="range"]{flex:1;min-width:0;accent-color:var(--accent)}
+.slider-row .val{width:36px;text-align:right;font-family:var(--mono);font-size:.65rem;color:var(--text-muted);flex-shrink:0;white-space:nowrap}
 .empty-imgs{text-align:center;padding:22px 10px;color:var(--text-dim)}
 .empty-imgs .ei{font-size:1.8rem;margin-bottom:6px}
 .empty-imgs p{font-size:.75rem}
@@ -181,7 +182,7 @@ select{cursor:pointer}
 <header>
   <div class="logo">
     <div class="logo-icon">🪪</div>
-    <div>Auto<span>PasFoto</span> Layout<small>tata letak cetak pas photo</small></div>
+    <div>Auto<span>PasFoto</span><small>tata letak cetak pas photo</small></div>
   </div>
   
   <!-- Stats Grid placed in Header so it is always visible on scroll -->
@@ -195,9 +196,11 @@ select{cursor:pointer}
   <div class="header-actions" style="display:flex;gap:8px;align-items:center">
     <!-- Page Nav placed in Header next to theme switcher -->
     <div class="page-nav" style="margin-right: 10px;">
+      <button class="btn btn-s btn-sm" id="btnFirstPage" title="Lompat ke halaman pertama" style="height: 30px; font-weight: 700;">« First</button>
       <button class="btn btn-s btn-sm" id="btnPrevPage" style="height: 30px; font-weight: 700;">‹ Prev</button>
-      <span id="pageIndicator" style="padding: 0 4px;">Halaman 1 / 1</span>
+      <span id="pageIndicator" style="padding: 0 4px;"><span id="pageIndicatorLabel">Halaman</span> <input type="number" id="pageIndicatorInput" min="1" value="1" style="width:44px;text-align:center;padding:2px 2px;font-family:var(--mono);font-weight:700"> / <span id="pageIndicatorTotal">1</span></span>
       <button class="btn btn-s btn-sm" id="btnNextPage" style="height: 30px; font-weight: 700;">Next ›</button>
+      <button class="btn btn-s btn-sm" id="btnLastPage" title="Lompat ke halaman terakhir" style="height: 30px; font-weight: 700;">Last »</button>
     </div>
     <button class="btn-icon" id="btnToggleToolbar" title="Sembunyikan/Tampilkan Toolbar Edit / Show-hide Edit Toolbar">🧰</button>
     <button class="btn-icon" id="langBtn" title="Ganti bahasa / Switch language" style="font-size: 0.72rem; font-weight: 700; font-family: var(--sans);">ID</button>
@@ -234,6 +237,8 @@ select{cursor:pointer}
           <button class="btn btn-s btn-sm" id="btnZoomIn" title="Perbesar gambar pada kotak terpilih">➕ Foto +</button>
           <button class="btn btn-s btn-sm" id="btnZoomOut" title="Perkecil gambar pada kotak terpilih">➖ Foto -</button>
           <button class="btn btn-s btn-sm" id="btnResetPan" title="Reset posisi geser (pan) pada kotak terpilih">🎯 Reset Foto Pan</button>
+          <button class="btn btn-s btn-sm" id="btnAutoCropSel" title="Auto Face Crop (AI) hanya pada kotak yang diseleksi — tiap kotak dipas-kan sesuai ukuran/aspect rasio kotaknya masing-masing (cocok utk kotak berbeda ukuran / mixed size)">🤖 Auto Crop Terpilih</button>
+          <button class="btn btn-s btn-sm" id="btnAdjustSel" title="Tampilkan slider Zoom/Pan manual utk kotak yang diseleksi">⚙ Adjust Terpilih</button>
           <div class="sep"></div>
           <label style="display:flex;align-items:center;gap:5px;font-size:.7rem;color:var(--text-muted);cursor:pointer"><input type="checkbox" id="snapBoxes" checked style="width:auto">Snap Kotak</label>
           <label style="display:flex;align-items:center;gap:5px;font-size:.7rem;color:var(--text-muted);cursor:pointer"><input type="checkbox" id="snapGrid" style="width:auto">Snap Grid</label>
@@ -272,6 +277,22 @@ select{cursor:pointer}
           <button class="btn btn-s btn-sm" id="btnClearSel">✕ Hapus Pilihan</button>
           <button class="btn btn-s btn-sm" id="btnSelectMode" title="Mode Seleksi Multi: klik kotak menambah/mengurangi pilihan (seperti Shift+Klik selalu aktif). Drag area tetap bekerja.">☰ Select</button>
           <span id="selCount" style="font-size:.7rem;color:var(--accent);margin-left:auto;font-family:var(--mono)">Tidak ada dipilih</span>
+          <button class="btn btn-s btn-sm" id="btnHideToolbarBottom" title="Sembunyikan Toolbar Edit" style="padding:5px 9px">▲</button>
+        </div>
+        <div id="selAutoCropPanel" style="display:none;gap:14px;align-items:center;padding:6px 10px;border-top:1px solid var(--border);flex-wrap:wrap">
+          <span style="font-size:.7rem;color:var(--text-muted);white-space:nowrap">🤖 Auto Crop Wajah (Kotak Terpilih):</span>
+          <div class="slider-row" style="width:190px" title="Tinggi Kepala thd Kotak"><label style="width:48px">Kepala</label><input type="range" id="selAcHeadRatio" min="40" max="90" step="1" value="75"><span class="val" style="width:42px">75%</span></div>
+          <div class="slider-row" style="width:190px" title="Margin Atas (Ubun ke Tepi)"><label style="width:48px">Margin</label><input type="range" id="selAcTopMargin" min="0" max="30" step="1" value="10"><span class="val" style="width:42px">10%</span></div>
+          <div class="slider-row" style="width:190px" title="Estimasi Rambut di Atas Dahi"><label style="width:48px">Rambut</label><input type="range" id="selAcHairExt" min="0" max="70" step="1" value="35"><span class="val" style="width:42px">35%</span></div>
+          <button class="btn btn-p btn-sm" id="btnSelAutoCropRun" style="height:26px;padding:0 10px;font-size:.72rem" title="Jalankan Auto Face Crop (AI) pada kotak yang diseleksi memakai nilai slider di atas">🤖 Jalankan</button>
+        </div>
+        <div id="selAdjustPanel" style="display:none;gap:14px;align-items:center;padding:6px 10px;border-top:1px solid var(--border);flex-wrap:wrap">
+          <span style="font-size:.7rem;color:var(--text-muted);white-space:nowrap">🎯 Adjust Foto (Kotak Terpilih):</span>
+          <div class="slider-row" style="width:190px"><label style="width:48px">Zoom</label><input type="range" id="selAdjZoom" min="1" max="3" step="0.05" value="1"><span class="val" style="width:42px">1.00×</span></div>
+          <div class="slider-row" style="width:190px"><label style="width:48px">Pan X</label><input type="range" id="selAdjOffX" min="-1" max="1" step="0.02" value="0"><span class="val" style="width:42px">0.00</span></div>
+          <div class="slider-row" style="width:190px"><label style="width:48px">Pan Y</label><input type="range" id="selAdjOffY" min="-1" max="1" step="0.02" value="0"><span class="val" style="width:42px">0.00</span></div>
+          <div class="slider-row" style="width:190px" title="Putar (miring) foto secara halus pada kotak terpilih — tidak menukar ukuran kotak"><label style="width:48px">Rotate</label><input type="range" id="selAdjRot" min="-180" max="180" step="1" value="0"><span class="val" style="width:42px">0°</span></div>
+          <button class="btn btn-s btn-sm" id="btnSelAdjReset" style="height:26px;padding:0 10px;font-size:.72rem">↺ Reset</button>
         </div>
 </div>
 
@@ -314,19 +335,19 @@ select{cursor:pointer}
         <div class="card-title"><div class="t">🤖 Auto Crop Wajah (AI)</div></div>
         <div class="info-box" id="aiEngineStatus" style="margin-bottom:12px">⏳ Memuat model deteksi wajah…</div>
         <div class="form-group">
-          <label>Tinggi Kepala thd Kotak <span id="aiHeadRatioVal" style="color:var(--accent);text-transform:none;font-weight:400">75%</span></label>
+          <label id="lblAiHeadRatio">Tinggi Kepala thd Kotak <span id="aiHeadRatioVal" style="color:var(--accent);text-transform:none;font-weight:400">75%</span></label>
           <input type="range" id="aiHeadRatio" min="40" max="90" value="75" style="width:100%">
         </div>
         <div class="form-group">
-          <label>Margin Atas (Ubun ke Tepi) <span id="aiTopMarginVal" style="color:var(--accent);text-transform:none;font-weight:400">10%</span></label>
+          <label id="lblAiTopMargin">Margin Atas (Ubun ke Tepi) <span id="aiTopMarginVal" style="color:var(--accent);text-transform:none;font-weight:400">10%</span></label>
           <input type="range" id="aiTopMargin" min="0" max="30" value="10" style="width:100%">
         </div>
         <div class="form-group" style="margin-bottom:14px">
-          <label>Estimasi Rambut di Atas Dahi <span id="aiHairExtVal" style="color:var(--accent);text-transform:none;font-weight:400">35%</span></label>
+          <label id="lblAiHairExt">Estimasi Rambut di Atas Dahi <span id="aiHairExtVal" style="color:var(--accent);text-transform:none;font-weight:400">35%</span></label>
           <input type="range" id="aiHairExt" min="0" max="70" value="35" style="width:100%">
         </div>
         <button class="btn btn-p btn-full" id="btnAutoCropAll">⚙️ Auto Crop Semua Foto</button>
-        <div class="info-box" style="margin-top:10px">💡 Mendeteksi wajah, meluruskan kemiringan kepala, lalu mengatur zoom &amp; posisi crop tiap foto otomatis mengikuti ukuran <b>Kotak Foto</b> di bawah. Hasil auto-crop tetap bisa disesuaikan manual per foto lewat tombol ⚙, atau dikembalikan ke foto asli lewat tombol 🗘.</div>
+        <div class="info-box" id="infoAutoCrop" style="margin-top:10px">💡 Mendeteksi wajah, meluruskan kemiringan kepala, lalu mengatur zoom &amp; posisi crop tiap foto otomatis mengikuti ukuran <b>Kotak Foto</b> di bawah. Hasil auto-crop tetap bisa disesuaikan manual per foto lewat tombol ⚙, atau dikembalikan ke foto asli lewat tombol 🗘.</div>
       </div>
 
       <!-- FILL MODE -->
@@ -340,6 +361,7 @@ select{cursor:pointer}
             <option value="mixed">Ukuran Beragam (Mixed Size + Bulk)</option>
             <option value="mixed_standard">Campur Foto + Ukuran Beragam (Mixed Size)</option>
             <option value="custom">Custom Layout (Isi Foto Manual)</option>
+            <option value="custom_mixed">Custom Layout (Mixed Size)</option>
           </select>
         </div>
         <div class="form-group">
@@ -395,7 +417,7 @@ select{cursor:pointer}
       </div>
 
       <!-- BOX SIZE -->
-      <div class="card">
+      <div class="card" id="boxSizeCard">
         <div class="card-title"><div class="t">Ukuran Kotak Foto</div></div>
         <div class="chips" id="boxChips"></div>
         <div class="row3" style="align-items:end;margin-top:10px">
@@ -572,16 +594,16 @@ select{cursor:pointer}
 <script type="module">
 import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
 
-function setAiStatus(msg){
-  const el = document.getElementById('aiEngineStatus');
-  if(el) el.textContent = msg;
+function setAiStatus(key){
+  window.__aiEngineStatusKey = key;
+  if(window.updateAiEngineStatusText) window.updateAiEngineStatusText();
 }
 
 window.faceAI = { model: null, ready: null, detect: null };
 
 window.faceAI.ready = (async () => {
   try{
-    setAiStatus('⏳ Memuat model deteksi wajah…');
+    setAiStatus('aiStatusLoadingFace');
     const vision = await FilesetResolver.forVisionTasks(
       "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
     );
@@ -594,9 +616,9 @@ window.faceAI.ready = (async () => {
       numFaces: 1,
     });
     window.faceAI.model = model;
-    setAiStatus('✅ Model AI siap digunakan');
+    setAiStatus('aiStatusFaceReady');
   }catch(err){
-    setAiStatus('❌ Gagal memuat model AI (cek koneksi internet)');
+    setAiStatus('aiStatusFaceFailed');
     console.error('faceAI init error:', err);
   }
 })();
@@ -624,16 +646,16 @@ window.faceAI.detect = function(imgEl){
 <script type="module">
 import { ImageSegmenter, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
 
-function setBgStatusMsg(msg){
-  const el = document.getElementById('aiEngineStatus');
-  if(el) el.textContent = msg;
+function setBgStatusMsg(key){
+  window.__aiEngineStatusKey = key;
+  if(window.updateAiEngineStatusText) window.updateAiEngineStatusText();
 }
 
 window.bgRemovalAI = { model: null, ready: null, removeBackground: null };
 
 window.bgRemovalAI.ready = (async () => {
   try{
-    setBgStatusMsg('⏳ Memuat model hapus background…');
+    setBgStatusMsg('aiStatusLoadingBg');
     const vision = await FilesetResolver.forVisionTasks(
       "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
     );
@@ -647,9 +669,9 @@ window.bgRemovalAI.ready = (async () => {
       outputConfidenceMasks: true
     });
     window.bgRemovalAI.model = model;
-    setBgStatusMsg('✅ Model hapus background siap');
+    setBgStatusMsg('aiStatusBgReady');
   }catch(err){
-    setBgStatusMsg('❌ Gagal memuat model hapus background (cek koneksi internet)');
+    setBgStatusMsg('aiStatusBgFailed');
     console.error('bgRemovalAI init error:', err);
   }
 })();
@@ -705,6 +727,7 @@ window.bgRemovalAI.removeBackground = function(imgEl){
   } finally {
     if(mask.close) mask.close();
     if(result.close) result.close();
+    freeCanvas(maskCanvas); freeCanvas(maskFullCanvas); freeCanvas(outCanvas);
   }
 };
 </script>
@@ -726,13 +749,26 @@ const TRANSLATIONS = {
     statTotal: 'Total Copy:',
     statPages: 'Halaman:',
     statEmpty: 'Slot Kosong:',
-    pageIndicator: 'Halaman {current} / {total}',
+    pageIndicator: 'Halaman',
     prevBtn: '‹ Prev',
     nextBtn: 'Next ›',
     
     // Cards
     cardSource: 'Foto Sumber',
     cardAutoCrop: '🤖 Auto Crop Wajah (AI)',
+    btnHideToolbarBottom: '▲',
+    titleHideToolbarBottom: 'Sembunyikan Toolbar Edit',
+    titleThemeBtn: 'Ganti tema',
+    titleFirstPage: 'Lompat ke halaman pertama',
+    titleLastPage: 'Lompat ke halaman terakhir',
+    titleEditScope: 'Terapkan perubahan ke…',
+    titleSnapGridSize: 'Jarak snap grid (mm)',
+    lblAiHeadRatio: 'Tinggi Kepala thd Kotak',
+    lblAiTopMargin: 'Margin Atas (Ubun ke Tepi)',
+    lblAiHairExt: 'Estimasi Rambut di Atas Dahi',
+    btnAutoCropAll: '⚙️ Auto Crop Semua Foto',
+    infoAutoCrop: '💡 Mendeteksi wajah, meluruskan kemiringan kepala, lalu mengatur zoom &amp; posisi crop tiap foto otomatis mengikuti ukuran <b>Kotak Foto</b> di bawah. Hasil auto-crop tetap bisa disesuaikan manual per foto lewat tombol ⚙, atau dikembalikan ke foto asli lewat tombol 🗘.',
+    btnAutoCropProcessing: '⏳ Memproses… ({cur}/{total})',
     cardFillMode: 'Mode Pengisian Lembar',
     cardPaperSize: 'Ukuran Kertas',
     cardBoxSize: 'Ukuran Kotak Foto',
@@ -762,6 +798,7 @@ const TRANSLATIONS = {
     optMixed: 'Ukuran Beragam (Mixed Size + Bulk)',
     optMixedStandard: 'Campur Foto + Ukuran Beragam (Mixed Size)',
     optCustom: 'Custom Layout (Isi Foto Manual)',
+    optCustomMixed: 'Custom Layout (Mixed Size)',
     lblTargetPages: 'Target Jml Lembar (utk tombol 🗎 isi penuh)',
     infoFillMode: '💡 <b>🗎</b> Tombol pada daftar foto akan mengisi foto hingga penuh sejumlah lembar target di atas. <b>Bulk</b>: tiap lembar otomatis diisi 1 file foto berbeda dan banyak.',
     lblMixedList: 'Daftar Ukuran Kotak per Lembar (mm)',
@@ -769,6 +806,7 @@ const TRANSLATIONS = {
     btnAddMixedSize: '+ Tambah Ukuran Custom',
     lblRotateAllowed: 'Izinkan Rotasi (Landscape/Portrait Otomatis)',
     infoMixedPacking: '✂️ Tiap lembar dipak otomatis dgn algoritma <i>skyline packing</i> (referensi CutOpt), mendukung rotasi kotak utk hasil maksimal. Tiap lembar = 1 foto (bulk), semua slot ukuran di atas diisi foto yang sama; foto berikutnya lanjut ke lembar berikutnya.',
+    infoMixedPackingCustom: '✂️ Tiap lembar dipak otomatis dgn algoritma <i>skyline packing</i> (referensi CutOpt), mendukung rotasi kotak utk hasil maksimal. Kotak dibiarkan kosong — pasang foto manual: pilih kotak lalu klik foto di daftar. Jumlah lembar mengikuti Target Jml Lembar.',
     
     // Paper panel
     lblPaperPreset: 'Preset Kertas',
@@ -826,6 +864,8 @@ const TRANSLATIONS = {
     btnZoomIn: '➕ Foto +',
     btnZoomOut: '➖ Foto -',
     btnResetPan: '🎯 Reset Foto Pan',
+    btnAutoCropSel: '🤖 Auto Crop Terpilih',
+    btnAdjustSel: '⚙ Adjust Terpilih',
     lblSnapBoxes: 'Snap Kotak',
     lblSnapGrid: 'Snap Grid',
     lblSnapCutGuide: '📐 Snap Cut-Guide',
@@ -961,6 +1001,19 @@ const TRANSLATIONS = {
     toastSettingsImport: '⬇ Pengaturan diimpor dari JSON',
     toastSettingsImportFailed: '❌ Gagal mengimpor: ',
     toastAddedToList: '✅ {n} ditambahkan ke daftar',
+    aiStatusLoadingFace: '⏳ Memuat model deteksi wajah…',
+    aiStatusFaceReady: '✅ Model AI siap digunakan',
+    aiStatusFaceFailed: '❌ Gagal memuat model AI (cek koneksi internet)',
+    aiStatusLoadingBg: '⏳ Memuat model hapus background…',
+    aiStatusBgReady: '✅ Model hapus background siap',
+    aiStatusBgFailed: '❌ Gagal memuat model hapus background (cek koneksi internet)',
+    badgeAiDetecting: 'Mendeteksi wajah…',
+    badgeAiOk: 'Auto crop AI berhasil',
+    badgeAiOkClamped: 'Auto crop AI berhasil (dibatasi zoom)',
+    badgeAiFail: 'Wajah tidak terdeteksi',
+    badgeBgProcessing: 'Menghapus background…',
+    badgeBgOk: 'Background berhasil dihapus (transparan)',
+    badgeBgFail: 'Gagal menghapus background',
     toastBgModuleNotLoaded: '⚠️ Modul hapus background belum termuat',
     toastBgModelFailed: '⚠️ Model hapus background gagal dimuat (cek koneksi internet)',
     toastBgRemoved: '✅ Background dihapus: {name}',
@@ -969,6 +1022,7 @@ const TRANSLATIONS = {
     toastAiModelFailed: '⚠️ Model AI gagal dimuat (cek koneksi internet)',
     toastFaceNotDetected: '⚠️ Wajah tidak terdeteksi: {name}',
     toastAutoCropDone: '🤖 Auto crop selesai — {ok} berhasil, {fail} gagal',
+    toastNoBoxImages: '⚠️ Belum ada foto terpasang di kotak yang dimaksud',
     toastSelectModeActive: '☰ Mode Pilih aktif — klik kotak untuk tambah/hapus pilihan; seret area untuk tambah ke pilihan',
     toastZipNotFound: '⚠ JSZip tidak ditemukan',
     toastZipDownloaded: '✅ ZIP {n} halaman diunduh',
@@ -984,13 +1038,26 @@ const TRANSLATIONS = {
     statTotal: 'Total Copies:',
     statPages: 'Pages:',
     statEmpty: 'Empty Slots:',
-    pageIndicator: 'Page {current} / {total}',
+    pageIndicator: 'Page',
     prevBtn: '‹ Prev',
     nextBtn: 'Next ›',
     
     // Cards
     cardSource: 'Source Photos',
     cardAutoCrop: '🤖 Auto Face Crop (AI)',
+    btnHideToolbarBottom: '▲',
+    titleHideToolbarBottom: 'Hide Edit Toolbar',
+    titleThemeBtn: 'Switch theme',
+    titleFirstPage: 'Jump to first page',
+    titleLastPage: 'Jump to last page',
+    titleEditScope: 'Apply changes to…',
+    titleSnapGridSize: 'Snap grid spacing (mm)',
+    lblAiHeadRatio: 'Head Height vs Box',
+    lblAiTopMargin: 'Top Margin (Crown to Edge)',
+    lblAiHairExt: 'Hair Above Forehead Estimate',
+    btnAutoCropAll: '⚙️ Auto Crop All Photos',
+    infoAutoCrop: '💡 Detects faces, straightens head tilt, then sets zoom &amp; crop position for each photo automatically to match the <b>Photo Box</b> size below. Auto-crop results can still be adjusted manually per photo via the ⚙ button, or reverted to the original photo via the 🗘 button.',
+    btnAutoCropProcessing: '⏳ Processing… ({cur}/{total})',
     cardFillMode: 'Page Filling Mode',
     cardPaperSize: 'Paper Size',
     cardBoxSize: 'Photo Box Size',
@@ -1020,6 +1087,7 @@ const TRANSLATIONS = {
     optMixed: 'Mixed Sizes (Mixed Size + Bulk)',
     optMixedStandard: 'Mixed Sizes (Mixed Size + Standard Mixing)',
     optCustom: 'Custom Layout (Manual Photo Fill)',
+    optCustomMixed: 'Custom Layout (Mixed Size)',
     lblTargetPages: 'Target Page Count (for 🗎 full fill button)',
     infoFillMode: '💡 <b>🗎</b> The button fills the entire template with this photo up to the target pages. <b>Bulk</b>: each page is automatically filled with a different photo file sequentially.',
     lblMixedList: 'List of Box Sizes per Page (mm)',
@@ -1027,6 +1095,7 @@ const TRANSLATIONS = {
     btnAddMixedSize: '+ Add Custom Size',
     lblRotateAllowed: 'Allow Rotation (Auto Landscape/Portrait)',
     infoMixedPacking: '✂️ Each sheet is packed automatically using the skyline packing algorithm (CutOpt reference), supporting box rotation for maximum efficiency.',
+    infoMixedPackingCustom: '✂️ Each sheet is packed automatically using the skyline packing algorithm (CutOpt reference), supporting box rotation for maximum efficiency. Boxes start empty — assign photos manually: select a box then click a photo in the list. Page count follows the Target Pages field.',
     
     // Paper panel
     lblPaperPreset: 'Paper Preset',
@@ -1084,6 +1153,8 @@ const TRANSLATIONS = {
     btnZoomIn: '➕ Photo +',
     btnZoomOut: '➖ Photo -',
     btnResetPan: '🎯 Reset Photo Pan',
+    btnAutoCropSel: '🤖 Auto Crop Selected',
+    btnAdjustSel: '⚙ Adjust Selected',
     lblSnapBoxes: 'Snap Boxes',
     lblSnapGrid: 'Snap Grid',
     lblSnapCutGuide: '📐 Snap Cut-Guide',
@@ -1219,6 +1290,19 @@ const TRANSLATIONS = {
     toastSettingsImport: '⬇ Settings imported from JSON',
     toastSettingsImportFailed: '❌ Import failed: ',
     toastAddedToList: '✅ {n} added to list',
+    aiStatusLoadingFace: '⏳ Loading face detection model…',
+    aiStatusFaceReady: '✅ AI model ready to use',
+    aiStatusFaceFailed: '❌ Failed to load AI model (check internet connection)',
+    aiStatusLoadingBg: '⏳ Loading background removal model…',
+    aiStatusBgReady: '✅ Background removal model ready',
+    aiStatusBgFailed: '❌ Failed to load background removal model (check internet connection)',
+    badgeAiDetecting: 'Detecting face…',
+    badgeAiOk: 'Auto crop AI succeeded',
+    badgeAiOkClamped: 'Auto crop AI succeeded (zoom limited)',
+    badgeAiFail: 'Face not detected',
+    badgeBgProcessing: 'Removing background…',
+    badgeBgOk: 'Background removed successfully (transparent)',
+    badgeBgFail: 'Failed to remove background',
     toastBgModuleNotLoaded: '⚠️ Background removal module not loaded',
     toastBgModelFailed: '⚠️ Background removal model failed to load (check internet connection)',
     toastBgRemoved: '✅ Background removed: {name}',
@@ -1227,6 +1311,7 @@ const TRANSLATIONS = {
     toastAiModelFailed: '⚠️ AI model failed to load (check internet connection)',
     toastFaceNotDetected: '⚠️ Face not detected: {name}',
     toastAutoCropDone: '🤖 Auto crop complete — {ok} succeeded, {fail} failed',
+    toastNoBoxImages: '⚠️ No photo assigned to the relevant box(es) yet',
     toastSelectModeActive: '☰ Select Mode active — click a box to add/remove selection; drag an area to add to selection',
     toastZipNotFound: '⚠ JSZip not found',
     toastZipDownloaded: '✅ ZIP downloaded ({n} pages)',
@@ -1285,6 +1370,42 @@ const state={
   _rubberRect:null
 };
 let mixedSeq=3;
+
+/* Bridge for the AI face-detection / background-removal modules below, which
+   run as separate <script type="module"> scopes and therefore can't see the
+   `state`/`TRANSLATIONS` consts declared here. window.__aiEngineStatusKey
+   tracks the last status reported by whichever module last updated it, so
+   the shared #aiEngineStatus text stays correct if the person switches
+   language after the model has already finished loading. */
+window.updateAiEngineStatusText = function(){
+  const el = document.getElementById('aiEngineStatus');
+  const key = window.__aiEngineStatusKey;
+  if(!el || !key) return;
+  const t = TRANSLATIONS[state.lang || 'id'];
+  if(t[key] !== undefined) el.textContent = t[key];
+};
+
+/* Modes that use the "Daftar Ukuran Kotak per Lembar" mixed-size packing
+   (skyline packing across mixedBoxes) instead of the single uniform
+   "Ukuran Kotak Foto". Custom Layout (Mixed Size) reuses the same packing
+   as Mixed Size modes, just without auto-assigning photos. */
+function isMixedFillMode(m){ return m==='mixed' || m==='mixed_standard' || m==='custom_mixed'; }
+
+/* Shows/hides the mixed-size panel ("Daftar Ukuran Kotak per Lembar") and
+   the single "Ukuran Kotak Foto" card based on the active fill mode — the
+   two are mutually exclusive since mixed-size modes don't use a uniform
+   box size. */
+function syncFillModeVisibility(){
+  const mixedLike=isMixedFillMode(state.fillMode);
+  $('mixedPanel').classList.toggle('hidden', !mixedLike);
+  const boxSizeCard=$('boxSizeCard');
+  if(boxSizeCard) boxSizeCard.classList.toggle('hidden', mixedLike);
+  const infoBox=$('infoMixedPacking');
+  if(infoBox){
+    const t=TRANSLATIONS[state.lang||'id'];
+    infoBox.innerHTML = state.fillMode==='custom_mixed' ? t.infoMixedPackingCustom : t.infoMixedPacking;
+  }
+}
 
 /* ================================================================
    UNDO / REDO
@@ -1355,7 +1476,7 @@ function restoreSnapshot(snap){
   $('imLink').classList.toggle('active',state.imLinked);
   $('gapLink').classList.toggle('active',state.gapLinked);
   $('fillMode').value=state.fillMode;
-  $('mixedPanel').classList.toggle('hidden',state.fillMode!=='mixed' && state.fillMode!=='mixed_standard');
+  syncFillModeVisibility();
   $('targetPages').value=state.targetPages;
   $('rotateAllowed').checked=state.rotateAllowed;
   $('frameColor').value=state.frameColor;
@@ -1378,6 +1499,7 @@ function autoSnapshot(){
       }
       lastSnapshotStr=snap;
       updateUndoRedoButtons();
+      pruneAiImageCache();
     }
   },400);
 }
@@ -1394,6 +1516,7 @@ function undo(){
   refreshAll();
   isRestoringSnapshot=false;
   updateUndoRedoButtons();
+  pruneAiImageCache();
   toast(TRANSLATIONS[state.lang||'id'].toastUndo);
 }
 
@@ -1408,6 +1531,7 @@ function redo(){
   refreshAll();
   isRestoringSnapshot=false;
   updateUndoRedoButtons();
+  pruneAiImageCache();
   toast(TRANSLATIONS[state.lang||'id'].toastRedo);
 }
 
@@ -1631,8 +1755,8 @@ $('btnBoxSwap').onclick=()=>{ [state.box.w,state.box.h]=[state.box.h,state.box.w
    ================================================================ */
 $('fillMode').onchange=e=>{
   state.fillMode=e.target.value;
-  $('mixedPanel').classList.toggle('hidden', state.fillMode!=='mixed' && state.fillMode!=='mixed_standard');
-  if(state.fillMode==='custom'){
+  syncFillModeVisibility();
+  if(state.fillMode==='custom' || state.fillMode==='custom_mixed'){
     if(!state.editMode){
       state.editMode=true;
       const be=$('btnEditMode');
@@ -1661,20 +1785,93 @@ function renderMixedList(){
   }
   state.mixedBoxes.forEach(mb=>{
     const row=document.createElement('div');
-    row.style.cssText='display:grid;grid-template-columns:1fr 1fr 1fr 30px;gap:6px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px';
+    row.style.cssText='display:flex;flex-direction:column;gap:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px';
     row.innerHTML=`
-      <input type="number" step="0.1" min="5" value="${mb.w}" title="Lebar mm">
-      <input type="number" step="0.1" min="5" value="${mb.h}" title="Tinggi mm">
-      <input type="number" min="1" value="${mb.qty}" title="Jumlah kotak per lembar">
-      <button class="mini-btn danger" title="Hapus ukuran">✕</button>`;
-    const inputs=row.querySelectorAll('input');
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 28px 28px 28px;gap:6px;align-items:center">
+        <input type="number" step="0.1" min="5" value="${mb.w}" title="Lebar mm">
+        <input type="number" step="0.1" min="5" value="${mb.h}" title="Tinggi mm">
+        <input type="number" min="1" value="${mb.qty}" title="Jumlah kotak per lembar">
+        <button class="mini-btn" data-role="ai-toggle" title="Auto Face Crop (AI) khusus ukuran kotak ini — pas otomatis sesuai aspect rasio ${mb.w}×${mb.h}mm">🤖</button>
+        <button class="mini-btn" data-role="adj-toggle" title="Adjust manual (Zoom/Pan) khusus ukuran kotak ini — berlaku ke semua kotak berukuran ${mb.w}×${mb.h}mm yang sudah ada fotonya">⚙</button>
+        <button class="mini-btn danger" title="Hapus ukuran">✕</button>
+      </div>
+      <div class="mixed-ai-panel" style="display:none;flex-direction:column;gap:4px;margin-top:6px;padding-top:6px;border-top:1px dashed var(--border)">
+        <div class="slider-row" title="Tinggi Kepala thd Kotak"><label style="width:44px;font-size:.6rem">Kepala</label><input type="range" min="40" max="90" data-k="aiHeadRatio" value="${mb.aiHeadRatio??parseFloat($('aiHeadRatio').value)}"><span class="val"></span></div>
+        <div class="slider-row" title="Margin Atas (Ubun ke Tepi)"><label style="width:44px;font-size:.6rem">Margin</label><input type="range" min="0" max="30" data-k="aiTopMargin" value="${mb.aiTopMargin??parseFloat($('aiTopMargin').value)}"><span class="val"></span></div>
+        <div class="slider-row" title="Estimasi Rambut di Atas Dahi"><label style="width:44px;font-size:.6rem">Rambut</label><input type="range" min="0" max="70" data-k="aiHairExt" value="${mb.aiHairExt??parseFloat($('aiHairExt').value)}"><span class="val"></span></div>
+        <button class="btn btn-p btn-sm" data-role="ai-run" style="margin-top:2px">🤖 Auto Crop Ukuran ${mb.w}×${mb.h}mm</button>
+      </div>
+      <div class="mixed-adj-panel" style="display:none;flex-direction:column;gap:4px;margin-top:6px;padding-top:6px;border-top:1px dashed var(--border)">
+        <div class="slider-row" title="Zoom foto"><label style="width:50px;font-size:.6rem">Zoom</label><input type="range" min="1" max="3" step="0.05" data-k="zoom" value="1"><span class="val"></span></div>
+        <div class="slider-row" title="Geser Horizontal"><label style="width:50px;font-size:.6rem">Pan X</label><input type="range" min="-1" max="1" step="0.02" data-k="offX" value="0"><span class="val"></span></div>
+        <div class="slider-row" title="Geser Vertikal"><label style="width:50px;font-size:.6rem">Pan Y</label><input type="range" min="-1" max="1" step="0.02" data-k="offY" value="0"><span class="val"></span></div>
+        <div class="slider-row" title="Putar (miring) foto — khusus ukuran kotak ini"><label style="width:50px;font-size:.6rem">Rotate</label><input type="range" min="-180" max="180" step="1" data-k="rot" value="0"><span class="val" style="width:40px"></span></div>
+        <button class="btn btn-s btn-sm" data-role="adj-reset" style="margin-top:2px">↺ Reset Ukuran ${mb.w}×${mb.h}mm</button>
+      </div>`;
+    const inputs=row.querySelectorAll(':scope > div:first-child > input');
     const wIn=inputs[0], hIn=inputs[1], qIn=inputs[2];
+    const topBtns=row.querySelectorAll(':scope > div:first-child > button');
+    const aiToggleBtn=topBtns[0], adjToggleBtn=topBtns[1], delBtn=topBtns[2];
+    const aiPanel=row.querySelector('.mixed-ai-panel');
+    const adjPanel=row.querySelector('.mixed-adj-panel');
     wIn.oninput=()=>{ mb.w=parseFloat(wIn.value)||mb.w; refreshAll(); };
     hIn.oninput=()=>{ mb.h=parseFloat(hIn.value)||mb.h; refreshAll(); };
     qIn.oninput=()=>{ mb.qty=Math.max(0,parseInt(qIn.value)||0); refreshAll(); };
-    row.querySelector('button').onclick=()=>{ state.mixedBoxes=state.mixedBoxes.filter(x=>x!==mb); renderMixedList(); refreshAll(); };
+    delBtn.onclick=()=>{ state.mixedBoxes=state.mixedBoxes.filter(x=>x!==mb); renderMixedList(); refreshAll(); };
+    aiToggleBtn.onclick=()=>{
+      adjPanel.style.display='none';
+      aiPanel.style.display=(aiPanel.style.display==='none')?'flex':'none';
+    };
+    aiPanel.querySelectorAll('input[type=range]').forEach(sl=>{
+      const valSpan=sl.parentElement.querySelector('.val');
+      const suffix=sl.dataset.k==='aiHeadRatio'||sl.dataset.k==='aiTopMargin'||sl.dataset.k==='aiHairExt' ? '%' : '';
+      valSpan.textContent=sl.value+suffix;
+      sl.oninput=()=>{ mb[sl.dataset.k]=parseFloat(sl.value); valSpan.textContent=sl.value+suffix; };
+    });
+    aiPanel.querySelector('[data-role="ai-run"]').onclick=(e)=>{ autoCropBoxSize(mb, e.target); };
+
+    adjToggleBtn.onclick=()=>{
+      aiPanel.style.display='none';
+      const willShow=adjPanel.style.display==='none';
+      adjPanel.style.display=willShow?'flex':'none';
+      if(willShow) syncMixedAdjustSliders(mb, adjPanel);
+    };
+    const adjZoomSl=adjPanel.querySelector('[data-k="zoom"]'), adjOffXSl=adjPanel.querySelector('[data-k="offX"]'), adjOffYSl=adjPanel.querySelector('[data-k="offY"]'), adjRotSl=adjPanel.querySelector('[data-k="rot"]');
+    const applyAdj=()=>{
+      const zoom=parseFloat(adjZoomSl.value), offX=parseFloat(adjOffXSl.value), offY=parseFloat(adjOffYSl.value), rot=parseFloat(adjRotSl.value);
+      adjZoomSl.nextElementSibling.textContent=zoom.toFixed(2)+'×';
+      adjOffXSl.nextElementSibling.textContent=offX.toFixed(2);
+      adjOffYSl.nextElementSibling.textContent=offY.toFixed(2);
+      adjRotSl.nextElementSibling.textContent=rot.toFixed(0)+'°';
+      findCellsForBoxSize(mb).forEach(tg=>{ state.cellCropOverrides[`${tg.pageIdx}:${tg.cellIdx}`]={zoom,offX,offY,rot}; });
+      refreshAll();
+    };
+    [adjZoomSl,adjOffXSl,adjOffYSl,adjRotSl].forEach(sl=>{ sl.oninput=applyAdj; });
+    adjPanel.querySelector('[data-role="adj-reset"]').onclick=()=>{
+      findCellsForBoxSize(mb).forEach(tg=>{ delete state.cellCropOverrides[`${tg.pageIdx}:${tg.cellIdx}`]; });
+      refreshAll();
+      syncMixedAdjustSliders(mb, adjPanel);
+    };
     wrap.appendChild(row);
   });
+}
+/* Reads the current crop (override if present, else the photo's own zoom/offX/offY)
+   of the first cell matching this box size, and reflects it into that row's Adjust
+   sliders — so opening the panel shows what's actually applied instead of a
+   misleading fixed default. */
+function syncMixedAdjustSliders(mb, adjPanel){
+  const targets=findCellsForBoxSize(mb);
+  const zoomSl=adjPanel.querySelector('[data-k="zoom"]'), offXSl=adjPanel.querySelector('[data-k="offX"]'), offYSl=adjPanel.querySelector('[data-k="offY"]'), rotSl=adjPanel.querySelector('[data-k="rot"]');
+  let zoom=1, offX=0, offY=0, rot=0;
+  if(targets.length){
+    const tg=targets[0];
+    const co=getCellCrop(tg.pageIdx, tg.cellIdx, {image:tg.im});
+    zoom=co.zoom; offX=co.offX; offY=co.offY; rot=co.rot||0;
+  }
+  zoomSl.value=zoom; zoomSl.nextElementSibling.textContent=zoom.toFixed(2)+'×';
+  offXSl.value=offX; offXSl.nextElementSibling.textContent=offX.toFixed(2);
+  offYSl.value=offY; offYSl.nextElementSibling.textContent=offY.toFixed(2);
+  rotSl.value=rot; rotSl.nextElementSibling.textContent=rot.toFixed(0)+'°';
 }
 $('btnAddMixedSize').onclick=()=>{
   state.mixedBoxes.push({id:'mb'+(mixedSeq++), w:state.box.w, h:state.box.h, qty:1});
@@ -1751,90 +1948,206 @@ $('folderInput').onchange=e=>{ handleFiles(e.target.files); e.target.value=''; }
 ['dragleave','drop'].forEach(ev=>$('dropzone').addEventListener(ev,e=>{ e.preventDefault(); $('dropzone').classList.remove('drag'); }));
 $('dropzone').addEventListener('drop',e=>{ if(e.dataTransfer.files.length) handleFiles(e.dataTransfer.files); });
 
+/* id -> row element, so re-renders can patch existing rows in place instead of tearing
+   the whole list down and rebuilding it (which caused the flicker: every row's fade-in
+   animation replayed and every thumbnail <img> re-decoded, even for rows that hadn't
+   actually changed). */
+const imgRowEls=new Map();
+
+function imgRowInnerHTML(im,t){
+  return `
+      <div class="img-row-main">
+        <img class="img-thumb" src="${im.url}" title="${t.thumbTitle}">
+        <div class="img-row-right">
+          <div class="img-info">
+            <div class="img-name"></div>
+            <div class="img-meta"></div>
+          </div>
+          <div class="img-row-controls">
+            <div class="qty-stepper">
+              <button data-act="dec">−</button>
+              <input type="number" min="0" value="${im.qty}">
+              <button data-act="inc">+</button>
+            </div>
+            <div class="img-row-actions">
+              <button class="mini-btn" data-act="autocrop" title="Auto crop wajah (AI) foto ini">🤖</button>
+              <button class="mini-btn" data-act="removebg" title="Hapus background foto ini (AI, transparan)">✂️</button>
+              <button class="mini-btn" data-act="restoreOrig" title="Kembalikan ke foto asli (batalkan auto-crop/hapus-bg AI)">🗘</button>
+              <button class="mini-btn" data-act="fillsheets" title="${t.titleFillsheets}">🗎</button>
+              <button class="mini-btn" data-act="adjust" title="${t.titleAdjust}">⚙</button>
+              <button class="mini-btn danger" data-act="remove" title="${t.titleRemove}">✕</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="adjust-panel">
+        <div class="slider-row"><label>${t.lblRotate}</label><input type="range" min="-180" max="180" step="1" data-act="rotation"><span class="val"></span></div>
+        <div class="slider-row"><label>${t.lblZoom}</label><input type="range" min="1" max="3" step="0.05" data-act="zoom"><span class="val"></span></div>
+        <div class="slider-row"><label>${t.lblPanX}</label><input type="range" min="-1" max="1" step="0.02" data-act="offX"><span class="val"></span></div>
+        <div class="slider-row"><label>${t.lblPanY}</label><input type="range" min="-1" max="1" step="0.02" data-act="offY"><span class="val"></span></div>
+        <button class="btn btn-s btn-sm" data-act="reset">${t.btnResetCrop}</button>
+      </div>`;
+}
+
+function buildImgRow(im,t){
+  const row=document.createElement('div'); row.className='img-row'; row.dataset.id=im.id;
+  row.innerHTML=imgRowInnerHTML(im,t);
+  return row;
+}
+
+/* Patches an existing row's DOM to match the current state of `im`, touching only the
+   attributes/text that actually need to change so the browser never has to re-decode
+   the thumbnail or restart the row's entrance animation for unrelated updates. */
+function updateImgRow(row,im,t){
+  const thumb=row.querySelector('.img-thumb');
+  if(thumb.src!==im.url) thumb.src=im.url;
+  thumb.title=t.thumbTitle;
+  const nameEl=row.querySelector('.img-name');
+  if(nameEl.textContent!==im.name) nameEl.textContent=im.name;
+  const metaHTML=`${im.img.naturalWidth}×${im.img.naturalHeight}px ${aiBadge(im.aiStatus,t)} ${bgBadge(im.bgStatus,t)}`;
+  const metaEl=row.querySelector('.img-meta');
+  if(metaEl.innerHTML!==metaHTML) metaEl.innerHTML=metaHTML;
+
+  const qtyInput=row.querySelector('.qty-stepper input');
+  if(document.activeElement!==qtyInput && qtyInput.value!=String(im.qty)) qtyInput.value=im.qty;
+
+  const hasRestore=!!(im.origImg && im.img!==im.origImg);
+  const restoreBtn=row.querySelector('[data-act="restoreOrig"]');
+  restoreBtn.classList.toggle('hidden',!hasRestore);
+  restoreBtn.title=t.titleRestoreOrig||restoreBtn.title;
+
+  row.querySelector('[data-act="fillsheets"]').title=t.titleFillsheets;
+  row.querySelector('[data-act="adjust"]').title=t.titleAdjust;
+  row.querySelector('[data-act="remove"]').title=t.titleRemove;
+
+  const panel=row.querySelector('.adjust-panel');
+  panel.classList.toggle('hidden',!im.open);
+  const labels=panel.querySelectorAll('.slider-row label');
+  if(labels[0]) labels[0].textContent=t.lblRotate;
+  if(labels[1]) labels[1].textContent=t.lblZoom;
+  if(labels[2]) labels[2].textContent=t.lblPanX;
+  if(labels[3]) labels[3].textContent=t.lblPanY;
+  const resetBtn=panel.querySelector('[data-act="reset"]');
+  if(resetBtn) resetBtn.textContent=t.btnResetCrop;
+  const setSlider=(act,val,fmt)=>{
+    const input=row.querySelector(`[data-act="${act}"]`);
+    if(document.activeElement!==input) input.value=val;
+    const label=input.nextElementSibling;
+    if(label) label.textContent=fmt(val);
+  };
+  setSlider('rotation',im.rotation||0,v=>v.toFixed(0)+'°');
+  setSlider('zoom',im.zoom,v=>v.toFixed(2)+'×');
+  setSlider('offX',im.offX,v=>v.toFixed(2));
+  setSlider('offY',im.offY,v=>v.toFixed(2));
+}
+
+function pickForAssignImg(im,t){
+  if(!state.selection || state.selection.size===0) return false;
+  state.selection.forEach(idx=>{
+    state.overrides[`${state.currentPage}:${idx}`]=im.id;
+  });
+  const n=state.selection.size;
+  refreshAll();
+  toast(t.toastAssigned.replace('{name}', im.name).replace('{n}', n));
+  return true;
+}
+
+let imgListDelegationBound=false;
+function bindImgListDelegation(){
+  if(imgListDelegationBound) return;
+  imgListDelegationBound=true;
+  const list=$('imgList');
+  list.addEventListener('click',e=>{
+    const row=e.target.closest('.img-row');
+    if(!row) return;
+    const im=state.images.find(x=>x.id===row.dataset.id);
+    if(!im) return;
+    const t=TRANSLATIONS[state.lang||'id'];
+    if(e.target.closest('.img-thumb')){ if(pickForAssignImg(im,t)) return; im.open=!im.open; renderImageList(); return; }
+    const btn=e.target.closest('[data-act]');
+    if(!btn) return;
+    switch(btn.dataset.act){
+      case 'adjust':
+        if(pickForAssignImg(im,t)) return;
+        im.open=!im.open; renderImageList();
+        break;
+      case 'fillsheets':{
+        const meta=lastMeta||computeLayoutMeta();
+        const target=Math.max(1,parseInt($('targetPages').value)||1);
+        im.qty = state.fillMode==='mixed' ? target : (meta.cellsPerPage||1)*target;
+        renderImageList(); refreshAll();
+        toast(t.toastFullFilled.replace('{name}', im.name).replace('{n}', target));
+        break;
+      }
+      case 'remove':
+        URL.revokeObjectURL(im.url);
+        state.images=state.images.filter(x=>x!==im);
+        imgRowEls.delete(im.id);
+        renderImageList(); refreshAll();
+        break;
+      case 'dec': im.qty=Math.max(0,im.qty-1); renderImageList(); refreshAll(); break;
+      case 'inc': im.qty+=1; renderImageList(); refreshAll(); break;
+      case 'reset': im.zoom=1; im.offX=0; im.offY=0; im.rotation=0; renderImageList(); refreshAll(); break;
+      case 'autocrop': im.aiStatus='detecting'; renderImageList(); autoCropImage(im); break;
+      case 'removebg': if(pickForAssignImg(im,t)) return; removeBgImage(im); break;
+      case 'restoreOrig':
+        if(im.origImg){ im.img=im.origImg; im.url=im.origImg.src; }
+        im.zoom=1; im.offX=0; im.offY=0; im.rotation=0; im.aiStatus=null; im.bgStatus=null;
+        renderImageList(); refreshAll();
+        break;
+    }
+  });
+  list.addEventListener('input',e=>{
+    const row=e.target.closest('.img-row');
+    if(!row) return;
+    const im=state.images.find(x=>x.id===row.dataset.id);
+    if(!im) return;
+    if(e.target.matches('.qty-stepper input')){ im.qty=Math.max(0,parseInt(e.target.value)||0); refreshAll(); return; }
+    const act=e.target.dataset.act;
+    const label=e.target.nextElementSibling;
+    if(act==='rotation'){ im.rotation=parseFloat(e.target.value); if(label) label.textContent=im.rotation.toFixed(0)+'°'; refreshPreviewOnly(); }
+    else if(act==='zoom'){ im.zoom=parseFloat(e.target.value); if(label) label.textContent=im.zoom.toFixed(2)+'×'; refreshPreviewOnly(); }
+    else if(act==='offX'){ im.offX=parseFloat(e.target.value); if(label) label.textContent=im.offX.toFixed(2); refreshPreviewOnly(); }
+    else if(act==='offY'){ im.offY=parseFloat(e.target.value); if(label) label.textContent=im.offY.toFixed(2); refreshPreviewOnly(); }
+  });
+}
+
 function renderImageList(){
   const list=$('imgList');
   const lang = state.lang || 'id';
   const t = TRANSLATIONS[lang];
+  bindImgListDelegation();
   if(!state.images.length){
+    imgRowEls.clear();
     list.innerHTML=`<div class="empty-imgs"><div class="ei">🖼️</div><p>${lang==='id'?'Belum ada foto dimuat':'No photos loaded yet'}</p></div>`;
     return;
   }
-  list.innerHTML='';
+  if(list.querySelector('.empty-imgs')) list.innerHTML='';
+
+  const currentIds=new Set(state.images.map(im=>im.id));
+  for(const [id,row] of imgRowEls){
+    if(!currentIds.has(id)){ row.remove(); imgRowEls.delete(id); }
+  }
+
+  let prevEl=null;
   state.images.forEach(im=>{
-    const row=document.createElement('div'); row.className='img-row';
-    row.innerHTML=`
-      <div class="img-row-main">
-        <img class="img-thumb" src="${im.url}" title="${t.thumbTitle}">
-        <div class="img-info">
-          <div class="img-name">${im.name}</div>
-          <div class="img-meta">${im.img.naturalWidth}×${im.img.naturalHeight}px ${aiBadge(im.aiStatus)} ${bgBadge(im.bgStatus)}</div>
-        </div>
-      </div>
-      <div class="img-row-controls">
-        <div class="qty-stepper">
-          <button data-act="dec">−</button>
-          <input type="number" min="0" value="${im.qty}">
-          <button data-act="inc">+</button>
-        </div>
-        <div class="img-row-actions">
-          <button class="mini-btn" data-act="autocrop" title="Auto crop wajah (AI) foto ini">🤖</button>
-          <button class="mini-btn" data-act="removebg" title="Hapus background foto ini (AI, transparan)">✂️</button>
-          ${im.origImg && im.img!==im.origImg ? `<button class="mini-btn" data-act="restoreOrig" title="Kembalikan ke foto asli (batalkan auto-crop/hapus-bg AI)">🗘</button>` : ''}
-          <button class="mini-btn" data-act="fillsheets" title="${t.titleFillsheets}">🗎</button>
-          <button class="mini-btn" data-act="adjust" title="${t.titleAdjust}">⚙</button>
-          <button class="mini-btn danger" data-act="remove" title="${t.titleRemove}">✕</button>
-        </div>
-      </div>
-      <div class="adjust-panel ${im.open?'':'hidden'}">
-        <div class="slider-row"><label>${t.lblRotate}</label><input type="range" min="-180" max="180" step="1" value="${im.rotation||0}" data-act="rotation"><span class="val">${(im.rotation||0).toFixed(0)}°</span></div>
-        <div class="slider-row"><label>${t.lblZoom}</label><input type="range" min="1" max="3" step="0.05" value="${im.zoom}" data-act="zoom"><span class="val">${im.zoom.toFixed(2)}×</span></div>
-        <div class="slider-row"><label>${t.lblPanX}</label><input type="range" min="-1" max="1" step="0.02" value="${im.offX}" data-act="offX"><span class="val">${im.offX.toFixed(2)}</span></div>
-        <div class="slider-row"><label>${t.lblPanY}</label><input type="range" min="-1" max="1" step="0.02" value="${im.offY}" data-act="offY"><span class="val">${im.offY.toFixed(2)}</span></div>
-        <button class="btn btn-s btn-sm" data-act="reset">${t.btnResetCrop}</button>
-      </div>`;
-    const thumb=row.querySelector('.img-thumb');
-    function pickForAssign(){
-      if(!state.selection || state.selection.size===0) return false;
-      state.selection.forEach(idx=>{
-        state.overrides[`${state.currentPage}:${idx}`]=im.id;
-      });
-      const n=state.selection.size;
-      refreshAll();
-      toast(t.toastAssigned.replace('{name}', im.name).replace('{n}', n));
-      return true;
+    let row=imgRowEls.get(im.id);
+    if(!row){
+      row=buildImgRow(im,t);
+      imgRowEls.set(im.id,row);
     }
-    thumb.onclick=()=>{ if(pickForAssign()) return; im.open=!im.open; renderImageList(); };
-    row.querySelector('[data-act="adjust"]').onclick=()=>{ if(pickForAssign()) return; im.open=!im.open; renderImageList(); };
-    row.querySelector('[data-act="fillsheets"]').onclick=()=>{
-      const meta=lastMeta||computeLayoutMeta();
-      const target=Math.max(1,parseInt($('targetPages').value)||1);
-      im.qty = state.fillMode==='mixed' ? target : (meta.cellsPerPage||1)*target;
-      renderImageList(); refreshAll();
-      toast(t.toastFullFilled.replace('{name}', im.name).replace('{n}', target));
-    };
-    row.querySelector('[data-act="remove"]').onclick=()=>{ URL.revokeObjectURL(im.url); state.images=state.images.filter(x=>x!==im); renderImageList(); refreshAll(); };
-    row.querySelector('[data-act="dec"]').onclick=()=>{ im.qty=Math.max(0,im.qty-1); renderImageList(); refreshAll(); };
-    row.querySelector('[data-act="inc"]').onclick=()=>{ im.qty+=1; renderImageList(); refreshAll(); };
-    row.querySelector('.qty-stepper input').oninput=e=>{ im.qty=Math.max(0,parseInt(e.target.value)||0); refreshAll(); };
-    const rt=row.querySelector('[data-act="rotation"]'); if(rt) rt.oninput=e=>{ im.rotation=parseFloat(e.target.value); e.target.nextElementSibling.textContent=im.rotation.toFixed(0)+'°'; refreshPreviewOnly(); };
-    const zr=row.querySelector('[data-act="zoom"]'); if(zr) zr.oninput=e=>{ im.zoom=parseFloat(e.target.value); e.target.nextElementSibling.textContent=im.zoom.toFixed(2)+'×'; refreshPreviewOnly(); };
-    const ox=row.querySelector('[data-act="offX"]'); if(ox) ox.oninput=e=>{ im.offX=parseFloat(e.target.value); e.target.nextElementSibling.textContent=im.offX.toFixed(2); refreshPreviewOnly(); };
-    const oy=row.querySelector('[data-act="offY"]'); if(oy) oy.oninput=e=>{ im.offY=parseFloat(e.target.value); e.target.nextElementSibling.textContent=im.offY.toFixed(2); refreshPreviewOnly(); };
-    const rs=row.querySelector('[data-act="reset"]'); if(rs) rs.onclick=()=>{ im.zoom=1; im.offX=0; im.offY=0; im.rotation=0; renderImageList(); refreshAll(); };
-    const ac=row.querySelector('[data-act="autocrop"]'); if(ac) ac.onclick=async()=>{ im.aiStatus='detecting'; renderImageList(); await autoCropImage(im); };
-    const rb=row.querySelector('[data-act="removebg"]'); if(rb) rb.onclick=async()=>{ if(pickForAssign()) return; await removeBgImage(im); };
-    const ro=row.querySelector('[data-act="restoreOrig"]'); if(ro) ro.onclick=()=>{
-      if(im.origImg){ im.img=im.origImg; im.url=im.origImg.src; }
-      im.zoom=1; im.offX=0; im.offY=0; im.rotation=0; im.aiStatus=null; im.bgStatus=null;
-      renderImageList(); refreshAll();
-    };
-    list.appendChild(row);
+    updateImgRow(row,im,t);
+    if(prevEl){ if(prevEl.nextSibling!==row) list.insertBefore(row,prevEl.nextSibling); }
+    else if(list.firstChild!==row) list.insertBefore(row,list.firstChild);
+    if(!row.isConnected) list.appendChild(row);
+    prevEl=row;
   });
 }
-function bgBadge(status){
-  if(status==='processing') return '<span title="Menghapus background…">✂️…</span>';
-  if(status==='ok') return '<span title="Background berhasil dihapus (transparan)">✂️✓</span>';
-  if(status==='fail') return '<span title="Gagal menghapus background">✂️⚠</span>';
+function bgBadge(status,t){
+  t = t || TRANSLATIONS[state.lang||'id'];
+  if(status==='processing') return `<span title="${t.badgeBgProcessing}">✂️…</span>`;
+  if(status==='ok') return `<span title="${t.badgeBgOk}">✂️✓</span>`;
+  if(status==='fail') return `<span title="${t.badgeBgFail}">✂️⚠</span>`;
   return '';
 }
 async function removeBgImage(im){
@@ -1859,11 +2172,12 @@ async function removeBgImage(im){
     return false;
   }
 }
-function aiBadge(status){
-  if(status==='detecting') return '<span title="Mendeteksi wajah…">🤖…</span>';
-  if(status==='ok') return '<span title="Auto crop AI berhasil">🤖✓</span>';
-  if(status==='ok-clamped') return '<span title="Auto crop AI berhasil (dibatasi zoom)">🤖✓*</span>';
-  if(status==='fail') return '<span title="Wajah tidak terdeteksi">🤖⚠</span>';
+function aiBadge(status,t){
+  t = t || TRANSLATIONS[state.lang||'id'];
+  if(status==='detecting') return `<span title="${t.badgeAiDetecting}">🤖…</span>`;
+  if(status==='ok') return `<span title="${t.badgeAiOk}">🤖✓</span>`;
+  if(status==='ok-clamped') return `<span title="${t.badgeAiOkClamped}">🤖✓*</span>`;
+  if(status==='fail') return `<span title="${t.badgeAiFail}">🤖⚠</span>`;
   return '';
 }
 
@@ -1891,10 +2205,57 @@ function aiCanvasToImage(canvas){
 /* Cache of url -> Image so undo/redo can restore auto-cropped photos synchronously
    (undo snapshots only store the url string, since Image elements can't be JSON-serialized) */
 const aiImageCache=new Map();
+const AI_CACHE_HARD_CAP=120; /* safety net so cache can never grow unbounded even if pruning is skipped somewhere */
 
+/* Frees entries in aiImageCache that are no longer reachable from either the live
+   state.images list or any snapshot still sitting in the undo/redo stacks. Each entry
+   is a full-resolution data: URL (can be tens of MB for large photos), so leaving old
+   ones behind after every AI auto-crop / remove-bg call is the main cause of the app
+   slowly running out of memory during long editing sessions. Safe to call often. */
+function pruneAiImageCache(){
+  const reachable=new Set();
+  state.images.forEach(im=>{ reachable.add(im.url); if(im.origImg && im.origImg.src) reachable.add(im.origImg.src); });
+  const scanStack=stack=>{
+    stack.forEach(snapStr=>{
+      try{
+        const snap=JSON.parse(snapStr);
+        if(snap.imageQtys) snap.imageQtys.forEach(iq=>{ if(iq.imgUrl) reachable.add(iq.imgUrl); });
+      }catch(e){ /* ignore malformed snapshot */ }
+    });
+  };
+  scanStack(undoStack); scanStack(redoStack);
+  for(const key of aiImageCache.keys()){
+    if(!reachable.has(key)) aiImageCache.delete(key);
+  }
+  /* Hard cap as a last resort in case something still holds more than expected */
+  while(aiImageCache.size>AI_CACHE_HARD_CAP){
+    const oldestKey=aiImageCache.keys().next().value;
+    if(oldestKey===undefined) break;
+    aiImageCache.delete(oldestKey);
+  }
+}
 
+/* Explicitly release a canvas's pixel backing store. Setting width/height to 0 forces
+   the browser to drop the (often large) raster buffer immediately instead of waiting
+   for GC, which matters a lot when exporting many high-DPI pages back to back. */
+function freeCanvas(cv){
+  try{ cv.width=0; cv.height=0; }catch(e){ /* ignore */ }
+}
 
-async function autoCropImage(im){
+/* opts (all optional):
+   - aspect: target width/height ratio to crop to. Defaults to the single global
+     Kotak Foto aspect (state.box.w/state.box.h) — this is what the original
+     "Auto Crop Semua Foto" button and the per-photo 🤖 icon still use.
+   - headRatio/topMargin/hairExt: 0..1 fractions. Default to the global AI sliders.
+   - cellKey: "pageIdx:cellIdx". When given, the resulting zoom/offX/offY is written
+     into state.cellCropOverrides[cellKey] instead of the image's own global
+     zoom/offX/offY — this lets ONE source photo be auto-cropped differently for
+     different box sizes/cells (needed for Mixed Size where cells can have
+     different aspect ratios) without one crop clobbering another. The face-detect
+     + tilt-straightening step is always shared/baked into im.img since it isn't
+     aspect-dependent. */
+async function autoCropImage(im, opts){
+  opts=opts||{};
   if(!window.faceAI){ toast(TRANSLATIONS[state.lang||'id'].toastAiModuleNotLoaded); im.aiStatus='fail'; renderImageList(); return false; }
   await window.faceAI.ready;
   if(!window.faceAI.model){ toast(TRANSLATIONS[state.lang||'id'].toastAiModelFailed); im.aiStatus='fail'; renderImageList(); return false; }
@@ -1920,10 +2281,10 @@ async function autoCropImage(im){
   const eyeR=aiTransformPoint(px(473),py(473),w,h,correctionAngle,rotated.w,rotated.h);
   const faceCenterX=(eyeL.x+eyeR.x)/2;
 
-  const headRatio=parseFloat($('aiHeadRatio').value)/100;
-  const topMargin=parseFloat($('aiTopMargin').value)/100;
-  const hairExt=parseFloat($('aiHairExt').value)/100;
-  const aspect=state.box.w/state.box.h;
+  const headRatio=opts.headRatio!=null ? opts.headRatio : parseFloat($('aiHeadRatio').value)/100;
+  const topMargin=opts.topMargin!=null ? opts.topMargin : parseFloat($('aiTopMargin').value)/100;
+  const hairExt=opts.hairExt!=null ? opts.hairExt : parseFloat($('aiHairExt').value)/100;
+  const aspect=opts.aspect!=null ? opts.aspect : state.box.w/state.box.h;
 
   const vx=forehead.x-chin.x, vy=forehead.y-chin.y;
   const crown={x:forehead.x+vx*hairExt, y:forehead.y+vy*hairExt};
@@ -1950,10 +2311,18 @@ async function autoCropImage(im){
   offX=Math.max(-1,Math.min(1,offX)); offY=Math.max(-1,Math.min(1,offY));
 
   const correctedImg=await aiCanvasToImage(rotated.canvas);
+  freeCanvas(rotated.canvas);
   aiImageCache.set(correctedImg.src, correctedImg);
 
   im.img=correctedImg; im.url=correctedImg.src;
-  im.zoom=zoom; im.offX=offX; im.offY=offY; im.rotation=0;
+  if(opts.cellKey){
+    /* Cell-specific result: don't touch the image's own global zoom/offX/offY
+       (other cells/box-sizes using the same photo keep their own framing). */
+    state.cellCropOverrides[opts.cellKey]={zoom,offX,offY};
+    im.rotation=0;
+  } else {
+    im.zoom=zoom; im.offX=offX; im.offY=offY; im.rotation=0;
+  }
   im.aiStatus=clamped?'ok-clamped':'ok';
   renderImageList(); refreshAll();
   return true;
@@ -1967,8 +2336,101 @@ async function autoCropAllImages(){
   let ok=0, fail=0;
   for(const im of state.images){
     im.aiStatus='detecting'; renderImageList();
-    btn.textContent=`⏳ Memproses… (${ok+fail+1}/${state.images.length})`;
+    btn.textContent=TRANSLATIONS[state.lang||'id'].btnAutoCropProcessing.replace('{cur}', ok+fail+1).replace('{total}', state.images.length);
     const success=await autoCropImage(im);
+    if(success) ok++; else fail++;
+  }
+  btn.textContent=origLabel; btn.disabled=false;
+  toast(TRANSLATIONS[state.lang||'id'].toastAutoCropDone.replace('{ok}', ok).replace('{fail}', fail));
+}
+
+/* Returns true if a cell's actual on-page size (w×h mm) matches a mixedBoxes row's
+   configured size — either orientation, since the bin-packer can rotate a box to fit
+   (state.rotateAllowed) so the cell may be landscape even if the row was entered
+   portrait or vice-versa. 0.05mm tolerance for float rounding. */
+function cellMatchesBoxSize(cellW,cellH,mb){
+  const eps=0.05;
+  const same=Math.abs(cellW-mb.w)<eps && Math.abs(cellH-mb.h)<eps;
+  const swapped=Math.abs(cellW-mb.h)<eps && Math.abs(cellH-mb.w)<eps;
+  return same||swapped;
+}
+
+/* Auto Face Crop (AI) scoped to ONE row of "Daftar Ukuran Kotak per Lembar" (mixed
+   size list). Scans every page for cells whose actual size matches this box size,
+   and re-crops the photo assigned to each such cell using THIS box's own aspect
+   ratio (and this row's own AI sliders, if set — otherwise falls back to the global
+   sliders). Written as a per-cell override so it never disturbs how the same photo
+   is framed in a differently-sized box elsewhere. */
+/* All (pageIdx,cellIdx,image,aspect) tuples across every page whose actual on-page
+   size matches this mixedBoxes row and which currently have a photo assigned.
+   Shared by the row's 🤖 Auto Crop and ⚙ Adjust controls. */
+function findCellsForBoxSize(mb){
+  const meta=lastMeta||computeLayoutMeta();
+  const out=[];
+  meta.pages.forEach((cells,pi)=>{
+    cells.forEach((cell,ci)=>{
+      if(!cell.image) return;
+      if(!cellMatchesBoxSize(cell.w,cell.h,mb)) return;
+      out.push({pageIdx:pi, cellIdx:ci, im:cell.image, aspect:cell.w/cell.h});
+    });
+  });
+  return out;
+}
+
+async function autoCropBoxSize(mb, btn){
+  if(!state.images.length){ toast(TRANSLATIONS[state.lang||'id'].toastNoImages); return; }
+  if(!window.faceAI){ toast(TRANSLATIONS[state.lang||'id'].toastAiModuleNotLoaded); return; }
+  await window.faceAI.ready;
+  const targets=findCellsForBoxSize(mb);
+  if(!targets.length){ toast(TRANSLATIONS[state.lang||'id'].toastNoBoxImages); return; }
+
+  const headRatio=(mb.aiHeadRatio!=null?mb.aiHeadRatio:parseFloat($('aiHeadRatio').value))/100;
+  const topMargin=(mb.aiTopMargin!=null?mb.aiTopMargin:parseFloat($('aiTopMargin').value))/100;
+  const hairExt=(mb.aiHairExt!=null?mb.aiHairExt:parseFloat($('aiHairExt').value))/100;
+
+  const origLabel=btn?btn.textContent:null;
+  if(btn) btn.disabled=true;
+  let ok=0, fail=0;
+  for(let i=0;i<targets.length;i++){
+    const tg=targets[i];
+    if(btn) btn.textContent=`⏳ ${i+1}/${targets.length}`;
+    tg.im.aiStatus='detecting'; renderImageList();
+    const success=await autoCropImage(tg.im,{aspect:tg.aspect, headRatio, topMargin, hairExt, cellKey:`${tg.pageIdx}:${tg.cellIdx}`});
+    if(success) ok++; else fail++;
+  }
+  if(btn){ btn.textContent=origLabel; btn.disabled=false; }
+  toast(TRANSLATIONS[state.lang||'id'].toastAutoCropDone.replace('{ok}', ok).replace('{fail}', fail));
+}
+
+/* Auto Face Crop (AI) scoped to the currently SELECTED boxes only (state.selection,
+   on the current page). Each selected box is re-cropped using ITS OWN on-page
+   aspect ratio (getCellEffectiveRect accounts for a manual 90°/270° box rotation),
+   so a mixed selection of different box sizes each gets correctly framed instead of
+   all being forced to the single global Kotak Foto aspect. Also written as a
+   per-cell override so it doesn't affect the same photo used in other boxes. */
+async function autoCropSelectedCells(opts){
+  opts=opts||{};
+  if(!state.selection || state.selection.size===0){ toast(TRANSLATIONS[state.lang||'id'].toastSelectFirst); return; }
+  if(!window.faceAI){ toast(TRANSLATIONS[state.lang||'id'].toastAiModuleNotLoaded); return; }
+  await window.faceAI.ready;
+  const cells=(lastMeta && lastMeta.pages[state.currentPage])||[];
+  const idxs=[...state.selection].filter(i=>cells[i] && cells[i].image);
+  if(!idxs.length){ toast(TRANSLATIONS[state.lang||'id'].toastNoBoxImages); return; }
+
+  const headRatio=(opts.headRatio!=null?opts.headRatio:parseFloat($('aiHeadRatio').value))/100;
+  const topMargin=(opts.topMargin!=null?opts.topMargin:parseFloat($('aiTopMargin').value))/100;
+  const hairExt=(opts.hairExt!=null?opts.hairExt:parseFloat($('aiHairExt').value))/100;
+
+  const btn=opts.btn||$('btnAutoCropSel'); const origLabel=btn.textContent; btn.disabled=true;
+  let ok=0, fail=0;
+  for(let i=0;i<idxs.length;i++){
+    const idx=idxs[i];
+    const cell=cells[idx];
+    const rect=getCellEffectiveRect(state.currentPage, idx, cell);
+    const aspect=rect.w/rect.h;
+    btn.textContent=`⏳ ${i+1}/${idxs.length}`;
+    cell.image.aiStatus='detecting'; renderImageList();
+    const success=await autoCropImage(cell.image,{aspect, headRatio, topMargin, hairExt, cellKey:`${state.currentPage}:${idx}`});
     if(success) ok++; else fail++;
   }
   btn.textContent=origLabel; btn.disabled=false;
@@ -1979,6 +2441,84 @@ $('btnAutoCropAll').onclick=autoCropAllImages;
 ['aiHeadRatio','aiTopMargin','aiHairExt'].forEach(id=>{
   $(id).oninput=()=>{ $(id+'Val').textContent=$(id).value+'%'; };
 });
+
+/* ── "Auto Crop Terpilih" gets its own slider panel (Kepala/Margin/Rambut),
+   same pattern as the "⚙ Adjust Terpilih" panel below: click the toolbar
+   button to toggle the panel open, tweak the sliders, then hit 🤖 Jalankan
+   to run the AI crop on the current selection using those values — instead
+   of always reusing the global "Auto Crop Wajah (AI)" card settings. ── */
+function syncSelAutoCropSliders(){
+  const hr=$('selAcHeadRatio'), tm=$('selAcTopMargin'), he=$('selAcHairExt');
+  hr.value=$('aiHeadRatio').value; hr.nextElementSibling.textContent=hr.value+'%';
+  tm.value=$('aiTopMargin').value; tm.nextElementSibling.textContent=tm.value+'%';
+  he.value=$('aiHairExt').value; he.nextElementSibling.textContent=he.value+'%';
+}
+['selAcHeadRatio','selAcTopMargin','selAcHairExt'].forEach(id=>{
+  $(id).oninput=()=>{ $(id).nextElementSibling.textContent=$(id).value+'%'; };
+});
+$('btnAutoCropSel').onclick=()=>{
+  if(!state.selection.size){ toast(TRANSLATIONS[state.lang||'id'].toastSelectFirst); return; }
+  $('selAdjustPanel').style.display='none';
+  const panel=$('selAutoCropPanel');
+  const willShow=panel.style.display==='none';
+  panel.style.display=willShow?'flex':'none';
+  if(willShow) syncSelAutoCropSliders();
+};
+$('btnSelAutoCropRun').onclick=(e)=>{
+  autoCropSelectedCells({
+    headRatio: parseFloat($('selAcHeadRatio').value),
+    topMargin: parseFloat($('selAcTopMargin').value),
+    hairExt: parseFloat($('selAcHairExt').value),
+    btn: e.target
+  });
+};
+
+/* ── Manual Adjust (Zoom/Pan) panel for the current selection ──
+   Unlike the AI auto-crop, this is a plain manual slider control — the same idea as
+   the per-photo adjust panel, but scoped to whichever boxes are currently selected
+   on the canvas (each written as its own per-cell override, so a mixed selection of
+   different box sizes is unaffected by each other). */
+function syncSelAdjustSliders(){
+  const cells=(lastMeta && lastMeta.pages[state.currentPage])||[];
+  const idxs=[...state.selection].filter(i=>cells[i]&&cells[i].image);
+  let zoom=1, offX=0, offY=0, rot=0;
+  if(idxs.length){
+    const co=getCellCrop(state.currentPage, idxs[0], cells[idxs[0]]);
+    zoom=co.zoom; offX=co.offX; offY=co.offY; rot=co.rot||0;
+  }
+  $('selAdjZoom').value=zoom; $('selAdjZoom').nextElementSibling.textContent=zoom.toFixed(2)+'×';
+  $('selAdjOffX').value=offX; $('selAdjOffX').nextElementSibling.textContent=offX.toFixed(2);
+  $('selAdjOffY').value=offY; $('selAdjOffY').nextElementSibling.textContent=offY.toFixed(2);
+  $('selAdjRot').value=rot; $('selAdjRot').nextElementSibling.textContent=rot.toFixed(0)+'°';
+}
+function applySelAdjust(){
+  const cells=(lastMeta && lastMeta.pages[state.currentPage])||[];
+  const zoom=parseFloat($('selAdjZoom').value), offX=parseFloat($('selAdjOffX').value), offY=parseFloat($('selAdjOffY').value), rot=parseFloat($('selAdjRot').value);
+  $('selAdjZoom').nextElementSibling.textContent=zoom.toFixed(2)+'×';
+  $('selAdjOffX').nextElementSibling.textContent=offX.toFixed(2);
+  $('selAdjOffY').nextElementSibling.textContent=offY.toFixed(2);
+  $('selAdjRot').nextElementSibling.textContent=rot.toFixed(0)+'°';
+  state.selection.forEach(idx=>{
+    const cell=cells[idx]; if(!cell||!cell.image) return;
+    state.cellCropOverrides[`${state.currentPage}:${idx}`]={zoom,offX,offY,rot};
+  });
+  refreshAll();
+}
+$('btnAdjustSel').onclick=()=>{
+  if(!state.selection.size){ toast(TRANSLATIONS[state.lang||'id'].toastSelectFirst); return; }
+  $('selAutoCropPanel').style.display='none';
+  const panel=$('selAdjustPanel');
+  const willShow=panel.style.display==='none';
+  panel.style.display=willShow?'flex':'none';
+  if(willShow) syncSelAdjustSliders();
+};
+['selAdjZoom','selAdjOffX','selAdjOffY','selAdjRot'].forEach(id=>{ $(id).oninput=applySelAdjust; });
+$('btnSelAdjReset').onclick=()=>{
+  if(!state.selection.size) return;
+  state.selection.forEach(idx=>{ delete state.cellCropOverrides[`${state.currentPage}:${idx}`]; });
+  refreshAll();
+  syncSelAdjustSliders();
+};
 
 renderImageList();
 
@@ -2150,6 +2690,29 @@ function computeMixedPages(grid){
   return pages;
 }
 
+/* ── Custom Layout (Mixed Size): boxes are packed using the same skyline
+   packing as Mixed Size mode (state.mixedBoxes), but — like plain Custom
+   Layout — NO photo is auto-assigned; every cell starts empty so the user
+   places photos manually. Page count comes from "Target Jml Lembar" and
+   every page repeats the same packed template. ── */
+function computeCustomMixedPages(grid){
+  const pm=state.pageMargin;
+  const usableW=grid.usableW, usableH=grid.usableH;
+  const boxReqs=[];
+  state.mixedBoxes.forEach(mb=>{ for(let i=0;i<mb.qty;i++) boxReqs.push({w:mb.w,h:mb.h}); });
+  if(!boxReqs.length) return [[]];
+  boxReqs.sort((a,b)=>(b.w*b.h)-(a.w*a.h));
+  const packed=packRects(usableW,usableH,boxReqs,state.gap.x,state.gap.y,state.rotateAllowed);
+  if(!packed.length) return [[]];
+  const template=packed.map(p=>({x:pm.l+p.x, y:pm.t+p.y, w:p.w, h:p.h, rotated:p.rotated}));
+  const nPages=Math.max(1, parseInt(state.targetPages)||1);
+  const pages=[];
+  for(let p=0;p<nPages;p++){
+    pages.push(template.map(t=>({...t, image:null})));
+  }
+  return pages;
+}
+
 function applyPosOverrides(pages){
   pages.forEach((cells,pi)=>{
     cells.forEach((cell,ci)=>{
@@ -2178,6 +2741,7 @@ function computeLayoutMeta(){
   const grid=computeGridDims();
   let pages;
   if(state.fillMode==='mixed' || state.fillMode==='mixed_standard') pages=computeMixedPages(grid);
+  else if(state.fillMode==='custom_mixed') pages=computeCustomMixedPages(grid);
   else if(state.fillMode==='bulk') pages=computeBulkPages(grid);
   else if(state.fillMode==='custom') pages=computeCustomPages(grid);
   else pages=computeStandardPages(grid);
@@ -2191,16 +2755,16 @@ function computeLayoutMeta(){
     originX:grid.originX, originY:grid.originY,
     cellsPerPage:(pages[0]||[]).length,
     pages, totalItems,
-    mixed: (state.fillMode==='mixed' || state.fillMode==='mixed_standard')
+    mixed: isMixedFillMode(state.fillMode)
   };
 }
 
 function getCellCrop(pageIdx, cellIdx, cell){
   const key=`${pageIdx}:${cellIdx}`;
   const co=state.cellCropOverrides[key];
-  if(co) return co;
-  if(cell.image) return {zoom:cell.image.zoom, offX:cell.image.offX, offY:cell.image.offY};
-  return {zoom:1, offX:0, offY:0};
+  if(co) return {zoom:co.zoom, offX:co.offX, offY:co.offY, rot:(co.rot!==undefined?co.rot:(cell.image?(cell.image.rotation||0):0))};
+  if(cell.image) return {zoom:cell.image.zoom, offX:cell.image.offX, offY:cell.image.offY, rot:cell.image.rotation||0};
+  return {zoom:1, offX:0, offY:0, rot:0};
 }
 
 function getCellRotation(pageIdx, cellIdx){
@@ -2481,17 +3045,17 @@ function renderPageCanvas(meta,pageIndex,dpi){
         ctx.rotate(totalPhotoRot*Math.PI/180);
         ctx.scale(flip.fx?-1:1, flip.fy?-1:1);
         ctx.translate(-dw/2,-dh/2);
-        drawCoverRotated(ctx,cell.image.img,0,0,dw,dh,crop.zoom,crop.offX,crop.offY,cell.image.rotation||0);
+        drawCoverRotated(ctx,cell.image.img,0,0,dw,dh,crop.zoom,crop.offX,crop.offY,crop.rot||0);
         ctx.restore();
       } else if(flip.fx||flip.fy){
         ctx.save();
         ctx.translate(ix+iw/2, iy+ih/2);
         ctx.scale(flip.fx?-1:1, flip.fy?-1:1);
         ctx.translate(-iw/2,-ih/2);
-        drawCoverRotated(ctx,cell.image.img,0,0,iw,ih,crop.zoom,crop.offX,crop.offY,cell.image.rotation||0);
+        drawCoverRotated(ctx,cell.image.img,0,0,iw,ih,crop.zoom,crop.offX,crop.offY,crop.rot||0);
         ctx.restore();
       } else {
-        drawCoverRotated(ctx,cell.image.img,ix,iy,iw,ih,crop.zoom,crop.offX,crop.offY,cell.image.rotation||0);
+        drawCoverRotated(ctx,cell.image.img,ix,iy,iw,ih,crop.zoom,crop.offX,crop.offY,crop.rot||0);
       }
     }
     /* Draw guides using the same cw,ch — always matches the box+photo shape */
@@ -2572,7 +3136,12 @@ function updateStats(meta){
   const lastPage=meta.pages[meta.pages.length-1]||[];
   const emptySlots=meta.cellsPerPage>0 ? lastPage.filter(c=>!c.image).length : 0;
   $('statEmpty').textContent = meta.totalItems>0 ? emptySlots : 0;
-  $('pageIndicator').textContent=t.pageIndicator.replace('{current}', meta.pages.length?state.currentPage+1:0).replace('{total}', meta.pages.length);
+  $('pageIndicatorLabel').textContent=t.pageIndicator;
+  const pageInput=$('pageIndicatorInput');
+  const totalPages=meta.pages.length;
+  pageInput.max=Math.max(1,totalPages);
+  if(document.activeElement!==pageInput){ pageInput.value=totalPages?state.currentPage+1:0; }
+  $('pageIndicatorTotal').textContent=totalPages;
   $('warnBox').classList.toggle('hidden', meta.cellsPerPage>0);
 }
 
@@ -2586,6 +3155,15 @@ function updateSelCount(){
   const lang = state.lang || 'id';
   const t = TRANSLATIONS[lang];
   el.textContent = state.selection.size ? t.countSelection.replace('{n}', state.selection.size) : t.noSelection;
+  const adjPanel=$('selAdjustPanel');
+  if(adjPanel && adjPanel.style.display!=='none'){
+    if(state.selection.size && typeof syncSelAdjustSliders==='function') syncSelAdjustSliders();
+    else adjPanel.style.display='none';
+  }
+  const acPanel=$('selAutoCropPanel');
+  if(acPanel && acPanel.style.display!=='none' && !state.selection.size){
+    acPanel.style.display='none';
+  }
 }
 
 function clientToMM(e){
@@ -2599,9 +3177,18 @@ function clientToMM(e){
 /* Snap posisi grup terpilih ke tepi/tengah kotak lain, dan/atau ke grid */
 function snapDelta(origSelected, dx, dy, others){
   let sdx=dx, sdy=dy;
+  /* Use the effective (post-rotation) rect (ex/ey/ew/eh) when present, falling
+     back to the raw rect for callers that don't supply it. A manually-rotated
+     box (🔄 Rotate Kotak) is drawn with its w/h swapped around the same
+     center — see getCellEffectiveRect — so snapping must compare against
+     that visual footprint, not the raw/unrotated cell.x/y/w/h, or the
+     "Snap ..." candidates line up with a box outline that isn't actually
+     where the rotated box is drawn. */
+  const rx=o=>o.ex!==undefined?o.ex:o.x, ry=o=>o.ey!==undefined?o.ey:o.y;
+  const rw=o=>o.ew!==undefined?o.ew:o.w, rh=o=>o.eh!==undefined?o.eh:o.h;
   if(state.snapToBoxes || state.snapToCutGuide){
-    const minX=Math.min(...origSelected.map(o=>o.x)), maxX=Math.max(...origSelected.map(o=>o.x+o.w));
-    const minY=Math.min(...origSelected.map(o=>o.y)), maxY=Math.max(...origSelected.map(o=>o.y+o.h));
+    const minX=Math.min(...origSelected.map(o=>rx(o))), maxX=Math.max(...origSelected.map(o=>rx(o)+rw(o)));
+    const minY=Math.min(...origSelected.map(o=>ry(o))), maxY=Math.max(...origSelected.map(o=>ry(o)+rh(o)));
     const tol=1.5;
     const candX=[], candY=[];
     if(state.snapToBoxes){
@@ -2609,13 +3196,14 @@ function snapDelta(origSelected, dx, dy, others){
       candY.push(state.pageMargin.t, state.paper.h-state.pageMargin.b);
     }
     others.forEach(o=>{
-      if(state.snapToBoxes){ candX.push(o.x,o.x+o.w,o.x+o.w/2); candY.push(o.y,o.y+o.h,o.y+o.h/2); }
+      const ox=rx(o), oy=ry(o), ow=rw(o), oh=rh(o);
+      if(state.snapToBoxes){ candX.push(ox,ox+ow,ox+ow/2); candY.push(oy,oy+oh,oy+oh/2); }
       /* Cut-guide snap: keep exactly Box Spacing distance from the neighbor so the
          gap-mid cut line lands evenly between the two boxes (edge = neighbor edge
          ± configured spacing) instead of merely touching flush. This is what keeps
          "Line in Middle of Spacing" / "Crop Marks in Middle of Spacing" guides
          straight & evenly spaced after boxes are dragged manually. */
-      if(state.snapToCutGuide){ candX.push(o.x-state.gap.x, o.x+o.w+state.gap.x); candY.push(o.y-state.gap.y, o.y+o.h+state.gap.y); }
+      if(state.snapToCutGuide){ candX.push(ox-state.gap.x, ox+ow+state.gap.x); candY.push(oy-state.gap.y, oy+oh+state.gap.y); }
     });
     const newLeft=minX+dx, newRight=maxX+dx, newCX=(newLeft+newRight)/2;
     let bestDX=null,bestDiffX=tol;
@@ -2630,7 +3218,7 @@ function snapDelta(origSelected, dx, dy, others){
     const g=Math.max(0.5,state.snapGridSize||5);
     const first=origSelected[0];
     if(first){
-      const newX=first.x+sdx, newY=first.y+sdy;
+      const newX=rx(first)+sdx, newY=ry(first)+sdy;
       const snX=Math.round(newX/g)*g, snY=Math.round(newY/g)*g;
       if(Math.abs(newX-snX)<g*0.5) sdx+=(snX-newX);
       if(Math.abs(newY-snY)<g*0.5) sdy+=(snY-newY);
@@ -2681,10 +3269,18 @@ previewCanvas.addEventListener('mousedown', e=>{
       state.selection=new Set([idx]);
     }
     const selArr=[...state.selection];
+    /* Store both the raw (pre-rotation) rect AND the effective on-page rect
+       (ex/ey/ew/eh — accounts for manual 🔄 Rotate Kotak swapping w/h, see
+       getCellEffectiveRect). Snapping must compare against the box as it's
+       actually drawn, otherwise a rotated box's snap candidates/targets are
+       computed from the wrong (unrotated) footprint and "Snap ..." silently
+       fails to align it with neighbors. The raw x/y is kept because moving a
+       box is a pure translation — the offset (sdx,sdy) computed from the
+       effective rect applies identically to the raw x/y. */
     dragState={
       type:'move', startX:pt.x, startY:pt.y, moved:false, shift:e.shiftKey, idx,
-      orig:selArr.map(i=>({idx:i,x:cells[i].x,y:cells[i].y,w:cells[i].w,h:cells[i].h})),
-      others:cells.map((c,i)=>({idx:i,x:c.x,y:c.y,w:c.w,h:c.h})).filter(c=>!selArr.includes(c.idx))
+      orig:selArr.map(i=>{const c=cells[i]; const er=getCellEffectiveRect(state.currentPage,i,c); return {idx:i,x:c.x,y:c.y,w:c.w,h:c.h,ex:er.x,ey:er.y,ew:er.w,eh:er.h};}),
+      others:cells.map((c,i)=>{const er=getCellEffectiveRect(state.currentPage,i,c); return {idx:i,x:c.x,y:c.y,w:c.w,h:c.h,ex:er.x,ey:er.y,ew:er.w,eh:er.h};}).filter(c=>!selArr.includes(c.idx))
     };
   } else {
     dragState={type:'rubber', startX:pt.x, startY:pt.y, moved:false, shift:e.shiftKey};
@@ -3379,8 +3975,22 @@ function renderPreview(meta){
   updateLayoutZoom();
 }
 
+$('btnFirstPage').onclick=()=>{ if(!lastMeta) return; state.currentPage=0; state.selection.clear(); updateSelCount(); updateStats(lastMeta); renderPreview(lastMeta); };
 $('btnPrevPage').onclick=()=>{ if(!lastMeta) return; state.currentPage=Math.max(0,state.currentPage-1); state.selection.clear(); updateSelCount(); updateStats(lastMeta); renderPreview(lastMeta); };
 $('btnNextPage').onclick=()=>{ if(!lastMeta) return; state.currentPage=Math.min(lastMeta.pages.length-1,state.currentPage+1); state.selection.clear(); updateSelCount(); updateStats(lastMeta); renderPreview(lastMeta); };
+$('btnLastPage').onclick=()=>{ if(!lastMeta) return; state.currentPage=Math.max(0,lastMeta.pages.length-1); state.selection.clear(); updateSelCount(); updateStats(lastMeta); renderPreview(lastMeta); };
+function jumpToPageFromInput(){
+  if(!lastMeta) return;
+  const totalPages=lastMeta.pages.length;
+  const input=$('pageIndicatorInput');
+  let n=parseInt(input.value)||1;
+  n=Math.max(1,Math.min(totalPages||1,n));
+  state.currentPage=totalPages?n-1:0;
+  state.selection.clear(); updateSelCount(); updateStats(lastMeta); renderPreview(lastMeta);
+}
+$('pageIndicatorInput').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); jumpToPageFromInput(); $('pageIndicatorInput').blur(); } };
+$('pageIndicatorInput').onblur=jumpToPageFromInput;
+$('pageIndicatorInput').onclick=e=>{ e.stopPropagation(); };
 
 /* ================================================================
    DPI / FORMAT CONTROLS
@@ -3503,6 +4113,7 @@ $('btnDlPage').onclick=async()=>{
   const filenames=buildPageFilenames(meta);
   const cv=renderPageCanvas(meta,state.currentPage,dpi);
   await downloadCanvas(cv,filenames[state.currentPage],dpi);
+  freeCanvas(cv);
   toast(TRANSLATIONS[state.lang||'id'].toastDlPage);
 };
 
@@ -3517,6 +4128,7 @@ $('btnDlAll').onclick=async()=>{
     for(let i=0;i<meta.pages.length;i++){
       const cv=renderPageCanvas(meta,i,dpi);
       await downloadCanvas(cv,filenames[i],dpi);
+      freeCanvas(cv);
       if(i<meta.pages.length-1) await new Promise(r=>setTimeout(r,220));
     }
     toast(TRANSLATIONS[state.lang||'id'].toastAllPagesDownloaded.replace('{n}', meta.pages.length));
@@ -3539,6 +4151,7 @@ $('btnDlAllZip').onclick=async()=>{
       const cv=renderPageCanvas(meta,i,dpi);
       const {blob,ext}=await canvasToDpiBlob(cv,dpi);
       zip.file(`${filenames[i]}.${ext}`,blob);
+      freeCanvas(cv);
       await new Promise(r=>setTimeout(r,0));
     }
     const zipBlob=await zip.generateAsync({type:'blob'});
@@ -3567,6 +4180,7 @@ $('btnExportPdfPage').onclick=async()=>{
     const doc=new jsPDF({orientation, unit:'mm', format:[meta.paperW,meta.paperH]});
     const cv=renderPageCanvas(meta,state.currentPage,dpi);
     const data=cv.toDataURL('image/jpeg',0.95);
+    freeCanvas(cv);
     doc.addImage(data,'JPEG',0,0,meta.paperW,meta.paperH);
     doc.save(`${filenames[state.currentPage]}.pdf`);
     toast(TRANSLATIONS[state.lang||'id'].toastPdfPageSuccess);
@@ -3590,6 +4204,7 @@ $('btnExportPdf').onclick=async()=>{
     for(let p=0;p<meta.pages.length;p++){
       const cv=renderPageCanvas(meta,p,dpi);
       const data=cv.toDataURL('image/jpeg',0.95);
+      freeCanvas(cv);
       if(p>0) doc.addPage([meta.paperW,meta.paperH],orientation);
       doc.addImage(data,'JPEG',0,0,meta.paperW,meta.paperH);
       await new Promise(r=>setTimeout(r,0));
@@ -3609,7 +4224,7 @@ $('btnExportPdf').onclick=async()=>{
 $('btnExportSettings').onclick=()=>{
   const settings={
     _format:'pasfoto-layout-settings',
-    _version:1,
+    _version:3, // v3: also persists currentPage (active page shown when the file is re-imported)
     paper:{...state.paper},
     pageMargin:{...state.pageMargin}, pmLinked:state.pmLinked,
     box:{...state.box},
@@ -3622,20 +4237,21 @@ $('btnExportSettings').onclick=()=>{
     pageBg:state.pageBg,
     fillMode:state.fillMode,
     targetPages:state.targetPages,
-    mixedBoxes:state.mixedBoxes.map(mb=>({w:mb.w,h:mb.h,qty:mb.qty})),
+    currentPage:state.currentPage,
+    mixedBoxes:state.mixedBoxes.map(mb=>({w:mb.w,h:mb.h,qty:mb.qty,aiHeadRatio:mb.aiHeadRatio,aiTopMargin:mb.aiTopMargin,aiHairExt:mb.aiHairExt})),
     rotateAllowed:state.rotateAllowed,
-    posOverrides:state.posOverrides,
-    cellRotations:state.cellRotations,
-    imageRotations:state.imageRotations,
-    imageFlips:state.imageFlips,
-    cellCropOverrides:state.cellCropOverrides,
-    overrides:state.overrides,
+    posOverrides:JSON.parse(JSON.stringify(state.posOverrides)),
+    cellRotations:JSON.parse(JSON.stringify(state.cellRotations)),
+    imageRotations:JSON.parse(JSON.stringify(state.imageRotations)),
+    imageFlips:JSON.parse(JSON.stringify(state.imageFlips)),
+    cellCropOverrides:JSON.parse(JSON.stringify(state.cellCropOverrides)),
+    overrides:JSON.parse(JSON.stringify(state.overrides)),
     snapToBoxes:state.snapToBoxes,
     snapToGrid:state.snapToGrid,
     snapGridSize:state.snapGridSize,
     snapToCutGuide:state.snapToCutGuide,
     alignPageAsGroup:state.alignPageAsGroup,
-    zOrder:state.zOrder,
+    zOrder:JSON.parse(JSON.stringify(state.zOrder||{})),
     aiHeadRatio:parseFloat($('aiHeadRatio').value),
     aiTopMargin:parseFloat($('aiTopMargin').value),
     aiHairExt:parseFloat($('aiHairExt').value)
@@ -3668,10 +4284,11 @@ $('settingsFileInput').onchange=e=>{
       if(s.guide){ state.guide=s.guide; $('guideStyle').value=s.guide; }
       if(s.borderColor){ state.borderColor=s.borderColor; $('borderColor').value=s.borderColor; }
       if(s.pageBg){ state.pageBg=s.pageBg; $('pageBg').value=s.pageBg; }
-      if(s.fillMode){ state.fillMode=s.fillMode; $('fillMode').value=s.fillMode; $('mixedPanel').classList.toggle('hidden',s.fillMode!=='mixed' && s.fillMode!=='mixed_standard'); }
+      if(s.fillMode){ state.fillMode=s.fillMode; $('fillMode').value=s.fillMode; syncFillModeVisibility(); }
       if(s.targetPages){ state.targetPages=s.targetPages; $('targetPages').value=s.targetPages; }
+      const importedCurrentPage=s.currentPage;
       if(s.mixedBoxes){
-        state.mixedBoxes=s.mixedBoxes.map((mb,i)=>({id:'mb'+(mixedSeq++),w:mb.w,h:mb.h,qty:mb.qty}));
+        state.mixedBoxes=s.mixedBoxes.map((mb,i)=>({id:'mb'+(mixedSeq++),w:mb.w,h:mb.h,qty:mb.qty,aiHeadRatio:mb.aiHeadRatio,aiTopMargin:mb.aiTopMargin,aiHairExt:mb.aiHairExt}));
       }
       if(s.rotateAllowed!==undefined){ state.rotateAllowed=s.rotateAllowed; $('rotateAllowed').checked=s.rotateAllowed; }
       if(s.snapToBoxes!==undefined){ state.snapToBoxes=s.snapToBoxes; $('snapBoxes').checked=s.snapToBoxes; }
@@ -3689,7 +4306,18 @@ $('settingsFileInput').onchange=e=>{
       state.cellRotations = s.cellRotations ? {...s.cellRotations} : {};
       state.imageRotations = s.imageRotations ? {...s.imageRotations} : {};
       state.imageFlips = s.imageFlips ? {...s.imageFlips} : {};
-      state.cellCropOverrides = s.cellCropOverrides ? JSON.parse(JSON.stringify(s.cellCropOverrides)) : {};
+      state.cellCropOverrides = {};
+      if(s.cellCropOverrides){
+        Object.keys(s.cellCropOverrides).forEach(key=>{
+          const co=s.cellCropOverrides[key]||{};
+          state.cellCropOverrides[key]={
+            zoom:Math.max(1,Math.min(3,parseFloat(co.zoom)||1)),
+            offX:Math.max(-1,Math.min(1,parseFloat(co.offX)||0)),
+            offY:Math.max(-1,Math.min(1,parseFloat(co.offY)||0)),
+            rot:co.rot!==undefined?Math.max(-180,Math.min(180,parseFloat(co.rot)||0)):0
+          };
+        });
+      }
       state.overrides = s.overrides ? {...s.overrides} : {};
       
       // Sync dropdown selections based on dimensions
@@ -3709,6 +4337,10 @@ $('settingsFileInput').onchange=e=>{
       syncPaperInputs(); syncBoxInputs();
       rebuildPmGrid(); rebuildImGrid(); buildGapGrid();
       renderMixedList(); refreshAll();
+      if(importedCurrentPage!==undefined && lastMeta && lastMeta.pages.length){
+        state.currentPage=Math.max(0,Math.min(lastMeta.pages.length-1,parseInt(importedCurrentPage)||0));
+        updateSelCount(); updateStats(lastMeta); renderPreview(lastMeta);
+      }
       toast(TRANSLATIONS[state.lang||'id'].toastSettingsImport);
     }catch(err){
       toast(TRANSLATIONS[state.lang||'id'].toastSettingsImportFailed+err.message);
@@ -3725,6 +4357,7 @@ function applyLanguage() {
   const t = TRANSLATIONS[lang];
   
   $('langBtn').textContent = lang.toUpperCase();
+  window.updateAiEngineStatusText();
 
   if($('mtabBtnSettings')) $('mtabBtnSettings').textContent = t.mtabSettings;
   if($('mtabBtnCanvas')) $('mtabBtnCanvas').textContent = t.mtabCanvas;
@@ -3737,6 +4370,24 @@ function applyLanguage() {
   cardKeys.forEach((k, idx) => {
     if(titles[idx]) titles[idx].textContent = t[k];
   });
+
+  // AI Auto Crop card: labels keep their live "xx%" <span> child, so only
+  // the leading text node is replaced, not the whole label.
+  [['lblAiHeadRatio','lblAiHeadRatio'],['lblAiTopMargin','lblAiTopMargin'],['lblAiHairExt','lblAiHairExt']].forEach(([id,key]) => {
+    const lbl = $(id);
+    if(lbl && lbl.firstChild) lbl.firstChild.textContent = t[key] + ' ';
+  });
+  if($('btnAutoCropAll')) $('btnAutoCropAll').textContent = t.btnAutoCropAll;
+  if($('infoAutoCrop')) $('infoAutoCrop').innerHTML = t.infoAutoCrop;
+  if($('btnHideToolbarBottom')){
+    $('btnHideToolbarBottom').textContent = t.btnHideToolbarBottom;
+    $('btnHideToolbarBottom').title = t.titleHideToolbarBottom;
+  }
+  if($('themeBtn')) $('themeBtn').title = t.titleThemeBtn;
+  if($('btnFirstPage')) $('btnFirstPage').title = t.titleFirstPage;
+  if($('btnLastPage')) $('btnLastPage').title = t.titleLastPage;
+  if($('editScope')) $('editScope').title = t.titleEditScope;
+  if($('snapGridSize')) $('snapGridSize').title = t.titleSnapGridSize;
   
   const labelMappings = [
     { sel: '#fillMode', key: 'lblMode', sibling: 'prev' },
@@ -3795,7 +4446,7 @@ function applyLanguage() {
   if(dzSub) dzSub.textContent = t.dropzoneSub;
   
   if($('infoFillMode')) $('infoFillMode').innerHTML = t.infoFillMode;
-  if($('infoMixedPacking')) $('infoMixedPacking').innerHTML = t.infoMixedPacking;
+  if($('infoMixedPacking')) $('infoMixedPacking').innerHTML = (state.fillMode==='custom_mixed' ? t.infoMixedPackingCustom : t.infoMixedPacking);
   if($('infoSettings')) $('infoSettings').innerHTML = t.infoSettings;
   if($('infoExport')) $('infoExport').innerHTML = t.infoExport;
   
@@ -3818,6 +4469,8 @@ function applyLanguage() {
   if(optMixStd) optMixStd.textContent = t.optMixedStandard;
   const optCustom = document.querySelector('#fillMode option[value="custom"]');
   if(optCustom) optCustom.textContent = t.optCustom;
+  const optCustomMixed = document.querySelector('#fillMode option[value="custom_mixed"]');
+  if(optCustomMixed) optCustomMixed.textContent = t.optCustomMixed;
   
   const optGNone = document.querySelector('#guideStyle option[value="none"]');
   if(optGNone) optGNone.textContent = t.optGuideNone;
@@ -3878,6 +4531,8 @@ function applyLanguage() {
   $('btnZoomIn').textContent = t.btnZoomIn;
   $('btnZoomOut').textContent = t.btnZoomOut;
   $('btnResetPan').textContent = t.btnResetPan;
+  if($('btnAutoCropSel')) $('btnAutoCropSel').textContent = t.btnAutoCropSel;
+  if($('btnAdjustSel')) $('btnAdjustSel').textContent = t.btnAdjustSel;
   $('btnResetPos').textContent = t.btnResetPos;
   $('btnResetAllPos').textContent = t.btnResetAllPos;
   $('btnResetAllPages').textContent = t.btnResetAllPages;
@@ -3961,6 +4616,7 @@ function applyLanguage() {
   $('btnZoomIn').title = lang === 'id' ? 'Perbesar gambar pada kotak terpilih' : 'Zoom in photo inside selected boxes';
   $('btnZoomOut').title = lang === 'id' ? 'Perkecil gambar pada kotak terpilih' : 'Zoom out photo inside selected boxes';
   $('btnResetPan').title = lang === 'id' ? 'Reset posisi geser (pan) pada kotak terpilih' : 'Reset photo pan to center on selected boxes';
+  if($('btnAutoCropSel')) $('btnAutoCropSel').title = lang === 'id' ? 'Auto Face Crop (AI) hanya pada kotak yang diseleksi — tiap kotak dipas-kan sesuai ukuran/aspect rasio kotaknya masing-masing (cocok utk kotak berbeda ukuran / mixed size)' : 'Auto Face Crop (AI) only on the selected boxes — each box is framed to match its own size/aspect ratio (useful for mixed box sizes)';
   $('btnResetPos').title = lang === 'id' ? 'Reset posisi & transformasi kotak terpilih saja' : 'Reset position & transform of selected boxes';
   $('btnResetAllPos').title = lang === 'id' ? 'Reset semua posisi & transformasi kotak di halaman aktif ini' : 'Reset all positions & transforms on this active page';
   $('btnResetAllPages').title = lang === 'id' ? 'Reset semua posisi & transformasi kotak di semua halaman' : 'Reset all positions & transforms on all pages';
@@ -3988,6 +4644,10 @@ function applyToolbarVisibility(hidden){
 $('btnToggleToolbar').onclick=()=>{
   applyToolbarVisibility(!$('canvasToolbarBar').classList.contains('hidden'));
 };
+/* Extra hide button placed inside the toolbar itself (bottom-right) so it can be
+   closed without reaching back up to the header icon — always hides (doesn't
+   toggle back open), since the button disappears along with the rest of the bar. */
+$('btnHideToolbarBottom').onclick=()=>{ applyToolbarVisibility(true); };
 applyToolbarVisibility(localStorage.getItem('pasfoto-toolbar-hidden')==='1');
 
 $('langBtn').onclick=()=>{
