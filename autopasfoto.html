@@ -562,6 +562,19 @@ select{cursor:pointer}
 
         <div class="export-actions">
           <div class="export-group">
+            <div class="export-group-label" id="lblExportPageRangeGroup">🔢 Export Halaman Tertentu / Rentang</div>
+            <div class="form-group">
+              <label id="lblPageRangeInput">Nomor Halaman</label>
+              <input type="text" id="pageRangeInput" placeholder="mis. 1,3,5-7" autocomplete="off">
+            </div>
+            <div class="info-box" id="infoPageRange">💡 Pisahkan dengan koma, gunakan tanda hubung (-) untuk rentang. Contoh: <b>1,3,5-7</b> → halaman 1, 3, 5, 6, 7. Kosongkan untuk memakai tombol "Semua Halaman" di bawah.</div>
+            <div class="row3">
+              <button class="btn btn-p btn-sm" id="btnExportPdfRange" title="Export halaman/rentang yang diisi di atas sebagai satu file PDF">⬇ PDF</button>
+              <button class="btn btn-s btn-sm" id="btnDlRangeZip" title="Unduh halaman/rentang yang diisi di atas sebagai gambar, dikemas dalam satu file ZIP">⬇ ZIP</button>
+              <button class="btn btn-s btn-sm" id="btnDlRange" title="Unduh halaman/rentang yang diisi di atas sebagai file gambar terpisah">⬇ Terpisah</button>
+            </div>
+          </div>
+          <div class="export-group">
             <div class="export-group-label" id="lblExportPdfGroup">📄 Export PDF</div>
             <div class="row2">
               <button class="btn btn-p" id="btnExportPdfPage" title="Export halaman yang sedang aktif sebagai satu file PDF">⬇ Halaman Ini</button>
@@ -958,6 +971,13 @@ const TRANSLATIONS = {
     optDpiCustomOpt: 'Custom…',
     lblImgFormat: 'Format Unduh Gambar',
     lblJpgQuality: 'Kualitas JPG',
+    lblExportPageRangeGroup: '🔢 Export Halaman Tertentu / Rentang',
+    lblPageRangeInput: 'Nomor Halaman',
+    placeholderPageRange: 'mis. 1,3,5-7',
+    infoPageRange: '💡 Pisahkan dengan koma, gunakan tanda hubung (-) untuk rentang. Contoh: <b>1,3,5-7</b> → halaman 1, 3, 5, 6, 7. Kosongkan untuk memakai tombol "Semua Halaman" di bawah.',
+    btnExportPdfRange: '⬇ PDF',
+    btnDlRangeZip: '⬇ ZIP',
+    btnDlRange: '⬇ Terpisah',
     lblExportPdfGroup: '📄 Export PDF',
     lblExportImgGroup: '🖼️ Export Gambar (PNG/JPG)',
     btnExportPdf: '⬇ Semua Halaman',
@@ -1017,7 +1037,10 @@ const TRANSLATIONS = {
     toastDlAllStart: '⬇ Mengunduh {n} halaman…',
     toastPdfSuccess: '✅ PDF {n} halaman diunduh',
     toastPdfPageSuccess: '✅ PDF halaman ini diunduh',
+    toastPdfRangeSuccess: '✅ PDF rentang halaman diunduh ({n} halaman)',
     toastPdfFailed: '❌ Gagal membuat PDF: ',
+    toastInvalidPageRange: '⚠ Format halaman tidak valid atau di luar jangkauan. Contoh: 1,3,5-7',
+    toastRangeDownloaded: '⬇ {n} halaman (rentang) diunduh',
     toastSettingsExport: '⬆ Pengaturan diekspor ke JSON',
     toastSettingsImport: '⬇ Pengaturan diimpor dari JSON',
     toastSettingsImportFailed: '❌ Gagal mengimpor: ',
@@ -1255,6 +1278,13 @@ const TRANSLATIONS = {
     optDpiCustomOpt: 'Custom…',
     lblImgFormat: 'Image Format',
     lblJpgQuality: 'JPG Quality',
+    lblExportPageRangeGroup: '🔢 Export Specific Pages / Range',
+    lblPageRangeInput: 'Page Number',
+    placeholderPageRange: 'e.g. 1,3,5-7',
+    infoPageRange: '💡 Separate with commas, use a hyphen (-) for ranges. Example: <b>1,3,5-7</b> → pages 1, 3, 5, 6, 7. Leave empty and use the "All Pages" buttons below instead.',
+    btnExportPdfRange: '⬇ PDF',
+    btnDlRangeZip: '⬇ ZIP',
+    btnDlRange: '⬇ Separate',
     lblExportPdfGroup: '📄 Export PDF',
     lblExportImgGroup: '🖼️ Export Image (PNG/JPG)',
     btnExportPdf: '⬇ All Pages',
@@ -1314,7 +1344,10 @@ const TRANSLATIONS = {
     toastDlAllStart: '⬇ Downloading {n} pages…',
     toastPdfSuccess: '✅ PDF downloaded ({n} pages)',
     toastPdfPageSuccess: '✅ Page PDF downloaded',
+    toastPdfRangeSuccess: '✅ Page range PDF downloaded ({n} pages)',
     toastPdfFailed: '❌ Failed to create PDF: ',
+    toastInvalidPageRange: '⚠ Invalid or out-of-range page format. Example: 1,3,5-7',
+    toastRangeDownloaded: '⬇ {n} pages (range) downloaded',
     toastSettingsExport: '⬆ Settings exported to JSON',
     toastSettingsImport: '⬇ Settings imported from JSON',
     toastSettingsImportFailed: '❌ Import failed: ',
@@ -4138,6 +4171,135 @@ function buildPageFilenames(meta){
   });
 }
 
+/* Parses a user-typed page list/range string like "1,3,5-7" into a sorted,
+   de-duplicated array of 0-indexed page indices, clamped to [1..maxPages].
+   Returns null if the string is empty/unparseable/out of range so callers
+   can show a validation toast instead of silently exporting nothing. */
+function parsePageRangeInput(str, maxPages){
+  const raw = String(str||'').trim();
+  if(!raw) return null;
+  const parts = raw.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!parts.length) return null;
+  const setIdx = new Set();
+  for(const p of parts){
+    const m = p.match(/^(\d+)\s*-\s*(\d+)$/);
+    if(m){
+      let a=parseInt(m[1],10), b=parseInt(m[2],10);
+      if(isNaN(a)||isNaN(b)) return null;
+      if(a>b) [a,b]=[b,a];
+      for(let i=a;i<=b;i++) setIdx.add(i);
+    } else if(/^\d+$/.test(p)){
+      setIdx.add(parseInt(p,10));
+    } else {
+      return null; // unrecognized token → invalid input
+    }
+  }
+  const indices = Array.from(setIdx)
+    .filter(n=>n>=1 && n<=maxPages)
+    .sort((a,b)=>a-b)
+    .map(n=>n-1);
+  return indices.length ? indices : null;
+}
+
+/* Turns a sorted array of 0-indexed page indices into a compact, filename-safe
+   tag, collapsing consecutive runs into ranges, e.g. [0,1,2,4] → "1-3_5" */
+function formatPageRangeTag(indices){
+  const nums = indices.map(i=>i+1);
+  const groups=[];
+  let start=nums[0], prev=nums[0];
+  for(let i=1;i<=nums.length;i++){
+    if(i<nums.length && nums[i]===prev+1){ prev=nums[i]; continue; }
+    groups.push(start===prev ? `${start}` : `${start}-${prev}`);
+    if(i<nums.length){ start=nums[i]; prev=nums[i]; }
+  }
+  return groups.join('_');
+}
+
+$('btnExportPdfRange').onclick=async()=>{
+  const meta=computeLayoutMeta();
+  if(meta.cellsPerPage===0){ toast(TRANSLATIONS[state.lang||'id'].toastWarnBoxOverlap); return; }
+  const indices=parsePageRangeInput($('pageRangeInput').value, meta.pages.length);
+  if(!indices){ toast(TRANSLATIONS[state.lang||'id'].toastInvalidPageRange); return; }
+  const dpi=getSelectedDPI();
+  const btn=$('btnExportPdfRange'); const orig=btn.textContent;
+  btn.disabled=true; btn.textContent='⏳ Membuat PDF…';
+  try{
+    const {jsPDF}=window.jspdf;
+    const orientation=meta.paperW>meta.paperH?'landscape':'portrait';
+    const doc=new jsPDF({orientation, unit:'mm', format:[meta.paperW,meta.paperH]});
+    for(let k=0;k<indices.length;k++){
+      const cv=renderPageCanvas(meta,indices[k],dpi);
+      const data=cv.toDataURL('image/jpeg',0.95);
+      freeCanvas(cv);
+      if(k>0) doc.addPage([meta.paperW,meta.paperH],orientation);
+      doc.addImage(data,'JPEG',0,0,meta.paperW,meta.paperH);
+      await new Promise(r=>setTimeout(r,0));
+    }
+    doc.save(`pasfoto-halaman-${formatPageRangeTag(indices)}.pdf`);
+    toast(TRANSLATIONS[state.lang||'id'].toastPdfRangeSuccess.replace('{n}', indices.length));
+  }catch(err){
+    toast(TRANSLATIONS[state.lang||'id'].toastPdfFailed+err.message);
+  }finally{
+    btn.disabled=false; btn.textContent=orig;
+  }
+};
+
+$('btnDlRangeZip').onclick=async()=>{
+  const meta=computeLayoutMeta();
+  if(meta.cellsPerPage===0){ toast(TRANSLATIONS[state.lang||'id'].toastWarnBoxOverlap); return; }
+  if(typeof JSZip==='undefined'){ toast(TRANSLATIONS[state.lang||'id'].toastZipNotFound); return; }
+  const indices=parsePageRangeInput($('pageRangeInput').value, meta.pages.length);
+  if(!indices){ toast(TRANSLATIONS[state.lang||'id'].toastInvalidPageRange); return; }
+  const dpi=getSelectedDPI();
+  const filenames=buildPageFilenames(meta);
+  const btn=$('btnDlRangeZip'); const orig=btn.textContent;
+  btn.disabled=true; btn.textContent='⏳ Menyiapkan ZIP…';
+  try{
+    const zip=new JSZip();
+    for(let k=0;k<indices.length;k++){
+      const p=indices[k];
+      const cv=renderPageCanvas(meta,p,dpi);
+      const {blob,ext}=await canvasToDpiBlob(cv,dpi);
+      zip.file(`${filenames[p]}.${ext}`,blob);
+      freeCanvas(cv);
+      await new Promise(r=>setTimeout(r,0));
+    }
+    const zipBlob=await zip.generateAsync({type:'blob'});
+    const url=URL.createObjectURL(zipBlob);
+    const a=document.createElement('a'); a.download=`pasfoto-halaman-${formatPageRangeTag(indices)}.zip`; a.href=url; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);
+    toast(TRANSLATIONS[state.lang||'id'].toastZipDownloaded.replace('{n}', indices.length));
+  }catch(err){
+    console.error(err);
+    toast(TRANSLATIONS[state.lang||'id'].toastZipFailed);
+  }finally{
+    btn.disabled=false; btn.textContent=orig;
+  }
+};
+
+$('btnDlRange').onclick=async()=>{
+  const meta=computeLayoutMeta();
+  if(meta.cellsPerPage===0){ toast(TRANSLATIONS[state.lang||'id'].toastWarnBoxOverlap); return; }
+  const indices=parsePageRangeInput($('pageRangeInput').value, meta.pages.length);
+  if(!indices){ toast(TRANSLATIONS[state.lang||'id'].toastInvalidPageRange); return; }
+  const dpi=getSelectedDPI();
+  const filenames=buildPageFilenames(meta);
+  const btn=$('btnDlRange'); const orig=btn.textContent;
+  btn.disabled=true;
+  try{
+    for(let k=0;k<indices.length;k++){
+      const p=indices[k];
+      const cv=renderPageCanvas(meta,p,dpi);
+      await downloadCanvas(cv,filenames[p],dpi);
+      freeCanvas(cv);
+      if(k<indices.length-1) await new Promise(r=>setTimeout(r,220));
+    }
+    toast(TRANSLATIONS[state.lang||'id'].toastRangeDownloaded.replace('{n}', indices.length));
+  }finally{
+    btn.disabled=false; btn.textContent=orig;
+  }
+};
+
 $('btnDlPage').onclick=async()=>{
   const meta=computeLayoutMeta();
   if(meta.cellsPerPage===0){ toast(TRANSLATIONS[state.lang||'id'].toastWarnBoxOverlap); return; }
@@ -4792,6 +4954,13 @@ function applyLanguage() {
   $('btnAddMixedSize').textContent = t.btnAddMixedSize;
   $('btnExportSettings').textContent = t.btnExportSettings;
   $('btnImportSettings').textContent = t.btnImportSettings;
+  if($('lblExportPageRangeGroup')) $('lblExportPageRangeGroup').textContent = t.lblExportPageRangeGroup;
+  if($('lblPageRangeInput')) $('lblPageRangeInput').textContent = t.lblPageRangeInput;
+  if($('pageRangeInput')) $('pageRangeInput').placeholder = t.placeholderPageRange;
+  if($('infoPageRange')) $('infoPageRange').innerHTML = t.infoPageRange;
+  if($('btnExportPdfRange')) $('btnExportPdfRange').textContent = t.btnExportPdfRange;
+  if($('btnDlRangeZip')) $('btnDlRangeZip').textContent = t.btnDlRangeZip;
+  if($('btnDlRange')) $('btnDlRange').textContent = t.btnDlRange;
   if($('lblExportPdfGroup')) $('lblExportPdfGroup').textContent = t.lblExportPdfGroup;
   if($('lblExportImgGroup')) $('lblExportImgGroup').textContent = t.lblExportImgGroup;
   $('btnExportPdf').textContent = t.btnExportPdf;
