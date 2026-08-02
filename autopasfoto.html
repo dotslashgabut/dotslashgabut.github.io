@@ -80,7 +80,7 @@ select{cursor:pointer}
 .img-row-main{display:flex;align-items:stretch;gap:10px}
 .img-row-right{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;gap:6px}
 .img-row-controls{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px}
-.img-thumb{width:72px;height:auto;align-self:stretch;min-height:56px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid var(--border);background:var(--bg);cursor:pointer}
+.img-thumb{width:72px;height:72px;align-self:center;border-radius:8px;object-fit:contain;flex-shrink:0;border:1px solid var(--border);background:var(--bg);cursor:pointer}
 .img-info{flex:1;min-width:0}
 .img-name{font-size:.74rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
 .img-meta{font-size:.63rem;color:var(--text-dim);font-family:var(--mono)}
@@ -576,6 +576,15 @@ select{cursor:pointer}
             </div>
             <button class="btn btn-s btn-full" id="btnDlAllZip" title="Unduh semua halaman sebagai gambar, dikemas dalam satu file ZIP">⬇ Semua Halaman (ZIP)</button>
           </div>
+          <div class="export-group">
+            <div class="export-group-label" id="lblExportCropGroup">✂️ Export Foto (Ukuran Crop/Kotak)</div>
+            <div class="row2">
+              <button class="btn btn-s" id="btnDlCropPage" title="Unduh tiap foto di halaman aktif, dipotong sesuai ukuran kotaknya masing-masing">⬇ Halaman Ini</button>
+              <button class="btn btn-s" id="btnDlCropAll" title="Unduh tiap foto di semua halaman, dipotong sesuai ukuran kotaknya masing-masing">⬇ Semua Halaman</button>
+            </div>
+            <button class="btn btn-s btn-full" id="btnDlCropZip" title="Unduh semua foto (ukuran kotak) dari semua halaman, dikemas dalam satu file ZIP">⬇ Semua Foto (ZIP)</button>
+            <button class="btn btn-s btn-full" id="btnDlCropSelected" title="Unduh foto dari kotak yang sedang dipilih saja, dipotong sesuai ukuran kotaknya">⬇ Kotak Terpilih</button>
+          </div>
         </div>
         <div class="info-box" id="infoExport">💡 Klik nama/thumbnail foto di panel kiri untuk mengatur zoom &amp; posisi crop tiap foto.</div>
       </div>
@@ -682,12 +691,19 @@ window.bgRemovalAI.removeBackground = function(imgEl){
   const w = imgEl.naturalWidth, h = imgEl.naturalHeight;
   const result = window.bgRemovalAI.model.segment(imgEl);
   const mask = result.confidenceMasks[0];
+  /* Declared here (function scope) rather than inside the try{} block below,
+     because the finally{} block needs to reference them to free their pixel
+     buffers. const-declaring them inside try{} would make them inaccessible
+     in finally{} (ReferenceError), which caused removeBackground() to always
+     throw instead of returning — the root cause of the remove-background
+     feature failing. */
+  let maskCanvas, maskFullCanvas, outCanvas;
   try{
     const maskData = mask.getAsFloat32Array();
     const mw = mask.width, mh = mask.height;
 
     // 1) Render mask (resolusi rendah dari model) sebagai citra grayscale terpisah
-    const maskCanvas = document.createElement('canvas');
+    maskCanvas = document.createElement('canvas');
     maskCanvas.width = mw; maskCanvas.height = mh;
     const mctx = maskCanvas.getContext('2d');
     const maskImageData = mctx.createImageData(mw, mh);
@@ -701,7 +717,7 @@ window.bgRemovalAI.removeBackground = function(imgEl){
     mctx.putImageData(maskImageData, 0, 0);
 
     // 2) Upscale HANYA mask-nya ke resolusi penuh foto (dengan smoothing supaya tepi halus)
-    const maskFullCanvas = document.createElement('canvas');
+    maskFullCanvas = document.createElement('canvas');
     maskFullCanvas.width = w; maskFullCanvas.height = h;
     const mfctx = maskFullCanvas.getContext('2d');
     mfctx.imageSmoothingEnabled = true;
@@ -710,7 +726,7 @@ window.bgRemovalAI.removeBackground = function(imgEl){
     const maskFullData = mfctx.getImageData(0, 0, w, h).data;
 
     // 3) Gambar foto ASLI di resolusi PENUH (tidak pernah diperkecil, jadi tetap tajam)
-    const outCanvas = document.createElement('canvas');
+    outCanvas = document.createElement('canvas');
     outCanvas.width = w; outCanvas.height = h;
     const octx = outCanvas.getContext('2d');
     octx.drawImage(imgEl, 0, 0, w, h);
@@ -843,7 +859,7 @@ const TRANSLATIONS = {
     // Settings panel
     btnExportSettings: '⬆ Export Pengaturan',
     btnImportSettings: '⬇ Import Pengaturan',
-    infoSettings: '💾 Export/import pengaturan layout (kertas, kotak, margin, garis potong, dll.) ke/dari file JSON. Foto tidak disertakan.',
+    infoSettings: '💾 Export/import pengaturan layout (kertas, kotak, margin, garis potong, DPI, format gambar, dll.) ke/dari file JSON. Foto tidak disertakan.',
     
     // Toolbar buttons
     btnEditModeOn: '✏️ Edit Layout: ON',
@@ -949,6 +965,11 @@ const TRANSLATIONS = {
     btnDlPage: '⬇ Halaman Ini',
     btnDlAll: '⬇ Semua Halaman',
     btnDlAllZip: '⬇ Semua Halaman (ZIP)',
+    lblExportCropGroup: '✂️ Export Foto (Ukuran Crop/Kotak)',
+    btnDlCropPage: '⬇ Halaman Ini',
+    btnDlCropAll: '⬇ Semua Halaman',
+    btnDlCropZip: '⬇ Semua Foto (ZIP)',
+    btnDlCropSelected: '⬇ Kotak Terpilih',
     infoExport: '💡 Klik nama/thumbnail foto di panel kiri untuk mengatur zoom & posisi crop tiap foto.',
     
     // Stepper & Adjust
@@ -1027,7 +1048,10 @@ const TRANSLATIONS = {
     toastZipNotFound: '⚠ JSZip tidak ditemukan',
     toastZipDownloaded: '✅ ZIP {n} halaman diunduh',
     toastZipFailed: '⚠ Gagal membuat ZIP',
-    toastAllPagesDownloaded: '⬇ {n} halaman diunduh'
+    toastAllPagesDownloaded: '⬇ {n} halaman diunduh',
+    toastNoPhotosToExport: '⚠ Tidak ada foto untuk diekspor',
+    toastCropDownloaded: '⬇ {n} foto (ukuran kotak) diunduh',
+    toastCropZipDownloaded: '✅ ZIP {n} foto (ukuran kotak) diunduh'
   },
   en: {
     logoSubtitle: 'passport / print photo layout engine',
@@ -1132,7 +1156,7 @@ const TRANSLATIONS = {
     // Settings panel
     btnExportSettings: '⬆ Export Settings',
     btnImportSettings: '⬇ Import Settings',
-    infoSettings: '💾 Export/import layout settings (paper, box, margins, cut guides, etc.) to/from JSON. Photo data is not included.',
+    infoSettings: '💾 Export/import layout settings (paper, box, margins, cut guides, DPI, image format, etc.) to/from JSON. Photo data is not included.',
     
     // Toolbar buttons
     btnEditModeOn: '✏️ Edit Layout: ON',
@@ -1238,6 +1262,11 @@ const TRANSLATIONS = {
     btnDlPage: '⬇ This Page',
     btnDlAll: '⬇ All Pages',
     btnDlAllZip: '⬇ All Pages (ZIP)',
+    lblExportCropGroup: '✂️ Export Photos (Crop/Box Size)',
+    btnDlCropPage: '⬇ This Page',
+    btnDlCropAll: '⬇ All Pages',
+    btnDlCropZip: '⬇ All Photos (ZIP)',
+    btnDlCropSelected: '⬇ Selected Box',
     infoExport: '💡 Click photo name/thumbnail in left panel to adjust crop & zoom for each photo.',
     
     // Stepper & Adjust
@@ -1316,7 +1345,10 @@ const TRANSLATIONS = {
     toastZipNotFound: '⚠ JSZip not found',
     toastZipDownloaded: '✅ ZIP downloaded ({n} pages)',
     toastZipFailed: '⚠ Failed to create ZIP',
-    toastAllPagesDownloaded: '⬇ {n} pages downloaded'
+    toastAllPagesDownloaded: '⬇ {n} pages downloaded',
+    toastNoPhotosToExport: '⚠ No photos to export',
+    toastCropDownloaded: '⬇ {n} photo(s) (box size) downloaded',
+    toastCropZipDownloaded: '✅ ZIP downloaded ({n} photos, box size)'
   }
 };
 
@@ -4219,12 +4251,252 @@ $('btnExportPdf').onclick=async()=>{
 };
 
 /* ================================================================
+   EXPORT — PER-PHOTO CROP SIZE (ukuran kotak foto)
+   Renders each cell's photo standalone, at exactly the box's own
+   footprint size (accounting for auto-fit rotation + manual box
+   rotation), instead of a whole page. Works for any fill mode
+   (bulk/mixed/mixed_standard/custom/standard) including mixed box
+   sizes, since each cell already carries its own w/h in mm.
+   ================================================================ */
+
+/* Final on-page pixel size of a cell's box, after both the packer's
+   auto-fit rotation (cell.rotated) and the user's manual box rotation
+   (🔄 Rotate, 90°/270°) are applied — mirrors the same two swap steps
+   renderPageCanvas performs, so the cropped photo comes out identical
+   to what's shown in that box on the printed page. */
+function computeCellFinalSize(pageIndex,ci,cell,scale){
+  let cw,ch;
+  if(cell.rotated){ cw=cell.h*scale; ch=cell.w*scale; } else { cw=cell.w*scale; ch=cell.h*scale; }
+  const cellRot=getCellRotation(pageIndex,ci);
+  if(cellRot===90||cellRot===270){ const t=cw; cw=ch; ch=t; }
+  return {cw,ch};
+}
+
+/* Renders a single cell's photo (with frame color, inner-margin/photo-bg fill,
+   and the photo itself — zoom/pan/rotate/flip all included) onto its own
+   canvas sized to that box's final mm footprint at the given dpi. No page
+   guides/crop-marks/border are drawn — this is meant to be the finished,
+   print-ready photo itself. Returns null if the cell has no assigned photo. */
+function renderCellCanvas(meta,pageIndex,ci,dpi){
+  const cells=meta.pages[pageIndex]||[];
+  const cell=cells[ci];
+  if(!cell || !cell.image) return null;
+  const scale=dpi/25.4;
+  const {cw,ch}=computeCellFinalSize(pageIndex,ci,cell,scale);
+  const cv=document.createElement('canvas');
+  cv.width=Math.max(1,Math.round(cw));
+  cv.height=Math.max(1,Math.round(ch));
+  const ctx=cv.getContext('2d');
+  const im=state.innerMargin;
+  const crop=getCellCrop(pageIndex,ci,cell);
+  const cellRot=getCellRotation(pageIndex,ci);
+
+  ctx.fillStyle=state.frameColor||'#ffffff'; ctx.fillRect(0,0,cv.width,cv.height);
+  {
+    const ix0=im.l*scale, iy0=im.t*scale;
+    const iw0=cv.width-(im.l+im.r)*scale, ih0=cv.height-(im.t+im.b)*scale;
+    if(iw0>0 && ih0>0){ ctx.fillStyle=state.photoBgColor||'#ffffff'; ctx.fillRect(ix0,iy0,iw0,ih0); }
+  }
+  const ix=im.l*scale, iy=im.t*scale;
+  const iw=cv.width-(im.l+im.r)*scale, ih=cv.height-(im.t+im.b)*scale;
+  const imgRot=getImgRotation(pageIndex,ci);
+  const totalPhotoRot=(cellRot+imgRot)%360;
+  const flip=getImgFlip(pageIndex,ci);
+  if(totalPhotoRot){
+    const swapPhoto90=(totalPhotoRot===90||totalPhotoRot===270);
+    const dw=swapPhoto90?ih:iw, dh=swapPhoto90?iw:ih;
+    ctx.save();
+    ctx.translate(ix+iw/2, iy+ih/2);
+    ctx.rotate(totalPhotoRot*Math.PI/180);
+    ctx.scale(flip.fx?-1:1, flip.fy?-1:1);
+    ctx.translate(-dw/2,-dh/2);
+    drawCoverRotated(ctx,cell.image.img,0,0,dw,dh,crop.zoom,crop.offX,crop.offY,crop.rot||0);
+    ctx.restore();
+  } else if(flip.fx||flip.fy){
+    ctx.save();
+    ctx.translate(ix+iw/2, iy+ih/2);
+    ctx.scale(flip.fx?-1:1, flip.fy?-1:1);
+    ctx.translate(-iw/2,-ih/2);
+    drawCoverRotated(ctx,cell.image.img,0,0,iw,ih,crop.zoom,crop.offX,crop.offY,crop.rot||0);
+    ctx.restore();
+  } else {
+    drawCoverRotated(ctx,cell.image.img,ix,iy,iw,ih,crop.zoom,crop.offX,crop.offY,crop.rot||0);
+  }
+  return cv;
+}
+
+/* Per-cell "is this the exact same finished photo as another cell" signature:
+   same source photo, same box size (mm), same auto-fit/manual rotation, same
+   flip, and same crop adjustment (zoom/pan/tilt). Two cells sharing this
+   signature would render byte-for-byte identical output, so only the first
+   one needs to actually be exported. This is what makes e.g. an "isi penuh 1
+   halaman" bulk sheet — same photo, same size, no per-cell adjustment —
+   collapse down to a single exported file instead of one per cell. */
+function cellCropSignature(pageIndex,ci,cell){
+  const crop=getCellCrop(pageIndex,ci,cell);
+  const cellRot=getCellRotation(pageIndex,ci);
+  const imgRot=getImgRotation(pageIndex,ci);
+  const flip=getImgFlip(pageIndex,ci);
+  const r2=v=>Math.round((v||0)*100)/100;
+  return [
+    cell.image.id,
+    cell.rotated?1:0, cellRot, imgRot,
+    flip.fx?1:0, flip.fy?1:0,
+    r2(cell.w), r2(cell.h),
+    r2(crop.zoom!=null?crop.zoom:1), r2(crop.offX), r2(crop.offY), r2(crop.rot)
+  ].join('|');
+}
+
+/* Builds the list of cells to actually export for the crop-size export
+   buttons: scope 'page' considers only the current page, scope 'all'
+   considers every page. Cells with no photo are skipped, and cells that are
+   an exact duplicate (see cellCropSignature) of one already queued are
+   skipped too — so a repeated fill of the same photo/size/crop only produces
+   one file. Filenames are derived only from what's left, so the "-2", "-3"
+   disambiguation suffix only kicks in for genuinely different photos/crops
+   that happen to share a source name. */
+function buildCropExportPlan(meta,scope){
+  const pageIdxs = (scope==='all') ? meta.pages.map((_,i)=>i) : [state.currentPage];
+  const selFilter = scope==='selected' ? state.selection : null;
+  const seenSig=new Set();
+  const items=[];
+  pageIdxs.forEach(pi=>{
+    (meta.pages[pi]||[]).forEach((cell,ci)=>{
+      if(!cell.image) return;
+      if(selFilter && !selFilter.has(ci)) return;
+      const sig=cellCropSignature(pi,ci,cell);
+      if(seenSig.has(sig)) return;
+      seenSig.add(sig);
+      items.push({pageIndex:pi, ci, cell, baseName:sanitizeFilename(cell.image.name)});
+    });
+  });
+  const totals={};
+  items.forEach(it=>{ totals[it.baseName]=(totals[it.baseName]||0)+1; });
+  const seenName={};
+  const multiPage=pageIdxs.length>1;
+  items.forEach(it=>{
+    let out=it.baseName;
+    if(totals[out]>1){ seenName[out]=(seenName[out]||0)+1; out=`${out}-${seenName[out]}`; }
+    const prefix=multiPage?`hal${String(it.pageIndex+1).padStart(2,'0')}_`:'';
+    const sizeTag=formatBoxSizeTag(it.cell.w,it.cell.h);
+    it.filename=`${prefix}${out} - kotak_${sizeTag}`;
+  });
+  return items;
+}
+
+/* Formats a cell's mm size as a short filename-safe tag, e.g. 30x40mm.
+   Rounds to 1 decimal and drops a trailing ".0" so common whole-mm sizes
+   (like 30x40) stay clean while fractional custom sizes are preserved. */
+function formatBoxSizeTag(w,h){
+  const fmt=v=>{ const r=Math.round(v*10)/10; return (r%1===0)?String(r):String(r).replace('.',','); };
+  return `${fmt(w)}x${fmt(h)}mm`;
+}
+
+$('btnDlCropPage').onclick=async()=>{
+  const meta=computeLayoutMeta();
+  const items=buildCropExportPlan(meta,'page');
+  if(!items.length){ toast(TRANSLATIONS[state.lang||'id'].toastNoPhotosToExport); return; }
+  const dpi=getSelectedDPI();
+  const btn=$('btnDlCropPage'); const orig=btn.textContent;
+  btn.disabled=true;
+  try{
+    for(let i=0;i<items.length;i++){
+      const it=items[i];
+      const cv=renderCellCanvas(meta,it.pageIndex,it.ci,dpi);
+      if(!cv) continue;
+      await downloadCanvas(cv,it.filename,dpi);
+      freeCanvas(cv);
+      if(i<items.length-1) await new Promise(r=>setTimeout(r,180));
+    }
+    toast(TRANSLATIONS[state.lang||'id'].toastCropDownloaded.replace('{n}',items.length));
+  }finally{
+    btn.disabled=false; btn.textContent=orig;
+  }
+};
+
+$('btnDlCropAll').onclick=async()=>{
+  const meta=computeLayoutMeta();
+  const items=buildCropExportPlan(meta,'all');
+  if(!items.length){ toast(TRANSLATIONS[state.lang||'id'].toastNoPhotosToExport); return; }
+  const dpi=getSelectedDPI();
+  const btn=$('btnDlCropAll'); const orig=btn.textContent;
+  btn.disabled=true;
+  try{
+    for(let i=0;i<items.length;i++){
+      const it=items[i];
+      const cv=renderCellCanvas(meta,it.pageIndex,it.ci,dpi);
+      if(!cv) continue;
+      await downloadCanvas(cv,it.filename,dpi);
+      freeCanvas(cv);
+      if(i<items.length-1) await new Promise(r=>setTimeout(r,180));
+    }
+    toast(TRANSLATIONS[state.lang||'id'].toastCropDownloaded.replace('{n}',items.length));
+  }finally{
+    btn.disabled=false; btn.textContent=orig;
+  }
+};
+
+$('btnDlCropZip').onclick=async()=>{
+  const meta=computeLayoutMeta();
+  const items=buildCropExportPlan(meta,'all');
+  if(!items.length){ toast(TRANSLATIONS[state.lang||'id'].toastNoPhotosToExport); return; }
+  if(typeof JSZip==='undefined'){ toast(TRANSLATIONS[state.lang||'id'].toastZipNotFound); return; }
+  const dpi=getSelectedDPI();
+  const btn=$('btnDlCropZip'); const orig=btn.textContent;
+  btn.disabled=true; btn.textContent='⏳ Menyiapkan ZIP…';
+  try{
+    const zip=new JSZip();
+    for(const it of items){
+      const cv=renderCellCanvas(meta,it.pageIndex,it.ci,dpi);
+      if(!cv) continue;
+      const {blob,ext}=await canvasToDpiBlob(cv,dpi);
+      zip.file(`${it.filename}.${ext}`,blob);
+      freeCanvas(cv);
+      await new Promise(r=>setTimeout(r,0));
+    }
+    const zipBlob=await zip.generateAsync({type:'blob'});
+    const url=URL.createObjectURL(zipBlob);
+    const a=document.createElement('a'); a.download='pasfoto-crop.zip'; a.href=url; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);
+    toast(TRANSLATIONS[state.lang||'id'].toastCropZipDownloaded.replace('{n}',items.length));
+  }catch(err){
+    console.error(err);
+    toast(TRANSLATIONS[state.lang||'id'].toastZipFailed);
+  }finally{
+    btn.disabled=false; btn.textContent=orig;
+  }
+};
+
+$('btnDlCropSelected').onclick=async()=>{
+  if(!state.selection || !state.selection.size){ toast(TRANSLATIONS[state.lang||'id'].toastSelectFirst); return; }
+  const meta=computeLayoutMeta();
+  const items=buildCropExportPlan(meta,'selected');
+  if(!items.length){ toast(TRANSLATIONS[state.lang||'id'].toastNoPhotosToExport); return; }
+  const dpi=getSelectedDPI();
+  const btn=$('btnDlCropSelected'); const orig=btn.textContent;
+  btn.disabled=true;
+  try{
+    for(let i=0;i<items.length;i++){
+      const it=items[i];
+      const cv=renderCellCanvas(meta,it.pageIndex,it.ci,dpi);
+      if(!cv) continue;
+      await downloadCanvas(cv,it.filename,dpi);
+      freeCanvas(cv);
+      if(i<items.length-1) await new Promise(r=>setTimeout(r,180));
+    }
+    toast(TRANSLATIONS[state.lang||'id'].toastCropDownloaded.replace('{n}',items.length));
+  }finally{
+    btn.disabled=false; btn.textContent=orig;
+  }
+};
+
+/* ================================================================
    EXPORT / IMPORT SETTINGS (JSON)
    ================================================================ */
 $('btnExportSettings').onclick=()=>{
   const settings={
     _format:'pasfoto-layout-settings',
-    _version:3, // v3: also persists currentPage (active page shown when the file is re-imported)
+    _version:4, // v4: also persists DPI, image format & JPG quality (export panel settings)
     paper:{...state.paper},
     pageMargin:{...state.pageMargin}, pmLinked:state.pmLinked,
     box:{...state.box},
@@ -4254,7 +4526,11 @@ $('btnExportSettings').onclick=()=>{
     zOrder:JSON.parse(JSON.stringify(state.zOrder||{})),
     aiHeadRatio:parseFloat($('aiHeadRatio').value),
     aiTopMargin:parseFloat($('aiTopMargin').value),
-    aiHairExt:parseFloat($('aiHairExt').value)
+    aiHairExt:parseFloat($('aiHairExt').value),
+    dpi:$('dpiSelect').value,
+    dpiCustom:Math.max(30,Math.min(1200,parseInt($('dpiCustom').value)||300)),
+    imgFormat:$('imgFormat').value,
+    jpgQuality:Math.max(10,Math.min(100,parseInt($('jpgQuality').value)||92))
   };
   const blob=new Blob([JSON.stringify(settings,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
@@ -4300,6 +4576,12 @@ $('settingsFileInput').onchange=e=>{
       if(s.aiHeadRatio!==undefined){ $('aiHeadRatio').value=s.aiHeadRatio; $('aiHeadRatioVal').textContent=s.aiHeadRatio+'%'; }
       if(s.aiTopMargin!==undefined){ $('aiTopMargin').value=s.aiTopMargin; $('aiTopMarginVal').textContent=s.aiTopMargin+'%'; }
       if(s.aiHairExt!==undefined){ $('aiHairExt').value=s.aiHairExt; $('aiHairExtVal').textContent=s.aiHairExt+'%'; }
+      if(s.dpi!==undefined){ $('dpiSelect').value=s.dpi; }
+      if(s.dpiCustom!==undefined){ $('dpiCustom').value=Math.max(30,Math.min(1200,parseInt(s.dpiCustom)||300)); }
+      $('dpiCustom').disabled = $('dpiSelect').value!=='custom';
+      if(s.imgFormat){ $('imgFormat').value=s.imgFormat; }
+      if(s.jpgQuality!==undefined){ $('jpgQuality').value=Math.max(10,Math.min(100,parseInt(s.jpgQuality)||92)); }
+      $('jpgQualityWrap').style.display = $('imgFormat').value==='jpeg'?'block':'none';
       
       // Load custom layout/coordinates/rotations if present, otherwise reset them to empty objects
       state.posOverrides = s.posOverrides ? JSON.parse(JSON.stringify(s.posOverrides)) : {};
@@ -4517,6 +4799,11 @@ function applyLanguage() {
   $('btnDlPage').textContent = t.btnDlPage;
   $('btnDlAll').textContent = t.btnDlAll;
   $('btnDlAllZip').textContent = t.btnDlAllZip;
+  if($('lblExportCropGroup')) $('lblExportCropGroup').textContent = t.lblExportCropGroup;
+  if($('btnDlCropPage')) $('btnDlCropPage').textContent = t.btnDlCropPage;
+  if($('btnDlCropAll')) $('btnDlCropAll').textContent = t.btnDlCropAll;
+  if($('btnDlCropZip')) $('btnDlCropZip').textContent = t.btnDlCropZip;
+  if($('btnDlCropSelected')) $('btnDlCropSelected').textContent = t.btnDlCropSelected;
   
   $('presetNone').textContent = t.presetNone;
   $('presetPolaroid').textContent = t.presetPolaroid;
