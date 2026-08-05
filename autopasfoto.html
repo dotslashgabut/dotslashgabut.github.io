@@ -2934,10 +2934,16 @@ function getCellEffectiveRect(pageIndex,ci,cell){
   return {x:cx-ew/2, y:cy-eh/2, w:ew, h:eh};
 }
 
-/* ── Gap-mid lines: outer boundary offset by half-gap ── */
-function drawGapMidLines(ctx,meta,scale,pageIndex){
-  const cells = meta.pages[pageIndex] || [];
-  if (!cells.length) return;
+/* ── Gap-mid lines: outer boundary offset by half-gap ──
+   Draws the guide for a SINGLE cell (called per-cell, interleaved into the main
+   drawOrder loop in renderPageCanvas) so the guide is painted at the same moment
+   in the stacking order as its box. Previously this ran once for every cell in a
+   single pass AFTER all boxes were drawn, so the guide always sat on top of the
+   whole page regardless of the box's Arrange (front/back) stacking — sending a
+   box to the back visually left its guide floating above the box now in front of
+   it. Drawing per-cell in z-order makes the guide layer correctly with its box,
+   just like the box's own border/corner marks already do. */
+function drawGapMidLineForCell(ctx,pageIndex,ci,cell,scale){
   ctx.save(); ctx.strokeStyle=state.borderColor||'#999'; ctx.lineWidth=Math.max(1,0.12*scale);
   ctx.setLineDash([1.2*scale,0.9*scale]);
   const halfGX=state.gap.x/2, halfGY=state.gap.y/2;
@@ -2951,31 +2957,30 @@ function drawGapMidLines(ctx,meta,scale,pageIndex){
   const pageT=0, pageB=state.paper.h*scale;
   const clampX=v=>Math.max(pageL,Math.min(pageR,v));
   const clampY=v=>Math.max(pageT,Math.min(pageB,v));
-  cells.forEach((c,ci) => {
-    const r=getCellEffectiveRect(pageIndex,ci,c);
-    const bx=r.x*scale, by=r.y*scale, bw=r.w*scale, bh=r.h*scale;
-    const hgx=halfGX*scale, hgy=halfGY*scale;
-    const left=clampX(bx-hgx), right=clampX(bx+bw+hgx);
-    const top=clampY(by-hgy), bottom=clampY(by+bh+hgy);
-    // Draw mid-lines relative to each box's actual (rotation-aware) boundary
-    ctx.beginPath();
-    // top
-    ctx.moveTo(left, top); ctx.lineTo(right, top);
-    // bottom
-    ctx.moveTo(left, bottom); ctx.lineTo(right, bottom);
-    // left
-    ctx.moveTo(left, top); ctx.lineTo(left, bottom);
-    // right
-    ctx.moveTo(right, top); ctx.lineTo(right, bottom);
-    ctx.stroke();
-  });
+  const r=getCellEffectiveRect(pageIndex,ci,cell);
+  const bx=r.x*scale, by=r.y*scale, bw=r.w*scale, bh=r.h*scale;
+  const hgx=halfGX*scale, hgy=halfGY*scale;
+  const left=clampX(bx-hgx), right=clampX(bx+bw+hgx);
+  const top=clampY(by-hgy), bottom=clampY(by+bh+hgy);
+  // Draw mid-lines relative to this box's actual (rotation-aware) boundary
+  ctx.beginPath();
+  // top
+  ctx.moveTo(left, top); ctx.lineTo(right, top);
+  // bottom
+  ctx.moveTo(left, bottom); ctx.lineTo(right, bottom);
+  // left
+  ctx.moveTo(left, top); ctx.lineTo(left, bottom);
+  // right
+  ctx.moveTo(right, top); ctx.lineTo(right, bottom);
+  ctx.stroke();
   ctx.restore();
 }
 
-/* ── Corner marks at gap-mid intersections ── */
-function drawGapMidCorners(ctx,meta,scale,pageIndex){
-  const cells = meta.pages[pageIndex] || [];
-  if (!cells.length) return;
+/* ── Corner marks at gap-mid intersections ──
+   Same per-cell refactor as drawGapMidLineForCell above, and for the same reason:
+   drawn per-cell inside the z-order loop so the marks layer with their box instead
+   of always sitting on top regardless of Arrange (front/back) order. */
+function drawGapMidCornerForCell(ctx,pageIndex,ci,cell,scale){
   ctx.save(); ctx.strokeStyle=state.borderColor||'#999'; ctx.lineWidth=Math.max(1,0.15*scale);
   ctx.setLineDash([]);
   const halfGX=state.gap.x/2, halfGY=state.gap.y/2;
@@ -2995,31 +3000,29 @@ function drawGapMidCorners(ctx,meta,scale,pageIndex){
   const pageT=0, pageB=state.paper.h*scale;
   const clampX=v=>Math.max(pageL,Math.min(pageR,v));
   const clampY=v=>Math.max(pageT,Math.min(pageB,v));
-  cells.forEach((c,ci) => {
-    const r=getCellEffectiveRect(pageIndex,ci,c);
-    const bx=r.x*scale, by=r.y*scale, bw=r.w*scale, bh=r.h*scale;
-    const hgx=halfGX*scale, hgy=halfGY*scale;
-    const ml=markLen;
-    const xL=clampX(bx-hgx), xR=clampX(bx+bw+hgx);
-    const yT=clampY(by-hgy), yB=clampY(by+bh+hgy);
+  const r=getCellEffectiveRect(pageIndex,ci,cell);
+  const bx=r.x*scale, by=r.y*scale, bw=r.w*scale, bh=r.h*scale;
+  const hgx=halfGX*scale, hgy=halfGY*scale;
+  const ml=markLen;
+  const xL=clampX(bx-hgx), xR=clampX(bx+bw+hgx);
+  const yT=clampY(by-hgy), yB=clampY(by+bh+hgy);
 
-    // Draw corners at the half-gap outer boundaries of this cell
-    // Top-Left corner of boundaries
-    ctx.beginPath(); ctx.moveTo(xL, yT); ctx.lineTo(xL + ml, yT); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(xL, yT); ctx.lineTo(xL, yT + ml); ctx.stroke();
+  // Draw corners at the half-gap outer boundaries of this cell
+  // Top-Left corner of boundaries
+  ctx.beginPath(); ctx.moveTo(xL, yT); ctx.lineTo(xL + ml, yT); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(xL, yT); ctx.lineTo(xL, yT + ml); ctx.stroke();
 
-    // Top-Right corner of boundaries
-    ctx.beginPath(); ctx.moveTo(xR, yT); ctx.lineTo(xR - ml, yT); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(xR, yT); ctx.lineTo(xR, yT + ml); ctx.stroke();
+  // Top-Right corner of boundaries
+  ctx.beginPath(); ctx.moveTo(xR, yT); ctx.lineTo(xR - ml, yT); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(xR, yT); ctx.lineTo(xR, yT + ml); ctx.stroke();
 
-    // Bottom-Left corner of boundaries
-    ctx.beginPath(); ctx.moveTo(xL, yB); ctx.lineTo(xL + ml, yB); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(xL, yB); ctx.lineTo(xL, yB - ml); ctx.stroke();
+  // Bottom-Left corner of boundaries
+  ctx.beginPath(); ctx.moveTo(xL, yB); ctx.lineTo(xL + ml, yB); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(xL, yB); ctx.lineTo(xL, yB - ml); ctx.stroke();
 
-    // Bottom-Right corner of boundaries
-    ctx.beginPath(); ctx.moveTo(xR, yB); ctx.lineTo(xR - ml, yB); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(xR, yB); ctx.lineTo(xR, yB - ml); ctx.stroke();
-  });
+  // Bottom-Right corner of boundaries
+  ctx.beginPath(); ctx.moveTo(xR, yB); ctx.lineTo(xR - ml, yB); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(xR, yB); ctx.lineTo(xR, yB - ml); ctx.stroke();
   ctx.restore();
 }
 
@@ -3042,13 +3045,19 @@ function setZOrderArr(pageIndex, arr){
 function getDrawOrder(pageIndex, count){
   return getZOrderArr(pageIndex, count);
 }
-/* Hit-test in reverse draw order so the visually topmost box wins when boxes overlap. */
+/* Hit-test in reverse draw order so the visually topmost box wins when boxes overlap.
+   Uses each cell's EFFECTIVE on-page rect (getCellEffectiveRect), which accounts for
+   manual 90°/270° box rotation (🔄 Rotate Kotak) swapping the on-screen w/h. Testing
+   against the raw, un-rotated c.x/c.y/c.w/c.h footprint was the bug: for a rotated box
+   the clickable area no longer matched what's actually drawn on screen. */
 function findTopCellAt(cells, pageIndex, pt){
   const order=getDrawOrder(pageIndex, cells.length);
   for(let i=order.length-1;i>=0;i--){
     const ci=order[i];
     const c=cells[ci];
-    if(c && pt.x>=c.x&&pt.x<=c.x+c.w&&pt.y>=c.y&&pt.y<=c.y+c.h) return ci;
+    if(!c) continue;
+    const r=getCellEffectiveRect(pageIndex,ci,c);
+    if(pt.x>=r.x&&pt.x<=r.x+r.w&&pt.y>=r.y&&pt.y<=r.y+r.h) return ci;
   }
   return -1;
 }
@@ -3169,9 +3178,12 @@ function renderPageCanvas(meta,pageIndex,dpi){
       ctx.restore();
     }
     ctx.restore();
+    /* gapmid guides are drawn here, per-cell, right after this box (back in page-
+       space coords, post ctx.restore()), so they paint at this box's position in
+       the z-order — see drawGapMidLineForCell/drawGapMidCornerForCell comments. */
+    if(state.guide==='gapmid'){ drawGapMidLineForCell(ctx,pageIndex,ci,cell,scale); }
+    if(state.guide==='gapmid_corner'){ drawGapMidCornerForCell(ctx,pageIndex,ci,cell,scale); }
   });
-  if(state.guide==='gapmid'){ drawGapMidLines(ctx,meta,scale,pageIndex); }
-  if(state.guide==='gapmid_corner'){ drawGapMidCorners(ctx,meta,scale,pageIndex); }
   return cv;
 }
 
@@ -3462,7 +3474,10 @@ window.addEventListener('mouseup', ()=>{
       const cells=lastMeta.pages[state.currentPage]||[];
       const hits=[];
       cells.forEach((c,i)=>{
-        const overlap=!(c.x+c.w<r.x||c.x>r.x+r.w||c.y+c.h<r.y||c.y>r.y+r.h);
+        /* Use the rotation-aware effective rect so a rubber-band selection matches
+           what's actually drawn on screen for boxes with a 90°/270° manual rotation. */
+        const er=getCellEffectiveRect(state.currentPage,i,c);
+        const overlap=!(er.x+er.w<r.x||er.x>r.x+r.w||er.y+er.h<r.y||er.y>r.y+r.h);
         if(overlap) hits.push(i);
       });
       if(dragState.shift || state.selectMode) hits.forEach(i=>state.selection.add(i));
