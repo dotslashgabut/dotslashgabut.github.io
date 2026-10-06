@@ -1479,6 +1479,9 @@
 
     // timecode
     if(opts.timeLabel){
+      // The cached static layer skips the code that sets these, so set them explicitly
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
       ctx.font = `400 ${base*0.022}px 'JetBrains Mono', monospace`;
       ctx.fillStyle = theme.timeColor;
       ctx.fillText(opts.timeLabel, colCx, waveY+waveH+(landscape ? H*0.07 : H*0.038));
