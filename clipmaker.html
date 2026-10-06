@@ -1612,10 +1612,9 @@
   }
 
   // Info text shown under the artist in the video/preview. The duration is the
-  // length of the selected clip (End - Start), so it matches the exported video.
+  // length of the FULL audio file (not the selected clip).
   function buildInfoLine(){
-    const clipDur = Math.max(0, state.rangeB - state.rangeA);
-    return `${state.formatLabel}, ${Math.round(state.sampleRate/1000)} kHz, ${state.bitrateKbps} kbps, ${state.channels>=2?'Stereo':'Mono'}, ${formatTimeMs(clipDur)}`;
+    return `${state.formatLabel}, ${Math.round(state.sampleRate/1000)} kHz, ${state.bitrateKbps} kbps, ${state.channels>=2?'Stereo':'Mono'}, ${formatTimeMs(state.duration)}`;
   }
 
   function renderPreviewStatic(){
