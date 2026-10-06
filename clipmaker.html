@@ -1294,13 +1294,6 @@
     const theme = getCurrentTheme();
     const accent = theme.accentFromCover ? state.accent : theme.accent;
 
-    // background
-    const bg = ctx.createLinearGradient(0,0,0,H);
-    bg.addColorStop(0, theme.bgTop);
-    bg.addColorStop(1, theme.bgBottom);
-    ctx.fillStyle = bg;
-    ctx.fillRect(0,0,W,H);
-
     // Landscape frames: cover on the left, text + waveform in a column on the right.
     // Portrait/square frames keep the original stacked layout.
     const landscape = (W/H) > 1.2;
@@ -1322,6 +1315,19 @@
       base = W;
     }
     const coverCx = coverX+coverSize/2;
+
+    // Static layer (background, blurred glow, cover, title/artist/info) never changes
+    // during an export, so it is rendered once into an offscreen canvas and just blitted.
+    if(opts.staticCanvas){
+      ctx.drawImage(opts.staticCanvas, 0, 0, W, H);
+    } else {
+    // background
+    const bg = ctx.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0, theme.bgTop);
+    bg.addColorStop(1, theme.bgBottom);
+    ctx.fillStyle = bg;
+    ctx.fillRect(0,0,W,H);
+
 
     // glow behind cover
     if(state.coverImg){
@@ -1402,6 +1408,9 @@
     ctx.fillStyle = theme.infoColor;
     ctx.fillText(opts.infoLine || '', colCx, textY, landscape ? colW : W*0.9); // maxWidth squeezes instead of overflowing on narrow aspect ratios
 
+    }
+    if(opts.staticOnly) return;
+
     // waveform
     const waveW = colW;
     const waveX = colCx-waveW/2;
@@ -1413,8 +1422,9 @@
     const gap = waveW*0.012;
     const barW = (waveW-gap*(n-1))/n;
     const centerY = waveY+waveH/2;
+    const rr = Math.min(barW/2, 3);
+    const heights = new Float32Array(n);
     for(let i=0;i<n;i++){
-      const frac = i/(n-1);
       let normalized;
       if(liveBars){
         // driven by the actual audio signal as it plays, floored by the
@@ -1424,19 +1434,40 @@
         const shimmer = 0.88 + 0.12*Math.sin(t*3.2 + i*0.45);
         normalized = staticPeaks[i]*shimmer;
       }
-      let bh = Math.max(waveH*0.06, normalized*waveH);
-      const played = progress!==null && frac<=progress;
-      ctx.fillStyle = played ? accent : theme.barIdleColor;
-      if(played){
-        ctx.shadowColor = hexToRgba(accent,0.55);
-        ctx.shadowBlur = W*0.006;
-      } else {
-        ctx.shadowColor = 'transparent';
+      heights[i] = Math.max(waveH*0.06, normalized*waveH);
+    }
+    // Batched: one fill for all idle bars, one (shadowed) fill for all played bars,
+    // instead of ~n fills with per-bar shadow state changes.
+    const addBar = (x,y,w,h,r)=>{
+      ctx.moveTo(x+r,y);
+      ctx.arcTo(x+w,y,x+w,y+h,r);
+      ctx.arcTo(x+w,y+h,x,y+h,r);
+      ctx.arcTo(x,y+h,x,y,r);
+      ctx.arcTo(x,y,x+w,y,r);
+      ctx.closePath();
+    };
+    ctx.shadowColor = 'transparent';
+    ctx.fillStyle = theme.barIdleColor;
+    ctx.beginPath();
+    let anyIdle = false;
+    for(let i=0;i<n;i++){
+      if(progress!==null && (i/(n-1))<=progress) continue;
+      addBar(waveX + i*(barW+gap), centerY-heights[i]/2, barW, heights[i], rr);
+      anyIdle = true;
+    }
+    if(anyIdle) ctx.fill();
+    if(progress!==null){
+      ctx.fillStyle = accent;
+      ctx.shadowColor = hexToRgba(accent,0.55);
+      ctx.shadowBlur = W*0.006;
+      ctx.beginPath();
+      let anyPlayed = false;
+      for(let i=0;i<n;i++){
+        if((i/(n-1))>progress) break;
+        addBar(waveX + i*(barW+gap), centerY-heights[i]/2, barW, heights[i], rr);
+        anyPlayed = true;
       }
-      const bx = waveX + i*(barW+gap);
-      const by = centerY - bh/2;
-      roundRectPath(ctx, bx, by, barW, bh, Math.min(barW/2, 3));
-      ctx.fill();
+      if(anyPlayed) ctx.fill();
     }
     ctx.shadowColor = 'transparent';
 
@@ -1897,7 +1928,7 @@
       exportCanvas = document.createElement('canvas');
       exportCanvas.width = dims.w;
       exportCanvas.height = dims.h;
-      ectx = exportCanvas.getContext('2d');
+      ectx = exportCanvas.getContext('2d', {alpha:false});
 
       // MediaRecorder's AAC/Opus encoders reject streams above 48 kHz, which is
       // what the default AudioContext produces when the OS output is set to
@@ -2007,6 +2038,16 @@
       resetExportUI();
     };
 
+    // Pre-render the static layer once (blur filter + cover are the costly part).
+    const staticCanvas = document.createElement('canvas');
+    staticCanvas.width = exportCanvas.width;
+    staticCanvas.height = exportCanvas.height;
+    renderFrame(staticCanvas.getContext('2d'), staticCanvas.width, staticCanvas.height, {
+      title, artist, infoLine, progress: null, staticOnly: true
+    });
+    const frameMs = 1000/(parseInt($('fpsSelect').value, 10) || 30);
+    let lastRenderT = 0, lastUiT = 0;
+
     recorder.start();
     source.start(0, a, dur);
     const startCtxTime = ctx.currentTime;
@@ -2022,11 +2063,14 @@
         const elapsed = ctx.currentTime-startCtxTime;
         const frac = clamp(elapsed/dur, 0, 1);
         const now = performance.now();
+        // cap rendering at the target fps (rAF can run at 60/120 Hz; extra frames are wasted work)
+        if(elapsed<dur && now-lastRenderT < frameMs-2){ requestAnimationFrame(step); return; }
+        lastRenderT = now;
         const dt = Math.min(0.05, (now-lastFrameT)/1000);
         lastFrameT = now;
         const liveBars = computeLiveBars(exportAnalyser, exportTimeBuf, VIDEO_BUCKETS, exportLiveBars);
         renderFrame(ectx, exportCanvas.width, exportCanvas.height, {
-          title, artist, infoLine,
+          staticCanvas,
           progress: frac,
           tGlobal: now/1000,
           dt,
@@ -2034,8 +2078,11 @@
           particles: exportParticles,
           timeLabel: `${formatTime(elapsed)} / ${formatTime(dur)}`
         });
-        $('progressFill').style.width = (frac*100).toFixed(1)+'%';
-        $('progressLabel').textContent = `Rendering… ${formatTime(elapsed)} / ${formatTime(dur)}`;
+        if(now-lastUiT > 250){
+          lastUiT = now;
+          $('progressFill').style.width = (frac*100).toFixed(1)+'%';
+          $('progressLabel').textContent = `Rendering… ${formatTime(elapsed)} / ${formatTime(dur)}`;
+        }
         if(elapsed>=dur){
           try{ source.stop(); }catch(e){}
           try{ recorder.stop(); }catch(e){}
