@@ -246,7 +246,7 @@
   .time-inputs .field{ flex-direction:row; align-items:center; gap:8px; }
   .time-inputs .field label{ font-size:12px; }
   .time-inputs input[type=text]{
-    width: 82px; text-align:center; font-family:'JetBrains Mono', monospace;
+    width: 104px; text-align:center; font-family:'JetBrains Mono', monospace;
   }
   .duration-label{
     font-family:'JetBrains Mono', monospace; font-size:12.5px; color: var(--text-faint);
@@ -378,11 +378,11 @@
         <div class="time-inputs">
           <div class="field">
             <label for="inputA">Start</label>
-            <input type="text" id="inputA" value="0:00">
+            <input type="text" id="inputA" value="0:00.000" inputmode="decimal" spellcheck="false">
           </div>
           <div class="field">
             <label for="inputB">End</label>
-            <input type="text" id="inputB" value="0:00">
+            <input type="text" id="inputB" value="0:00.000" inputmode="decimal" spellcheck="false">
           </div>
           <button class="btn btn-ghost" id="previewPlayBtn" type="button">▶ Preview clip audio</button>
           <span class="duration-label" id="durationLabel"></span>
@@ -408,6 +408,16 @@
               <option value="4:5" selected>Portrait 4:5</option>
               <option value="1:1">Square 1:1</option>
               <option value="9:16">Story 9:16</option>
+              <option value="2:3">Portrait 2:3</option>
+              <option value="3:2">Landscape 3:2</option>
+              <option value="16:9">Landscape 16:9</option>
+            </select>
+          </div>
+          <div class="export-opt">
+            <label for="resSelect">Resolution</label>
+            <select id="resSelect">
+              <option value="1280" selected>HD 720p</option>
+              <option value="1920">FHD 1080p</option>
             </select>
           </div>
           <div class="export-opt">
@@ -496,7 +506,8 @@
       origin: null       // 'button' (Preview clip audio) or 'seek' (timeline click/scrub)
     },
     exportActive: false,
-    exportCancelled: false
+    exportCancelled: false,
+    exportCtx: null
   };
 
   const FINE_BUCKETS = 400;
@@ -516,13 +527,30 @@
     return m+':'+String(s).padStart(2,'0');
   }
 
+  // Like formatTime() but with millisecond precision, e.g. 1:08.984
+  function formatTimeMs(sec){
+    const totalMs = Math.round(Math.max(0, sec||0)*1000); // round once so 59.9996 can't become "0:60.000"
+    const ms = totalMs % 1000;
+    const totalS = Math.floor(totalMs/1000);
+    const h = Math.floor(totalS/3600);
+    const m = Math.floor((totalS%3600)/60);
+    const s = totalS % 60;
+    const msStr = '.'+String(ms).padStart(3,'0');
+    if(h>0) return h+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+msStr;
+    return m+':'+String(s).padStart(2,'0')+msStr;
+  }
+
+  // Accepts 68.984, 1:08.984, 1:08,984 (comma decimal), 0:01:08.984, 1:08
   function parseTimeStr(str, fallback){
     if(!str) return fallback;
-    str = str.trim();
+    str = str.trim().replace(/,/g,'.');
     const parts = str.split(':').map(s=>s.trim()).filter(s=>s.length);
     if(!parts.length) return fallback;
     let secs = 0;
-    for(const p of parts){ secs = secs*60 + (parseFloat(p)||0); }
+    for(const p of parts){
+      if(!/^\d*\.?\d*$/.test(p)) return fallback;
+      secs = secs*60 + (parseFloat(p)||0);
+    }
     return secs;
   }
 
@@ -545,6 +573,32 @@
       state.audioCtx = new (window.AudioContext||window.webkitAudioContext)();
     }
     return state.audioCtx;
+  }
+
+  // Context used only for export. Capped at 48 kHz so MediaRecorder can encode it.
+  function getExportCtx(){
+    closeExportCtx();
+    const AC = window.AudioContext||window.webkitAudioContext;
+    const main = getAudioCtx();
+    if(main.sampleRate <= 48000) return main;
+    for(const rate of [48000, 44100]){
+      try{
+        const c = new AC({sampleRate: rate});
+        if(c.sampleRate <= 48000){
+          state.exportCtx = c;
+          return c;
+        }
+        c.close();
+      }catch(e){ /* try next rate */ }
+    }
+    return main; // last resort: let the browser try anyway
+  }
+
+  function closeExportCtx(){
+    if(state.exportCtx){
+      try{ state.exportCtx.close(); }catch(e){}
+      state.exportCtx = null;
+    }
   }
 
   // ---------- ID3 parsing ----------
@@ -1087,14 +1141,14 @@
   }
 
   function updateTimeInputsFromRange(){
-    $('inputA').value = formatTime(state.rangeA);
-    $('inputB').value = formatTime(state.rangeB);
-    $('durationLabel').textContent = `Selected ${formatTime(state.rangeB-state.rangeA)} of ${formatTime(state.duration)}`;
+    $('inputA').value = formatTimeMs(state.rangeA);
+    $('inputB').value = formatTimeMs(state.rangeB);
+    $('durationLabel').textContent = `Selected ${formatTimeMs(state.rangeB-state.rangeA)} of ${formatTimeMs(state.duration)}`;
   }
 
   function setRange(a, b){
-    a = clamp(a, 0, state.duration);
-    b = clamp(b, 0, state.duration);
+    a = clamp(Math.round(a*1000)/1000, 0, state.duration);
+    b = clamp(Math.round(b*1000)/1000, 0, state.duration);
     if(b-a < MIN_SELECTION){
       if(a > state.duration-MIN_SELECTION) a = Math.max(0, state.duration-MIN_SELECTION);
       b = Math.min(state.duration, a+MIN_SELECTION);
@@ -1140,6 +1194,7 @@
         a = clamp(a, 0, state.duration-rangeWidth);
         setRange(a, a+rangeWidth);
       }
+      followPlaybackRange(dragging==='B' ? 'B' : 'A');
     }
     function onUp(){
       dragging = null;
@@ -1152,13 +1207,17 @@
     $('selectionOverlay').style.cursor = 'grab';
     $('selectionOverlay').addEventListener('pointerdown', (e)=>onDown('range', e));
 
+    // Arrow = 1 s, Shift+Arrow = 0.1 s, Alt+Arrow = 1 ms
+    function keyStep(e){ return e.altKey ? 0.001 : (e.shiftKey ? 0.1 : 1); }
     $('handleA').addEventListener('keydown', (e)=>{
-      if(e.key==='ArrowLeft') setRange(state.rangeA-1, state.rangeB);
-      if(e.key==='ArrowRight') setRange(state.rangeA+1, state.rangeB);
+      const st = keyStep(e);
+      if(e.key==='ArrowLeft'){ e.preventDefault(); setRange(state.rangeA-st, state.rangeB); followPlaybackRange('A'); }
+      if(e.key==='ArrowRight'){ e.preventDefault(); setRange(state.rangeA+st, state.rangeB); followPlaybackRange('A'); }
     });
     $('handleB').addEventListener('keydown', (e)=>{
-      if(e.key==='ArrowLeft') setRange(state.rangeA, state.rangeB-1);
-      if(e.key==='ArrowRight') setRange(state.rangeA, state.rangeB+1);
+      const st = keyStep(e);
+      if(e.key==='ArrowLeft'){ e.preventDefault(); setRange(state.rangeA, state.rangeB-st); followPlaybackRange('B'); }
+      if(e.key==='ArrowRight'){ e.preventDefault(); setRange(state.rangeA, state.rangeB+st); followPlaybackRange('B'); }
     });
   }
 
@@ -1242,9 +1301,27 @@
     ctx.fillStyle = bg;
     ctx.fillRect(0,0,W,H);
 
-    const coverSize = W*0.62;
-    const coverX = (W-coverSize)/2;
-    const coverY = H*0.085;
+    // Landscape frames: cover on the left, text + waveform in a column on the right.
+    // Portrait/square frames keep the original stacked layout.
+    const landscape = (W/H) > 1.2;
+    let coverSize, coverX, coverY, colCx, colW, base;
+    if(landscape){
+      coverSize = H*0.70;
+      coverX = W*0.06;
+      coverY = (H-coverSize)/2;
+      const colX0 = coverX+coverSize+W*0.05, colX1 = W*0.94;
+      colW = colX1-colX0;
+      colCx = (colX0+colX1)/2;
+      base = H*0.95; // font scale unit
+    } else {
+      coverSize = W*0.62;
+      coverX = (W-coverSize)/2;
+      coverY = H*0.085;
+      colW = W*0.86;
+      colCx = W/2;
+      base = W;
+    }
+    const coverCx = coverX+coverSize/2;
 
     // glow behind cover
     if(state.coverImg){
@@ -1258,13 +1335,13 @@
       ctx.globalAlpha = 1;
       ctx.restore();
 
-      const rg = ctx.createRadialGradient(W/2, coverY+coverSize*0.4, coverSize*0.1, W/2, coverY+coverSize*0.4, coverSize*1.1);
+      const rg = ctx.createRadialGradient(coverCx, coverY+coverSize*0.4, coverSize*0.1, coverCx, coverY+coverSize*0.4, coverSize*1.1);
       rg.addColorStop(0, hexToRgba(accent,theme.glowWithCover));
       rg.addColorStop(1, hexToRgba(accent,0));
       ctx.fillStyle = rg;
       ctx.fillRect(0,0,W,H);
     } else {
-      const rg = ctx.createRadialGradient(W/2, coverY+coverSize*0.4, coverSize*0.1, W/2, coverY+coverSize*0.4, coverSize*1.1);
+      const rg = ctx.createRadialGradient(coverCx, coverY+coverSize*0.4, coverSize*0.1, coverCx, coverY+coverSize*0.4, coverSize*1.1);
       rg.addColorStop(0, hexToRgba(accent,theme.glowNoCover));
       rg.addColorStop(1, hexToRgba(accent,0));
       ctx.fillStyle = rg;
@@ -1307,29 +1384,29 @@
     // title
     const title = opts.title || '';
     const artist = opts.artist || '';
-    let textY = coverY + coverSize + H*0.075;
+    let textY = landscape ? H*0.27 : coverY + coverSize + H*0.075;
     ctx.textAlign = 'center';
     ctx.fillStyle = theme.titleColor;
-    ctx.font = `700 ${W*0.052}px 'Space Grotesk', sans-serif`;
-    drawEllipsisText(ctx, title, W/2, textY, W*0.86);
+    ctx.font = `700 ${base*0.052}px 'Space Grotesk', sans-serif`;
+    drawEllipsisText(ctx, title, colCx, textY, colW);
 
     // artist
-    textY += H*0.048;
-    ctx.font = `500 ${W*0.032}px 'Inter', sans-serif`;
+    textY += landscape ? H*0.085 : H*0.048;
+    ctx.font = `500 ${base*0.032}px 'Inter', sans-serif`;
     ctx.fillStyle = theme.artistColor;
-    drawEllipsisText(ctx, artist, W/2, textY, W*0.86);
+    drawEllipsisText(ctx, artist, colCx, textY, colW);
 
     // info line
-    textY += H*0.042;
-    ctx.font = `400 ${W*0.024}px 'JetBrains Mono', monospace`;
+    textY += landscape ? H*0.07 : H*0.042;
+    ctx.font = `400 ${base*0.024}px 'JetBrains Mono', monospace`;
     ctx.fillStyle = theme.infoColor;
-    ctx.fillText(opts.infoLine || '', W/2, textY);
+    ctx.fillText(opts.infoLine || '', colCx, textY, landscape ? colW : W*0.9); // maxWidth squeezes instead of overflowing on narrow aspect ratios
 
     // waveform
-    const waveW = W*0.86;
-    const waveX = (W-waveW)/2;
-    const waveH = H*0.11;
-    const waveY = H*0.79;
+    const waveW = colW;
+    const waveX = colCx-waveW/2;
+    const waveH = landscape ? H*0.18 : H*0.11;
+    const waveY = landscape ? H*0.50 : H*0.79;
     const staticPeaks = state.videoPeaks || new Float32Array(VIDEO_BUCKETS);
     const n = staticPeaks.length;
     const liveBars = opts.liveBars || null; // Float32Array(n), real audio-reactive amplitude, or null when idle
@@ -1371,9 +1448,9 @@
 
     // timecode
     if(opts.timeLabel){
-      ctx.font = `400 ${W*0.022}px 'JetBrains Mono', monospace`;
+      ctx.font = `400 ${base*0.022}px 'JetBrains Mono', monospace`;
       ctx.fillStyle = theme.timeColor;
-      ctx.fillText(opts.timeLabel, W/2, waveY+waveH+H*0.038);
+      ctx.fillText(opts.timeLabel, colCx, waveY+waveH+(landscape ? H*0.07 : H*0.038));
     }
   }
 
@@ -1480,7 +1557,7 @@
   // which is what currentAspect() alone was producing.)
   function exportDimensions(){
     const aspect = currentAspect();
-    const longEdge = 1280; // ~720p long edge — good quality/size balance
+    const longEdge = parseInt($('resSelect').value, 10) || 1280; // 1280 = HD 720p, 1920 = FHD 1080p
     let w, h;
     if(aspect.ratio >= 1){
       w = longEdge;
@@ -1498,13 +1575,16 @@
   function setupPreviewCanvas(){
     const canvas = $('previewCanvas');
     const aspect = currentAspect();
-    const baseW = 460;
+    const baseW = aspect.ratio > 1.2 ? 640 : 460;
     canvas.width = baseW;
     canvas.height = Math.round(baseW/aspect.ratio);
   }
 
+  // Info text shown under the artist in the video/preview. The duration is the
+  // length of the selected clip (End - Start), so it matches the exported video.
   function buildInfoLine(){
-    return `${state.formatLabel}, ${Math.round(state.sampleRate/1000)} kHz, ${state.bitrateKbps} kbps, ${state.channels>=2?'Stereo':'Mono'}`;
+    const clipDur = Math.max(0, state.rangeB - state.rangeA);
+    return `${state.formatLabel}, ${Math.round(state.sampleRate/1000)} kHz, ${state.bitrateKbps} kbps, ${state.channels>=2?'Stereo':'Mono'}, ${formatTimeMs(clipDur)}`;
   }
 
   function renderPreviewStatic(){
@@ -1662,6 +1742,33 @@
     renderPreviewStatic();
   }
 
+  // When the selection changes while "Preview clip audio" is playing (handle drag,
+  // moving the whole range, arrow keys, typed times), the audio follows it live:
+  //  - moving Start or the whole range -> plays from the new start
+  //  - moving End -> plays the last moments before the new end, so you can hear where the clip stops
+  // Restarts are throttled (with a trailing call) so dragging doesn't crackle and
+  // the final position is always applied.
+  const FOLLOW_TAIL = 1.5;      // seconds of lead-in before End while adjusting End
+  const FOLLOW_THROTTLE = 110;  // ms between audio restarts while dragging
+  let followTimer = null, lastFollow = 0;
+  function followPlaybackRange(which){
+    const p = state.preview;
+    if(!p.playing || p.origin!=='button') return;
+    function apply(){
+      followTimer = null;
+      lastFollow = performance.now();
+      const q = state.preview;
+      if(!q.playing || q.origin!=='button') return;
+      const a = state.rangeA, b = state.rangeB;
+      const from = which==='B' ? Math.max(a, b-FOLLOW_TAIL) : a;
+      startPreviewSegment(a, b, from, 'button');
+    }
+    clearTimeout(followTimer);
+    const wait = FOLLOW_THROTTLE - (performance.now()-lastFollow);
+    if(wait<=0) apply();
+    else followTimer = setTimeout(apply, wait);
+  }
+
   // "Preview clip audio" always plays the selected range from the start —
   // it's a play/pause toggle for the clip, not a resume-from-where-you-left-off control.
   function togglePreviewPlay(){
@@ -1792,7 +1899,11 @@
       exportCanvas.height = dims.h;
       ectx = exportCanvas.getContext('2d');
 
-      ctx = getAudioCtx();
+      // MediaRecorder's AAC/Opus encoders reject streams above 48 kHz, which is
+      // what the default AudioContext produces when the OS output is set to
+      // 88.2/96/176.4/192 kHz. Record from a dedicated 48 kHz context instead;
+      // Web Audio resamples the (already decoded) buffer automatically.
+      ctx = getExportCtx();
       if(ctx.state==='suspended') await ctx.resume();
 
       source = ctx.createBufferSource();
@@ -1835,7 +1946,10 @@
       // throw EncodingError when the *options* (bitrate) don't fit that
       // encoder's supported configuration. Fall back progressively instead
       // of failing the whole export.
-      const bitrateAttempts = [6000000, 4000000, 2500000, undefined];
+      const fhd = (parseInt($('resSelect').value, 10) || 1280) >= 1920;
+      const bitrateAttempts = fhd
+        ? [12000000, 8000000, 5000000, 2500000, undefined]
+        : [6000000, 4000000, 2500000, undefined];
       let lastErr;
       for(const vbr of bitrateAttempts){
         try{
@@ -1946,6 +2060,7 @@
   }
 
   function resetExportUI(){
+    closeExportCtx();
     state.exportActive = false;
     $('exportBtn').disabled = false;
     $('cancelBtn').style.display = 'none';
@@ -2036,9 +2151,11 @@
 
     $('inputA').addEventListener('change', ()=>{
       setRange(parseTimeStr($('inputA').value, state.rangeA), state.rangeB);
+      followPlaybackRange('A');
     });
     $('inputB').addEventListener('change', ()=>{
       setRange(state.rangeA, parseTimeStr($('inputB').value, state.rangeB));
+      followPlaybackRange('B');
     });
 
     $('previewPlayBtn').addEventListener('click', togglePreviewPlay);
