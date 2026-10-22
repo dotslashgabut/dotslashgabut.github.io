@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer-when-downgrade">
+<title>Street View Route Recorder</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root{--bg:#000;--panel:#0a0a0a;--card:#111;--field:#050505;--line:#262626;--line2:#3a3a3a;--ink:#fafafa;--mute:#8c8c8c;--acc:#fafafa;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444}
+*{box-sizing:border-box;border-radius:0}
+body{margin:0;height:100dvh;background:var(--bg);color:var(--ink);font:14px/1.45 "Inter",system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#2a2a2a}::-webkit-scrollbar-track{background:transparent}
+.app{display:grid;grid-template-columns:400px 1fr;gap:0;height:100%;transition:grid-template-columns .25s}
+.app.collapsed{grid-template-columns:0 1fr}
+.app.collapsed aside{opacity:0;padding:0;border-width:0;pointer-events:none}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;min-width:0;transition:opacity .2s}
+.hd h1{margin:0;font-size:19px;font-weight:700;letter-spacing:-.02em}
+.hd p{margin:4px 0 0;color:var(--mute);font-size:12.5px}
+.card{background:var(--card);border:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:12px}
+.card>h2{margin:0;font-size:14px;font-weight:650;display:flex;align-items:center;gap:10px}
+.card>h2 b{display:grid;place-items:center;width:22px;height:22px;background:var(--acc);font-size:12px;color:#000}
+label{display:block;font-size:12px;color:var(--mute);margin-bottom:5px;font-weight:600}
+input,select,textarea{width:100%;padding:9px 11px;background:var(--field);border:1px solid var(--line);transition:border-color .15s}
+input:hover,select:hover,textarea:hover{border-color:var(--line2)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+input:focus,select:focus,textarea:focus{border-color:var(--acc)}
+textarea{min-height:76px;resize:vertical;font:12px ui-monospace,Consolas,monospace}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,#8c8c8c 50%),linear-gradient(135deg,#8c8c8c 50%,transparent 50%);background-position:calc(100% - 15px) 52%,calc(100% - 10px) 52%;background-size:5px 5px;background-repeat:no-repeat;padding-right:28px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;padding:11px 16px;border:1px solid var(--acc);font-weight:650;background:var(--acc);color:#000;cursor:pointer;transition:background .15s,color .15s}
+button:hover:not(:disabled){background:#d4d4d4;border-color:#d4d4d4}
+button:disabled{opacity:.35;cursor:not-allowed}
+.alt{background:transparent;color:var(--ink);border:1px solid var(--line2)}.alt:hover:not(:disabled){background:#1c1c1c;border-color:var(--acc)}
+.ok{background:var(--ok);border-color:var(--ok);color:#000}.ok:hover:not(:disabled){background:#16a34a;border-color:#16a34a}
+.bad{background:var(--bad);border-color:var(--bad);color:#fff}.bad:hover:not(:disabled){background:#dc2626;border-color:#dc2626}
+fieldset{border:0;padding:0;margin:0;min-width:0;display:flex;flex-direction:column;gap:12px}
+details{border-top:1px solid var(--line);padding-top:12px}
+details summary{cursor:pointer;color:var(--mute);font-size:12.5px;font-weight:600}
+details summary:hover{color:var(--ink)}
+details>div{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+.chk{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--ink);font-weight:500;margin:0}
+.chk input{width:16px;height:16px;accent-color:var(--acc)}
+kbd{font:600 11px ui-monospace,Consolas,monospace;padding:1px 6px;margin-left:8px;border:1px solid currentColor;opacity:.65}
+.hint{font-size:12px;color:var(--mute);margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px;max-height:84px;overflow:auto}
+.chips:empty{display:none}
+.chip{background:var(--field);color:var(--ink);border:1px solid var(--line);padding:4px 10px;font-size:12px;font-weight:500;cursor:pointer;text-align:left}
+.chip:hover:not(:disabled){background:var(--field);border-color:var(--acc)}
+.chip.on{border-color:var(--acc);background:#1c1c1c}
+.chip i{color:var(--warn);font-style:normal;font-weight:700;margin-right:6px}
+#map{position:relative;z-index:0;isolation:isolate;height:210px;border:1px solid var(--line);background:#050505}
+.leaflet-bar a,.leaflet-bar a:hover{background:#111;color:#fafafa;border-color:var(--line)}
+.leaflet-control-attribution{background:rgba(0,0,0,.7)!important;color:#8c8c8c!important}
+.leaflet-control-attribution a{color:#bdbdbd!important}
+.leaflet-tooltip{background:#000;color:#fafafa;border:1px solid var(--line2);box-shadow:none}
+.leaflet-tooltip:before{display:none}
+.status{background:var(--field);border:1px solid var(--line);border-left:3px solid var(--line2);padding:11px 13px;font-size:13px}
+.status.warn{border-left-color:var(--warn)}.status.err{border-left-color:var(--bad)}
+.pill{display:none;padding:2px 8px;font-size:12px;font-weight:700;margin-bottom:6px;width:fit-content}
+.pill.live{display:block;background:var(--bad);color:#fff}
+.pill.wait{display:block;background:var(--warn);color:#000}
+progress{width:100%;height:4px;margin-top:10px;accent-color:var(--acc);appearance:none;border:0;background:var(--line)}
+progress::-webkit-progress-bar{background:var(--line)}progress::-webkit-progress-value{background:var(--acc)}progress::-moz-progress-bar{background:var(--acc)}
+#result{display:none;flex-direction:column;gap:10px}
+#result video{width:100%;background:#000;border:1px solid var(--line)}
+.stagewrap{position:relative;display:flex;align-items:center;justify-content:center;min-height:0;padding:20px;container-type:size;background:#000}
+.stage{position:relative;width:100%;height:100%;background:#000;overflow:hidden;outline:1px solid var(--line2);outline-offset:4px}
+.stage.fixed{width:min(100cqw,calc(100cqh*var(--ar)));height:auto;aspect-ratio:var(--ar)}
+.stage.live{outline:2px solid var(--bad);outline-offset:4px}.stage.wait{outline:2px solid var(--warn);outline-offset:4px}
+.sv{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+.empty{position:absolute;inset:0;z-index:5;display:grid;place-items:center;text-align:center;color:var(--mute);padding:24px;background:#050505;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:40px 40px;background-position:center}
+.empty>div{background:#000;border:1px solid var(--line);padding:24px 32px;max-width:360px}
+.empty strong{display:block;color:var(--ink);font-size:17px;margin-bottom:6px}
+.hud{position:absolute;left:16px;bottom:16px;z-index:30;background:rgba(0,0,0,.9);padding:8px 14px;font:600 13px ui-monospace,Consolas,monospace;border:1px solid var(--line2);pointer-events:none}
+#pump{position:absolute;right:2px;bottom:2px;width:2px;height:2px;z-index:40;opacity:.03;pointer-events:none}
+.tools{display:flex;gap:8px;position:absolute;top:32px;right:32px;z-index:50}
+.tools button{background:rgba(0,0,0,.85);color:var(--ink);border:1px solid var(--line2);padding:7px 12px;font-size:13px}
+.stagewrap:fullscreen{padding:0;background:#000}
+.stagewrap:fullscreen .stage{outline:0}
+.tools button:hover:not(:disabled){background:#fafafa;color:#000;border-color:#fafafa}
+.stagemsg{display:none}
+body.rec .stagemsg{display:none!important}
+@media(max-width:1000px) and (orientation:landscape){
+.app{grid-template-columns:340px 1fr}.app.collapsed{grid-template-columns:0 1fr}
+}
+@media(max-width:1000px) and (orientation:portrait),(max-width:600px){
+body{height:auto;overflow:auto;-webkit-text-size-adjust:100%}
+.app{display:flex;flex-direction:column;height:auto;transition:none}
+.stagewrap{order:-1;position:sticky;top:0;z-index:2000;height:40dvh;min-height:210px;padding:10px;border-bottom:1px solid var(--line)}
+.app.collapsed .stagewrap{height:100dvh;border-bottom:0}
+.app.collapsed aside{display:none}
+aside{border-right:0;overflow:visible;padding:14px 14px calc(28px + env(safe-area-inset-bottom));gap:14px;opacity:1}
+.hd h1{font-size:17px}
+input,select,textarea{font-size:16px;min-height:44px}
+textarea{min-height:88px}
+button{min-height:46px}
+.chip{min-height:38px;padding:6px 12px;font-size:13px}
+.chips{max-height:132px}
+#map{height:240px}
+.tools{top:18px;right:18px}
+.tools button{min-height:40px;padding:6px 10px;font-size:12px}
+.hud{left:10px;bottom:10px;font-size:11px;padding:5px 9px}
+.stagemsg{display:block;position:absolute;left:18px;right:150px;top:18px;z-index:45;background:rgba(0,0,0,.85);border:1px solid var(--line2);padding:6px 10px;font-size:12px;line-height:1.35;max-height:3.9em;overflow:hidden;pointer-events:none}
+.stagemsg:empty{display:none}
+}
+@media(max-width:360px){.g2{grid-template-columns:1fr}}
+@media(hover:none){kbd{display:none}}
+.note{border:1px solid var(--warn);color:#fcd34d;padding:9px 12px;font-size:12.5px;margin:0}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+<aside>
+  <div class="hd"><h1>Street View route recorder</h1><p>Turn a Google Maps route into a steady, sharp Street View video.</p></div>
+
+  <section class="card">
+    <h2><b>1</b>Choose a route</h2>
+    <div>
+      <label for="url">Directions link, or “lat,lng to lat,lng”</label>
+      <textarea id="url" placeholder="https://www.google.com/maps/dir/…"></textarea>
+    </div>
+    <button id="parseBtn" onclick="buildRoute()">Load route and preview stop 1<kbd>L</kbd></button>
+    <button id="openShort" type="button" class="alt" style="display:none" onclick="window.open($('url').value.trim(),'_blank','noopener')">Open short link in a new tab</button>
+    <div class="chips" id="chips"></div>
+    <p class="hint" id="chipHint" style="display:none">Click a stop to preview its Street View on the stage.</p>
+    <div id="map"></div>
+  </section>
+
+  <section class="card">
+    <h2><b>2</b>Capture settings</h2>
+    <fieldset id="lock">
+      <div class="g2">
+        <div><label for="count">Stops along route</label><input type="number" id="count" value="20" min="3" max="150" oninput="eta()"></div>
+        <div><label for="sharpen" title="Paused time so Street View tiles can sharpen">Sharpen wait (sec)</label><input type="number" id="sharpen" value="3.5" min="1.5" max="10" step="0.5" oninput="eta()"></div>
+      </div>
+      <div class="g2">
+        <div><label for="hold" title="Video time per stop">Seconds per stop</label><input type="number" id="hold" value="1" min="0.4" max="5" step="0.1" oninput="eta()"></div>
+        <div><label for="aspect">Video shape</label>
+          <select id="aspect" onchange="setAspect()">
+            <option value="0">Fill stage</option><option value="1.7778">16:9 landscape</option>
+            <option value="0.5625">9:16 vertical</option><option value="1">1:1 square</option>
+          </select></div>
+      </div>
+      <p class="hint" id="eta"></p>
+      <details>
+        <summary>Advanced</summary>
+        <div>
+          <div class="g2">
+            <div><label for="codec">Output format</label><select id="codec"></select></div>
+            <div><label for="tiles">Mini-map style</label>
+              <select id="tiles" onchange="setTiles()"><option value="street">Esri street</option><option value="dark">Dark</option><option value="light">Light</option><option value="sat">Satellite</option></select></div>
+          </div>
+          <div><label for="apiKey">Maps Embed API key (optional)</label>
+            <input id="apiKey" type="password" placeholder="Use if the keyless embed shows grey or blank" autocomplete="off"></div>
+          <label class="chk"><input type="checkbox" id="hudOn" checked onchange="hud()">Show frame counter on video</label>
+          <label class="chk"><input type="checkbox" id="autoHide" checked>Hide controls while recording</label>
+        </div>
+      </details>
+    </fieldset>
+  </section>
+
+  <section class="card">
+    <h2><b>3</b>Record</h2>
+    <p class="note" id="recNote" style="display:none">Recording needs desktop Chrome or Edge. On this device you can still load routes and preview each stop.</p>
+    <button id="startBtn" class="ok" onclick="startRecording()" disabled>Start recording<kbd>R</kbd></button>
+    <button id="stopBtn" class="bad" onclick="stopTour()" style="display:none">Stop and save<kbd>S</kbd></button>
+    <p class="hint">While recording, the stage button is hidden so it never appears in the video. Use M, C, S or Esc instead.</p>
+    <p class="hint">Tip: press F for fullscreen first, then R, to record at full screen size. Leaving fullscreen stops the recording and saves it.</p>
+    <div class="status" id="statusBox">
+      <div class="pill" id="pill"></div>
+      <div id="status">Load a route to begin.</div>
+      <progress id="prog" value="0" max="100"></progress>
+    </div>
+    <div id="result">
+      <video id="resultVideo" controls></video>
+      <a id="dl"><button type="button" style="width:100%">Download video<kbd>D</kbd></button></a>
+    </div>
+  </section>
+</aside>
+
+<div class="stagewrap" id="stageWrap">
+  <div class="stagemsg" id="stageMsg"></div>
+  <div class="tools">
+    <button onclick="toggleFs()" id="fsBtn">Fullscreen<kbd>F</kbd></button><button onclick="toggleSidebar()" id="sideBtn">Maximize stage<kbd>M</kbd></button></div>
+  <div class="stage" id="stage">
+    <iframe id="svA" class="sv" style="z-index:2" allowfullscreen></iframe>
+    <iframe id="svB" class="sv" style="z-index:1" allowfullscreen></iframe>
+    <div class="empty" id="empty"><div><strong>No route loaded</strong>Paste a directions link and choose “Load route” to preview Street View here.</div></div>
+    <div class="hud" id="hudText" style="display:none"></div>
+    <canvas id="pump" width="2" height="2"></canvas>
+  </div>
+</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id), sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let autoHid=false,roadPts=[],stopPts=[],previewed=false,previewTok=0,waypoints=[],isPlaying=false,rec=null,chunks=[],buf='A',durMs=0,pumpRaf=null,resultUrl=null;
+
+/* ---------- map ---------- */
+const map=L.map('map').setView([-6.9115,107.6135],13);
+const TILES={
+  street:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}','© Esri'],
+  dark:['https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png','© CARTO © OpenStreetMap'],
+  light:['https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png','© CARTO © OpenStreetMap'],
+  sat:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','© Esri']
+};
+let tileLayer=null,routeLine=null,marker=null,stopMarks=[],tileErrs=0,tileWarned=false;
+function setTiles(){
+  const t=TILES[$('tiles').value];tileErrs=0;
+  if(tileLayer)map.removeLayer(tileLayer);
+  tileLayer=L.tileLayer(t[0],{attribution:t[1],maxZoom:19,subdomains:'abcd'}).addTo(map);
+  tileLayer.on('tileerror',()=>{
+    if(++tileErrs<6)return;tileErrs=0;
+    if($('tiles').value!=='dark'){$('tiles').value='dark';setTiles();return}
+    if(!tileWarned){tileWarned=true;setStatus('Mini-map tiles could not load (check your connection). The route and recording still work.',null,'warn')}
+  });
+}
+setTiles();
+
+$('url').value="https://www.google.com/maps/dir/Gedung+Sate,+Bandung/Museum+Konferensi+Asia+Afrika/Alun-Alun+Bandung/@-6.9115,107.6135,14z/data=!4m20!4m19!1m5!1m1!1s0x0:0x0!2m2!1d107.6187!2d-6.9025!1m5!1m1!1s0x0:0x0!2m2!1d107.6095!2d-6.9211!1m5!1m1!1s0x0:0x0!2m2!1d107.6049!2d-6.9218!3e0";
+
+/* ---------- ui helpers ---------- */
+function toggleSidebar(force){
+  if(isPlaying)return;
+  const a=$('app'),c=force===undefined?!a.classList.contains('collapsed'):force;
+  a.classList.toggle('collapsed',c);
+  $('sideBtn').innerHTML=c?'Show controls<kbd>C</kbd>':'Maximize stage<kbd>M</kbd>';
+  setTimeout(()=>map.invalidateSize(),300);window.scrollTo(0,0);
+}
+function setStatus(msg,pct,kind){
+  $('status').textContent=msg;$('stageMsg').textContent=msg;$('statusBox').className='status'+(kind?' '+kind:'');
+  if(pct!=null)$('prog').value=pct;
+}
+function setRec(mode){
+  const st=$('stage'),p=$('pill');
+  st.classList.toggle('live',mode==='live');st.classList.toggle('wait',mode==='wait');
+  p.className='pill'+(mode==='live'||mode==='wait'?' '+mode:'');
+  p.textContent=mode==='live'?'● Recording':mode==='wait'?'❚❚ Paused while tiles sharpen':'';
+}
+function hud(){$('hudText').style.display=$('hudOn').checked&&waypoints.length?'block':'none'}
+function setAspect(){
+  const v=+$('aspect').value,st=$('stage');
+  st.classList.toggle('fixed',v>0);if(v>0)st.style.setProperty('--ar',v);
+}
+function eta(){
+  const n=+$('count').value||0,s=+$('sharpen').value||0,h=+$('hold').value||0;
+  const cap=Math.round(n*(s+h+.6)),m=Math.floor(cap/60);
+  $('eta').textContent=`Capture takes about ${m?m+' min ':''}${cap%60} sec. The video will be about ${(n*h).toFixed(0)} sec.`;
+}
+eta();
+function setLocked(on){
+  $('lock').disabled=on;document.body.classList.toggle('rec',on);$('chips').style.pointerEvents=on?'none':'';$('parseBtn').disabled=on;document.querySelector('.tools').style.visibility=on?'hidden':'visible';
+  $('startBtn').style.display=on?'none':'block';$('stopBtn').style.display=on?'block':'none';
+}
+document.addEventListener('keydown',e=>{
+  if(e.repeat||e.ctrlKey||e.metaKey||e.altKey)return;
+  const t=e.target.tagName,k=e.key.toLowerCase();
+  if(e.key==='Escape'){if(isPlaying)stopTour();return}
+  if(/INPUT|TEXTAREA|SELECT/.test(t))return;
+  if(k==='l'){if(!$('parseBtn').disabled)buildRoute()}
+  else if(k==='r'){if(!isPlaying&&!$('startBtn').disabled)startRecording()}
+  else if(k==='s'){if(isPlaying)stopTour()}
+  else if(k==='d'){if($('result').style.display==='flex')$('dl').click()}
+  else if(k==='f')toggleFs();
+  else if(k==='m')toggleSidebar(true);
+  else if(k==='c')toggleSidebar(false);
+  else return;
+  e.preventDefault();
+});
+
+/* ---------- fullscreen ---------- */
+if(!document.fullscreenEnabled)$('fsBtn').style.display='none';
+function toggleFs(){
+  if(document.fullscreenElement)document.exitFullscreen();
+  else $('stageWrap').requestFullscreen().catch(()=>setStatus('Fullscreen is not available in this browser.',null,'warn'));
+}
+document.addEventListener('fullscreenchange',()=>{
+  const on=!!document.fullscreenElement;
+  $('fsBtn').firstChild.textContent=on?'Exit fullscreen':'Fullscreen';
+  if(!on&&isPlaying)stopTour();
+});
+
+/* ---------- output formats ---------- */
+const FORMATS=[
+  {label:'MP4 (clean, recommended)',mode:'mp4'},
+  {label:'WebM VP9',mime:'video/webm;codecs=vp9'},
+  {label:'WebM H.264',mime:'video/webm;codecs=h264'},
+  {label:'WebM VP8',mime:'video/webm;codecs=vp8'}
+];
+const MR=window.MediaRecorder;
+if(MR)FORMATS.forEach(f=>{
+  const ok=f.mode==='mp4'?(MR.isTypeSupported('video/mp4;codecs=avc1')||MR.isTypeSupported('video/mp4')):MR.isTypeSupported(f.mime);
+  if(ok)$('codec').add(new Option(f.label,JSON.stringify(f)));
+});
+if(!MR||!navigator.mediaDevices?.getDisplayMedia||!$('codec').options.length){
+  $('codec').add(new Option('WebM VP8',JSON.stringify(FORMATS[3])));
+}
+const canRecord=!!(MR&&navigator.mediaDevices?.getDisplayMedia);
+if(!canRecord)$('recNote').style.display='block';
+
+/* ---------- street view ---------- */
+function svUrl(p){
+  const key=$('apiKey').value.trim();
+  if(key)return `https://www.google.com/maps/embed/v1/streetview?key=${encodeURIComponent(key)}&location=${p.lat},${p.lon}&heading=${p.heading}&pitch=0&fov=90`;
+  return `https://maps.google.com/maps?layer=c&cbll=${p.lat.toFixed(6)},${p.lon.toFixed(6)}&cbp=12,${p.heading},,0,0&output=svembed`;
+}
+function loadFrame(el,url,wait){
+  return new Promise(res=>{
+    let done=false;
+    const go=()=>{if(done)return;done=true;clearTimeout(t);setTimeout(res,wait)};
+    const t=setTimeout(go,8000);
+    el.onload=go;el.src=url;
+  });
+}
+function showHud(i,p){
+  $('hudText').textContent=`Frame ${i+1} / ${waypoints.length} | ${p.lat.toFixed(4)}, ${p.lon.toFixed(4)} | ${p.heading}°`;
+  hud();
+}
+
+/* ---------- link parsing ---------- */
+let geoBias=null;
+function normUrl(v){
+  v=v.trim();
+  return !/^https?:\/\//i.test(v)&&/^(?:www\.|maps\.)?(?:google\.[a-z.]+\/maps|goo\.gl\/|maps\.app\.goo\.gl\/)/i.test(v)?'https://'+v:v;
+}
+function pathNames(path){
+  const i=path.indexOf('/maps/dir/');if(i<0)return[];
+  const r=[];
+  for(const seg of path.slice(i+10).split('/')){
+    if(!seg||/^(@|data=|am=)/.test(seg))break;
+    r.push(decodeURIComponent(seg.replace(/\+/g,' ')).trim());
+  }
+  return r;
+}
+function parseDirections(raw){
+  const s=normUrl(raw);
+  if(!s)throw new Error('Paste a Google Maps directions link first.');
+  if(/goo\.gl|maps\.app/.test(s))throw new Error('Short links can’t be expanded in the browser. Open the link, then copy the full URL from the address bar.');
+  const fmt=(la,lo)=>`${(+la).toFixed(4)}, ${(+lo).toFixed(4)}`;
+  let names=[];try{names=pathNames(new URL(s).pathname)}catch{}
+  const at=s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);geoBias=at?{lat:+at[1],lon:+at[2]}:null;
+  const d=[...s.matchAll(/!1d(-?\d+\.\d+)!2d(-?\d+\.\d+)|!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g)].map(m=>m[1]!==undefined?m:[0,m[4],m[3]]);
+  const dc=d.length>=2?d.map((m,i)=>({lat:+m[2],lon:+m[1],label:names.length===d.length?names[i]:fmt(m[2],m[1])})):null;
+  if(dc&&(!names.length||names.length===d.length))return dc;
+  const pairs=[...s.matchAll(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/g)];
+  if(pairs.length>=2&&!/^https?:/i.test(s)&&!/\/maps\//i.test(s))return pairs.map(m=>({lat:+m[1],lon:+m[2],label:fmt(m[1],m[2])}));
+  let u;try{u=new URL(s)}catch{throw new Error('That doesn’t look like a valid link.')}
+  const q=u.searchParams;
+  if(q.get('origin')&&q.get('destination'))
+    return [q.get('origin'),...(q.get('waypoints')||'').split('|').filter(Boolean),q.get('destination')].map(v=>({query:v}));
+  if(names.length>=2){let k=0;const r=names.map(n=>{
+    const m=n.match(/^(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)$/);
+    if(m)return{lat:+m[1],lon:+m[2],label:n};
+    const short=n.length>32?n.split(',')[0]:n;
+    if(k<d.length){const c=d[k++];return{lat:+c[2],lon:+c[1],label:short}}
+    return{query:n,label:short};
+  });r.fallback=dc;return r}
+  throw new Error('Couldn’t find at least 2 stops in that link.');
+}
+async function expandShortLink(u){
+  try{
+    const j=await(await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(u))).json();
+    const f=j.status&&j.status.url;
+    if(f&&/google\.[a-z.]+\/maps/.test(f))return f;
+  }catch(e){console.warn('Short link expand failed',e)}
+  throw Object.assign(new Error('Couldn’t expand the short link automatically. Choose “Open short link in a new tab”, copy the full address from that tab’s address bar, and paste it here.'),{short:true});
+}
+async function resolveStop(st){
+  if(st.lat!==undefined)return st;
+  const q=st.query,m=q.match(/^(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)$/);
+  if(m)return{lat:+m[1],lon:+m[3],label:q};
+  const tries=[
+    async()=>{const f=(await(await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=1${geoBias?`&lat=${geoBias.lat}&lon=${geoBias.lon}`:''}`)).json()).features[0];return f&&{lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0]}},
+    async()=>{const r=(await(await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1${geoBias?`&viewbox=${geoBias.lon-.5},${geoBias.lat+.5},${geoBias.lon+.5},${geoBias.lat-.5}`:''}&q=${encodeURIComponent(q)}`)).json())[0];return r&&{lat:+r.lat,lon:+r.lon}}
+  ];
+  for(const t of tries){try{const p=await t();if(p)return{...p,label:q}}catch{}}
+  throw new Error(`Couldn’t find a location for “${q}”. Try pasting coordinates instead.`);
+}
+
+/* ---------- geometry ---------- */
+const rad=d=>d*Math.PI/180;
+function bearing(a,b){
+  const dl=rad(b.lon-a.lon),y=Math.sin(dl)*Math.cos(rad(b.lat));
+  const x=Math.cos(rad(a.lat))*Math.sin(rad(b.lat))-Math.sin(rad(a.lat))*Math.cos(rad(b.lat))*Math.cos(dl);
+  return (Math.atan2(y,x)*180/Math.PI+360)%360;
+}
+function dist(a,b){
+  const dLa=rad(b.lat-a.lat),dLo=rad(b.lon-a.lon);
+  const h=Math.sin(dLa/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLo/2)**2;
+  return 12742000*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));
+}
+function interpolate(coords,count){
+  const pts=coords.map(c=>({lon:c[0],lat:c[1]})),seg=[];let total=0;
+  for(let i=0;i<pts.length-1;i++){const d=dist(pts[i],pts[i+1]);seg.push(d);total+=d}
+  const at=t=>{
+    if(t<=0)return pts[0];
+    let c=0;
+    for(let i=0;i<seg.length;i++){
+      if(c+seg[i]>=t){const r=seg[i]?(t-c)/seg[i]:0;return{lat:pts[i].lat+(pts[i+1].lat-pts[i].lat)*r,lon:pts[i].lon+(pts[i+1].lon-pts[i].lon)*r}}
+      c+=seg[i];
+    }
+    return pts[pts.length-1];
+  };
+  const step=total/Math.max(1,count-1),out=[];
+  for(let i=0;i<count;i++){
+    const p=at(i*step),q=at(Math.min(total,i*step+20));
+    out.push({lat:p.lat,lon:p.lon,heading:Math.round(bearing(p,q))});
+  }
+  if(out.length>1)out[out.length-1].heading=out[out.length-2].heading;
+  return{pts:out,total,step};
+}
+
+/* ---------- stop preview ---------- */
+async function swapTo(p,wait){
+  const next=buf==='A'?'B':'A',cur=$('sv'+buf),nxt=$('sv'+next);
+  await loadFrame(nxt,svUrl(p),wait);
+  nxt.style.zIndex=2;cur.style.zIndex=1;buf=next;
+}
+function snapToRoad(p){
+  let bi=0,bd=Infinity;
+  roadPts.forEach((r,i)=>{const d=dist(p,r);if(d<bd){bd=d;bi=i}});
+  const a=roadPts[bi];let j=bi,acc=0;
+  while(j<roadPts.length-1&&acc<20){acc+=dist(roadPts[j],roadPts[j+1]);j++}
+  const h=j>bi?bearing(a,roadPts[j]):bearing(roadPts[Math.max(0,bi-1)],a);
+  return{lat:a.lat,lon:a.lon,heading:Math.round(h)};
+}
+async function previewStop(i){
+  if(isPlaying||!waypoints.length||!stopPts[i]||$('parseBtn').disabled)return;
+  const p=stopPts[i],pt=snapToRoad(p),tok=++previewTok;
+  document.querySelectorAll('#chips .chip').forEach((c,j)=>c.classList.toggle('on',j===i));
+  marker.setLatLng([pt.lat,pt.lon]);map.panTo([pt.lat,pt.lon]);
+  setStatus(`Loading Street View at stop ${i+1}: ${p.label}…`,null);
+  previewed=true;
+  await swapTo(pt,1200);
+  if(tok!==previewTok)return;
+  $('hudText').textContent=`Stop ${i+1} | ${pt.lat.toFixed(4)}, ${pt.lon.toFixed(4)} | ${pt.heading}°`;hud();
+  setStatus(`Previewing stop ${i+1}: ${p.label}. Recording still starts from frame 1.`,null);
+}
+$('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(b)previewStop(+b.dataset.i)});
+
+/* ---------- step 1: build route ---------- */
+async function buildRoute(){
+  const n=Math.min(150,Math.max(3,+$('count').value||20)),sharpenMs=(+$('sharpen').value||3.5)*1000;
+  $('parseBtn').disabled=true;$('startBtn').disabled=true;$('openShort').style.display='none';
+  try{
+    setStatus('Reading link…',10);
+    let raw=normUrl($('url').value);
+    if(/maps\.app\.goo\.gl|goo\.gl\/maps/.test(raw)){
+      setStatus('Expanding short link through a public proxy…',8);
+      raw=await expandShortLink(raw);$('url').value=raw;
+    }
+    const stops=parseDirections(raw);let pts=[],note='';
+    try{
+      for(let i=0;i<stops.length;i++){
+        setStatus(`Locating stop ${i+1} of ${stops.length}…`,15+30*i/stops.length);
+        pts.push(await resolveStop(stops[i]));
+        if(stops[i].query)await sleep(250);
+      }
+    }catch(e){
+      if(!stops.fallback)throw e;
+      pts=stops.fallback;note='Some stops could not be looked up by name, so only the stops with coordinates in the link are used. ';
+    }
+    stopPts=pts;previewed=false;
+    $('chips').innerHTML=pts.map((p,i)=>`<button type="button" class="chip" data-i="${i}" title="${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}. Click to preview"><i>${i+1}</i>${esc(p.label)}</button>`).join('');
+    $('chipHint').style.display='block';
+
+    setStatus('Finding the road path…',55);
+    let geo=[];
+    try{
+      const r=await(await fetch(`https://router.project-osrm.org/route/v1/driving/${pts.map(p=>p.lon+','+p.lat).join(';')}?overview=full&geometries=geojson`)).json();
+      if(r.routes&&r.routes.length)geo=r.routes[0].geometry.coordinates;
+    }catch(e){console.warn('OSRM failed, using straight lines',e)}
+    const usedRoads=geo.length>0;
+    if(!usedRoads)geo=pts.map(p=>[p.lon,p.lat]);
+    roadPts=geo.map(c=>({lon:c[0],lat:c[1]}));
+
+    const r=interpolate(geo,n);waypoints=r.pts;
+    [routeLine,marker,...stopMarks].forEach(l=>l&&map.removeLayer(l));stopMarks=[];
+    routeLine=L.polyline(geo.map(c=>[c[1],c[0]]),{color:'#3b82f6',weight:4}).addTo(map);
+    map.invalidateSize();map.fitBounds(routeLine.getBounds(),{padding:[24,24]});
+    stopMarks=pts.map((p,i)=>L.circleMarker([p.lat,p.lon],{radius:6,color:'#f5a524',fillColor:'#fbbf24',fillOpacity:.95}).bindTooltip(`${i+1}. ${p.label}`).addTo(map));
+    marker=L.circleMarker([waypoints[0].lat,waypoints[0].lon],{radius:8,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1}).addTo(map);
+
+    setStatus('Loading and sharpening frame 1…',75);
+    buf='A';$('svA').style.zIndex=2;$('svB').style.zIndex=1;
+    $('empty').style.display='none';
+    await loadFrame($('svA'),svUrl(waypoints[0]),sharpenMs);
+    showHud(0,waypoints[0]);
+    const km=(r.total/1000).toFixed(1);
+    setStatus(`${note}Starts at “${pts[0].label}” (${pts[0].lat.toFixed(5)}, ${pts[0].lon.toFixed(5)}). Route ready: ${km} km, a stop about every ${Math.round(r.step)} m${usedRoads?'':' (straight lines, road routing was unavailable)'}. Frame 1 is sharp. Choose “Start recording”, then pick this tab.`,100,usedRoads?'':'warn');
+    $('startBtn').disabled=!canRecord;
+  }catch(err){
+    setStatus(err.message,0,'err');$('openShort').style.display=err.short?'block':'none';
+  }finally{
+    $('parseBtn').disabled=false;
+  }
+}
+
+/* ---------- webm helpers ---------- */
+async function fixWebmDuration(blob,ms){
+  if(!blob.type.includes('webm'))return blob;
+  try{
+    const buffer=await blob.arrayBuffer(),b=new Uint8Array(buffer),lim=Math.min(b.length-16,4096);
+    for(let i=0;i<lim;i++){
+      if(b[i]===0x44&&b[i+1]===0x89&&b[i+2]===0x88){new DataView(buffer,i+3,8).setFloat64(0,ms,false);return new Blob([buffer],{type:blob.type})}
+    }
+    for(let i=0;i<lim;i++){
+      if(b[i]===0x2A&&b[i+1]===0xD7&&b[i+2]===0xB1&&b[i+3]===0x83&&b[i+4]===0x0F&&b[i+5]===0x42&&b[i+6]===0x40){
+        const pos=i+7,el=new Uint8Array(11);el.set([0x44,0x89,0x88]);
+        new DataView(el.buffer,3,8).setFloat64(0,ms,false);
+        const out=new Uint8Array(b.length+11);
+        out.set(b.subarray(0,pos));out.set(el,pos);out.set(b.subarray(pos),pos+11);
+        for(let j=Math.max(0,i-32);j<i;j++){
+          if(out[j]===0x15&&out[j+1]===0x49&&out[j+2]===0xA9&&out[j+3]===0x66){
+            if(out[j+4]>=0x80&&out[j+4]<0xF0)out[j+4]+=11;break;
+          }
+        }
+        return new Blob([out],{type:blob.type});
+      }
+    }
+  }catch(e){console.warn('Duration patch skipped',e)}
+  return blob;
+}
+function remuxToMp4(webm,ms){
+  const mime=MR.isTypeSupported('video/mp4;codecs=avc1')?'video/mp4;codecs=avc1':MR.isTypeSupported('video/mp4')?'video/mp4':null;
+  if(!mime)return Promise.resolve(webm);
+  return new Promise(resolve=>{
+    const v=document.createElement('video'),src=URL.createObjectURL(webm);
+    v.muted=true;v.playsInline=true;v.src=src;
+    const bail=()=>{URL.revokeObjectURL(src);resolve(webm)};
+    v.onerror=bail;
+    v.onloadedmetadata=()=>{
+      const w=v.videoWidth||1280,h=v.videoHeight||720,c=document.createElement('canvas');
+      c.width=w;c.height=h;const cx=c.getContext('2d');
+      const out=new MR(c.captureStream(30),{mimeType:mime,videoBitsPerSecond:8e6}),parts=[];
+      let drawing=true;
+      out.ondataavailable=e=>e.data.size&&parts.push(e.data);
+      out.onstop=()=>{drawing=false;URL.revokeObjectURL(src);resolve(parts.length?new Blob(parts,{type:mime}):webm)};
+      const end=()=>{drawing=false;if(out.state!=='inactive')out.stop()};
+      v.onended=end;
+      setTimeout(end,ms+6000);
+      (function draw(){if(!drawing)return;cx.drawImage(v,0,0,w,h);requestAnimationFrame(draw)})();
+      out.start(500);
+      v.play().catch(bail);
+    };
+  });
+}
+
+/* ---------- step 3: record ---------- */
+const pump=$('pump').getContext('2d');let tick=0;
+function startPump(){stopPump();(function loop(){tick=(tick+1)%60;pump.fillStyle=`rgb(16,185,${100+tick})`;pump.fillRect(0,0,2,2);pumpRaf=requestAnimationFrame(loop)})()}
+function stopPump(){if(pumpRaf)cancelAnimationFrame(pumpRaf);pumpRaf=null}
+
+async function holdFrame(ms){
+  if(!rec||rec.state!=='paused')return;
+  rec.resume();await sleep(ms);
+  if(rec&&rec.state==='recording')rec.pause();
+  durMs+=ms;
+}
+
+function restoreControls(){if(autoHid){autoHid=false;toggleSidebar(false)}}
+async function startRecording(){
+  if(!waypoints.length||isPlaying)return;
+  const sharpenMs=(+$('sharpen').value||3.5)*1000,holdMs=(+$('hold').value||1)*1000;
+  const fmt=JSON.parse($('codec').value);
+  const mime=fmt.mode==='mp4'?(MR.isTypeSupported('video/webm;codecs=vp9')?'video/webm;codecs=vp9':'video/webm'):fmt.mime;
+  if($('autoHide').checked&&!$('app').classList.contains('collapsed')){toggleSidebar(true);autoHid=true}
+  let stream;
+  try{
+    stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:30,max:30},displaySurface:'browser'},audio:false,preferCurrentTab:true,selfBrowserSurface:'include'});
+  }catch(e){restoreControls();setStatus('Screen capture was cancelled. Choose “This tab” in the share dialog to record.',0,'warn');return}
+  if(autoHid)await sleep(450);
+  const [track]=stream.getVideoTracks();
+  let cropped=false;
+  try{
+    if(window.CropTarget&&track.cropTo){await track.cropTo(await CropTarget.fromElement($('stage')));cropped=true}
+  }catch(e){console.warn('Crop failed',e)}
+
+  chunks=[];durMs=0;startPump();
+  rec=new MR(stream,{mimeType:mime,videoBitsPerSecond:8e6});
+  rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+  rec.onstop=()=>finishRecording(stream,mime,fmt);
+  track.onended=()=>{if(isPlaying)stopTour()};
+
+  isPlaying=true;setLocked(true);$('result').style.display='none';
+  rec.start(500);rec.pause();setRec('wait');
+  try{
+    await sleep(500);
+    const n=waypoints.length;
+    if(previewed){
+      previewTok++;setStatus('Returning to frame 1…',0);
+      await swapTo(waypoints[0],sharpenMs);previewed=false;
+      marker.setLatLng([waypoints[0].lat,waypoints[0].lon]);showHud(0,waypoints[0]);
+      document.querySelectorAll('#chips .chip').forEach(c=>c.classList.remove('on'));
+    }
+    setStatus(`Recording frame 1 of ${n}…`,100/n);setRec('live');
+    await holdFrame(holdMs);
+    for(let i=1;i<n&&isPlaying;i++){
+      const p=waypoints[i],pct=Math.round((i+1)/n*100);
+      setRec('wait');setStatus(`Paused: sharpening frame ${i+1} of ${n}…`,pct);
+      const next=buf==='A'?'B':'A',cur=$('sv'+buf),nxt=$('sv'+next);
+      await loadFrame(nxt,svUrl(p),sharpenMs);
+      if(!isPlaying)break;
+      nxt.style.zIndex=2;cur.style.zIndex=1;buf=next;
+      marker.setLatLng([p.lat,p.lon]);showHud(i,p);
+      await sleep(250);
+      if(!isPlaying)break;
+      setRec('live');setStatus(`Recording frame ${i+1} of ${n}…`,pct);
+      await holdFrame(holdMs);
+    }
+  }catch(err){
+    console.error(err);setStatus('Recording stopped: '+err.message,0,'err');
+  }
+  stopTour();
+  if(!cropped)setTimeout(()=>setStatus('Saved, but the video may include the whole tab. Choose “This tab” next time so it crops to the stage.',100,'warn'),600);
+}
+
+function stopTour(){
+  isPlaying=false;
+  if(rec&&rec.state!=='inactive')rec.stop();
+}
+
+async function finishRecording(stream,mime,fmt){
+  stopPump();setRec('idle');setLocked(false);restoreControls();
+  stream.getTracks().forEach(t=>t.stop());
+  if(!chunks.length){setStatus('No video was captured. Try recording again.',0,'warn');return}
+  let blob=await fixWebmDuration(new Blob(chunks,{type:mime}),Math.max(500,durMs));
+  if(fmt.mode==='mp4'){setStatus('Converting to MP4. This plays back in real time, so please wait…',98);blob=await remuxToMp4(blob,durMs)}
+  const ext=blob.type.includes('mp4')?'mp4':'webm';
+  if(resultUrl)URL.revokeObjectURL(resultUrl);
+  resultUrl=URL.createObjectURL(blob);
+  $('resultVideo').src=resultUrl;
+  $('dl').href=resultUrl;$('dl').download=`streetview-route-${Date.now()}.${ext}`;
+  $('result').style.display='flex';
+  setStatus(`Done. ${ext.toUpperCase()} video, ${(durMs/1000).toFixed(1)} sec. Preview it below, then download.`,100);
+  rec=null;
+}
+</script>
+</body>
+</html>
