@@ -311,6 +311,7 @@ function svUrl(p){
 }
 function loadFrame(el,url,wait){
   return new Promise(res=>{
+    if(el.getAttribute('src')===url){setTimeout(res,wait);return}
     let done=false;
     const go=()=>{if(done)return;done=true;clearTimeout(t);setTimeout(res,wait)};
     const t=setTimeout(go,8000);
@@ -416,10 +417,12 @@ function interpolate(coords,count){
 }
 
 /* ---------- stop preview ---------- */
-async function swapTo(p,wait){
+async function swapTo(p,wait,tok){
   const next=buf==='A'?'B':'A',cur=$('sv'+buf),nxt=$('sv'+next);
   await loadFrame(nxt,svUrl(p),wait);
+  if(tok!==undefined&&tok!==previewTok)return false;
   nxt.style.zIndex=2;cur.style.zIndex=1;buf=next;
+  return true;
 }
 function snapToRoad(p){
   let bi=0,bd=Infinity;
@@ -436,8 +439,7 @@ async function previewStop(i){
   marker.setLatLng([pt.lat,pt.lon]);map.panTo([pt.lat,pt.lon]);
   setStatus(`Loading Street View at stop ${i+1}: ${p.label}…`,null);
   previewed=true;
-  await swapTo(pt,1200);
-  if(tok!==previewTok)return;
+  if(!await swapTo(pt,1200,tok))return;
   $('hudText').textContent=`Stop ${i+1} | ${pt.lat.toFixed(4)}, ${pt.lon.toFixed(4)} | ${pt.heading}°`;hud();
   setStatus(`Previewing stop ${i+1}: ${p.label}. Recording still starts from frame 1.`,null);
 }
@@ -566,6 +568,7 @@ async function holdFrame(ms){
 function restoreControls(){if(autoHid){autoHid=false;toggleSidebar(false)}}
 async function startRecording(){
   if(!waypoints.length||isPlaying)return;
+  previewTok++;
   const sharpenMs=(+$('sharpen').value||3.5)*1000,holdMs=(+$('hold').value||1)*1000;
   const fmt=JSON.parse($('codec').value);
   const mime=fmt.mode==='mp4'?(MR.isTypeSupported('video/webm;codecs=vp9')?'video/webm;codecs=vp9':'video/webm'):fmt.mime;
@@ -581,23 +584,25 @@ async function startRecording(){
     if(window.CropTarget&&track.cropTo){await track.cropTo(await CropTarget.fromElement($('stage')));cropped=true}
   }catch(e){console.warn('Crop failed',e)}
 
+  isPlaying=true;setLocked(true);$('result').style.display='none';
+  track.onended=()=>{if(isPlaying)stopTour()};
+  if(previewed){
+    setStatus('Returning to frame 1…',0);
+    await swapTo(waypoints[0],sharpenMs);previewed=false;
+    marker.setLatLng([waypoints[0].lat,waypoints[0].lon]);showHud(0,waypoints[0]);
+    document.querySelectorAll('#chips .chip').forEach(c=>c.classList.remove('on'));
+    await sleep(400);
+  }
+  if(!isPlaying){stream.getTracks().forEach(t=>t.stop());setLocked(false);restoreControls();return}
+
   chunks=[];durMs=0;startPump();
   rec=new MR(stream,{mimeType:mime,videoBitsPerSecond:8e6});
   rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
   rec.onstop=()=>finishRecording(stream,mime,fmt);
-  track.onended=()=>{if(isPlaying)stopTour()};
-
-  isPlaying=true;setLocked(true);$('result').style.display='none';
   rec.start(500);rec.pause();setRec('wait');
   try{
     await sleep(500);
     const n=waypoints.length;
-    if(previewed){
-      previewTok++;setStatus('Returning to frame 1…',0);
-      await swapTo(waypoints[0],sharpenMs);previewed=false;
-      marker.setLatLng([waypoints[0].lat,waypoints[0].lon]);showHud(0,waypoints[0]);
-      document.querySelectorAll('#chips .chip').forEach(c=>c.classList.remove('on'));
-    }
     setStatus(`Recording frame 1 of ${n}…`,100/n);setRec('live');
     await holdFrame(holdMs);
     for(let i=1;i<n&&isPlaying;i++){
