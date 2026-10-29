@@ -3,465 +3,508 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Clip Maker — audio to video</title>
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0e0e10">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<title>ClipMaker — turn a song into a video clip</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg: #101012;
-    --panel: #1A1A1E;
-    --panel-2: #201F24;
-    --line: #2C2B31;
-    --amber: #E8A33D;
-    --amber-dim: #6b5330;
-    --text: #F3F0EA;
-    --text-dim: #9C9AA5;
-    --text-faint: #66646E;
-    --bar-off: #3A3A42;
-    --danger: #E0654D;
-    --radius: 14px;
-    box-sizing: border-box;
-    padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    --bg:#0e0e10; --surface:#17171b; --surface-2:#1f1f24;
+    --line:#2b2a31; --line-strong:#3d3c46;
+    --amber:#E8A33D; --amber-hi:#F4B65A; --amber-soft:rgba(232,163,61,.13); --amber-ink:#1c1404;
+    --ink:#F4F1EB; --ink-2:#B0AEB8; --ink-3:#8b8995;
+    --danger:#F0806B;
+    --r-lg:18px; --r-md:12px; --r-sm:8px;
+    --pad:20px;
+    color-scheme:dark;
   }
-  *{ box-sizing: border-box; }
-  html{ scroll-padding-top: env(safe-area-inset-top, 0px); }
-  html,body{
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    margin:0; padding:0;
-    min-height: 100%;
-  }
+  *{ box-sizing:border-box; }
+  html{ -webkit-text-size-adjust:100%; scroll-padding-top:env(safe-area-inset-top,0px); }
+  html,body{ margin:0; background:var(--bg); color:var(--ink); }
   body{
-    background-image:
-      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(232,163,61,0.07), transparent 60%),
-      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(232,163,61,0.05), transparent 60%);
+    font-family:'Inter',system-ui,sans-serif; font-size:15px; line-height:1.5;
+    background-image:radial-gradient(ellipse 900px 480px at 12% -8%, rgba(232,163,61,.08), transparent 60%);
+    background-repeat:no-repeat; min-height:100vh;
   }
-  ::selection{ background: var(--amber); color: #1a1305; }
-  input, button, select{ font-family: inherit; }
-  .wrap{
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 36px 24px 80px;
-  }
-  header.app-head{
-    display:flex; align-items:baseline; justify-content:space-between; gap: 16px;
-    margin-bottom: 28px; flex-wrap: wrap;
-  }
-  header.app-head h1{
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 700;
-    font-size: 28px;
-    letter-spacing: -0.01em;
-    margin:0;
-  }
-  header.app-head .accent{ color: var(--amber); }
-  header.app-head p{
-    margin: 6px 0 0;
-    color: var(--text-dim);
-    font-size: 14.5px;
-    max-width: 46ch;
-  }
-  main{
-    display: grid;
-    grid-template-columns: minmax(0,1fr) 380px;
-    gap: 20px;
-  }
-  @media (max-width: 900px){
-    main{ grid-template-columns: 1fr; }
-  }
-  .panel{
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    padding: 22px;
-  }
-  .panel h2{
-    font-family:'Space Grotesk', sans-serif;
-    font-size: 15px;
-    font-weight: 600;
-    margin: 0 0 16px;
-    color: var(--text);
-  }
-  .panel h2 small{
-    font-family:'JetBrains Mono', monospace;
-    font-weight: 400;
-    color: var(--text-faint);
-    font-size: 11.5px;
-    margin-left: 8px;
-  }
-  .col-left{ display:flex; flex-direction:column; gap:20px; min-width:0; }
-
-  /* Drop zone */
-  .dropzone{
-    border: 1.5px dashed var(--line);
-    border-radius: 10px;
-    padding: 34px 20px;
-    text-align:center;
-    cursor:pointer;
-    transition: border-color .15s ease, background .15s ease;
-    margin-bottom: 10px;
-  }
-  .dropzone:hover, .dropzone.drag{
-    border-color: var(--amber);
-    background: rgba(232,163,61,0.05);
-  }
-  .dropzone .icon{ font-size: 28px; margin-bottom: 10px; opacity:.85; }
-  .dropzone .main-txt{ font-size: 14.5px; color: var(--text); }
-  .dropzone .sub-txt{ font-size: 12.5px; color: var(--text-faint); margin-top:4px; }
+  ::selection{ background:var(--amber); color:var(--amber-ink); }
+  button,input,select{ font-family:inherit; font-size:inherit; color:inherit; }
+  button{ cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  :focus-visible{ outline:2px solid var(--amber); outline-offset:2px; }
+  .sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
   input[type=file]{ display:none; }
 
-  .track-meta{ display:none; }
-  .track-meta.show{ display:flex; flex-direction:column; gap:14px; }
-  .field{ display:flex; flex-direction:column; gap:6px; }
-  .field label{ font-size: 11.5px; color: var(--text-faint); text-transform: none; letter-spacing:.01em; }
-  .field input[type=text]{
-    background: var(--panel-2);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 9px 11px;
-    color: var(--text);
-    font-size: 14px;
-    outline: none;
+  .app{
+    max-width:1140px; margin:0 auto;
+    padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 0 max(16px,env(safe-area-inset-left));
   }
-  .field input[type=text]:focus{ border-color: var(--amber); }
-  .meta-row{ display:flex; gap:12px; }
-  .meta-row .field{ flex:1; min-width:0; }
-  .readout{
-    font-family:'JetBrains Mono', monospace;
-    font-size: 12.5px;
-    color: var(--text-dim);
-    background: var(--panel-2);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 9px 11px;
-  }
-  .cover-row{ display:flex; align-items:center; gap:14px; }
-  .cover-thumb-wrap{
-    position:relative; width:56px; height:56px; border-radius:8px;
-    background: var(--panel-2); border:1px solid var(--line); flex-shrink:0;
-    overflow:hidden;
-  }
-  .cover-thumb{
-    position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
-  }
-  .cover-thumb-wrap.empty{
-    background: linear-gradient(135deg,#3a3a42,#232227);
-  }
-  .cover-thumb-wrap.empty .cover-thumb{ display:none; }
-  .cover-thumb-note{
-    position:absolute; inset:0; display:none; align-items:center; justify-content:center;
-    color: rgba(255,255,255,0.55); font-size:22px; line-height:1; pointer-events:none;
-  }
-  .cover-thumb-wrap.empty .cover-thumb-note{ display:flex; }
-  .btn{
-    appearance:none; border:1px solid var(--line); background: var(--panel-2);
-    color: var(--text); border-radius: 8px; padding: 9px 14px; font-size: 13.5px;
-    cursor:pointer; transition: border-color .15s, background .15s;
-    display:inline-flex; align-items:center; gap:7px;
-  }
-  .btn:hover{ border-color:#454450; }
-  .btn:disabled{ opacity:.4; cursor:not-allowed; }
-  .btn-primary{
-    background: var(--amber); color:#1c1404; border-color: var(--amber); font-weight:600;
-  }
-  .btn-primary:hover{ background:#f0af52; }
-  .btn-primary:disabled{ background: var(--amber-dim); border-color: var(--amber-dim); color:#7a6534; }
-  .btn-ghost{ background: transparent; }
-  .btn-danger{ color: var(--danger); border-color:#4a2c26; }
-  .btn-row{ display:flex; gap:10px; flex-wrap:wrap; }
 
-  /* Preview */
-  .preview-panel{ display:flex; flex-direction:column; }
+  /* ---------- top bar ---------- */
+  .topbar{ display:flex; align-items:center; gap:10px; padding:6px 0 18px; }
+  .logo{ display:flex; align-items:center; gap:10px; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px; letter-spacing:-.01em; }
+  .logo svg{ display:block; }
+  .logo b{ color:var(--amber); font-weight:700; }
+
+  /* ---------- hero / empty state ---------- */
+  .hero{ max-width:640px; margin:0 auto; padding:clamp(4px,3vh,32px) 0 0; }
+  .hero h1{ font-family:'Space Grotesk',sans-serif; font-weight:700; letter-spacing:-.02em; line-height:1.08; font-size:clamp(30px,7vw,46px); margin:0 0 14px; }
+  .hero p{ color:var(--ink-2); font-size:16px; margin:0 0 26px; max-width:52ch; }
+  body.loaded .hero-copy, body.loaded .hero-steps{ display:none; }
+  body:not(.loaded) .layout{ max-width:640px; margin:0 auto; }
+  body:not(.loaded) #trackPanel{ background:none; border:0; padding:0; }
+  .hero-steps{ display:flex; gap:10px 22px; flex-wrap:wrap; margin:22px 0 0; padding:0; list-style:none; color:var(--ink-3); font-size:13.5px; }
+  .hero-steps li::before{ content:''; display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--amber); margin-right:8px; vertical-align:middle; }
+
+  .dropzone{
+    display:flex; flex-direction:column; align-items:center; text-align:center; gap:6px;
+    border:1.5px dashed var(--line-strong); border-radius:var(--r-lg); background:var(--surface);
+    padding:clamp(32px,8vh,64px) 20px; cursor:pointer; transition:border-color .15s, background .15s;
+  }
+  .dropzone:hover,.dropzone.drag{ border-color:var(--amber); background:#1c1a16; }
+  .dz-icon{ width:56px; height:56px; border-radius:50%; background:var(--amber-soft); color:var(--amber); display:grid; place-items:center; margin-bottom:10px; }
+  .dz-title{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:18px; }
+  .dz-sub{ color:var(--ink-3); font-size:13px; max-width:40ch; }
+  .dz-btn{ margin-top:14px; }
+  .txt-touch{ display:none; }
+  @media (hover:none){ .txt-touch{ display:inline; } .txt-desktop{ display:none; } }
+  body.loaded .dropzone{ display:none; }
+
+  /* ---------- buttons ---------- */
+  .btn{
+    appearance:none; border:1px solid var(--line-strong); background:var(--surface-2); color:var(--ink);
+    border-radius:var(--r-md); padding:0 16px; min-height:44px; font-weight:500; font-size:14px;
+    display:inline-flex; align-items:center; justify-content:center; gap:8px; transition:border-color .15s, background .15s, transform .05s;
+  }
+  .btn:hover{ border-color:#5a5966; }
+  .btn:active{ transform:scale(.98); }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+  .btn-primary{ background:var(--amber); border-color:var(--amber); color:var(--amber-ink); font-weight:600; }
+  .btn-primary:hover{ background:var(--amber-hi); border-color:var(--amber-hi); }
+  .btn-ghost{ background:transparent; }
+  .btn-sm{ min-height:38px; padding:0 12px; font-size:13.5px; }
+  .btn-danger{ color:var(--danger); border-color:#5a312a; background:transparent; }
+  .btn-lg{ min-height:50px; padding:0 26px; font-size:15.5px; }
+
+  /* ---------- layout ---------- */
+  .layout{ display:flex; flex-direction:column; gap:16px; }
+  body:not(.loaded) .stage{ display:none; }
+  .col-controls{ display:flex; flex-direction:column; gap:16px; min-width:0; }
+  @media (min-width:960px){
+    body.loaded .layout{ display:grid; grid-template-columns:minmax(0,5fr) minmax(0,6fr); gap:24px; align-items:start; }
+    .stage{ position:sticky; top:20px; }
+  }
+
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); padding:var(--pad); }
+  .card-head{ display:flex; align-items:center; gap:10px; margin:0 0 16px; }
+  .card-head h2{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:17px; margin:0; letter-spacing:-.005em; }
+  .step-n{ width:24px; height:24px; border-radius:50%; background:var(--amber-soft); color:var(--amber); font:600 12.5px 'Space Grotesk',sans-serif; display:grid; place-items:center; flex-shrink:0; }
+  .card-head .hint{ margin-left:auto; font-size:12.5px; color:var(--ink-3); }
+
+  /* ---------- preview ---------- */
+  .stage{ padding:14px; z-index:15; }
   .preview-stage{
-    flex:1; display:flex; align-items:center; justify-content:center;
-    background: #0b0b0d; border-radius:10px; border:1px solid var(--line);
-    padding: 18px; min-height: 320px;
+    display:flex; align-items:center; justify-content:center; background:#09090a; border:1px solid var(--line); border-radius:var(--r-md);
+    padding:14px; min-height:200px;
   }
   #previewCanvas{
-    max-width:100%; max-height: 420px; border-radius: 8px;
-    box-shadow: 0 20px 50px -20px rgba(0,0,0,.7);
+    display:block; max-width:100%; max-height:min(64vh,600px); width:auto; height:auto; border-radius:8px;
+    box-shadow:0 20px 50px -20px rgba(0,0,0,.8); cursor:pointer; touch-action:manipulation;
   }
-  .preview-controls{
-    display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:14px;
+  .placeholder-hint{ color:var(--ink-3); font-size:13px; text-align:center; padding:30px 10px; }
+  /* seek bar under the live preview */
+  .seekbar{ display:none; align-items:center; gap:10px; margin:12px 2px 0; }
+  body.loaded .seekbar{ display:flex; }
+  .seekbar time{ font:500 12.5px/1 'Space Grotesk',sans-serif; font-variant-numeric:tabular-nums; color:var(--ink-2); min-width:34px; }
+  .seekbar time:last-child{ text-align:right; color:var(--ink-3); }
+  .seek-range{ --p:0%; -webkit-appearance:none; appearance:none; flex:1; min-width:0; height:28px; margin:0; background:transparent; cursor:pointer; touch-action:none; }
+  .seek-range:focus{ outline:none; }
+  .seek-range::-webkit-slider-runnable-track{ height:6px; border-radius:3px; background:linear-gradient(to right,var(--amber) var(--p),var(--line-strong) var(--p)); }
+  .seek-range::-moz-range-track{ height:6px; border-radius:3px; background:var(--line-strong); }
+  .seek-range::-moz-range-progress{ height:6px; border-radius:3px; background:var(--amber); }
+  .seek-range::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:16px; height:16px; margin-top:-5px; border-radius:50%; background:var(--amber-hi); border:2px solid var(--bg); box-shadow:0 0 0 1px var(--amber); transition:transform .12s; }
+  .seek-range::-moz-range-thumb{ width:12px; height:12px; border-radius:50%; background:var(--amber-hi); border:2px solid var(--bg); box-shadow:0 0 0 1px var(--amber); transition:transform .12s; }
+  .seek-range:hover::-webkit-slider-thumb, .seek-range:active::-webkit-slider-thumb{ transform:scale(1.2); }
+  .seek-range:focus-visible::-webkit-slider-thumb{ outline:2px solid var(--amber); outline-offset:2px; }
+  .seek-range:focus-visible::-moz-range-thumb{ outline:2px solid var(--amber); outline-offset:2px; }
+  .stage-cap{ display:flex; justify-content:space-between; gap:10px; margin:10px 2px 0; font-size:12.5px; color:var(--ink-3); }
+  @media (max-width:959px){
+    #previewCanvas{ max-height:46vh; }
   }
-  .aspect-select{
-    background: var(--panel-2); color:var(--text); border:1px solid var(--line);
-    border-radius:8px; padding:8px 10px; font-size:13px;
-  }
-  .placeholder-hint{
-    text-align:center; color:var(--text-faint); font-size:13px; padding: 40px 10px;
+  @media (max-width:719px) and (min-height:600px){
+    .stage{ position:sticky; top:calc(env(safe-area-inset-top,0px) + 6px); padding:10px; box-shadow:0 12px 24px -8px rgba(0,0,0,.7); }
+    .preview-stage{ padding:8px; min-height:0; }
+    #previewCanvas{ max-height:27vh; }
+    .stage-cap{ margin-top:8px; }
   }
 
-  /* Timeline */
-  .timeline-panel{ margin-top:20px; }
-  .timeline-wrap{ position:relative; }
+  /* ---------- track card ---------- */
+  .track-meta{ display:none; }
+  .track-meta.show{ display:flex; flex-direction:column; gap:16px; }
+  .track-top{ display:flex; gap:16px; align-items:flex-start; }
+  .cover-thumb-wrap{
+    position:relative; width:84px; height:84px; border-radius:var(--r-md); overflow:hidden; flex-shrink:0;
+    background:var(--surface-2); border:1px solid var(--line); padding:0; cursor:pointer;
+  }
+  .cover-thumb{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .cover-thumb-wrap.empty{ background:linear-gradient(135deg,#3a3a42,#232227); }
+  .cover-thumb-wrap.empty .cover-thumb{ display:none; }
+  .cover-thumb-note{ position:absolute; inset:0; display:none; align-items:center; justify-content:center; color:rgba(255,255,255,.55); font-size:30px; pointer-events:none; }
+  .cover-thumb-wrap.empty .cover-thumb-note{ display:flex; }
+  .cover-edit{ position:absolute; left:0; right:0; bottom:0; background:rgba(0,0,0,.62); color:#fff; font-size:11.5px; text-align:center; padding:3px 0; pointer-events:none; }
+  .track-fields{ flex:1; min-width:0; display:grid; grid-template-columns:1fr; gap:12px; }
+  @media (min-width:720px){ .track-fields{ grid-template-columns:1fr 1fr; } }
+  .field{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .field label,.setting-label{ font-size:13px; font-weight:500; color:var(--ink-2); }
+  .field input[type=text]{
+    width:100%; min-height:44px; background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-md);
+    padding:0 12px; color:var(--ink); font-size:16px; outline:none; transition:border-color .15s;
+  }
+  .field input[type=text]:focus{ border-color:var(--amber); box-shadow:0 0 0 3px var(--amber-soft); }
+  .track-foot{ display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; justify-content:space-between; }
+  .track-info{ font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--ink-3); display:flex; flex-wrap:wrap; gap:4px 10px; }
+  .track-info span+span::before{ content:'·'; margin-right:10px; color:var(--line-strong); }
+  .btn-row{ display:flex; gap:8px; flex-wrap:wrap; }
+
+  /* ---------- timeline ---------- */
+  .timeline-wrap{ position:relative; padding:0 18px; }
   .timeline{
-    position:relative; height:74px; border-radius:8px; overflow:hidden;
-    background: var(--panel-2); border:1px solid var(--line);
-    touch-action:none; cursor:pointer;
+    -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent;
+    position:relative; height:100px; border-radius:var(--r-sm); background:var(--surface-2); border:1px solid var(--line);
+    touch-action:none; cursor:pointer; user-select:none; -webkit-user-select:none;
   }
-  #timelineWave{ position:absolute; inset:0; width:100%; height:100%; display:block; }
-  .seek-tooltip{
-    position:absolute; bottom: calc(100% + 8px); transform: translateX(-50%);
-    background:#1c1b20; border:1px solid var(--line); color:var(--text);
-    font-family:'JetBrains Mono', monospace; font-size:11.5px; line-height:1;
-    padding:4px 7px; border-radius:6px; white-space:nowrap; pointer-events:none;
-    z-index:6; display:none;
-  }
-  .seek-tooltip::after{
-    content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%);
-    border:5px solid transparent; border-top-color:#1c1b20;
-  }
+  #timelineWave{ position:absolute; inset:0; width:100%; height:100%; display:block; border-radius:var(--r-sm); }
   .selection-overlay{
-    position:absolute; top:0; bottom:0; background: rgba(232,163,61,0.16);
-    border-left: 2px solid var(--amber); border-right: 2px solid var(--amber);
-    pointer-events:none;
+    position:absolute; top:0; bottom:0; background:rgba(232,163,61,.17);
+    border-top:2px solid var(--amber); border-bottom:2px solid var(--amber);
+    touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent;
   }
-  .playcursor{
-    position:absolute; top:0; bottom:0; width:2px; background: #fff;
-    box-shadow: 0 0 8px rgba(255,255,255,.8);
-    pointer-events:none; display:none; z-index:5;
-  }
-  .click-indicator{
-    position:absolute; top:0; bottom:0; width:2px;
-    background: repeating-linear-gradient(to bottom, rgba(243,240,234,0.85) 0 5px, transparent 5px 10px);
-    pointer-events:none; display:none; z-index:4;
-  }
-  .handle{
-    position:absolute; top:0; bottom:0; width:14px; margin-left:-7px;
-    cursor: ew-resize; display:flex; align-items:center; justify-content:center;
-  }
-  .handle::after{
-    content:''; width:4px; height:36px; border-radius:3px; background: var(--amber);
-    box-shadow: 0 0 0 3px rgba(232,163,61,0.18);
-  }
+  .playcursor{ position:absolute; top:0; bottom:0; width:2px; background:#fff; box-shadow:0 0 8px rgba(255,255,255,.8); pointer-events:none; display:none; z-index:5; }
+  .click-indicator{ position:absolute; top:0; bottom:0; width:2px; background:repeating-linear-gradient(to bottom, rgba(244,241,235,.85) 0 5px, transparent 5px 10px); pointer-events:none; display:none; z-index:4; }
+  .handle{ position:absolute; top:-6px; bottom:-6px; width:44px; margin-left:-22px; cursor:ew-resize; display:flex; align-items:center; justify-content:center; z-index:6; touch-action:none; }
+  .handle::after{ content:''; width:8px; height:100%; border-radius:5px; background:var(--amber); box-shadow:0 0 0 3px rgba(14,14,16,.55), 0 2px 10px rgba(0,0,0,.5); background-image:linear-gradient(var(--amber-ink),var(--amber-ink)); background-size:2px 20px; background-repeat:no-repeat; background-position:center; }
+  .handle{ user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }
+  /* Very short selection: push the handles outward so the highlighted area stays grabbable */
+  .handle.out-a{ margin-left:-44px; justify-content:flex-end; }
+  .handle.out-a::after{ margin-right:-4px; }
+  .handle.out-b{ margin-left:0; justify-content:flex-start; }
+  .handle.out-b::after{ margin-left:-4px; }
   .handle:focus{ outline:none; }
-  .handle:focus::after{ box-shadow: 0 0 0 4px rgba(232,163,61,0.35); }
-  .time-inputs{
-    display:flex; align-items:center; gap:16px; margin-top:14px; flex-wrap:wrap;
+  .handle:focus-visible::after{ box-shadow:0 0 0 3px var(--bg), 0 0 0 6px var(--amber); }
+  .seek-tooltip{
+    position:absolute; bottom:calc(100% + 10px); transform:translateX(-50%); background:#26252b; border:1px solid var(--line-strong);
+    color:var(--ink); font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1; padding:5px 8px; border-radius:6px; white-space:nowrap; pointer-events:none; z-index:8; display:none;
   }
-  .time-inputs .field{ flex-direction:row; align-items:center; gap:8px; }
-  .time-inputs .field label{ font-size:12px; }
-  .time-inputs input[type=text]{
-    width: 104px; text-align:center; font-family:'JetBrains Mono', monospace;
+  .tl-scale{ display:flex; justify-content:space-between; gap:10px; padding:8px 18px 0; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--ink-3); }
+  .tl-help{ margin:12px 0 0; font-size:13px; color:var(--ink-3); }
+  .trim-controls{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; align-items:end; }
+  .trim-controls .field input[type=text]{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:16px; }
+  .trim-play{ grid-column:1 / -1; display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px; }
+  #previewPlayBtn{ background:var(--amber-soft); border-color:rgba(232,163,61,.5); color:var(--amber-hi); min-height:48px; min-width:150px; font-weight:600; flex:1 1 150px; }
+  #previewPlayBtn:hover{ background:rgba(232,163,61,.22); }
+  .duration-label{ color:var(--amber-hi); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  @media (min-width:720px){
+    .trim-controls{ grid-template-columns:150px 150px 1fr; }
+    .trim-play{ grid-column:auto; justify-content:flex-end; flex-wrap:nowrap; }
+    #previewPlayBtn{ flex:0 0 auto; }
   }
-  .duration-label{
-    font-family:'JetBrains Mono', monospace; font-size:12.5px; color: var(--text-faint);
-    margin-left:auto;
-  }
+  .trim-play{ justify-content:flex-end; }
 
-  /* Export */
-  .export-panel{ margin-top:20px; }
-  .export-grid{ display:flex; gap:22px; flex-wrap:wrap; align-items:flex-end; }
-  .export-opt{ display:flex; flex-direction:column; gap:6px; }
-  .export-opt label{ font-size:11.5px; color: var(--text-faint); }
-  .export-opt select{
-    background: var(--panel-2); color:var(--text); border:1px solid var(--line);
-    border-radius:8px; padding:9px 11px; font-size:13.5px;
+  /* ---------- style & export settings ---------- */
+  .settings{ display:flex; flex-direction:column; gap:20px; }
+  .setting{ display:flex; flex-direction:column; gap:10px; }
+  .setting-pair{ display:grid; grid-template-columns:1fr; gap:20px; }
+  @media (min-width:480px){ .setting-pair{ grid-template-columns:1fr 1fr; } }
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{
+    appearance:none; border:1px solid var(--line); background:var(--surface-2); color:var(--ink-2); border-radius:var(--r-md);
+    padding:0 14px; min-height:44px; display:inline-flex; align-items:center; gap:9px; font-weight:500; font-size:14px; transition:border-color .15s, background .15s, color .15s;
   }
-  .checkbox-row{ display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--text-dim); }
-  .checkbox-row input{ accent-color: var(--amber); width:15px; height:15px; }
-  .progress-wrap{ margin-top:18px; display:none; }
+  .chip:hover{ border-color:var(--line-strong); color:var(--ink); }
+  .chip[aria-pressed="true"]{ border-color:var(--amber); background:var(--amber-soft); color:var(--ink); box-shadow:inset 0 0 0 .5px var(--amber); }
+  .sw{ width:20px; height:20px; border-radius:50%; background:linear-gradient(135deg,var(--b) 0,var(--b) 49%,var(--a) 51%,var(--a) 100%); background-clip:padding-box; border:0; box-shadow:inset 0 0 0 1px rgba(255,255,255,.22); flex-shrink:0; position:relative; }
+  .chips.frames{ display:grid; grid-template-columns:repeat(3,1fr); }
+  .chips.frames .chip{ flex-direction:column; justify-content:center; gap:6px; padding:10px 6px; min-height:72px; text-align:center; line-height:1.15; }
+  .chips.frames .chip small{ font-size:11.5px; color:var(--ink-3); font-weight:400; }
+  .ar{ display:block; border:1.5px solid currentColor; border-radius:3px; }
+  @media (min-width:720px) and (max-width:959px), (min-width:1100px){ .chips.frames{ grid-template-columns:repeat(6,1fr); } }
+  .seg{ display:inline-flex; gap:4px; padding:4px; border:1px solid var(--line); border-radius:var(--r-md); background:var(--surface-2); align-self:flex-start; }
+  .seg button{ appearance:none; border:0; background:transparent; color:var(--ink-2); padding:0 16px; min-height:40px; min-width:64px; border-radius:calc(var(--r-md) - 4px); font-weight:500; font-size:14px; transition:background .15s, color .15s, box-shadow .15s; }
+  .seg button:hover{ color:var(--ink); }
+  .seg button[aria-pressed="true"]{ background:var(--amber-soft); color:var(--ink); box-shadow:inset 0 0 0 1.5px var(--amber); }
+  .switch{ display:flex; align-items:center; gap:12px; min-height:44px; cursor:pointer; color:var(--ink-2); }
+  .switch input{ position:absolute; opacity:0; width:1px; height:1px; }
+  .switch .track{ width:42px; height:24px; border-radius:12px; background:var(--surface-2); border:1px solid var(--line-strong); position:relative; flex-shrink:0; transition:background .15s, border-color .15s; }
+  .switch .track::after{ content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:var(--ink-2); transition:transform .15s, background .15s; }
+  .switch input:checked + .track{ background:var(--amber); border-color:var(--amber); }
+  .switch input:checked + .track::after{ transform:translateX(18px); background:var(--amber-ink); }
+  .switch input:focus-visible + .track{ outline:2px solid var(--amber); outline-offset:2px; }
+
+  /* ---------- result ---------- */
+  .result{ display:none; }
+  .result.show{ display:block; }
+  .result-body{ display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  .result video{ width:min(160px,40%); max-height:260px; border-radius:var(--r-sm); border:1px solid var(--line); background:#000; }
+  .result-info{ flex:1; min-width:180px; display:flex; flex-direction:column; gap:12px; }
+  .result-info p{ margin:0; color:var(--ink-2); font-size:13.5px; word-break:break-word; }
+
+  /* ---------- action bar ---------- */
+  .actionbar{
+    position:sticky; bottom:max(0px,env(safe-area-inset-bottom)); z-index:30; margin-top:20px;
+    background:rgba(23,23,27,.9); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
+    border:1px solid var(--line-strong); border-radius:var(--r-lg); padding:12px 14px; box-shadow:0 -12px 32px rgba(0,0,0,.4);
+  }
+  body:not(.loaded) .actionbar{ display:none; }
+  .ab-row{ display:flex; align-items:center; gap:12px; }
+  .ab-summary{ flex:1; min-width:0; display:flex; flex-direction:column; line-height:1.25; }
+  .ab-summary strong{ font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:600; }
+  .ab-summary span{ font-size:12.5px; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .progress-wrap{ display:none; margin-bottom:12px; }
   .progress-wrap.show{ display:block; }
-  .progress-bar{
-    height:8px; border-radius:5px; background: var(--panel-2); overflow:hidden; border:1px solid var(--line);
+  .progress-bar{ height:8px; border-radius:5px; background:var(--surface-2); overflow:hidden; border:1px solid var(--line); }
+  .progress-fill{ height:100%; width:0; background:var(--amber); transition:width .08s linear; }
+  .progress-label{ font-size:12px; color:var(--ink-3); margin-top:6px; font-family:'JetBrains Mono',monospace; }
+  @media (max-width:719px){
+    .actionbar{ margin-left:calc(-1*max(16px,env(safe-area-inset-left))); margin-right:calc(-1*max(16px,env(safe-area-inset-right))); border-radius:var(--r-lg) var(--r-lg) 0 0; border-left:0; border-right:0; bottom:0; padding:12px max(16px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left)); }
+    #exportBtn{ flex:0 0 auto; }
   }
-  .progress-fill{ height:100%; width:0%; background: var(--amber); transition: width .08s linear; }
-  .progress-label{ font-size:12px; color: var(--text-faint); margin-top:8px; font-family:'JetBrains Mono', monospace; }
-  .result{ margin-top:18px; display:none; }
-  .result.show{ display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
-  .result video{ width:150px; border-radius:8px; border:1px solid var(--line); background:#000; }
-  .result .result-info{ flex:1; min-width:180px; }
-  .result .result-info p{ margin:0 0 10px; font-size:13.5px; color: var(--text-dim); }
-  .status-msg{ font-size:12.5px; color: var(--text-faint); margin-top:10px; min-height:16px; }
-  .status-msg.err{ color: var(--danger); }
 
-  footer{
-    text-align:center; color: var(--text-faint); font-size:12px; margin-top:40px;
+  /* ---------- toast / warnings / footer ---------- */
+  .toast{
+    position:fixed; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom,0px) + 96px); z-index:50;
+    max-width:min(520px,calc(100vw - 32px)); background:#26252b; border:1px solid var(--line-strong); color:var(--ink);
+    padding:12px 16px; border-radius:var(--r-md); font-size:13.5px; box-shadow:0 12px 30px rgba(0,0,0,.5); cursor:pointer;
   }
-  .file-warning{
-    display:none;
-    background: rgba(224,101,77,0.1);
-    border: 1px solid #4a2c26;
-    border-radius: 10px;
-    padding: 14px 16px;
-    margin-bottom: 20px;
-    font-size: 13.5px;
-    line-height:1.5;
-    color: var(--text-dim);
-  }
+  .toast:empty{ display:none; }
+  .toast.err{ border-color:#7a3a2e; color:#ffd2c8; background:#2c1b17; }
+  body:not(.loaded) .toast{ bottom:24px; }
+  .file-warning{ display:none; background:rgba(240,128,107,.1); border:1px solid #5a312a; border-radius:var(--r-md); padding:14px 16px; margin-bottom:16px; font-size:13.5px; line-height:1.55; color:var(--ink-2); }
   .file-warning.show{ display:block; }
-  .file-warning strong{ color: var(--danger); }
-  .file-warning code{
-    background: var(--panel-2); border:1px solid var(--line); border-radius:4px;
-    padding:1px 6px; font-family:'JetBrains Mono', monospace; font-size:12.5px; color:var(--text);
-  }
+  .file-warning strong{ color:var(--danger); }
+  .file-warning code{ background:var(--surface-2); border:1px solid var(--line); border-radius:4px; padding:1px 6px; font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--ink); }
+  footer{ text-align:center; color:var(--ink-3); font-size:12.5px; padding:28px 0 calc(28px + env(safe-area-inset-bottom)); }
+  .drop-overlay{ position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; background:rgba(14,14,16,.86); border:3px dashed var(--amber); font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:600; pointer-events:none; }
+  .drop-overlay.show{ display:flex; }
+
+  @media (max-width:719px){ :root{ --pad:16px; } .track-top{ gap:14px; } .cover-thumb-wrap{ width:72px; height:72px; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; scroll-behavior:auto !important; } }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="app">
 
   <div id="fileWarning" class="file-warning">
     <strong>Heads up:</strong> you opened this file directly (<code>file://</code>), which can make Chrome/Edge misbehave —
-    you may see console errors like <code>ERR_REQUEST_RANGE_NOT_SATISFIABLE</code> or blocked "unsafe frame" loads, and video export/recording can fail silently.
+    you may see console errors like <code>ERR_REQUEST_RANGE_NOT_SATISFIABLE</code> or blocked “unsafe frame” loads, and video export/recording can fail silently.
     For reliable results, serve this file over <code>http://localhost</code> instead. Quickest ways:
-    <code>python -m http.server 8000</code> (then open <code>http://localhost:8000</code>), the VS Code "Live Server" extension, or <code>npx serve</code>.
+    <code>python -m http.server 8000</code> (then open <code>http://localhost:8000</code>), the VS Code “Live Server” extension, or <code>npx serve</code>.
   </div>
 
-  <header class="app-head">
-    <div>
-      <h1>Clip<span class="accent">Maker</span></h1>
-      <p>Turn a stretch of a song into a video: cover art, tags and a waveform, trimmed to the part you want to share.</p>
+  <header class="topbar">
+    <div class="logo">
+      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="8" fill="#E8A33D"/><g fill="#1c1404"><rect x="5" y="11" width="2.6" height="6" rx="1.3"/><rect x="9.6" y="7" width="2.6" height="14" rx="1.3"/><rect x="14.2" y="9.5" width="2.6" height="9" rx="1.3"/><rect x="18.8" y="5.5" width="2.6" height="17" rx="1.3"/><rect x="23" y="12" width="1.2" height="4" rx=".6"/></g></svg>
+      <span>Clip<b>Maker</b></span>
     </div>
   </header>
 
-  <main>
-    <div class="col-left">
+  <div class="hero hero-copy">
+    <h1>Turn a song into a shareable video clip.</h1>
+    <p>Pick the part you love. ClipMaker adds the cover art, track details and a live waveform, then exports a video ready to post.</p>
+  </div>
 
-      <section class="panel">
-        <h2>1. Audio file</h2>
-        <div class="dropzone" id="dropzone">
-          <div class="icon">🎧</div>
-          <div class="main-txt">Drop an audio file here, or click to choose one</div>
-          <div class="sub-txt">MP3, WAV, M4A, OGG, FLAC — tags and cover art are read automatically</div>
+  <div class="layout" id="layout">
+
+    <!-- Preview -->
+    <section class="card stage" aria-label="Preview">
+      <div class="preview-stage" id="previewStage">
+        <div class="placeholder-hint" id="previewPlaceholder">Your clip’s video card will appear here once you load a track.</div>
+        <canvas id="previewCanvas" style="display:none;" title="Tap to play or pause"></canvas>
+      </div>
+      <div class="seekbar">
+        <time id="seekCur">0:00</time>
+        <input type="range" class="seek-range" id="seekRange" min="0" max="1000" step="1" value="0" aria-label="Seek within clip">
+        <time id="seekTotal">0:00</time>
+      </div>
+      <div class="stage-cap"><span>Live preview</span><span>Tap the card to play</span></div>
+    </section>
+
+    <div class="col-controls">
+
+      <!-- 1. Track -->
+      <section class="card" id="trackPanel">
+        <div class="card-head" id="trackHead" hidden><span class="step-n">1</span><h2>Your track</h2></div>
+
+        <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Choose an audio file">
+          <div class="dz-icon" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          </div>
+          <div class="dz-title"><span class="txt-desktop">Drop an audio file here</span><span class="txt-touch">Choose an audio file</span></div>
+          <div class="dz-sub">MP3, WAV, M4A, OGG or FLAC. Tags and cover art are read automatically.</div>
+          <span class="btn btn-primary dz-btn">Browse files</span>
           <input type="file" id="fileInput" accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.aac">
         </div>
+        <ul class="hero-steps"><li>Add a track</li><li>Choose the moment</li><li>Export the video</li></ul>
 
         <div class="track-meta" id="trackMeta">
-          <div class="cover-row">
-            <div class="cover-thumb-wrap empty" id="coverThumbWrap">
+          <div class="track-top">
+            <button class="cover-thumb-wrap empty" id="coverThumbWrap" type="button" aria-label="Change cover art">
               <img class="cover-thumb" id="coverThumb" alt="">
               <span class="cover-thumb-note" aria-hidden="true">♪</span>
+              <span class="cover-edit" aria-hidden="true">Change</span>
+            </button>
+            <div class="track-fields">
+              <div class="field">
+                <label for="titleInput">Title</label>
+                <input type="text" id="titleInput" placeholder="Track title" autocomplete="off" enterkeyhint="done">
+              </div>
+              <div class="field">
+                <label for="artistInput">Artist</label>
+                <input type="text" id="artistInput" placeholder="Artist name" autocomplete="off" enterkeyhint="done">
+              </div>
             </div>
+          </div>
+          <div class="track-foot">
+            <div class="track-info"><span id="readoutFormat">—</span><span id="readoutDuration">—</span></div>
             <div class="btn-row">
-              <button class="btn" id="changeCoverBtn" type="button">Change cover</button>
+              <button class="btn btn-sm" id="changeCoverBtn" type="button">Change cover</button>
+              <button class="btn btn-sm" id="reloadCoverBtn" type="button" title="Restore the cover embedded in the audio file" disabled>Reload cover</button>
+              <button class="btn btn-sm btn-ghost" id="removeCoverBtn" type="button" title="Remove the cover art from the clip" disabled>Remove cover</button>
               <input type="file" id="coverInput" accept="image/*">
-              <button class="btn btn-ghost" id="changeFileBtn" type="button">Replace audio</button>
-            </div>
-          </div>
-          <div class="field">
-            <label for="titleInput">Title</label>
-            <input type="text" id="titleInput" placeholder="Track title">
-          </div>
-          <div class="field">
-            <label for="artistInput">Artist</label>
-            <input type="text" id="artistInput" placeholder="Artist name">
-          </div>
-          <div class="meta-row">
-            <div class="field">
-              <label>Format</label>
-              <div class="readout" id="readoutFormat">—</div>
-            </div>
-            <div class="field">
-              <label>Duration</label>
-              <div class="readout" id="readoutDuration">—</div>
+              <button class="btn btn-sm btn-ghost" id="changeFileBtn" type="button">Replace audio</button>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="panel timeline-panel" id="timelinePanel" style="display:none;">
-        <h2>2. Choose the clip range <small id="rangeHint"></small></h2>
+      <!-- 2. Trim -->
+      <section class="card" id="timelinePanel" style="display:none;">
+        <div class="card-head"><span class="step-n">2</span><h2>Choose the clip</h2></div>
         <div class="timeline-wrap">
           <div class="timeline" id="timeline">
             <canvas id="timelineWave"></canvas>
             <div class="selection-overlay" id="selectionOverlay"></div>
             <div class="playcursor" id="playCursor"></div>
             <div class="click-indicator" id="clickIndicator"></div>
-            <div class="handle" id="handleA" tabindex="0"></div>
-            <div class="handle" id="handleB" tabindex="0"></div>
+            <div class="handle" id="handleA" tabindex="0" role="slider" aria-label="Clip start"></div>
+            <div class="handle" id="handleB" tabindex="0" role="slider" aria-label="Clip end"></div>
           </div>
         </div>
-        <div class="time-inputs">
+        <div class="tl-scale"><span>0:00</span><span class="duration-label" id="durationLabel"></span><span id="tlEnd">—</span></div>
+        <p class="tl-help">Drag the amber handles to trim, or drag the highlighted area to slide the whole clip. Tap anywhere on the waveform to listen from that spot.</p>
+        <div class="trim-controls">
           <div class="field">
             <label for="inputA">Start</label>
-            <input type="text" id="inputA" value="0:00.000" inputmode="decimal" spellcheck="false">
+            <input type="text" id="inputA" value="0:00.000" inputmode="text" enterkeyhint="done" autocomplete="off" autocapitalize="off" spellcheck="false">
           </div>
           <div class="field">
             <label for="inputB">End</label>
-            <input type="text" id="inputB" value="0:00.000" inputmode="decimal" spellcheck="false">
+            <input type="text" id="inputB" value="0:00.000" inputmode="text" enterkeyhint="done" autocomplete="off" autocapitalize="off" spellcheck="false">
           </div>
-          <button class="btn btn-ghost" id="previewPlayBtn" type="button">▶ Preview clip audio</button>
-          <span class="duration-label" id="durationLabel"></span>
+          <div class="trim-play">
+            <button class="btn" id="previewPlayBtn" type="button">▶ Play clip</button>
+          </div>
         </div>
       </section>
 
-      <section class="panel export-panel" id="exportPanel" style="display:none;">
-        <h2>3. Export</h2>
-        <div class="export-grid">
-          <div class="export-opt">
-            <label for="themeSelect">Theme</label>
-            <select id="themeSelect">
-              <option value="amber" selected>Amber Glow</option>
-              <option value="midnight">Midnight Blue</option>
-              <option value="mono">Mono Noir</option>
-              <option value="sunset">Sunset Punch</option>
-              <option value="neon">Neon Pulse</option>
+      <!-- 3. Style & export settings -->
+      <section class="card" id="exportPanel" style="display:none;">
+        <div class="card-head"><span class="step-n">3</span><h2>Style and format</h2></div>
+        <div class="settings">
+
+          <div class="setting">
+            <span class="setting-label" id="lblTheme">Theme</span>
+            <div class="chips" role="group" aria-labelledby="lblTheme" data-select="themeSelect">
+              <button type="button" class="chip" data-value="amber"><span class="sw" style="--a:#E8A33D;--b:#131215"></span>Amber Glow</button>
+              <button type="button" class="chip" data-value="midnight"><span class="sw" style="--a:#4D8FE8;--b:#0d1220"></span>Midnight Blue</button>
+              <button type="button" class="chip" data-value="mono"><span class="sw" style="--a:#D8D8D8;--b:#141414"></span>Mono Noir</button>
+              <button type="button" class="chip" data-value="sunset"><span class="sw" style="--a:#FF6B5F;--b:#1c1013"></span>Sunset Punch</button>
+              <button type="button" class="chip" data-value="neon"><span class="sw" style="--a:#39FF88;--b:#08120d"></span>Neon Pulse</button>
+            </div>
+            <select id="themeSelect" class="sr-only" tabindex="-1" aria-hidden="true">
+              <option value="amber" selected>Amber Glow</option><option value="midnight">Midnight Blue</option><option value="mono">Mono Noir</option><option value="sunset">Sunset Punch</option><option value="neon">Neon Pulse</option>
             </select>
           </div>
-          <div class="export-opt">
-            <label for="aspectSelect">Frame</label>
-            <select id="aspectSelect">
-              <option value="4:5" selected>Portrait 4:5</option>
-              <option value="1:1">Square 1:1</option>
-              <option value="9:16">Story 9:16</option>
-              <option value="2:3">Portrait 2:3</option>
-              <option value="3:2">Landscape 3:2</option>
-              <option value="16:9">Landscape 16:9</option>
+
+          <div class="setting">
+            <span class="setting-label" id="lblFrame">Frame shape</span>
+            <div class="chips frames" role="group" aria-labelledby="lblFrame" data-select="aspectSelect">
+              <button type="button" class="chip" data-value="4:5"><i class="ar" style="width:22px;height:28px"></i>4:5<small>Portrait</small></button>
+              <button type="button" class="chip" data-value="1:1"><i class="ar" style="width:26px;height:26px"></i>1:1<small>Square</small></button>
+              <button type="button" class="chip" data-value="9:16"><i class="ar" style="width:16px;height:28px"></i>9:16<small>Story</small></button>
+              <button type="button" class="chip" data-value="2:3"><i class="ar" style="width:19px;height:28px"></i>2:3<small>Portrait</small></button>
+              <button type="button" class="chip" data-value="3:2"><i class="ar" style="width:28px;height:19px"></i>3:2<small>Landscape</small></button>
+              <button type="button" class="chip" data-value="16:9"><i class="ar" style="width:28px;height:16px"></i>16:9<small>Wide</small></button>
+            </div>
+            <select id="aspectSelect" class="sr-only" tabindex="-1" aria-hidden="true">
+              <option value="4:5" selected>Portrait 4:5</option><option value="1:1">Square 1:1</option><option value="9:16">Story 9:16</option><option value="2:3">Portrait 2:3</option><option value="3:2">Landscape 3:2</option><option value="16:9">Landscape 16:9</option>
             </select>
           </div>
-          <div class="export-opt">
-            <label for="resSelect">Resolution</label>
-            <select id="resSelect">
-              <option value="1280" selected>HD 720p</option>
-              <option value="1920">FHD 1080p</option>
-            </select>
+
+          <div class="setting-pair">
+            <div class="setting">
+              <span class="setting-label" id="lblRes">Quality</span>
+              <div class="seg" role="group" aria-labelledby="lblRes" data-select="resSelect">
+                <button type="button" data-value="1280">720p</button>
+                <button type="button" data-value="1920">1080p</button>
+              </div>
+              <select id="resSelect" class="sr-only" tabindex="-1" aria-hidden="true">
+                <option value="1280" selected>HD 720p</option><option value="1920">FHD 1080p</option>
+              </select>
+            </div>
+            <div class="setting">
+              <span class="setting-label" id="lblFps">Frame rate</span>
+              <div class="seg" role="group" aria-labelledby="lblFps" data-select="fpsSelect">
+                <button type="button" data-value="30">30 fps</button>
+                <button type="button" data-value="24">24 fps</button>
+              </div>
+              <select id="fpsSelect" class="sr-only" tabindex="-1" aria-hidden="true">
+                <option value="30" selected>30 fps</option><option value="24">24 fps</option>
+              </select>
+            </div>
           </div>
-          <div class="export-opt">
-            <label for="fpsSelect">Frame rate</label>
-            <select id="fpsSelect">
-              <option value="30" selected>30 fps</option>
-              <option value="24">24 fps</option>
-            </select>
-          </div>
-          <div class="checkbox-row">
+
+          <label class="switch">
             <input type="checkbox" id="monitorAudio" checked>
-            <label for="monitorAudio">Play sound while exporting</label>
-          </div>
-          <div style="flex:1"></div>
-          <button class="btn btn-primary" id="exportBtn" type="button">Export video</button>
-          <button class="btn btn-danger" id="cancelBtn" type="button" style="display:none;">Cancel</button>
+            <span class="track" aria-hidden="true"></span>
+            <span>Play sound while exporting</span>
+          </label>
         </div>
-        <div class="progress-wrap" id="progressWrap">
-          <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-          <div class="progress-label" id="progressLabel">Rendering…</div>
-        </div>
-        <div class="result" id="result">
-          <video id="resultVideo" controls muted></video>
+      </section>
+
+      <!-- Result -->
+      <section class="card result" id="result" aria-live="polite">
+        <div class="card-head"><h2>Your clip is ready</h2></div>
+        <div class="result-body">
+          <video id="resultVideo" controls muted playsinline></video>
           <div class="result-info">
             <p id="resultInfo"></p>
-            <button class="btn btn-primary" id="downloadBtn" type="button">Download video</button>
+            <button class="btn btn-primary btn-lg" id="downloadBtn" type="button">Download video</button>
           </div>
         </div>
-        <div class="status-msg" id="statusMsg"></div>
       </section>
 
     </div>
+  </div>
 
-    <section class="panel preview-panel">
-      <h2>Preview</h2>
-      <div class="preview-stage" id="previewStage">
-        <div class="placeholder-hint" id="previewPlaceholder">Your clip's video card will appear here once you load a track.</div>
-        <canvas id="previewCanvas" style="display:none;"></canvas>
-      </div>
-    </section>
-  </main>
+  <!-- Sticky action bar -->
+  <div class="actionbar" id="actionBar">
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-label" id="progressLabel">Rendering…</div>
+    </div>
+    <div class="ab-row">
+      <div class="ab-summary"><strong id="sumLen">—</strong><span id="sumMeta"></span></div>
+      <button class="btn btn-danger" id="cancelBtn" type="button" style="display:none;">Cancel</button>
+      <button class="btn btn-primary btn-lg" id="exportBtn" type="button">Export video</button>
+    </div>
+  </div>
 
-  <footer>Everything runs in your browser — audio and images are never uploaded anywhere.</footer>
+  <footer>Everything runs in your browser. Audio and images are never uploaded anywhere.</footer>
 </div>
+
+<div class="toast" id="statusMsg" role="status" aria-live="polite"></div>
+<div class="drop-overlay" id="dropOverlay">Drop to load this track</div>
 
 <script>
 (function(){
@@ -479,6 +522,8 @@
     title: '',
     artist: '',
     coverImg: null,       // HTMLImageElement or null
+    embeddedCover: null,  // Blob of the cover art embedded in the audio file (or null)
+    coverSource: 'none',  // 'embedded' | 'custom' | 'none'
     accent: '#E8A33D',
     themeId: 'amber',     // selected video theme, see THEMES below
     finePeaks: null,      // Float32Array ~400 buckets, for timeline
@@ -989,6 +1034,7 @@
     $('readoutFormat').textContent = `${state.formatLabel}, ${Math.round(state.sampleRate/1000)} kHz, ${state.bitrateKbps} kbps, ${state.channels>=2?'Stereo':'Mono'}`;
     $('readoutDuration').textContent = formatTime(state.duration);
 
+    state.embeddedCover = (tags && tags.pictureBlob) || null;
     if(tags && tags.pictureBlob){
       try{
         await setCoverFromBlob(tags.pictureBlob);
@@ -1049,6 +1095,15 @@
     const el = $('coverThumb');
     el.removeAttribute('src');
     $('coverThumbWrap').classList.add('empty');
+    state.coverSource = 'none';
+    updateCoverButtons();
+  }
+
+  // Remove: needs a cover. Reload: needs an embedded cover that isn't already the one shown.
+  function updateCoverButtons(){
+    const rm = $('removeCoverBtn'), rl = $('reloadCoverBtn');
+    if(rm) rm.disabled = !state.coverImg;
+    if(rl) rl.disabled = !state.embeddedCover || state.coverSource==='embedded';
   }
 
   function setCoverThumbImage(url){
@@ -1092,7 +1147,9 @@
       img.onload = ()=>{
         state.coverImg = img;
         state.accent = averageColor(img);
+        state.coverSource = (blob===state.embeddedCover) ? 'embedded' : 'custom';
         setCoverThumbImage(url);
+        updateCoverButtons();
         finish();
       };
       img.onerror = ()=>{
@@ -1138,7 +1195,21 @@
     const overlay = $('selectionOverlay');
     overlay.style.left = pctA+'%';
     overlay.style.width = (pctB-pctA)+'%';
+    // If the highlighted area is narrower than the two 44px touch zones, move the
+    // handles outward so a finger can still land on (and drag) the area itself.
+    const tw = $('timeline').getBoundingClientRect().width;
+    const narrow = tw>0 && ((pctB-pctA)/100)*tw < 56;
+    for(const [id,v] of [['handleA',state.rangeA],['handleB',state.rangeB]]){
+      const h = $(id);
+      h.setAttribute('aria-valuemin','0');
+      h.setAttribute('aria-valuemax',String(Math.round(state.duration*1000)/1000));
+      h.setAttribute('aria-valuenow',String(Math.round(v*1000)/1000));
+      h.setAttribute('aria-valuetext',formatTimeMs(v));
+    }
+    $('handleA').classList.toggle('out-a', narrow);
+    $('handleB').classList.toggle('out-b', narrow);
   }
+  window.addEventListener('resize', ()=>{ if(state.duration) layoutHandles(); });
 
   function updateTimeInputsFromRange(){
     $('inputA').value = formatTimeMs(state.rangeA);
@@ -1168,22 +1239,38 @@
 
   function attachDrag(){
     let dragging = null;
+    let activeId = null;
+    let activeEl = null;
     let rangeGrabOffset = 0;
     let rangeWidth = 0;
 
     function onDown(which, e){
+      if(dragging) return;                       // ignore a second finger
+      if(e.pointerType==='mouse' && e.button!==0) return;
       dragging = which;
+      activeId = e.pointerId;
+      activeEl = e.currentTarget;
       if(which==='range'){
         const t = pctFromClientX(e.clientX);
         rangeGrabOffset = t - state.rangeA;
         rangeWidth = state.rangeB - state.rangeA;
+        activeEl.style.cursor = 'grabbing';
       }
+      // Capture the pointer so the drag keeps tracking even if the finger leaves
+      // the element or the browser would otherwise reclaim the touch.
+      try{ activeEl.setPointerCapture(e.pointerId); }catch(_){}
+      // preventDefault() below stops the browser from focusing the handle, which is
+      // why the arrow-key shortcuts never worked after grabbing it — focus it by hand.
+      if(which!=='range'){ try{ activeEl.focus({preventScroll:true}); }catch(_){} }
       e.preventDefault();
+      e.stopPropagation();
       window.addEventListener('pointermove', onMove);
       window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onUp);
     }
     function onMove(e){
-      if(!dragging) return;
+      if(!dragging || e.pointerId!==activeId) return;
+      e.preventDefault();
       const t = pctFromClientX(e.clientX);
       if(dragging==='A'){
         setRange(Math.min(t, state.rangeB-MIN_SELECTION), state.rangeB);
@@ -1196,11 +1283,19 @@
       }
       followPlaybackRange(dragging==='B' ? 'B' : 'A');
     }
-    function onUp(){
-      dragging = null;
+    function onUp(e){
+      if(e && e.pointerId!==undefined && e.pointerId!==activeId) return;
+      if(activeEl){
+        try{ activeEl.releasePointerCapture(activeId); }catch(_){}
+        if(dragging==='range') activeEl.style.cursor = 'grab';
+      }
+      dragging = null; activeId = null; activeEl = null;
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
     }
+    // A long-press on touch screens opens the context menu, which cancels the drag.
+    $('timeline').addEventListener('contextmenu', (e)=>e.preventDefault());
     $('handleA').addEventListener('pointerdown', (e)=>onDown('A', e));
     $('handleB').addEventListener('pointerdown', (e)=>onDown('B', e));
     $('selectionOverlay').style.pointerEvents = 'auto';
@@ -1208,16 +1303,22 @@
     $('selectionOverlay').addEventListener('pointerdown', (e)=>onDown('range', e));
 
     // Arrow = 1 s, Shift+Arrow = 0.1 s, Alt+Arrow = 1 ms
-    function keyStep(e){ return e.altKey ? 0.001 : (e.shiftKey ? 0.1 : 1); }
+    function keyStep(e){ return (e.key==='PageUp'||e.key==='PageDown') ? 10 : (e.altKey ? 0.001 : (e.shiftKey ? 0.1 : 1)); }
+    // Left/Down = earlier, Right/Up = later (standard slider keys). Handles never push each other.
+    function keyDir(e){
+      return (e.key==='ArrowLeft'||e.key==='ArrowDown'||e.key==='PageDown') ? -1 : ((e.key==='ArrowRight'||e.key==='ArrowUp'||e.key==='PageUp') ? 1 : 0);
+    }
     $('handleA').addEventListener('keydown', (e)=>{
-      const st = keyStep(e);
-      if(e.key==='ArrowLeft'){ e.preventDefault(); setRange(state.rangeA-st, state.rangeB); followPlaybackRange('A'); }
-      if(e.key==='ArrowRight'){ e.preventDefault(); setRange(state.rangeA+st, state.rangeB); followPlaybackRange('A'); }
+      const d = keyDir(e); if(!d) return;
+      e.preventDefault();
+      setRange(Math.min(state.rangeA + d*keyStep(e), state.rangeB-MIN_SELECTION), state.rangeB);
+      followPlaybackRange('A');
     });
     $('handleB').addEventListener('keydown', (e)=>{
-      const st = keyStep(e);
-      if(e.key==='ArrowLeft'){ e.preventDefault(); setRange(state.rangeA, state.rangeB-st); followPlaybackRange('B'); }
-      if(e.key==='ArrowRight'){ e.preventDefault(); setRange(state.rangeA, state.rangeB+st); followPlaybackRange('B'); }
+      const d = keyDir(e); if(!d) return;
+      e.preventDefault();
+      setRange(state.rangeA, Math.max(state.rangeB + d*keyStep(e), state.rangeA+MIN_SELECTION));
+      followPlaybackRange('B');
     });
   }
 
@@ -1620,6 +1721,21 @@
     return `${state.formatLabel}, ${Math.round(state.sampleRate/1000)} kHz, ${state.bitrateKbps} kbps, ${state.channels>=2?'Stereo':'Mono'}, ${formatTimeMs(state.duration)}`;
   }
 
+  // ---------- seek bar (live preview) ----------
+  // Maps the slider (0..1000) onto the selected clip [rangeA, rangeB].
+  let seekScrubbing = false;
+  function updateSeekUI(progress){
+    const r = $('seekRange');
+    if(!r) return;
+    const len = Math.max(0, state.rangeB - state.rangeA);
+    if(!seekScrubbing){
+      r.value = Math.round(clamp(progress,0,1)*1000);
+    }
+    r.style.setProperty('--p', (r.value/10)+'%');
+    $('seekCur').textContent = formatTime(len*(r.value/1000));
+    $('seekTotal').textContent = formatTime(len);
+  }
+
   function renderPreviewStatic(){
     if(!state.audioBuffer) return;
     const canvas = $('previewCanvas');
@@ -1632,6 +1748,7 @@
       tGlobal: performance.now()/1000,
       timeLabel: `${formatTime(0)} / ${formatTime(state.rangeB-state.rangeA)}`
     });
+    updateSeekUI(0);
   }
 
   // ---------- preview playback (not recorded) ----------
@@ -1666,7 +1783,7 @@
     // A timeline scrub taking over from a currently-playing button preview
     // should drop the button back to its idle label — it's no longer playing.
     if(origin!=='button' && state.preview.origin==='button' && state.preview.playing){
-      $('previewPlayBtn').textContent = '▶ Preview clip audio';
+      $('previewPlayBtn').textContent = '▶ Play clip';
     }
 
     stopPreviewSource();
@@ -1697,7 +1814,7 @@
     p.origin = origin;
 
     if(origin==='button'){
-      $('previewPlayBtn').textContent = '⏸ Preview clip audio';
+      $('previewPlayBtn').textContent = '⏸ Pause';
     }
     $('playCursor').style.display = '';
 
@@ -1729,6 +1846,7 @@
       });
       const pct = state.duration ? (pos/state.duration)*100 : 0;
       $('playCursor').style.left = pct+'%';
+      updateSeekUI(progress);
 
       if(pos>=state.preview.segEnd-0.008){
         stopPreviewFully();
@@ -1757,7 +1875,7 @@
     p.playing = false;
     p.paused = true;
     p.playFrom = p.segStart;
-    $('previewPlayBtn').textContent = '▶ Preview clip audio';
+    $('previewPlayBtn').textContent = '▶ Play clip';
   }
 
   function stopPreviewFully(){
@@ -1769,7 +1887,7 @@
     p.playFrom = p.segStart;
     p.particles = [];
     if(wasButton){
-      $('previewPlayBtn').textContent = '▶ Preview clip audio';
+      $('previewPlayBtn').textContent = '▶ Play clip';
     }
     $('playCursor').style.display = 'none';
     renderPreviewStatic();
@@ -1805,7 +1923,7 @@
   // "Preview clip audio" always plays the selected range from the start —
   // it's a play/pause toggle for the clip, not a resume-from-where-you-left-off control.
   function togglePreviewPlay(){
-    if(!state.audioBuffer) return;
+    if(!state.audioBuffer || state.exportActive) return;
     const p = state.preview;
     if(p.playing && p.origin==='button'){ pausePreview(); return; }
     startPreviewSegment(state.rangeA, state.rangeB, state.rangeA, 'button');
@@ -2194,6 +2312,22 @@
       await setCoverFromBlob(f);
       renderPreviewStatic();
     });
+    $('removeCoverBtn').addEventListener('click', ()=>{
+      if(state.exportActive || !state.coverImg) return;
+      state.coverImg = null;
+      state.accent = '#E8A33D';
+      $('coverInput').value = '';
+      clearCoverThumb();
+      renderPreviewStatic();
+      setStatus('Cover removed.');
+    });
+    $('reloadCoverBtn').addEventListener('click', async ()=>{
+      if(state.exportActive || !state.embeddedCover) return;
+      await setCoverFromBlob(state.embeddedCover);
+      renderPreviewStatic();
+      if(state.coverImg) setStatus('Embedded cover restored.');
+      else setStatus('Could not load the embedded cover.', true);
+    });
 
     $('titleInput').addEventListener('input', renderPreviewStatic);
     $('artistInput').addEventListener('input', renderPreviewStatic);
@@ -2231,6 +2365,166 @@
   }
 
   init();
+
+  // Seek bar: drag/click/arrow keys to jump anywhere inside the selected clip.
+  // While dragging, audio is paused and the card shows the frame at that spot;
+  // on release playback continues from there.
+  (function(){
+    const range = $('seekRange');
+    function posFromSlider(){
+      const a = state.rangeA, b = state.rangeB;
+      return a + (b-a)*(range.value/1000);
+    }
+    function drawAt(pos){
+      const a = state.rangeA, b = state.rangeB;
+      const canvas = $('previewCanvas');
+      renderFrame(canvas.getContext('2d'), canvas.width, canvas.height, {
+        title: $('titleInput').value || state.title,
+        artist: $('artistInput').value || state.artist,
+        infoLine: buildInfoLine(),
+        progress: b>a ? clamp((pos-a)/(b-a),0,1) : 0,
+        tGlobal: performance.now()/1000,
+        timeLabel: `${formatTime(pos)} / ${formatTime(state.duration)}`
+      });
+    }
+    range.addEventListener('input',()=>{
+      if(!state.audioBuffer || state.exportActive) return;
+      if(!seekScrubbing){
+        seekScrubbing = true;
+        const p = state.preview;
+        stopPreviewSource();
+        p.playing = false; p.paused = false; p.particles = [];
+        $('previewPlayBtn').textContent = '▶ Play clip';
+        $('playCursor').style.display = 'none';
+      }
+      updateSeekUI(0);
+      drawAt(posFromSlider());
+    });
+    // Native range steps are 0.1% of the clip (~30 ms on a 30 s clip), far too small
+    // for keyboard scrubbing. Use the same steps as the trim handles instead.
+    range.addEventListener('keydown',(e)=>{
+      if(e.ctrlKey || e.metaKey || !state.audioBuffer || state.exportActive) return;
+      const len = state.rangeB - state.rangeA;
+      if(len<=0) return;
+      let cur = len*(range.value/1000), next = null;
+      const step = e.altKey ? 0.001 : (e.shiftKey ? 0.1 : 1);
+      if(e.key==='ArrowLeft' || e.key==='ArrowDown') next = cur - step;
+      else if(e.key==='ArrowRight' || e.key==='ArrowUp') next = cur + step;
+      else if(e.key==='PageDown') next = cur - 10;
+      else if(e.key==='PageUp') next = cur + 10;
+      else if(e.key==='Home') next = 0;
+      else if(e.key==='End') next = len;
+      else return;
+      e.preventDefault();
+      range.value = Math.round(clamp(next,0,len)/len*1000);
+      range.dispatchEvent(new Event('input',{bubbles:true}));
+      range.dispatchEvent(new Event('change',{bubbles:true}));
+    });
+    range.addEventListener('change',()=>{
+      if(!seekScrubbing) return;
+      seekScrubbing = false;
+      if(!state.audioBuffer || state.exportActive) return;
+      const pos = Math.min(posFromSlider(), state.rangeB - 0.05);
+      startPreviewSegment(state.rangeA, state.rangeB, Math.max(state.rangeA, pos), 'button');
+    });
+  })();
+})();
+</script>
+<script>
+/* UI glue: layout state, chips, summary, drag-drop, shortcuts. Core logic lives above. */
+(function(){
+  "use strict";
+  const $ = (id)=>document.getElementById(id);
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Loaded state toggles empty-state hero vs. workspace layout
+  const tm = $('trackMeta');
+  function syncLoaded(){
+    const on = tm.classList.contains('show');
+    document.body.classList.toggle('loaded', on);
+    $('trackHead').hidden = !on;
+  }
+  new MutationObserver(syncLoaded).observe(tm,{attributes:true,attributeFilter:['class']});
+  syncLoaded();
+
+  // Chips / segmented controls drive the (hidden) selects the core logic reads
+  function updateSummary(){
+    const m = /Selected\s+(\S+)/.exec($('durationLabel').textContent||'');
+    $('sumLen').textContent = m ? m[1].replace(/\.000$/,'') + ' clip' : '—';
+    const opt = (id)=>$(id).selectedOptions[0];
+    $('sumMeta').textContent = [$('aspectSelect').value, opt('resSelect').text.replace(/^\w+\s/,''), $('fpsSelect').value+' fps'].join(' · ');
+  }
+  document.querySelectorAll('[data-select]').forEach((group)=>{
+    const sel = $(group.dataset.select);
+    const paint = ()=>group.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.value===sel.value)));
+    group.addEventListener('click',(e)=>{
+      const b = e.target.closest('button'); if(!b) return;
+      sel.value = b.dataset.value;
+      sel.dispatchEvent(new Event('change',{bubbles:true}));
+      paint(); updateSummary();
+    });
+    paint();
+  });
+  new MutationObserver(updateSummary).observe($('durationLabel'),{childList:true,characterData:true,subtree:true});
+  new MutationObserver(()=>{ $('tlEnd').textContent = $('readoutDuration').textContent; }).observe($('readoutDuration'),{childList:true,characterData:true,subtree:true});
+  updateSummary();
+
+  // Dropzone keyboard access, cover thumb tap
+  $('dropzone').addEventListener('keydown',(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); $('fileInput').click(); } });
+  $('coverThumbWrap').addEventListener('click',()=>$('coverInput').click());
+  // Allow re-picking the same file
+  $('fileInput').addEventListener('click',(e)=>{ e.stopPropagation(); e.target.value=''; });
+
+  // Drop a file anywhere on the page
+  let dragDepth = 0;
+  const overlay = $('dropOverlay');
+  const hasFiles = (e)=>e.dataTransfer && Array.from(e.dataTransfer.types||[]).includes('Files');
+  window.addEventListener('dragenter',(e)=>{ if(!hasFiles(e)) return; dragDepth++; if(document.body.classList.contains('loaded')) overlay.classList.add('show'); });
+  window.addEventListener('dragleave',(e)=>{ if(!hasFiles(e)) return; dragDepth=Math.max(0,dragDepth-1); if(!dragDepth) overlay.classList.remove('show'); });
+  window.addEventListener('dragover',(e)=>{ if(hasFiles(e)) e.preventDefault(); });
+  window.addEventListener('drop',(e)=>{
+    dragDepth=0; overlay.classList.remove('show');
+    if(!hasFiles(e)) return;
+    e.preventDefault();
+    if(e.target.closest && e.target.closest('#dropzone')) return; // dropzone handles its own
+    const f = e.dataTransfer.files[0];
+    if(f && (f.type.startsWith('audio/') || /\.(mp3|wav|m4a|ogg|flac|aac)$/i.test(f.name))){
+      const dt = new DataTransfer(); dt.items.add(f);
+      $('fileInput').files = dt.files;
+      $('fileInput').dispatchEvent(new Event('change'));
+    }
+  });
+
+  // Tap the preview card to play/pause; Space does the same outside form fields
+  $('previewCanvas').addEventListener('click',()=>$('previewPlayBtn').click());
+
+  document.addEventListener('keydown',(e)=>{
+    if(e.code!=='Space' || !document.body.classList.contains('loaded')) return;
+    if(e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || e.isComposing) return; // holding Space must not flicker play/pause
+    const t = e.target;
+    // Sliders (trim handles, seek bar) have no Space behavior of their own, so let Space play from there.
+    const isSlider = t.matches && t.matches('[role="slider"], input[type="range"]');
+    if(!isSlider && t.closest && t.closest('input,select,textarea,button,[role="button"]')) return;
+    e.preventDefault(); $('previewPlayBtn').click();
+  });
+
+  // Toast: auto-dismiss info, tap to dismiss anything
+  const toast = $('statusMsg'); let toastTimer;
+  new MutationObserver(()=>{
+    clearTimeout(toastTimer);
+    if(toast.textContent && !toast.classList.contains('err')) toastTimer = setTimeout(()=>{ toast.textContent=''; }, 3500);
+  }).observe(toast,{childList:true,characterData:true,subtree:true});
+  toast.addEventListener('click',()=>{ toast.textContent=''; });
+
+  // Bring the finished video into view
+  new MutationObserver(()=>{
+    if($('result').classList.contains('show')) $('result').scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'});
+  }).observe($('result'),{attributes:true,attributeFilter:['class']});
+
+  // Don't let the sticky bar cover the focused field on mobile
+  document.addEventListener('focusin',(e)=>{
+    if(e.target.matches && e.target.matches('input[type=text]')) setTimeout(()=>e.target.scrollIntoView({block:'center',behavior:'auto'}),250);
+  });
 })();
 </script>
 </body>
