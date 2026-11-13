@@ -1,5 +1,5 @@
 # List of .html Files
-Generation Time: 10/11/2026 11.49.15,92
+Generation Time: 13/11/2026 19:57:47,10
 
 https://dotslashgabut.github.io/advanced-image-comparison.html
 https://dotslashgabut.github.io/alpha-extractor-alt.html
@@ -45,6 +45,7 @@ https://dotslashgabut.github.io/image-comparison-app-fullscreen-alt.html
 https://dotslashgabut.github.io/image-comparison-app-fullscreen.html
 https://dotslashgabut.github.io/image-comparison-app-old.html
 https://dotslashgabut.github.io/image-comparison-app.html
+https://dotslashgabut.github.io/imagesplitter.html
 https://dotslashgabut.github.io/index.html
 https://dotslashgabut.github.io/milk-player.html
 https://dotslashgabut.github.io/minimalist-audio-compare-alt1.html
@@ -85,6 +86,7 @@ https://dotslashgabut.github.io/resolution-aspect-ratio-hub.html
 https://dotslashgabut.github.io/resolution-aspect-ratio.html
 https://dotslashgabut.github.io/retro-pixelated-image-effect.html
 https://dotslashgabut.github.io/rolldeck-midi-player.html
+https://dotslashgabut.github.io/slicestudio.html
 https://dotslashgabut.github.io/streetview-route-recorder.html
 https://dotslashgabut.github.io/ultra-qr-studio-horizontal-qwen3coder.html
 https://dotslashgabut.github.io/ultra-qr-studio-vertical-qwen3coder.html

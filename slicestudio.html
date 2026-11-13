@@ -1,0 +1,2601 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SliceStudio — Image Splitter & Joiner</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            obsidian: {
+              950: '#09090b',
+              925: '#0e0e10',
+              900: '#121214',
+              850: '#18181b',
+              800: '#1f1f23',
+              750: '#27272a',
+              700: '#323236'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; user-select: none; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #09090b;
+      color: #f4f4f5;
+      overflow-x: hidden;
+    }
+    /* Pure neutral charcoal checkerboard for transparency */
+    .checkerboard {
+      background-color: #141416;
+      background-image:
+        linear-gradient(45deg, #0c0c0e 25%, transparent 25%),
+        linear-gradient(-45deg, #0c0c0e 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #0c0c0e 75%),
+        linear-gradient(-45deg, transparent 75%, #0c0c0e 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    }
+    /* Neutral Monochrome Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0e0e10; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+    canvas { touch-action: none; }
+    input[type="range"] { accent-color: #f4f4f5; }
+    .join-item-dragging { opacity: 0.45; border-color: #f4f4f5 !important; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-obsidian-950 text-zinc-100">
+
+  <!-- Top Navigation Bar -->
+  <header class="bg-obsidian-900/95 backdrop-blur border-b border-obsidian-750 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30">
+    <!-- Brand -->
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-zinc-100 text-zinc-950 flex items-center justify-center shadow-md">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-sm sm:text-base font-bold tracking-tight text-zinc-100 leading-tight flex items-center gap-1.5">
+          <span>SliceStudio</span>
+        </h1>
+        <p class="text-[11px] text-zinc-400 hidden md:block">Precision Image Splitter &amp; Multi-Image Stitcher</p>
+      </div>
+    </div>
+
+    <!-- Primary Workspace Switcher: Split vs Join -->
+    <div class="flex items-center bg-obsidian-950 p-1 rounded-xl border border-obsidian-750 shadow-inner">
+      <button id="tabSplitWorkspace" class="ws-tab active px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 bg-zinc-100 text-zinc-950 shadow transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121"/></svg>
+        <span>Split Image</span>
+      </button>
+      <button id="tabJoinWorkspace" class="ws-tab px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 text-zinc-400 hover:text-zinc-100 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+        <span>Join Images</span>
+        <span id="joinHeaderBadge" class="hidden text-[10px] px-1.5 py-0.2 rounded-full bg-obsidian-750 text-zinc-200 font-mono">0</span>
+      </button>
+    </div>
+
+    <!-- Context-Sensitive Header Actions -->
+    <div id="splitHeaderActions" class="flex items-center gap-2 flex-wrap">
+      <label for="fileInput" class="cursor-pointer px-3 py-1.5 rounded-xl bg-obsidian-800 hover:bg-obsidian-750 text-zinc-200 text-xs sm:text-sm font-medium border border-obsidian-700 transition flex items-center gap-1.5">
+        <svg class="w-4 h-4 text-zinc-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        <span>Upload</span>
+      </label>
+      <input id="fileInput" type="file" accept="image/*" class="hidden" />
+
+      <button id="btnDemoImage" class="px-3 py-1.5 rounded-xl bg-obsidian-850 hover:bg-obsidian-800 text-zinc-300 text-xs sm:text-sm font-medium border border-obsidian-750 transition">
+        Sample
+      </button>
+
+      <button id="btnSplitExport" class="px-3.5 py-1.5 rounded-xl bg-zinc-100 hover:bg-white text-zinc-950 text-xs sm:text-sm font-semibold shadow transition flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879"/></svg>
+        <span>Split &amp; Preview</span>
+      </button>
+    </div>
+
+    <div id="joinHeaderActions" class="hidden items-center gap-2 flex-wrap">
+      <label for="joinFileInput" class="cursor-pointer px-3 py-1.5 rounded-xl bg-obsidian-800 hover:bg-obsidian-750 text-zinc-200 text-xs sm:text-sm font-medium border border-obsidian-700 transition flex items-center gap-1.5">
+        <svg class="w-4 h-4 text-zinc-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+        <span>Add Images</span>
+      </label>
+      <input id="joinFileInput" type="file" accept="image/*" multiple class="hidden" />
+
+      <button id="btnJoinSampleSet" class="px-3 py-1.5 rounded-xl bg-obsidian-850 hover:bg-obsidian-800 text-zinc-300 text-xs sm:text-sm font-medium border border-obsidian-750 transition">
+        Sample Set
+      </button>
+
+      <button id="btnJoinDownload" class="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs sm:text-sm font-semibold shadow transition flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        <span>Download Joined</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       WORKSPACE 1: IMAGE SPLITTER
+       ======================================================================== -->
+  <div id="workspaceSplit" class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+
+    <!-- Left Control Sidebar (Splitter) -->
+    <aside class="w-full lg:w-80 xl:w-96 bg-obsidian-900 border-b lg:border-b-0 lg:border-r border-obsidian-750 p-4 flex flex-col gap-4 overflow-y-auto shrink-0">
+
+      <!-- Mode Selector -->
+      <div>
+        <label class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 block mb-2">1. Splitting Mode</label>
+        <div class="grid grid-cols-3 gap-1.5 bg-obsidian-950 p-1.5 rounded-xl border border-obsidian-750">
+          <button data-mode="grid" class="mode-btn active py-2 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition bg-zinc-100 text-zinc-950 shadow">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm0 6h16M12 4v16"/></svg>
+            <span>Grid / Slide</span>
+          </button>
+          <button data-mode="diagonal" class="mode-btn py-2 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition text-zinc-400 hover:text-zinc-100 hover:bg-obsidian-850">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 20L20 4M4 4h16v16H4z"/></svg>
+            <span>Diagonal</span>
+          </button>
+          <button data-mode="freehand" class="mode-btn py-2 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition text-zinc-400 hover:text-zinc-100 hover:bg-obsidian-850">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+            <span>Custom Draw</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mode-Specific Settings: GRID -->
+      <div id="panel-grid" class="space-y-3.5 bg-obsidian-850 p-3.5 rounded-2xl border border-obsidian-750">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-zinc-200">Grid &amp; Sliding Dividers</span>
+          <span id="gridPieceCount" class="text-xs px-2 py-0.5 rounded-full bg-obsidian-800 text-zinc-300 border border-obsidian-700 font-medium">4 pieces</span>
+        </div>
+
+        <!-- Quick Presets -->
+        <div class="grid grid-cols-3 gap-1.5">
+          <button id="presetHorizontal" class="py-1.5 px-2 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-xs font-medium text-zinc-200 border border-obsidian-700 transition">Horizontal</button>
+          <button id="presetVertical" class="py-1.5 px-2 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-xs font-medium text-zinc-200 border border-obsidian-700 transition">Vertical</button>
+          <button id="presetBoth" class="py-1.5 px-2 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-xs font-medium text-zinc-200 border border-obsidian-700 transition">Both (2×2)</button>
+        </div>
+
+        <!-- Rows & Columns Counters -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="bg-obsidian-900 p-2.5 rounded-xl border border-obsidian-750">
+            <label class="text-[11px] text-zinc-400 block mb-1">Horizontal Cuts</label>
+            <div class="flex items-center justify-between">
+              <button id="decRows" class="w-7 h-7 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-zinc-100 font-bold flex items-center justify-center border border-obsidian-700">−</button>
+              <span id="rowCountDisplay" class="text-xs font-bold text-zinc-100">2 rows</span>
+              <button id="incRows" class="w-7 h-7 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-zinc-100 font-bold flex items-center justify-center border border-obsidian-700">+</button>
+            </div>
+          </div>
+          <div class="bg-obsidian-900 p-2.5 rounded-xl border border-obsidian-750">
+            <label class="text-[11px] text-zinc-400 block mb-1">Vertical Cuts</label>
+            <div class="flex items-center justify-between">
+              <button id="decCols" class="w-7 h-7 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-zinc-100 font-bold flex items-center justify-center border border-obsidian-700">−</button>
+              <span id="colCountDisplay" class="text-xs font-bold text-zinc-100">2 cols</span>
+              <button id="incCols" class="w-7 h-7 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-zinc-100 font-bold flex items-center justify-center border border-obsidian-700">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Add/Remove & Equalize -->
+        <div class="space-y-2.5 pt-1">
+          <div class="flex items-center justify-between gap-2">
+            <button id="btnGridAddToggle" class="flex-1 py-2 px-3 rounded-xl bg-obsidian-800 hover:bg-obsidian-750 text-zinc-200 border border-obsidian-700 text-xs font-semibold transition flex items-center justify-center gap-1.5" title="Toggle click-on-canvas to add grid cut lines">
+              <span id="gridAddDot" class="w-2 h-2 rounded-full bg-zinc-500"></span>
+              <span id="gridAddLabel">Click Add: Off</span>
+            </button>
+            <select id="clickAddType" class="bg-obsidian-900 border border-obsidian-700 rounded-xl px-2.5 py-2 text-xs text-zinc-200 focus:outline-none focus:border-zinc-400" title="Cut axis when adding via click">
+              <option value="horizontal">Horizontal (—)</option>
+              <option value="vertical">Vertical (|)</option>
+              <option value="both">Both (+)</option>
+            </select>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <label class="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
+              <input id="snapToggle" type="checkbox" checked class="rounded bg-obsidian-800 border-obsidian-600 accent-zinc-100" />
+              <span>Snap to 5% / Center</span>
+            </label>
+            <button id="btnEqualizeGrid" class="text-xs text-zinc-200 hover:text-white font-medium underline underline-offset-2">Distribute Evenly</button>
+          </div>
+        </div>
+
+        <p id="gridHelpText" class="text-[11px] text-zinc-400 bg-obsidian-900/90 p-2.5 rounded-xl border border-obsidian-750 leading-relaxed">
+          <strong class="text-zinc-200">Tip:</strong> Drag any dashed line or pill handle to slide cuts, <strong class="text-zinc-200">Shift+Click</strong> (or turn <strong class="text-zinc-200">Click Add: On</strong>) to insert cuts, or double-click any line to delete it.
+        </p>
+      </div>
+
+      <!-- Mode-Specific Settings: DIAGONAL -->
+      <div id="panel-diagonal" class="hidden space-y-3.5 bg-obsidian-850 p-3.5 rounded-2xl border border-obsidian-750">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-zinc-200">Multi-Diagonal Slicer</span>
+          <span id="diagLineCount" class="text-xs px-2 py-0.5 rounded-full bg-obsidian-800 text-zinc-300 border border-obsidian-700 font-medium">1 cut (2 pieces)</span>
+        </div>
+
+        <!-- Diagonal Geometric Presets -->
+        <div>
+          <label class="text-[11px] text-zinc-400 block mb-1.5">Quick Multi-Cut Presets</label>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button id="btnDiagTLBR" class="py-1.5 px-2 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-[11px] font-medium text-zinc-200 border border-obsidian-700 transition">╲ Single</button>
+            <button id="btnDiagBLTR" class="py-1.5 px-2 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-[11px] font-medium text-zinc-200 border border-obsidian-700 transition">╱ Single</button>
+            <button id="btnDiagXCross" class="py-1.5 px-2 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-[11px] font-medium text-zinc-200 border border-obsidian-700 transition">╳ X-Cross</button>
+            <button id="btnDiagDiamond" class="py-1.5 px-2 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-[11px] font-medium text-zinc-200 border border-obsidian-700 transition">◇ Diamond</button>
+            <button id="btnDiagParallel" class="py-1.5 px-2 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-[11px] font-medium text-zinc-200 border border-obsidian-700 transition">⫽ Double ╲</button>
+            <button id="btnDiagStarburst" class="py-1.5 px-2 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-[11px] font-medium text-zinc-200 border border-obsidian-700 transition">✳ Starburst</button>
+          </div>
+        </div>
+
+        <!-- Add / Canvas Click Toggle -->
+        <div class="flex gap-2">
+          <button id="btnAddDiagonal" class="flex-1 py-2 px-3 rounded-xl bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-semibold shadow transition flex items-center justify-center gap-1">
+            <span>+ Add Diagonal</span>
+          </button>
+          <button id="btnDiagAddToggle" class="py-2 px-3 rounded-xl bg-obsidian-800 hover:bg-obsidian-750 text-zinc-200 border border-obsidian-700 text-xs font-medium transition" title="Toggle click-on-canvas to add diagonal lines">
+            Click Add: Off
+          </button>
+        </div>
+
+        <!-- Active Diagonal Lines List -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between text-[11px] text-zinc-400">
+            <span>Active Diagonal Cuts</span>
+            <button id="btnDiagReset" class="text-zinc-300 hover:text-white underline underline-offset-2">Reset</button>
+          </div>
+          <div id="diagonalList" class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <p class="text-[11px] text-zinc-400 bg-obsidian-900/90 p-2.5 rounded-xl border border-obsidian-750 leading-relaxed">
+          <strong class="text-zinc-200">Tip:</strong> Drag endpoint circles to angle a cut, drag the center pill to slide the line parallel, or <strong class="text-zinc-200">Shift+Click</strong> on canvas to add a new diagonal.
+        </p>
+      </div>
+
+      <!-- Mode-Specific Settings: FREEHAND / CUSTOM DRAW -->
+      <div id="panel-freehand" class="hidden space-y-3.5 bg-obsidian-850 p-3.5 rounded-2xl border border-obsidian-750">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-zinc-200">Custom Draw / Lasso</span>
+          <span id="freehandStrokeCount" class="text-xs px-2 py-0.5 rounded-full bg-obsidian-800 text-zinc-300 border border-obsidian-700 font-medium">0 paths</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-1.5 bg-obsidian-950 p-1 rounded-xl border border-obsidian-750">
+          <button id="subFreehandSlice" class="freehand-sub active py-1.5 px-2 rounded-lg text-xs font-semibold bg-zinc-100 text-zinc-950 transition">Slice Through</button>
+          <button id="subFreehandLasso" class="freehand-sub py-1.5 px-2 rounded-lg text-xs font-semibold text-zinc-400 hover:text-zinc-100 transition">Closed Shape</button>
+        </div>
+
+        <div class="flex gap-2">
+          <button id="btnUndoFreehand" class="flex-1 py-2 px-3 rounded-xl bg-obsidian-800 hover:bg-obsidian-750 text-zinc-200 border border-obsidian-700 text-xs font-medium transition">
+            Undo Path
+          </button>
+          <button id="btnClearFreehand" class="flex-1 py-2 px-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-medium transition">
+            Clear All
+          </button>
+        </div>
+
+        <p id="freehandHelpText" class="text-[11px] text-zinc-400 bg-obsidian-900/90 p-2.5 rounded-xl border border-obsidian-750 leading-relaxed">
+          <strong class="text-zinc-200">Slice Through:</strong> Draw a line starting near one edge of the image and ending near another edge to split into two pieces.
+        </p>
+      </div>
+
+      <!-- Guide Line Appearance -->
+      <div class="space-y-3 bg-obsidian-850 p-3.5 rounded-2xl border border-obsidian-750">
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 block">2. Guide Line Visibility</span>
+
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-xs text-zinc-300">Line Color</span>
+          <div class="flex items-center gap-1.5" id="colorSwatches">
+            <button data-color="#ffffff" class="swatch w-6 h-6 rounded-full bg-white ring-2 ring-zinc-400 scale-110 transition" title="Pure White"></button>
+            <button data-color="#facc15" class="swatch w-6 h-6 rounded-full bg-yellow-400 opacity-85 hover:opacity-100 hover:ring-2 hover:ring-zinc-300 transition" title="Amber Yellow"></button>
+            <button data-color="#f43f5e" class="swatch w-6 h-6 rounded-full bg-rose-500 opacity-85 hover:opacity-100 hover:ring-2 hover:ring-zinc-300 transition" title="Crimson"></button>
+            <button data-color="#34d399" class="swatch w-6 h-6 rounded-full bg-emerald-400 opacity-85 hover:opacity-100 hover:ring-2 hover:ring-zinc-300 transition" title="Emerald"></button>
+            <button data-color="#fb923c" class="swatch w-6 h-6 rounded-full bg-orange-400 opacity-85 hover:opacity-100 hover:ring-2 hover:ring-zinc-300 transition" title="Orange"></button>
+            <button data-color="#18181b" class="swatch w-6 h-6 rounded-full bg-obsidian-950 opacity-90 hover:opacity-100 hover:ring-2 hover:ring-zinc-300 transition" title="Obsidian Black"></button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-xs text-zinc-300">Thickness</span>
+          <input id="lineThickness" type="range" min="1" max="6" value="2.5" step="0.5" class="w-32 cursor-pointer" />
+        </div>
+
+        <div class="flex items-center justify-between">
+          <label class="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
+            <input id="showNumbersToggle" type="checkbox" checked class="rounded bg-obsidian-800 border-obsidian-600 accent-zinc-100" />
+            <span>Show slice numbers (#1, #2...)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Export Options -->
+      <div class="space-y-3 bg-obsidian-850 p-3.5 rounded-2xl border border-obsidian-750">
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 block">3. Export Settings</span>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-[11px] text-zinc-400 block mb-1">Format</label>
+            <select id="exportFormat" class="w-full bg-obsidian-900 border border-obsidian-700 rounded-xl px-2.5 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-zinc-400">
+              <option value="image/png">PNG (Transparent)</option>
+              <option value="image/jpeg">JPG (Compact)</option>
+              <option value="image/webp">WEBP (Modern)</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[11px] text-zinc-400 block mb-1">File Prefix</label>
+            <input id="filePrefix" type="text" value="slice" class="w-full bg-obsidian-900 border border-obsidian-700 rounded-xl px-2.5 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-zinc-400" />
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-xs text-zinc-400">Quality</span>
+          <div class="flex items-center gap-2">
+            <input id="splitQuality" type="range" min="0.5" max="1" step="0.02" value="0.94" class="w-24 cursor-pointer" />
+            <span id="splitQualityLabel" class="text-[11px] font-mono text-zinc-300 w-9 text-right">94%</span>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-1">
+          <button id="btnResetAll" class="flex-1 py-2 px-3 rounded-xl bg-obsidian-800 hover:bg-obsidian-750 text-zinc-300 border border-obsidian-700 text-xs font-medium transition">
+            Reset Cuts
+          </button>
+          <button id="btnSidebarSplit" class="flex-1 py-2 px-3 rounded-xl bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-semibold shadow transition">
+            Generate Slices
+          </button>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- Main Interactive Canvas Area + Results Drawer (Splitter) -->
+    <main class="flex-1 flex flex-col bg-obsidian-950 relative overflow-hidden">
+
+      <!-- Canvas Toolbar -->
+      <div class="bg-obsidian-900/90 border-b border-obsidian-750 px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-400">
+        <div class="flex items-center gap-3">
+          <span id="imageDimBadge" class="px-2.5 py-1 rounded-lg bg-obsidian-800 text-zinc-200 border border-obsidian-750 font-mono">No image loaded</span>
+          <span id="cursorCoordBadge" class="hidden sm:inline font-mono text-zinc-400">X: 0, Y: 0</span>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <button id="btnZoomOut" class="p-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-zinc-200 border border-obsidian-700 transition" title="Zoom Out">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"/></svg>
+          </button>
+          <span id="zoomLabel" class="px-2 font-mono text-zinc-200 min-w-[48px] text-center">100%</span>
+          <button id="btnZoomIn" class="p-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-zinc-200 border border-obsidian-700 transition" title="Zoom In">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          </button>
+          <button id="btnZoomFit" class="px-2.5 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-zinc-200 border border-obsidian-700 font-medium transition ml-1">
+            Fit Screen
+          </button>
+        </div>
+      </div>
+
+      <!-- Canvas Viewport Container -->
+      <div id="canvasViewport" class="flex-1 relative flex items-center justify-center p-4 sm:p-8 overflow-hidden checkerboard min-h-[340px]">
+        <canvas id="editorCanvas" class="rounded-lg shadow-2xl shadow-black max-w-full max-h-full"></canvas>
+      </div>
+
+      <!-- Sliced Pieces Output Gallery -->
+      <section id="resultsSection" class="hidden bg-obsidian-900 border-t border-obsidian-750 p-4 sm:p-5 max-h-[46vh] overflow-y-auto">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-sm sm:text-base font-bold text-zinc-100 flex items-center gap-2">
+              <span>Generated Image Slices</span>
+              <span id="sliceResultBadge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">0 pieces</span>
+            </h2>
+            <p class="text-xs text-zinc-400">Download individual pieces, save all as a ZIP archive, or send slices to the Joiner to rearrange &amp; stitch.</p>
+          </div>
+
+          <div class="flex items-center gap-2 flex-wrap">
+            <button id="btnSendToJoiner" class="px-3.5 py-2 rounded-xl bg-obsidian-800 hover:bg-obsidian-750 text-zinc-100 border border-obsidian-700 text-xs sm:text-sm font-semibold transition flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+              <span>Send Slices to Joiner</span>
+            </button>
+
+            <button id="btnDownloadZip" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs sm:text-sm font-semibold shadow transition flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              <span>Download All (.ZIP)</span>
+            </button>
+
+            <button id="btnCloseResults" class="p-2 rounded-xl bg-obsidian-800 hover:bg-obsidian-750 text-zinc-400 hover:text-zinc-100 border border-obsidian-700 transition" title="Hide Results">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="slicesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3"></div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ========================================================================
+       WORKSPACE 2: IMAGE JOINER / STITCHER
+       ======================================================================== -->
+  <div id="workspaceJoin" class="hidden flex-1 flex flex-col lg:flex-row overflow-hidden">
+
+    <!-- Left Control Sidebar (Joiner) -->
+    <aside class="w-full lg:w-80 xl:w-96 bg-obsidian-900 border-b lg:border-b-0 lg:border-r border-obsidian-750 p-4 flex flex-col gap-4 overflow-y-auto shrink-0">
+
+      <!-- 1. Layout Direction -->
+      <div class="space-y-3 bg-obsidian-850 p-3.5 rounded-2xl border border-obsidian-750">
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 block">1. Stitch Layout</span>
+        <div class="grid grid-cols-3 gap-1.5 bg-obsidian-950 p-1.5 rounded-xl border border-obsidian-750">
+          <button data-join-layout="horizontal" class="join-layout-btn active py-2 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition bg-zinc-100 text-zinc-950 shadow">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 4v16m6-16v16M4 6h16a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V7a1 1 0 011-1z"/></svg>
+            <span>Horizontal</span>
+          </button>
+          <button data-join-layout="vertical" class="join-layout-btn py-2 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition text-zinc-400 hover:text-zinc-100 hover:bg-obsidian-850">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 9h16M4 15h16M6 4v16a1 1 0 001 1h10a1 1 0 001-1V4a1 1 0 00-1-1H7a1 1 0 00-1 1z"/></svg>
+            <span>Vertical</span>
+          </button>
+          <button data-join-layout="grid" class="join-layout-btn py-2 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition text-zinc-400 hover:text-zinc-100 hover:bg-obsidian-850">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+            <span>Custom Grid</span>
+          </button>
+        </div>
+
+        <!-- Custom Grid Columns Control -->
+        <div id="joinGridColsRow" class="hidden flex items-center justify-between bg-obsidian-900 p-2.5 rounded-xl border border-obsidian-750">
+          <span class="text-xs text-zinc-300">Grid Columns</span>
+          <div class="flex items-center gap-2">
+            <button id="decJoinCols" class="w-7 h-7 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-zinc-100 font-bold border border-obsidian-700">−</button>
+            <span id="joinColsDisplay" class="text-xs font-bold text-zinc-100 min-w-[44px] text-center">2 cols</span>
+            <button id="incJoinCols" class="w-7 h-7 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-zinc-100 font-bold border border-obsidian-700">+</button>
+          </div>
+        </div>
+
+        <!-- Sizing & Alignment -->
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-[11px] text-zinc-400 block mb-1">Sizing Mode</label>
+            <select id="joinSizingMode" class="w-full bg-obsidian-900 border border-obsidian-700 rounded-xl px-2.5 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-zinc-400">
+              <option value="match">Auto-Match Edge</option>
+              <option value="uniform">Uniform Fit</option>
+              <option value="original">Original Size</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[11px] text-zinc-400 block mb-1">Alignment</label>
+            <select id="joinAlignMode" class="w-full bg-obsidian-900 border border-obsidian-700 rounded-xl px-2.5 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-zinc-400">
+              <option value="center">Center</option>
+              <option value="start">Start (Top/Left)</option>
+              <option value="end">End (Bot/Right)</option>
+              <option value="packed">Seamless Original (No Space)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Spacing & Canvas Frame -->
+      <div class="space-y-3 bg-obsidian-850 p-3.5 rounded-2xl border border-obsidian-750">
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 block">2. Spacing &amp; Frame Style</span>
+
+        <div class="space-y-2.5">
+          <div>
+            <div class="flex justify-between text-xs text-zinc-300 mb-1">
+              <span>Gap Between Images</span>
+              <span id="joinGapVal" class="font-mono text-zinc-400">0 px</span>
+            </div>
+            <input id="joinGapSlider" type="range" min="0" max="80" value="0" class="w-full cursor-pointer" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs text-zinc-300 mb-1">
+              <span>Outer Padding</span>
+              <span id="joinPadVal" class="font-mono text-zinc-400">0 px</span>
+            </div>
+            <input id="joinPadSlider" type="range" min="0" max="100" value="0" class="w-full cursor-pointer" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs text-zinc-300 mb-1">
+              <span>Corner Radius</span>
+              <span id="joinRadiusVal" class="font-mono text-zinc-400">0 px</span>
+            </div>
+            <input id="joinRadiusSlider" type="range" min="0" max="60" value="0" class="w-full cursor-pointer" />
+          </div>
+        </div>
+
+        <!-- Background Fill -->
+        <div class="pt-1">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs text-zinc-300">Canvas Background</span>
+            <input id="joinCustomColor" type="color" value="#09090b" class="w-6 h-6 rounded bg-transparent border-0 cursor-pointer" title="Custom Hex Color" />
+          </div>
+          <div class="grid grid-cols-4 gap-1.5">
+            <button data-bg="transparent" class="join-bg-btn active py-1.5 px-2 rounded-lg text-[11px] font-medium bg-zinc-100 text-zinc-950 border border-zinc-200 transition">Clear</button>
+            <button data-bg="#09090b" class="join-bg-btn py-1.5 px-2 rounded-lg text-[11px] font-medium bg-obsidian-950 text-zinc-200 border border-obsidian-700 transition">Black</button>
+            <button data-bg="#18181b" class="join-bg-btn py-1.5 px-2 rounded-lg text-[11px] font-medium bg-obsidian-800 text-zinc-200 border border-obsidian-700 transition">Charcoal</button>
+            <button data-bg="#ffffff" class="join-bg-btn py-1.5 px-2 rounded-lg text-[11px] font-medium bg-white text-zinc-950 border border-zinc-300 transition">White</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Image Sequence Queue -->
+      <div class="space-y-2.5 bg-obsidian-850 p-3.5 rounded-2xl border border-obsidian-750 flex-1 flex flex-col min-h-[210px]">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">3. Image Order (<span id="joinQueueCount">0</span>)</span>
+          <div class="flex items-center gap-2">
+            <button id="btnJoinReverse" class="text-[11px] text-zinc-300 hover:text-white underline underline-offset-2">Reverse</button>
+            <button id="btnJoinClearAll" class="text-[11px] text-rose-400 hover:text-rose-300">Clear</button>
+          </div>
+        </div>
+
+        <p class="text-[11px] text-zinc-500">Drag cards or use arrows to reorder, rotate 90°, duplicate, or remove.</p>
+
+        <div id="joinQueueList" class="space-y-2 overflow-y-auto max-h-64 pr-1">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- 4. Join Export Settings -->
+      <div class="space-y-2.5 bg-obsidian-850 p-3.5 rounded-2xl border border-obsidian-750">
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-[11px] text-zinc-400 block mb-1">Format</label>
+            <select id="joinExportFormat" class="w-full bg-obsidian-900 border border-obsidian-700 rounded-xl px-2.5 py-1.5 text-xs text-zinc-100 focus:outline-none">
+              <option value="image/png">PNG (Lossless)</option>
+              <option value="image/jpeg">JPG (Compact)</option>
+              <option value="image/webp">WEBP (Modern)</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[11px] text-zinc-400 block mb-1">Filename</label>
+            <input id="joinFileName" type="text" value="joined_image" class="w-full bg-obsidian-900 border border-obsidian-700 rounded-xl px-2.5 py-1.5 text-xs text-zinc-100 focus:outline-none" />
+          </div>
+        </div>
+        <button id="btnSidebarJoinExport" class="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold shadow transition">
+          Export Joined Image
+        </button>
+      </div>
+
+    </aside>
+
+    <!-- Main Interactive Preview Canvas (Joiner) -->
+    <main class="flex-1 flex flex-col bg-obsidian-950 relative overflow-hidden">
+
+      <!-- Joiner Canvas Toolbar -->
+      <div class="bg-obsidian-900/90 border-b border-obsidian-750 px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-400">
+        <div class="flex items-center gap-3">
+          <span id="joinDimBadge" class="px-2.5 py-1 rounded-lg bg-obsidian-800 text-zinc-200 border border-obsidian-750 font-mono">Output: 0 × 0 px</span>
+          <span class="hidden sm:inline text-zinc-500">Drop multiple images anywhere to append</span>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <button id="btnJoinZoomOut" class="p-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-zinc-200 border border-obsidian-700 transition" title="Zoom Out">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"/></svg>
+          </button>
+          <span id="joinZoomLabel" class="px-2 font-mono text-zinc-200 min-w-[48px] text-center">Fit</span>
+          <button id="btnJoinZoomIn" class="p-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-zinc-200 border border-obsidian-700 transition" title="Zoom In">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          </button>
+          <button id="btnJoinZoomFit" class="px-2.5 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 text-zinc-200 border border-obsidian-700 font-medium transition ml-1">
+            Fit Screen
+          </button>
+        </div>
+      </div>
+
+      <!-- Joiner Preview Viewport -->
+      <div id="joinViewport" class="flex-1 relative flex items-center justify-center p-4 sm:p-8 overflow-auto checkerboard min-h-[380px]">
+        <canvas id="joinCanvas" class="rounded-lg shadow-2xl shadow-black transition-transform duration-150"></canvas>
+
+        <!-- Empty State Prompt -->
+        <div id="joinEmptyState" class="hidden flex flex-col items-center justify-center text-center p-8 bg-obsidian-900/90 border border-obsidian-750 rounded-2xl max-w-md">
+          <div class="w-12 h-12 rounded-2xl bg-obsidian-800 border border-obsidian-700 flex items-center justify-center mb-3 text-zinc-300">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+          <h3 class="text-sm font-bold text-zinc-100">No Images in Join Queue</h3>
+          <p class="text-xs text-zinc-400 mt-1 mb-4">Upload multiple images, drag &amp; drop files here, or send slices over from the Image Splitter.</p>
+          <div class="flex gap-2">
+            <label for="joinFileInput" class="cursor-pointer px-4 py-2 rounded-xl bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-semibold transition">Select Images</label>
+            <button id="btnEmptyLoadSample" class="px-4 py-2 rounded-xl bg-obsidian-800 hover:bg-obsidian-750 text-zinc-200 border border-obsidian-700 text-xs font-medium transition">Load Sample Set</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Global Drag & Drop Overlay -->
+  <div id="dropOverlay" class="hidden fixed inset-4 rounded-2xl border-2 border-dashed border-zinc-300 bg-obsidian-950/90 backdrop-blur-sm flex flex-col items-center justify-center z-50 pointer-events-none">
+    <svg class="w-12 h-12 text-zinc-200 mb-3 animate-bounce" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+    <p id="dropOverlayTitle" class="text-lg font-bold text-zinc-100">Drop image to slice</p>
+    <p class="text-xs text-zinc-400 mt-1">Supports PNG, JPG, WEBP, GIF</p>
+  </div>
+
+  <!-- Toast Notification Banner -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-obsidian-850 border border-obsidian-700 text-zinc-100 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs sm:text-sm font-medium pointer-events-none">
+    <span id="toastIcon" class="text-emerald-400">✦</span>
+    <span id="toastMsg">Ready!</span>
+  </div>
+
+  <script>
+    /**
+     * ============================================================================
+     * SLICESTUDIO — PURE BLACK-GRAY IMAGE SPLITTER & MULTI-IMAGE JOINER
+     * ============================================================================
+     */
+
+    // --- DOM References ---
+    const canvas = document.getElementById('editorCanvas');
+    const ctx = canvas.getContext('2d');
+    const viewport = document.getElementById('canvasViewport');
+    const fileInput = document.getElementById('fileInput');
+    const joinFileInput = document.getElementById('joinFileInput');
+    const dropOverlay = document.getElementById('dropOverlay');
+
+    const joinCanvas = document.getElementById('joinCanvas');
+    const joinCtx = joinCanvas.getContext('2d');
+    const joinViewport = document.getElementById('joinViewport');
+
+    // --- Unified Application State ---
+    const DIAG_PALETTE = ['#ffffff', '#facc15', '#34d399', '#fb923c', '#f43f5e', '#a78bfa', '#38bdf8', '#f472b6'];
+
+    /**
+     * Computes relative luminance and returns readable inner foreground colors
+     * so dark line selections (such as Obsidian Black #18181b) never render unreadable dark-on-dark text,
+     * without drawing outer halos or borders.
+     */
+    function getContrastTheme(hexColor) {
+      const hex = (hexColor || '#ffffff').replace('#', '');
+      const fullHex = hex.length === 3 ? hex.split('').map(c => c + c).join('') : hex;
+      const r = parseInt(fullHex.slice(0, 2), 16) || 0;
+      const g = parseInt(fullHex.slice(2, 4), 16) || 0;
+      const b = parseInt(fullHex.slice(4, 6), 16) || 0;
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      const isDark = luminance < 0.42;
+
+      return {
+        isDark,
+        fgOnColor: isDark ? '#ffffff' : '#09090b',
+        innerDot: isDark ? '#ffffff' : '#09090b'
+      };
+    }
+
+    const state = {
+      workspace: 'split', // 'split' | 'join'
+
+      // Splitter State
+      img: null,
+      imgWidth: 0,
+      imgHeight: 0,
+      zoom: 1,
+      baseScale: 1,
+      mode: 'grid', // 'grid' | 'diagonal' | 'freehand'
+      lineColor: '#ffffff',
+      lineThickness: 2.5,
+      showNumbers: true,
+      snap: true,
+      hCuts: [0.5],
+      vCuts: [0.5],
+      gridClickAddMode: false,
+      diagonals: [{ p1: { x: 0, y: 0 }, p2: { x: 1, y: 1 } }],
+      diagClickAddMode: false,
+      freehandSubMode: 'slice', // 'slice' | 'lasso'
+      freehandPaths: [],
+      activeStroke: null,
+      dragging: null,
+      hoverTarget: null,
+      mouseNorm: { x: 0, y: 0 },
+      generatedSlices: [],
+
+      // Joiner State
+      joinItems: [], // [{ id, name, img, rotation: 0|90|180|270 }]
+      joinLayout: 'horizontal', // 'horizontal' | 'vertical' | 'grid'
+      joinCols: 2,
+      joinSizing: 'match', // 'match' | 'uniform' | 'original'
+      joinAlign: 'center', // 'start' | 'center' | 'end'
+      joinGap: 0,
+      joinPad: 0,
+      joinRadius: 0,
+      joinBg: 'transparent',
+      joinZoomMode: 'fit', // 'fit' | number
+      draggedJoinIdx: null
+    };
+
+    // --- Toast Notification Helper ---
+    let toastTimer = null;
+    function showToast(msg, icon = '✦') {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').textContent = msg;
+      document.getElementById('toastIcon').textContent = icon;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2800);
+    }
+
+    // ============================================================================
+    // WORKSPACE SWITCHER (SPLIT <-> JOIN)
+    // ============================================================================
+    function switchWorkspace(target) {
+      state.workspace = target;
+      const isSplit = target === 'split';
+
+      document.getElementById('workspaceSplit').classList.toggle('hidden', !isSplit);
+      document.getElementById('workspaceJoin').classList.toggle('hidden', isSplit);
+
+      document.getElementById('splitHeaderActions').classList.toggle('hidden', !isSplit);
+      document.getElementById('splitHeaderActions').classList.toggle('flex', isSplit);
+
+      document.getElementById('joinHeaderActions').classList.toggle('hidden', isSplit);
+      document.getElementById('joinHeaderActions').classList.toggle('flex', !isSplit);
+
+      const tabSplit = document.getElementById('tabSplitWorkspace');
+      const tabJoin = document.getElementById('tabJoinWorkspace');
+
+      if (isSplit) {
+        tabSplit.classList.add('bg-zinc-100', 'text-zinc-950', 'shadow');
+        tabSplit.classList.remove('text-zinc-400', 'hover:text-zinc-100');
+        tabJoin.classList.remove('bg-zinc-100', 'text-zinc-950', 'shadow');
+        tabJoin.classList.add('text-zinc-400', 'hover:text-zinc-100');
+        if (state.img) fitCanvasToViewport();
+      } else {
+        tabJoin.classList.add('bg-zinc-100', 'text-zinc-950', 'shadow');
+        tabJoin.classList.remove('text-zinc-400', 'hover:text-zinc-100');
+        tabSplit.classList.remove('bg-zinc-100', 'text-zinc-950', 'shadow');
+        tabSplit.classList.add('text-zinc-400', 'hover:text-zinc-100');
+        renderJoinPreview();
+      }
+    }
+
+    document.getElementById('tabSplitWorkspace').addEventListener('click', () => switchWorkspace('split'));
+    document.getElementById('tabJoinWorkspace').addEventListener('click', () => switchWorkspace('join'));
+
+    // ============================================================================
+    // SAMPLE IMAGE GENERATORS
+    // ============================================================================
+    function createArtworkCanvas(width, height, title, subtitle, stops) {
+      const off = document.createElement('canvas');
+      off.width = width;
+      off.height = height;
+      const octx = off.getContext('2d');
+
+      const grad = octx.createLinearGradient(0, 0, width, height);
+      stops.forEach(([pos, col]) => grad.addColorStop(pos, col));
+      octx.fillStyle = grad;
+      octx.fillRect(0, 0, width, height);
+
+      // Subtle architectural grid
+      octx.strokeStyle = 'rgba(255,255,255,0.08)';
+      octx.lineWidth = 2;
+      for (let x = 80; x < width; x += 80) {
+        octx.beginPath(); octx.moveTo(x, 0); octx.lineTo(x, height); octx.stroke();
+      }
+      for (let y = 80; y < height; y += 80) {
+        octx.beginPath(); octx.moveTo(0, y); octx.lineTo(width, y); octx.stroke();
+      }
+
+      // Geometric accent ring
+      octx.strokeStyle = 'rgba(255,255,255,0.22)';
+      octx.lineWidth = 4;
+      octx.beginPath();
+      octx.arc(width * 0.75, height * 0.45, Math.min(width, height) * 0.24, 0, Math.PI * 2);
+      octx.stroke();
+
+      octx.fillStyle = '#ffffff';
+      octx.font = `bold ${Math.round(height * 0.065)}px Inter, sans-serif`;
+      octx.fillText(title, width * 0.06, height * 0.16);
+
+      octx.fillStyle = 'rgba(244,244,245,0.75)';
+      octx.font = `500 ${Math.round(height * 0.032)}px Inter, sans-serif`;
+      octx.fillText(subtitle, width * 0.06, height * 0.22);
+
+      return off;
+    }
+
+    function loadSampleImage() {
+      const off = createArtworkCanvas(
+        1200,
+        800,
+        'SLICESTUDIO',
+        'Drag cut dividers • Slice diagonals • Draw custom paths',
+        [[0, '#09090b'], [0.45, '#27272a'], [0.8, '#b45309'], [1, '#f59e0b']]
+      );
+      const sampleImg = new Image();
+      sampleImg.onload = () => {
+        setLoadedImage(sampleImg);
+        showToast('Loaded sample artwork (1200×800)', '🖼️');
+      };
+      sampleImg.src = off.toDataURL('image/png');
+    }
+
+    async function loadJoinSampleSet() {
+      const specs = [
+        { title: 'PANEL 01', sub: 'Obsidian & Silver', stops: [[0, '#09090b'], [1, '#3f3f46']] },
+        { title: 'PANEL 02', sub: 'Amber Gold Accent', stops: [[0, '#78350f'], [1, '#f59e0b']] },
+        { title: 'PANEL 03', sub: 'Emerald Highlight', stops: [[0, '#064e3b'], [1, '#10b981']] }
+      ];
+      for (const s of specs) {
+        const off = createArtworkCanvas(600, 600, s.title, s.sub, s.stops);
+        const im = await loadImageFromSrc(off.toDataURL('image/png'));
+        state.joinItems.push({
+          id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+          name: `${s.title.toLowerCase().replace(' ', '_')}.png`,
+          img: im,
+          rotation: 0
+        });
+      }
+      updateJoinQueueUI();
+      renderJoinPreview();
+      showToast('Added 3 sample panels to Joiner', '🧩');
+    }
+
+    function loadImageFromSrc(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+      });
+    }
+
+    // --- Set & Fit Loaded Image (Splitter) ---
+    function setLoadedImage(img) {
+      state.img = img;
+      state.imgWidth = img.naturalWidth || img.width;
+      state.imgHeight = img.naturalHeight || img.height;
+      document.getElementById('imageDimBadge').textContent = `${state.imgWidth} × ${state.imgHeight} px`;
+      fitCanvasToViewport();
+      render();
+    }
+
+    function fitCanvasToViewport() {
+      if (!state.img) return;
+      const pad = 48;
+      const availW = Math.max(260, viewport.clientWidth - pad);
+      const availH = Math.max(240, viewport.clientHeight - pad);
+      state.baseScale = Math.min(availW / state.imgWidth, availH / state.imgHeight, 1);
+      state.zoom = 1;
+      updateCanvasDimensions();
+    }
+
+    function updateCanvasDimensions() {
+      if (!state.img) return;
+      const scale = state.baseScale * state.zoom;
+      canvas.width = Math.round(state.imgWidth * scale);
+      canvas.height = Math.round(state.imgHeight * scale);
+      document.getElementById('zoomLabel').textContent = `${Math.round(state.zoom * 100)}%`;
+      render();
+    }
+
+    // --- File Uploads & Global Drag-and-Drop ---
+    function handleSingleSplitFile(file) {
+      if (!file || !file.type.startsWith('image/')) {
+        showToast('Please select a valid image file.', '⚠️');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          setLoadedImage(img);
+          document.getElementById('resultsSection').classList.add('hidden');
+          showToast(`Loaded "${file.name}" (${img.width}×${img.height})`, '✅');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function handleMultipleJoinFiles(fileList) {
+      const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+      if (!files.length) {
+        showToast('No valid image files found.', '⚠️');
+        return;
+      }
+      for (const file of files) {
+        const dataUrl = await new Promise((res) => {
+          const r = new FileReader();
+          r.onload = (e) => res(e.target.result);
+          r.readAsDataURL(file);
+        });
+        const img = await loadImageFromSrc(dataUrl);
+        state.joinItems.push({
+          id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+          name: file.name,
+          img,
+          rotation: 0
+        });
+      }
+      updateJoinQueueUI();
+      renderJoinPreview();
+      showToast(`Added ${files.length} image${files.length === 1 ? '' : 's'} to Joiner`, '✅');
+    }
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files[0]) handleSingleSplitFile(e.target.files[0]);
+      fileInput.value = '';
+    });
+
+    joinFileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) handleMultipleJoinFiles(e.target.files);
+      joinFileInput.value = '';
+    });
+
+    window.addEventListener('dragover', (e) => {
+      // Ignore internal list item drags
+      if (state.draggedJoinIdx !== null) return;
+      if (e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files')) {
+        e.preventDefault();
+        document.getElementById('dropOverlayTitle').textContent =
+          state.workspace === 'split' ? 'Drop image to slice' : 'Drop images to append to Joiner';
+        dropOverlay.classList.remove('hidden');
+      }
+    });
+    window.addEventListener('dragleave', (e) => {
+      if (e.relatedTarget === null) dropOverlay.classList.add('hidden');
+    });
+    window.addEventListener('drop', (e) => {
+      if (state.draggedJoinIdx !== null) return;
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+        e.preventDefault();
+        dropOverlay.classList.add('hidden');
+        if (state.workspace === 'split') {
+          handleSingleSplitFile(e.dataTransfer.files[0]);
+        } else {
+          handleMultipleJoinFiles(e.dataTransfer.files);
+        }
+      }
+    });
+
+    // ============================================================================
+    // SPLITTER INTERACTIONS & RENDERING
+    // ============================================================================
+    function getNormalizedCoords(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (clientX - rect.left) / rect.width,
+        y: (clientY - rect.top) / rect.height
+      };
+    }
+
+    function clamp01(v) {
+      return Math.max(0, Math.min(1, v));
+    }
+
+    function applySnap(val) {
+      if (!state.snap) return val;
+      if (Math.abs(val - 0.5) < 0.015) return 0.5;
+      const nearestStep = Math.round(val * 20) / 20;
+      if (Math.abs(val - nearestStep) < 0.008) return nearestStep;
+      return val;
+    }
+
+    function snapDiagonalPoint(pt) {
+      let x = clamp01(pt.x);
+      let y = clamp01(pt.y);
+      const edgeThresh = 0.025;
+      if (x < edgeThresh) x = 0;
+      if (x > 1 - edgeThresh) x = 1;
+      if (y < edgeThresh) y = 0;
+      if (y > 1 - edgeThresh) y = 1;
+      if (state.snap) {
+        if (Math.abs(x - 0.5) < 0.02) x = 0.5;
+        if (Math.abs(y - 0.5) < 0.02) y = 0.5;
+      }
+      return { x, y };
+    }
+
+    function findHitTarget(normPt) {
+      const hitRadiusX = 14 / canvas.width;
+      const hitRadiusY = 14 / canvas.height;
+
+      if (state.mode === 'grid') {
+        for (let i = 0; i < state.hCuts.length; i++) {
+          if (Math.abs(normPt.y - state.hCuts[i]) <= hitRadiusY) return { type: 'h', index: i };
+        }
+        for (let i = 0; i < state.vCuts.length; i++) {
+          if (Math.abs(normPt.x - state.vCuts[i]) <= hitRadiusX) return { type: 'v', index: i };
+        }
+      } else if (state.mode === 'diagonal') {
+        for (let i = state.diagonals.length - 1; i >= 0; i--) {
+          const d = state.diagonals[i];
+          const dist1 = Math.hypot((normPt.x - d.p1.x) * canvas.width, (normPt.y - d.p1.y) * canvas.height);
+          if (dist1 <= 18) return { type: 'diag', index: i, endpoint: 'p1' };
+          const dist2 = Math.hypot((normPt.x - d.p2.x) * canvas.width, (normPt.y - d.p2.y) * canvas.height);
+          if (dist2 <= 18) return { type: 'diag', index: i, endpoint: 'p2' };
+          const midX = (d.p1.x + d.p2.x) / 2;
+          const midY = (d.p1.y + d.p2.y) / 2;
+          const distMid = Math.hypot((normPt.x - midX) * canvas.width, (normPt.y - midY) * canvas.height);
+          if (distMid <= 18) {
+            return {
+              type: 'diag',
+              index: i,
+              endpoint: 'mid',
+              startMouse: { ...normPt },
+              origP1: { ...d.p1 },
+              origP2: { ...d.p2 }
+            };
+          }
+        }
+      }
+      return null;
+    }
+
+    function addDiagonalAtPoint(normPt) {
+      // Create a 45° or -45° diagonal passing through normPt clipped to [0,1]x[0,1]
+      const slopeSign = (state.diagonals.length % 2 === 0) ? 1 : -1;
+      const cx = clamp01(normPt.x);
+      const cy = clamp01(normPt.y);
+      const ts = [];
+
+      if (slopeSign === 1) {
+        // p(t) = (cx + t, cy + t)
+        [-cx, 1 - cx, -cy, 1 - cy].forEach(t => {
+          const x = cx + t, y = cy + t;
+          if (x >= -1e-6 && x <= 1 + 1e-6 && y >= -1e-6 && y <= 1 + 1e-6) ts.push(t);
+        });
+      } else {
+        // p(t) = (cx + t, cy - t)
+        [-cx, 1 - cx, cy - 1, cy].forEach(t => {
+          const x = cx + t, y = cy - t;
+          if (x >= -1e-6 && x <= 1 + 1e-6 && y >= -1e-6 && y <= 1 + 1e-6) ts.push(t);
+        });
+      }
+
+      if (ts.length >= 2) {
+        const tMin = Math.min(...ts);
+        const tMax = Math.max(...ts);
+        if (tMax - tMin > 0.05) {
+          const p1 = { x: clamp01(cx + tMin), y: clamp01(cy + slopeSign * tMin) };
+          const p2 = { x: clamp01(cx + tMax), y: clamp01(cy + slopeSign * tMax) };
+          state.diagonals.push({ p1, p2 });
+          updateDiagonalUI();
+          render();
+          showToast(`Added Diagonal #${state.diagonals.length}`, '✂️');
+          return;
+        }
+      }
+
+      // Fallback diagonal
+      state.diagonals.push({ p1: { x: 0, y: 1 }, p2: { x: 1, y: 0 } });
+      updateDiagonalUI();
+      render();
+      showToast(`Added Diagonal #${state.diagonals.length}`, '✂️');
+    }
+
+    function onPointerDown(clientX, clientY, shiftKey = false) {
+      if (!state.img || state.workspace !== 'split') return;
+      const pt = getNormalizedCoords(clientX, clientY);
+      state.mouseNorm = pt;
+
+      if (state.mode === 'freehand') {
+        state.activeStroke = [pt];
+        render();
+        return;
+      }
+
+      const hit = findHitTarget(pt);
+      if (hit) {
+        state.dragging = hit;
+        render();
+        return;
+      }
+
+      if (state.mode === 'diagonal' && (shiftKey || state.diagClickAddMode)) {
+        addDiagonalAtPoint(pt);
+        return;
+      }
+
+      if (state.mode === 'grid') {
+        if (shiftKey || state.gridClickAddMode) {
+          const addType = document.getElementById('clickAddType').value;
+          const x = applySnap(clamp01(pt.x));
+          const y = applySnap(clamp01(pt.y));
+          let added = false;
+
+          if ((addType === 'horizontal' || addType === 'both') && y > 0.02 && y < 0.98) {
+            state.hCuts.push(y);
+            state.hCuts.sort((a, b) => a - b);
+            added = true;
+          }
+          if ((addType === 'vertical' || addType === 'both') && x > 0.02 && x < 0.98) {
+            state.vCuts.push(x);
+            state.vCuts.sort((a, b) => a - b);
+            added = true;
+          }
+
+          if (added) {
+            updateGridUI();
+            render();
+            const label = addType === 'both' ? 'horizontal & vertical cuts' : `${addType} cut line`;
+            showToast(`Added ${label}`, '✂️');
+          }
+        }
+      }
+    }
+
+    function onPointerMove(clientX, clientY) {
+      if (!state.img || state.workspace !== 'split') return;
+      const pt = getNormalizedCoords(clientX, clientY);
+      state.mouseNorm = pt;
+
+      const pxX = Math.round(clamp01(pt.x) * state.imgWidth);
+      const pxY = Math.round(clamp01(pt.y) * state.imgHeight);
+      document.getElementById('cursorCoordBadge').textContent = `X: ${pxX}px, Y: ${pxY}px`;
+
+      if (state.mode === 'freehand' && state.activeStroke) {
+        const last = state.activeStroke[state.activeStroke.length - 1];
+        const dist = Math.hypot((pt.x - last.x) * canvas.width, (pt.y - last.y) * canvas.height);
+        if (dist >= 3) {
+          state.activeStroke.push(pt);
+          render();
+        }
+        return;
+      }
+
+      if (state.dragging) {
+        if (state.dragging.type === 'h') {
+          state.hCuts[state.dragging.index] = applySnap(Math.max(0.015, Math.min(0.985, pt.y)));
+          updateGridUI();
+        } else if (state.dragging.type === 'v') {
+          state.vCuts[state.dragging.index] = applySnap(Math.max(0.015, Math.min(0.985, pt.x)));
+          updateGridUI();
+        } else if (state.dragging.type === 'diag') {
+          if (state.dragging.endpoint === 'mid') {
+            const dx = pt.x - state.dragging.startMouse.x;
+            const dy = pt.y - state.dragging.startMouse.y;
+            const o1 = state.dragging.origP1;
+            const o2 = state.dragging.origP2;
+            // Clamp shift so both endpoints remain inside [0, 1]
+            const minDx = Math.max(-o1.x, -o2.x);
+            const maxDx = Math.min(1 - o1.x, 1 - o2.x);
+            const minDy = Math.max(-o1.y, -o2.y);
+            const maxDy = Math.min(1 - o1.y, 1 - o2.y);
+            const clampedDx = Math.max(minDx, Math.min(maxDx, dx));
+            const clampedDy = Math.max(minDy, Math.min(maxDy, dy));
+            state.diagonals[state.dragging.index].p1 = { x: o1.x + clampedDx, y: o1.y + clampedDy };
+            state.diagonals[state.dragging.index].p2 = { x: o2.x + clampedDx, y: o2.y + clampedDy };
+          } else {
+            state.diagonals[state.dragging.index][state.dragging.endpoint] = snapDiagonalPoint(pt);
+          }
+          updateDiagonalUI();
+        }
+        render();
+        return;
+      }
+
+      const hit = findHitTarget(pt);
+      state.hoverTarget = hit;
+      if (state.mode === 'freehand') {
+        canvas.style.cursor = 'crosshair';
+      } else if (hit) {
+        if (hit.type === 'h') canvas.style.cursor = 'ns-resize';
+        else if (hit.type === 'v') canvas.style.cursor = 'ew-resize';
+        else if (hit.endpoint === 'mid') canvas.style.cursor = 'move';
+        else canvas.style.cursor = 'grab';
+      } else {
+        const canAddGrid = state.mode === 'grid' && state.gridClickAddMode;
+        const canAddDiag = state.mode === 'diagonal' && state.diagClickAddMode;
+        canvas.style.cursor = (canAddGrid || canAddDiag) ? 'cell' : 'default';
+      }
+      render();
+    }
+
+    function onPointerUp() {
+      if (state.mode === 'freehand' && state.activeStroke) {
+        if (state.activeStroke.length >= 2) {
+          state.freehandPaths.push(state.activeStroke);
+          updateFreehandUI();
+        }
+        state.activeStroke = null;
+        render();
+      }
+      if (state.dragging) {
+        if (state.dragging.type === 'h') state.hCuts.sort((a, b) => a - b);
+        if (state.dragging.type === 'v') state.vCuts.sort((a, b) => a - b);
+        state.dragging = null;
+        render();
+      }
+    }
+
+    canvas.addEventListener('dblclick', (e) => {
+      if (state.mode !== 'grid') return;
+      const pt = getNormalizedCoords(e.clientX, e.clientY);
+      const hit = findHitTarget(pt);
+      if (hit) {
+        if (hit.type === 'h') {
+          state.hCuts.splice(hit.index, 1);
+          updateGridUI(); render();
+          showToast('Removed horizontal cut line', '🗑️');
+        } else if (hit.type === 'v') {
+          state.vCuts.splice(hit.index, 1);
+          updateGridUI(); render();
+          showToast('Removed vertical cut line', '🗑️');
+        }
+      }
+    });
+
+    canvas.addEventListener('mousedown', (e) => onPointerDown(e.clientX, e.clientY, e.shiftKey));
+    window.addEventListener('mousemove', (e) => onPointerMove(e.clientX, e.clientY));
+    window.addEventListener('mouseup', onPointerUp);
+
+    canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        e.preventDefault();
+        onPointerDown(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: false });
+    window.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 1 && (state.dragging || state.activeStroke)) {
+        onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+    window.addEventListener('touchend', onPointerUp);
+
+    // --- Visual Overlay Renderer ---
+    function render() {
+      if (!state.img) return;
+      const w = canvas.width;
+      const h = canvas.height;
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(state.img, 0, 0, w, h);
+
+      ctx.save();
+      ctx.strokeStyle = state.lineColor;
+      ctx.fillStyle = state.lineColor;
+      ctx.lineWidth = state.lineThickness;
+
+      if (state.mode === 'grid') renderGridOverlay(w, h);
+      else if (state.mode === 'diagonal') renderDiagonalOverlay(w, h);
+      else if (state.mode === 'freehand') renderFreehandOverlay(w, h);
+      ctx.restore();
+    }
+
+    function renderGridOverlay(w, h) {
+      const yStops = [0, ...state.hCuts, 1];
+      const xStops = [0, ...state.vCuts, 1];
+
+      if (state.showNumbers) {
+        let idx = 1;
+        for (let r = 0; r < yStops.length - 1; r++) {
+          for (let c = 0; c < xStops.length - 1; c++) {
+            const cx = ((xStops[c] + xStops[c + 1]) / 2) * w;
+            const cy = ((yStops[r] + yStops[r + 1]) / 2) * h;
+            const cellW = Math.round((xStops[c + 1] - xStops[c]) * state.imgWidth);
+            const cellH = Math.round((yStops[r + 1] - yStops[r]) * state.imgHeight);
+            drawBadge(cx, cy, `#${idx++}`, `${cellW}×${cellH}`);
+          }
+        }
+      }
+
+      state.hCuts.forEach((normY, i) => {
+        const y = normY * h;
+        const isActive = (state.dragging && state.dragging.type === 'h' && state.dragging.index === i) ||
+                         (state.hoverTarget && state.hoverTarget.type === 'h' && state.hoverTarget.index === i);
+
+        ctx.save();
+        ctx.strokeStyle = state.lineColor;
+        ctx.lineWidth = isActive ? state.lineThickness + 1.5 : state.lineThickness;
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        ctx.restore();
+
+        drawSliderPill(w / 2, y, `${Math.round(normY * state.imgHeight)}px`, isActive, true);
+      });
+
+      state.vCuts.forEach((normX, i) => {
+        const x = normX * w;
+        const isActive = (state.dragging && state.dragging.type === 'v' && state.dragging.index === i) ||
+                         (state.hoverTarget && state.hoverTarget.type === 'v' && state.hoverTarget.index === i);
+
+        ctx.save();
+        ctx.strokeStyle = state.lineColor;
+        ctx.lineWidth = isActive ? state.lineThickness + 1.5 : state.lineThickness;
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+        ctx.restore();
+
+        drawSliderPill(x, h / 2, `${Math.round(normX * state.imgWidth)}px`, isActive, false);
+      });
+    }
+
+    function renderDiagonalOverlay(w, h) {
+      if (state.showNumbers) {
+        const polys = computeDiagonalPolygons();
+        polys.forEach((poly, idx) => {
+          const centroid = getPolygonCentroid(poly);
+          drawBadge(centroid.x * w, centroid.y * h, `#${idx + 1}`);
+        });
+      }
+
+      state.diagonals.forEach((diag, i) => {
+        const x1 = diag.p1.x * w, y1 = diag.p1.y * h;
+        const x2 = diag.p2.x * w, y2 = diag.p2.y * h;
+        const lineCol = state.diagonals.length > 1 ? DIAG_PALETTE[i % DIAG_PALETTE.length] : state.lineColor;
+        const theme = getContrastTheme(lineCol);
+
+        ctx.save();
+        ctx.strokeStyle = lineCol;
+        ctx.lineWidth = state.lineThickness;
+        ctx.setLineDash([10, 6]);
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        ctx.restore();
+
+        // Midpoint parallel-slide pill handle
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2;
+        const isMidHot = (state.dragging && state.dragging.index === i && state.dragging.endpoint === 'mid') ||
+                         (state.hoverTarget && state.hoverTarget.index === i && state.hoverTarget.endpoint === 'mid');
+
+        ctx.save();
+        const pillW = 38;
+        const pillH = 21;
+        ctx.fillStyle = isMidHot ? lineCol : 'rgba(18, 18, 20, 0.94)';
+        ctx.beginPath();
+        ctx.roundRect(midX - pillW / 2, midY - pillH / 2, pillW, pillH, 10.5);
+        ctx.fill();
+
+        ctx.fillStyle = isMidHot ? theme.fgOnColor : '#ffffff';
+        ctx.font = '700 10px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`D${i + 1}`, midX, midY + 0.5);
+        ctx.restore();
+
+        ['p1', 'p2'].forEach((ep) => {
+          const px = diag[ep].x * w;
+          const py = diag[ep].y * h;
+          const isHot = (state.dragging && state.dragging.index === i && state.dragging.endpoint === ep) ||
+                        (state.hoverTarget && state.hoverTarget.index === i && state.hoverTarget.endpoint === ep);
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(px, py, isHot ? 11 : 8.5, 0, Math.PI * 2);
+          ctx.fillStyle = lineCol;
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(px, py, 3, 0, Math.PI * 2);
+          ctx.fillStyle = theme.innerDot;
+          ctx.fill();
+          ctx.restore();
+        });
+      });
+    }
+
+    function renderFreehandOverlay(w, h) {
+      const allStrokes = [...state.freehandPaths];
+      if (state.activeStroke) allStrokes.push(state.activeStroke);
+      const theme = getContrastTheme(state.lineColor);
+
+      allStrokes.forEach((stroke, idx) => {
+        if (stroke.length < 2) return;
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        ctx.strokeStyle = state.lineColor;
+        ctx.lineWidth = state.lineThickness;
+        ctx.setLineDash(state.freehandSubMode === 'slice' ? [8, 5] : []);
+        ctx.beginPath();
+        ctx.moveTo(stroke[0].x * w, stroke[0].y * h);
+        for (let i = 1; i < stroke.length; i++) ctx.lineTo(stroke[i].x * w, stroke[i].y * h);
+        if (state.freehandSubMode === 'lasso') {
+          ctx.closePath();
+          ctx.fillStyle = hexToRgba(state.lineColor, theme.isDark ? 0.28 : 0.16);
+          ctx.fill();
+        }
+        ctx.stroke();
+
+        if (state.showNumbers && state.freehandSubMode === 'lasso') {
+          const c = getPolygonCentroid(stroke);
+          drawBadge(c.x * w, c.y * h, `#${idx + 1}`);
+        }
+        ctx.restore();
+      });
+    }
+
+    function drawSliderPill(x, y, label, isActive, isHorizontal) {
+      const theme = getContrastTheme(state.lineColor);
+      ctx.save();
+      const pillW = 66;
+      const pillH = 22;
+      ctx.fillStyle = isActive ? state.lineColor : 'rgba(18, 18, 20, 0.94)';
+
+      ctx.beginPath();
+      ctx.roundRect(x - pillW / 2, y - pillH / 2, pillW, pillH, 11);
+      ctx.fill();
+
+      ctx.fillStyle = isActive ? theme.fgOnColor : '#ffffff';
+      ctx.font = '600 10px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(isHorizontal ? `↕ ${label}` : `↔ ${label}`, x, y + 0.5);
+      ctx.restore();
+    }
+
+    function drawBadge(x, y, title, subtitle = '') {
+      ctx.save();
+      const w = subtitle ? 68 : 38;
+      const h = subtitle ? 34 : 24;
+      ctx.fillStyle = 'rgba(9, 9, 11, 0.84)';
+      ctx.beginPath();
+      ctx.roundRect(x - w / 2, y - h / 2, w, h, 8);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 12px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(title, x, subtitle ? y - 6 : y + 0.5);
+
+      if (subtitle) {
+        ctx.fillStyle = '#a1a1aa';
+        ctx.font = '500 9px Inter, sans-serif';
+        ctx.fillText(subtitle, x, y + 8);
+      }
+      ctx.restore();
+    }
+
+    function hexToRgba(hex, alpha) {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    // ============================================================================
+    // GEOMETRY & POLYGON SLICING ALGORITHMS
+    // ============================================================================
+    function clipPolygonByLine(poly, A, B, side) {
+      if (!poly || poly.length < 3) return [];
+      const dx = B.x - A.x;
+      const dy = B.y - A.y;
+      if (Math.hypot(dx, dy) < 1e-6) return poly.slice();
+
+      const out = [];
+      const evalSide = (P) => ((P.x - A.x) * dy - (P.y - A.y) * dx) * side;
+
+      for (let i = 0; i < poly.length; i++) {
+        const curr = poly[i];
+        const prev = poly[(i + poly.length - 1) % poly.length];
+        const dCurr = evalSide(curr);
+        const dPrev = evalSide(prev);
+        const denom = dPrev - dCurr;
+
+        if (dCurr >= 0) {
+          if (dPrev < 0 && Math.abs(denom) > 1e-9) {
+            const t = dPrev / denom;
+            out.push({ x: prev.x + t * (curr.x - prev.x), y: prev.y + t * (curr.y - prev.y) });
+          }
+          out.push(curr);
+        } else if (dPrev >= 0 && Math.abs(denom) > 1e-9) {
+          const t = dPrev / denom;
+          out.push({ x: prev.x + t * (curr.x - prev.x), y: prev.y + t * (curr.y - prev.y) });
+        }
+      }
+      return out;
+    }
+
+    function polygonArea(poly) {
+      if (!poly || poly.length < 3) return 0;
+      let area = 0;
+      for (let i = 0; i < poly.length; i++) {
+        const j = (i + 1) % poly.length;
+        area += poly[i].x * poly[j].y - poly[j].x * poly[i].y;
+      }
+      return Math.abs(area) / 2;
+    }
+
+    function getPolygonCentroid(poly) {
+      if (!poly || poly.length === 0) return { x: 0.5, y: 0.5 };
+      let x = 0, y = 0;
+      poly.forEach(p => { x += p.x; y += p.y; });
+      return { x: x / poly.length, y: y / poly.length };
+    }
+
+    function computeDiagonalPolygons() {
+      let regions = [[{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }]];
+      state.diagonals.forEach((diag) => {
+        const nextRegions = [];
+        regions.forEach((poly) => {
+          const leftPoly = clipPolygonByLine(poly, diag.p1, diag.p2, 1);
+          const rightPoly = clipPolygonByLine(poly, diag.p1, diag.p2, -1);
+          if (leftPoly.length >= 3 && polygonArea(leftPoly) > 0.0005) nextRegions.push(leftPoly);
+          if (rightPoly.length >= 3 && polygonArea(rightPoly) > 0.0005) nextRegions.push(rightPoly);
+        });
+        regions = nextRegions;
+      });
+      return regions;
+    }
+
+    async function generateSlices() {
+      if (!state.img) return;
+      const format = document.getElementById('exportFormat').value;
+      const quality = parseFloat(document.getElementById('splitQuality').value);
+      const prefix = (document.getElementById('filePrefix').value || 'slice').trim();
+      const ext = format === 'image/jpeg' ? 'jpg' : format === 'image/webp' ? 'webp' : 'png';
+      const slices = [];
+
+      const createSliceFromCanvas = async (offCanvas, index) => {
+        const blob = await new Promise(res => offCanvas.toBlob(res, format, quality));
+        const dataUrl = offCanvas.toDataURL(format, quality);
+        slices.push({
+          name: `${prefix}_${String(index).padStart(2, '0')}.${ext}`,
+          dataUrl,
+          blob,
+          width: offCanvas.width,
+          height: offCanvas.height
+        });
+      };
+
+      if (state.mode === 'grid') {
+        const yStops = [0, ...state.hCuts, 1];
+        const xStops = [0, ...state.vCuts, 1];
+        let count = 1;
+
+        for (let r = 0; r < yStops.length - 1; r++) {
+          for (let c = 0; c < xStops.length - 1; c++) {
+            const sx = Math.round(xStops[c] * state.imgWidth);
+            const sy = Math.round(yStops[r] * state.imgHeight);
+            const sw = Math.max(1, Math.round((xStops[c + 1] - xStops[c]) * state.imgWidth));
+            const sh = Math.max(1, Math.round((yStops[r + 1] - yStops[r]) * state.imgHeight));
+
+            const off = document.createElement('canvas');
+            off.width = sw;
+            off.height = sh;
+            const octx = off.getContext('2d');
+            if (format === 'image/jpeg') {
+              octx.fillStyle = '#09090b';
+              octx.fillRect(0, 0, sw, sh);
+            }
+            octx.drawImage(state.img, sx, sy, sw, sh, 0, 0, sw, sh);
+            await createSliceFromCanvas(off, count++);
+          }
+        }
+      } else if (state.mode === 'diagonal') {
+        const polys = computeDiagonalPolygons();
+        for (let i = 0; i < polys.length; i++) {
+          const off = renderClippedPolygonSlice(polys[i], format);
+          if (off) await createSliceFromCanvas(off, i + 1);
+        }
+      } else if (state.mode === 'freehand') {
+        if (state.freehandPaths.length === 0) {
+          showToast('Draw at least one cut path on the image first!', '✏️');
+          return;
+        }
+        if (state.freehandSubMode === 'lasso') {
+          for (let i = 0; i < state.freehandPaths.length; i++) {
+            const off = renderClippedPolygonSlice(state.freehandPaths[i], format);
+            if (off) await createSliceFromCanvas(off, i + 1);
+          }
+        } else {
+          const stroke = state.freehandPaths[state.freehandPaths.length - 1];
+          const offA = renderClippedPolygonSlice(buildSliceThroughPolygon(stroke, true), format);
+          const offB = renderClippedPolygonSlice(buildSliceThroughPolygon(stroke, false), format);
+          if (offA) await createSliceFromCanvas(offA, 1);
+          if (offB) await createSliceFromCanvas(offB, 2);
+        }
+      }
+
+      state.generatedSlices = slices;
+      renderResultsGallery();
+      showToast(`Generated ${slices.length} image slice${slices.length === 1 ? '' : 's'}!`, '🎉');
+    }
+
+    function buildSliceThroughPolygon(stroke, sideA) {
+      const clamped = stroke.map(p => ({ x: clamp01(p.x), y: clamp01(p.y) }));
+      const start = clamped[0];
+      const end = clamped[clamped.length - 1];
+      const corners = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
+      const getEdgeIndex = (p) => {
+        const dTop = p.y, dRight = 1 - p.x, dBottom = 1 - p.y, dLeft = p.x;
+        const m = Math.min(dTop, dRight, dBottom, dLeft);
+        if (m === dTop) return 0;
+        if (m === dRight) return 1;
+        if (m === dBottom) return 2;
+        return 3;
+      };
+      const snapEdge = (p, edge) => {
+        if (edge === 0) return { x: p.x, y: 0 };
+        if (edge === 1) return { x: 1, y: p.y };
+        if (edge === 2) return { x: p.x, y: 1 };
+        return { x: 0, y: p.y };
+      };
+
+      const eStart = getEdgeIndex(start);
+      const eEnd = getEdgeIndex(end);
+      const pStart = snapEdge(start, eStart);
+      const pEnd = snapEdge(end, eEnd);
+
+      const poly = [pStart, ...clamped, pEnd];
+      if (sideA) {
+        let cur = (eEnd + 1) % 4;
+        const target = (eStart + 1) % 4;
+        let guard = 0;
+        while (cur !== target && guard++ < 5) {
+          poly.push(corners[cur]);
+          cur = (cur + 1) % 4;
+        }
+      } else {
+        let cur = eEnd;
+        let guard = 0;
+        while (cur !== eStart && guard++ < 5) {
+          poly.push(corners[cur]);
+          cur = (cur + 3) % 4;
+        }
+      }
+      return poly;
+    }
+
+    function renderClippedPolygonSlice(normPoly, format) {
+      if (!normPoly || normPoly.length < 3) return null;
+      const pts = normPoly.map(p => ({ x: p.x * state.imgWidth, y: p.y * state.imgHeight }));
+      const xs = pts.map(p => p.x);
+      const ys = pts.map(p => p.y);
+      const minX = Math.max(0, Math.floor(Math.min(...xs)));
+      const minY = Math.max(0, Math.floor(Math.min(...ys)));
+      const maxX = Math.min(state.imgWidth, Math.ceil(Math.max(...xs)));
+      const maxY = Math.min(state.imgHeight, Math.ceil(Math.max(...ys)));
+
+      const w = Math.max(1, maxX - minX);
+      const h = Math.max(1, maxY - minY);
+      const off = document.createElement('canvas');
+      off.width = w;
+      off.height = h;
+      const octx = off.getContext('2d');
+
+      if (format === 'image/jpeg') {
+        octx.fillStyle = '#09090b';
+        octx.fillRect(0, 0, w, h);
+      }
+
+      octx.save();
+      octx.beginPath();
+      octx.moveTo(pts[0].x - minX, pts[0].y - minY);
+      for (let i = 1; i < pts.length; i++) octx.lineTo(pts[i].x - minX, pts[i].y - minY);
+      octx.closePath();
+      octx.clip();
+      octx.drawImage(state.img, -minX, -minY, state.imgWidth, state.imgHeight);
+      octx.restore();
+      return off;
+    }
+
+    function renderResultsGallery() {
+      const section = document.getElementById('resultsSection');
+      const grid = document.getElementById('slicesGrid');
+      const badge = document.getElementById('sliceResultBadge');
+
+      section.classList.remove('hidden');
+      badge.textContent = `${state.generatedSlices.length} piece${state.generatedSlices.length === 1 ? '' : 's'}`;
+      grid.innerHTML = '';
+
+      state.generatedSlices.forEach((slice, idx) => {
+        const card = document.createElement('div');
+        card.className = 'group bg-obsidian-950 border border-obsidian-750 hover:border-zinc-500 rounded-xl p-2 flex flex-col gap-2 transition shadow-md';
+
+        card.innerHTML = `
+          <div class="relative aspect-square rounded-lg overflow-hidden checkerboard flex items-center justify-center">
+            <img src="${slice.dataUrl}" alt="${slice.name}" class="max-w-full max-h-full object-contain transition-transform duration-200 group-hover:scale-105" />
+            <span class="absolute top-1.5 left-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-obsidian-950/90 text-zinc-100 border border-obsidian-750">#${idx + 1}</span>
+          </div>
+          <div class="flex items-center justify-between gap-1 px-0.5">
+            <div class="truncate">
+              <p class="text-[11px] font-semibold text-zinc-200 truncate">${slice.name}</p>
+              <p class="text-[10px] text-zinc-500 font-mono">${slice.width}×${slice.height}</p>
+            </div>
+            <a href="${slice.dataUrl}" download="${slice.name}" class="p-1.5 rounded-lg bg-obsidian-800 hover:bg-zinc-100 text-zinc-200 hover:text-zinc-950 border border-obsidian-700 transition shrink-0" title="Download ${slice.name}">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            </a>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // --- Send Slices Directly to Joiner ---
+    document.getElementById('btnSendToJoiner').addEventListener('click', async () => {
+      if (!state.generatedSlices.length) return;
+      state.joinItems = [];
+      for (const slice of state.generatedSlices) {
+        const img = await loadImageFromSrc(slice.dataUrl);
+        state.joinItems.push({
+          id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+          name: slice.name,
+          img,
+          rotation: 0
+        });
+      }
+      // Match grid columns if coming from grid split
+      if (state.mode === 'grid') {
+        state.joinLayout = 'grid';
+        state.joinCols = state.vCuts.length + 1;
+        syncJoinLayoutButtons('grid');
+      }
+      updateJoinQueueUI();
+      switchWorkspace('join');
+      showToast(`Sent ${state.joinItems.length} slices to Image Joiner`, '🧩');
+    });
+
+    // ============================================================================
+    // IMAGE JOINER / STITCHER ENGINE
+    // ============================================================================
+    function getRotatedDimensions(item) {
+      const w = item.img.naturalWidth || item.img.width;
+      const h = item.img.naturalHeight || item.img.height;
+      return (item.rotation % 180 === 0) ? { w, h } : { w: h, h: w };
+    }
+
+    function updateJoinQueueUI() {
+      const list = document.getElementById('joinQueueList');
+      const countEl = document.getElementById('joinQueueCount');
+      const headerBadge = document.getElementById('joinHeaderBadge');
+      const emptyState = document.getElementById('joinEmptyState');
+
+      const total = state.joinItems.length;
+      countEl.textContent = total;
+      headerBadge.textContent = total;
+      headerBadge.classList.toggle('hidden', total === 0);
+
+      emptyState.classList.toggle('hidden', total > 0);
+      joinCanvas.classList.toggle('hidden', total === 0);
+
+      list.innerHTML = '';
+      state.joinItems.forEach((item, idx) => {
+        const dims = getRotatedDimensions(item);
+        const row = document.createElement('div');
+        row.draggable = true;
+        row.dataset.index = idx;
+        row.className = 'flex items-center justify-between gap-2 bg-obsidian-900 hover:bg-obsidian-800 border border-obsidian-750 rounded-xl p-2 transition cursor-grab active:cursor-grabbing';
+
+        row.innerHTML = `
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="text-[10px] font-mono text-zinc-500 w-4 text-center">${idx + 1}</span>
+            <div class="w-9 h-9 rounded-lg overflow-hidden checkerboard border border-obsidian-750 flex items-center justify-center shrink-0">
+              <img src="${item.img.src}" style="transform: rotate(${item.rotation}deg);" class="max-w-full max-h-full object-contain" />
+            </div>
+            <div class="min-w-0">
+              <p class="text-xs font-medium text-zinc-200 truncate">${item.name}</p>
+              <p class="text-[10px] font-mono text-zinc-500">${dims.w}×${dims.h}${item.rotation ? ` • ${item.rotation}°` : ''}</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1 shrink-0">
+            <button data-action="up" class="p-1 rounded bg-obsidian-850 hover:bg-obsidian-750 text-zinc-300 border border-obsidian-700" title="Move Up">↑</button>
+            <button data-action="down" class="p-1 rounded bg-obsidian-850 hover:bg-obsidian-750 text-zinc-300 border border-obsidian-700" title="Move Down">↓</button>
+            <button data-action="rotate" class="p-1 rounded bg-obsidian-850 hover:bg-obsidian-750 text-zinc-300 border border-obsidian-700" title="Rotate 90°">↻</button>
+            <button data-action="dup" class="p-1 rounded bg-obsidian-850 hover:bg-obsidian-750 text-zinc-300 border border-obsidian-700" title="Duplicate">+</button>
+            <button data-action="del" class="p-1 rounded bg-obsidian-850 hover:bg-rose-500/20 text-zinc-400 hover:text-rose-300 border border-obsidian-700" title="Remove">×</button>
+          </div>
+        `;
+
+        // Button Actions
+        row.querySelectorAll('button').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const act = btn.dataset.action;
+            if (act === 'up' && idx > 0) {
+              [state.joinItems[idx - 1], state.joinItems[idx]] = [state.joinItems[idx], state.joinItems[idx - 1]];
+            } else if (act === 'down' && idx < state.joinItems.length - 1) {
+              [state.joinItems[idx + 1], state.joinItems[idx]] = [state.joinItems[idx], state.joinItems[idx + 1]];
+            } else if (act === 'rotate') {
+              item.rotation = (item.rotation + 90) % 360;
+            } else if (act === 'dup') {
+              state.joinItems.splice(idx + 1, 0, {
+                id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+                name: item.name,
+                img: item.img,
+                rotation: item.rotation
+              });
+            } else if (act === 'del') {
+              state.joinItems.splice(idx, 1);
+            }
+            updateJoinQueueUI();
+            renderJoinPreview();
+          });
+        });
+
+        // HTML5 Drag & Drop Reordering
+        row.addEventListener('dragstart', () => {
+          state.draggedJoinIdx = idx;
+          row.classList.add('join-item-dragging');
+        });
+        row.addEventListener('dragend', () => {
+          state.draggedJoinIdx = null;
+          row.classList.remove('join-item-dragging');
+        });
+        row.addEventListener('dragover', (e) => e.preventDefault());
+        row.addEventListener('drop', (e) => {
+          e.preventDefault();
+          if (state.draggedJoinIdx === null || state.draggedJoinIdx === idx) return;
+          const moved = state.joinItems.splice(state.draggedJoinIdx, 1)[0];
+          state.joinItems.splice(idx, 0, moved);
+          state.draggedJoinIdx = null;
+          updateJoinQueueUI();
+          renderJoinPreview();
+        });
+
+        list.appendChild(row);
+      });
+    }
+
+    function renderJoinPreview() {
+      if (state.joinItems.length === 0) {
+        document.getElementById('joinDimBadge').textContent = 'Output: 0 × 0 px';
+        return;
+      }
+
+      const items = state.joinItems.map(it => ({ ...it, ...getRotatedDimensions(it) }));
+      const gap = state.joinGap;
+      const pad = state.joinPad;
+      const radius = state.joinRadius;
+
+      let totalW = 0;
+      let totalH = 0;
+      const placements = []; // { item, x, y, w, h }
+
+      if (state.joinLayout === 'horizontal') {
+        const refH = state.joinSizing === 'uniform'
+          ? Math.round(items.reduce((a, b) => a + b.h, 0) / items.length)
+          : Math.max(...items.map(i => i.h));
+
+        const scaled = items.map(it => {
+          if (state.joinSizing === 'match' || state.joinSizing === 'uniform') {
+            const scale = refH / it.h;
+            return { ...it, dw: Math.round(it.w * scale), dh: refH };
+          }
+          return { ...it, dw: it.w, dh: it.h };
+        });
+
+        const maxH = Math.max(...scaled.map(s => s.dh));
+        let curX = pad;
+        scaled.forEach((s, idx) => {
+          let y = pad;
+          if (state.joinAlign === 'center') y = pad + Math.round((maxH - s.dh) / 2);
+          else if (state.joinAlign === 'end') y = pad + (maxH - s.dh);
+
+          placements.push({ item: s, x: curX, y, w: s.dw, h: s.dh });
+          curX += s.dw + (idx < scaled.length - 1 ? gap : 0);
+        });
+        totalW = curX + pad;
+        totalH = maxH + pad * 2;
+
+      } else if (state.joinLayout === 'vertical') {
+        const refW = state.joinSizing === 'uniform'
+          ? Math.round(items.reduce((a, b) => a + b.w, 0) / items.length)
+          : Math.max(...items.map(i => i.w));
+
+        const scaled = items.map(it => {
+          if (state.joinSizing === 'match' || state.joinSizing === 'uniform') {
+            const scale = refW / it.w;
+            return { ...it, dw: refW, dh: Math.round(it.h * scale) };
+          }
+          return { ...it, dw: it.w, dh: it.h };
+        });
+
+        const maxW = Math.max(...scaled.map(s => s.dw));
+        let curY = pad;
+        scaled.forEach((s, idx) => {
+          let x = pad;
+          if (state.joinAlign === 'center') x = pad + Math.round((maxW - s.dw) / 2);
+          else if (state.joinAlign === 'end') x = pad + (maxW - s.dw);
+
+          placements.push({ item: s, x, y: curY, w: s.dw, h: s.dh });
+          curY += s.dh + (idx < scaled.length - 1 ? gap : 0);
+        });
+        totalW = maxW + pad * 2;
+        totalH = curY + pad;
+
+      } else {
+        // Custom Grid
+        const cols = Math.max(1, state.joinCols);
+        const rows = Math.ceil(items.length / cols);
+
+        if (state.joinSizing === 'original') {
+          // Variable-size grid: each row uses its own max height, and each column uses its own max width
+          // (or packs tightly row-by-row when Seamless Original is selected)
+          const rowHeights = Array(rows).fill(0);
+          const colWidths = Array(cols).fill(0);
+
+          items.forEach((it, idx) => {
+            const r = Math.floor(idx / cols);
+            const c = idx % cols;
+            rowHeights[r] = Math.max(rowHeights[r], it.h);
+            colWidths[c] = Math.max(colWidths[c], it.w);
+          });
+
+          if (state.joinAlign === 'packed') {
+            // Pack each row seamlessly at original image dimensions without forcing uniform column tracks
+            let curY = pad;
+            let maxRowW = 0;
+
+            for (let r = 0; r < rows; r++) {
+              let curX = pad;
+              for (let c = 0; c < cols; c++) {
+                const idx = r * cols + c;
+                if (idx >= items.length) break;
+                const it = items[idx];
+                placements.push({ item: it, x: curX, y: curY, w: it.w, h: it.h });
+                curX += it.w + (c < cols - 1 && idx + 1 < items.length ? gap : 0);
+              }
+              maxRowW = Math.max(maxRowW, curX + pad);
+              curY += rowHeights[r] + (r < rows - 1 ? gap : 0);
+            }
+
+            totalW = maxRowW;
+            totalH = curY + pad;
+          } else {
+            // Track-based variable grid: tracks size to each row/column's natural dimensions
+            const colX = [];
+            let accX = pad;
+            for (let c = 0; c < cols; c++) {
+              colX.push(accX);
+              accX += colWidths[c] + (c < cols - 1 ? gap : 0);
+            }
+
+            const rowY = [];
+            let accY = pad;
+            for (let r = 0; r < rows; r++) {
+              rowY.push(accY);
+              accY += rowHeights[r] + (r < rows - 1 ? gap : 0);
+            }
+
+            items.forEach((it, idx) => {
+              const r = Math.floor(idx / cols);
+              const c = idx % cols;
+              const slotW = colWidths[c];
+              const slotH = rowHeights[r];
+
+              let x = colX[c];
+              let y = rowY[r];
+              if (state.joinAlign === 'center') {
+                x += Math.round((slotW - it.w) / 2);
+                y += Math.round((slotH - it.h) / 2);
+              } else if (state.joinAlign === 'end') {
+                x += slotW - it.w;
+                y += slotH - it.h;
+              }
+              placements.push({ item: it, x, y, w: it.w, h: it.h });
+            });
+
+            totalW = accX + pad;
+            totalH = accY + pad;
+          }
+        } else {
+          const cellW = state.joinSizing === 'uniform'
+            ? Math.round(items.reduce((a, b) => a + b.w, 0) / items.length)
+            : Math.max(...items.map(i => i.w));
+          const cellH = state.joinSizing === 'uniform'
+            ? Math.round(items.reduce((a, b) => a + b.h, 0) / items.length)
+            : Math.max(...items.map(i => i.h));
+
+          items.forEach((it, idx) => {
+            const r = Math.floor(idx / cols);
+            const c = idx % cols;
+            const slotX = pad + c * (cellW + gap);
+            const slotY = pad + r * (cellH + gap);
+
+            let dw = it.w, dh = it.h;
+            if (state.joinSizing === 'match') {
+              const scale = Math.min(cellW / it.w, cellH / it.h);
+              dw = Math.round(it.w * scale);
+              dh = Math.round(it.h * scale);
+            } else if (state.joinSizing === 'uniform') {
+              dw = cellW;
+              dh = cellH;
+            }
+
+            let x = slotX;
+            let y = slotY;
+            if (state.joinAlign === 'center') {
+              x += Math.round((cellW - dw) / 2);
+              y += Math.round((cellH - dh) / 2);
+            } else if (state.joinAlign === 'end') {
+              x += cellW - dw;
+              y += cellH - dh;
+            }
+
+            placements.push({ item: it, x, y, w: dw, h: dh });
+          });
+
+          totalW = pad * 2 + cols * cellW + (cols - 1) * gap;
+          totalH = pad * 2 + rows * cellH + (rows - 1) * gap;
+        }
+      }
+
+      totalW = Math.max(1, totalW);
+      totalH = Math.max(1, totalH);
+      joinCanvas.width = totalW;
+      joinCanvas.height = totalH;
+
+      joinCtx.clearRect(0, 0, totalW, totalH);
+
+      if (state.joinBg !== 'transparent') {
+        joinCtx.fillStyle = state.joinBg;
+        joinCtx.fillRect(0, 0, totalW, totalH);
+      }
+
+      placements.forEach(({ item, x, y, w, h }) => {
+        joinCtx.save();
+        if (radius > 0) {
+          joinCtx.beginPath();
+          joinCtx.roundRect(x, y, w, h, Math.min(radius, w / 2, h / 2));
+          joinCtx.clip();
+        }
+
+        // Draw with rotation around center of destination box
+        joinCtx.translate(x + w / 2, y + h / 2);
+        joinCtx.rotate((item.rotation * Math.PI) / 180);
+        if (item.rotation % 180 === 0) {
+          joinCtx.drawImage(item.img, -w / 2, -h / 2, w, h);
+        } else {
+          joinCtx.drawImage(item.img, -h / 2, -w / 2, h, w);
+        }
+        joinCtx.restore();
+      });
+
+      document.getElementById('joinDimBadge').textContent = `Output: ${totalW} × ${totalH} px`;
+      applyJoinCanvasZoom();
+    }
+
+    function applyJoinCanvasZoom() {
+      if (!joinCanvas.width || !joinCanvas.height) return;
+      if (state.joinZoomMode === 'fit') {
+        const pad = 48;
+        const availW = Math.max(240, joinViewport.clientWidth - pad);
+        const availH = Math.max(220, joinViewport.clientHeight - pad);
+        const scale = Math.min(availW / joinCanvas.width, availH / joinCanvas.height, 1);
+        joinCanvas.style.width = `${Math.round(joinCanvas.width * scale)}px`;
+        joinCanvas.style.height = `${Math.round(joinCanvas.height * scale)}px`;
+        document.getElementById('joinZoomLabel').textContent = 'Fit';
+      } else {
+        const z = state.joinZoomMode;
+        joinCanvas.style.width = `${Math.round(joinCanvas.width * z)}px`;
+        joinCanvas.style.height = `${Math.round(joinCanvas.height * z)}px`;
+        document.getElementById('joinZoomLabel').textContent = `${Math.round(z * 100)}%`;
+      }
+    }
+
+    function exportJoinedImage() {
+      if (!state.joinItems.length) {
+        showToast('Add at least one image to join!', '⚠️');
+        return;
+      }
+      const format = document.getElementById('joinExportFormat').value;
+      const ext = format === 'image/jpeg' ? 'jpg' : format === 'image/webp' ? 'webp' : 'png';
+      const baseName = (document.getElementById('joinFileName').value || 'joined_image').trim();
+
+      // If JPG selected with transparent background, composite onto obsidian black
+      let exportCanvas = joinCanvas;
+      if (format === 'image/jpeg' && state.joinBg === 'transparent') {
+        exportCanvas = document.createElement('canvas');
+        exportCanvas.width = joinCanvas.width;
+        exportCanvas.height = joinCanvas.height;
+        const ectx = exportCanvas.getContext('2d');
+        ectx.fillStyle = '#09090b';
+        ectx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+        ectx.drawImage(joinCanvas, 0, 0);
+      }
+
+      const dataUrl = exportCanvas.toDataURL(format, 0.94);
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `${baseName}.${ext}`;
+      a.click();
+      showToast(`Exported ${baseName}.${ext} (${joinCanvas.width}×${joinCanvas.height})`, '✅');
+    }
+
+    // ============================================================================
+    // ZERO-DEPENDENCY PURE JAVASCRIPT ZIP ARCHIVE BUILDER
+    // ============================================================================
+    const crcTable = (() => {
+      const table = new Uint32Array(256);
+      for (let i = 0; i < 256; i++) {
+        let c = i;
+        for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        table[i] = c;
+      }
+      return table;
+    })();
+
+    function crc32(uint8Arr) {
+      let crc = 0xFFFFFFFF;
+      for (let i = 0; i < uint8Arr.length; i++) crc = crcTable[(crc ^ uint8Arr[i]) & 0xFF] ^ (crc >>> 8);
+      return (crc ^ 0xFFFFFFFF) >>> 0;
+    }
+
+    async function downloadAllAsZip() {
+      if (!state.generatedSlices.length) return;
+      const encoder = new TextEncoder();
+      const fileEntries = [];
+      let offset = 0;
+
+      for (const slice of state.generatedSlices) {
+        const arrayBuf = await slice.blob.arrayBuffer();
+        const data = new Uint8Array(arrayBuf);
+        const nameBytes = encoder.encode(slice.name);
+        const checksum = crc32(data);
+
+        const localHeader = new Uint8Array(30 + nameBytes.length);
+        const lView = new DataView(localHeader.buffer);
+        lView.setUint32(0, 0x04034b50, true);
+        lView.setUint16(4, 20, true);
+        lView.setUint32(14, checksum, true);
+        lView.setUint32(18, data.length, true);
+        lView.setUint32(22, data.length, true);
+        lView.setUint16(26, nameBytes.length, true);
+        localHeader.set(nameBytes, 30);
+
+        const centralHeader = new Uint8Array(46 + nameBytes.length);
+        const cView = new DataView(centralHeader.buffer);
+        cView.setUint32(0, 0x02014b50, true);
+        cView.setUint16(4, 20, true);
+        cView.setUint16(6, 20, true);
+        cView.setUint32(16, checksum, true);
+        cView.setUint32(20, data.length, true);
+        cView.setUint32(24, data.length, true);
+        cView.setUint16(28, nameBytes.length, true);
+        cView.setUint32(42, offset, true);
+        centralHeader.set(nameBytes, 46);
+
+        fileEntries.push({ localHeader, data, centralHeader });
+        offset += localHeader.length + data.length;
+      }
+
+      const centralDirOffset = offset;
+      let centralDirSize = 0;
+      fileEntries.forEach(e => { centralDirSize += e.centralHeader.length; });
+
+      const eocd = new Uint8Array(22);
+      const eView = new DataView(eocd.buffer);
+      eView.setUint32(0, 0x06054b50, true);
+      eView.setUint16(8, fileEntries.length, true);
+      eView.setUint16(10, fileEntries.length, true);
+      eView.setUint32(12, centralDirSize, true);
+      eView.setUint32(16, centralDirOffset, true);
+
+      const parts = [];
+      fileEntries.forEach(e => { parts.push(e.localHeader, e.data); });
+      fileEntries.forEach(e => { parts.push(e.centralHeader); });
+      parts.push(eocd);
+
+      const zipBlob = new Blob(parts, { type: 'application/zip' });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      const prefix = (document.getElementById('filePrefix').value || 'slices').trim();
+      a.href = url;
+      a.download = `${prefix}_pack.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`Downloaded ${prefix}_pack.zip (${state.generatedSlices.length} files)`, '📦');
+    }
+
+    // ============================================================================
+    // UI CONTROLS & EVENT BINDINGS
+    // ============================================================================
+    function setEvenGrid(rows, cols) {
+      state.hCuts = [];
+      for (let r = 1; r < rows; r++) state.hCuts.push(r / rows);
+      state.vCuts = [];
+      for (let c = 1; c < cols; c++) state.vCuts.push(c / cols);
+      updateGridUI();
+      render();
+    }
+
+    function updateGridUI() {
+      const rows = state.hCuts.length + 1;
+      const cols = state.vCuts.length + 1;
+      document.getElementById('rowCountDisplay').textContent = `${rows} row${rows === 1 ? '' : 's'}`;
+      document.getElementById('colCountDisplay').textContent = `${cols} col${cols === 1 ? '' : 's'}`;
+      document.getElementById('gridPieceCount').textContent = `${rows * cols} pieces`;
+    }
+
+    function updateDiagonalUI() {
+      const n = computeDiagonalPolygons().length;
+      document.getElementById('diagLineCount').textContent = `${state.diagonals.length} cut${state.diagonals.length === 1 ? '' : 's'} (${n} pieces)`;
+
+      const list = document.getElementById('diagonalList');
+      if (!list) return;
+      list.innerHTML = '';
+
+      state.diagonals.forEach((diag, idx) => {
+        const col = state.diagonals.length > 1 ? DIAG_PALETTE[idx % DIAG_PALETTE.length] : state.lineColor;
+        const dx = (diag.p2.x - diag.p1.x) * (state.imgWidth || 100);
+        const dy = (diag.p2.y - diag.p1.y) * (state.imgHeight || 100);
+        const angleDeg = Math.round(Math.atan2(dy, dx) * (180 / Math.PI));
+
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between gap-2 bg-obsidian-900 border border-obsidian-750 rounded-xl px-2.5 py-1.5 text-xs';
+
+        row.innerHTML = `
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${col};"></span>
+            <span class="font-semibold text-zinc-200">Cut #${idx + 1}</span>
+            <span class="text-[11px] font-mono text-zinc-400">${angleDeg}°</span>
+          </div>
+          <div class="flex items-center gap-1 shrink-0">
+            <button data-diag-act="flip" class="px-2 py-0.5 rounded-md bg-obsidian-800 hover:bg-obsidian-750 text-[11px] text-zinc-200 border border-obsidian-700 transition" title="Mirror Diagonal">⇄ Flip</button>
+            <button data-diag-act="del" ${state.diagonals.length <= 1 ? 'disabled' : ''} class="px-2 py-0.5 rounded-md bg-obsidian-800 hover:bg-rose-500/20 disabled:opacity-35 disabled:pointer-events-none text-zinc-300 hover:text-rose-300 border border-obsidian-700 transition" title="Delete Cut">×</button>
+          </div>
+        `;
+
+        row.querySelector('[data-diag-act="flip"]').addEventListener('click', () => {
+          diag.p1.x = 1 - diag.p1.x;
+          diag.p2.x = 1 - diag.p2.x;
+          updateDiagonalUI();
+          render();
+        });
+
+        row.querySelector('[data-diag-act="del"]').addEventListener('click', () => {
+          if (state.diagonals.length > 1) {
+            state.diagonals.splice(idx, 1);
+            updateDiagonalUI();
+            render();
+            showToast(`Removed diagonal cut`, '🗑️');
+          }
+        });
+
+        list.appendChild(row);
+      });
+    }
+
+    function updateFreehandUI() {
+      const c = state.freehandPaths.length;
+      document.getElementById('freehandStrokeCount').textContent = `${c} path${c === 1 ? '' : 's'}`;
+    }
+
+    // Splitter Mode Switching
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn').forEach(b => {
+          b.classList.remove('active', 'bg-zinc-100', 'text-zinc-950', 'shadow');
+          b.classList.add('text-zinc-400');
+        });
+        btn.classList.add('active', 'bg-zinc-100', 'text-zinc-950', 'shadow');
+        btn.classList.remove('text-zinc-400');
+
+        state.mode = btn.dataset.mode;
+        document.getElementById('panel-grid').classList.toggle('hidden', state.mode !== 'grid');
+        document.getElementById('panel-diagonal').classList.toggle('hidden', state.mode !== 'diagonal');
+        document.getElementById('panel-freehand').classList.toggle('hidden', state.mode !== 'freehand');
+        render();
+      });
+    });
+
+    // Grid Controls
+    document.getElementById('presetHorizontal').addEventListener('click', () => {
+      setEvenGrid(3, 1);
+      document.getElementById('clickAddType').value = 'horizontal';
+    });
+    document.getElementById('presetVertical').addEventListener('click', () => {
+      setEvenGrid(1, 3);
+      document.getElementById('clickAddType').value = 'vertical';
+    });
+    document.getElementById('presetBoth').addEventListener('click', () => {
+      setEvenGrid(2, 2);
+      document.getElementById('clickAddType').value = 'both';
+    });
+    document.getElementById('btnGridAddToggle').addEventListener('click', () => {
+      state.gridClickAddMode = !state.gridClickAddMode;
+      const btn = document.getElementById('btnGridAddToggle');
+      const dot = document.getElementById('gridAddDot');
+      const lbl = document.getElementById('gridAddLabel');
+      const help = document.getElementById('gridHelpText');
+
+      lbl.textContent = state.gridClickAddMode ? 'Click Add: On' : 'Click Add: Off';
+      btn.classList.toggle('bg-amber-400', state.gridClickAddMode);
+      btn.classList.toggle('hover:bg-amber-300', state.gridClickAddMode);
+      btn.classList.toggle('text-zinc-950', state.gridClickAddMode);
+      btn.classList.toggle('border-amber-300', state.gridClickAddMode);
+      btn.classList.toggle('shadow', state.gridClickAddMode);
+
+      btn.classList.toggle('bg-obsidian-800', !state.gridClickAddMode);
+      btn.classList.toggle('hover:bg-obsidian-750', !state.gridClickAddMode);
+      btn.classList.toggle('text-zinc-200', !state.gridClickAddMode);
+      btn.classList.toggle('border-obsidian-700', !state.gridClickAddMode);
+
+      dot.classList.toggle('bg-zinc-950', state.gridClickAddMode);
+      dot.classList.toggle('bg-zinc-500', !state.gridClickAddMode);
+
+      help.innerHTML = state.gridClickAddMode
+        ? '<strong class="text-amber-300">Click Add Active:</strong> Click anywhere on empty canvas space to place a new cut line, or drag existing handles to adjust.'
+        : '<strong class="text-zinc-200">Tip:</strong> Drag any dashed line or pill handle to slide cuts, <strong class="text-zinc-200">Shift+Click</strong> (or turn <strong class="text-zinc-200">Click Add: On</strong>) to insert cuts, or double-click any line to delete it.';
+
+      canvas.style.cursor = state.gridClickAddMode ? 'cell' : 'default';
+    });
+    document.getElementById('incRows').addEventListener('click', () => setEvenGrid(state.hCuts.length + 2, state.vCuts.length + 1));
+    document.getElementById('decRows').addEventListener('click', () => {
+      if (state.hCuts.length > 0) setEvenGrid(state.hCuts.length, state.vCuts.length + 1);
+    });
+    document.getElementById('incCols').addEventListener('click', () => setEvenGrid(state.hCuts.length + 1, state.vCuts.length + 2));
+    document.getElementById('decCols').addEventListener('click', () => {
+      if (state.vCuts.length > 0) setEvenGrid(state.hCuts.length + 1, state.vCuts.length);
+    });
+    document.getElementById('btnEqualizeGrid').addEventListener('click', () => {
+      setEvenGrid(state.hCuts.length + 1, state.vCuts.length + 1);
+      showToast('Distributed cut lines evenly', '📏');
+    });
+    document.getElementById('snapToggle').addEventListener('change', (e) => { state.snap = e.target.checked; });
+
+    // Diagonal Controls
+    document.getElementById('btnDiagTLBR').addEventListener('click', () => {
+      state.diagonals = [{ p1: { x: 0, y: 0 }, p2: { x: 1, y: 1 } }];
+      updateDiagonalUI(); render();
+    });
+    document.getElementById('btnDiagBLTR').addEventListener('click', () => {
+      state.diagonals = [{ p1: { x: 0, y: 1 }, p2: { x: 1, y: 0 } }];
+      updateDiagonalUI(); render();
+    });
+    document.getElementById('btnDiagXCross').addEventListener('click', () => {
+      state.diagonals = [
+        { p1: { x: 0, y: 0 }, p2: { x: 1, y: 1 } },
+        { p1: { x: 0, y: 1 }, p2: { x: 1, y: 0 } }
+      ];
+      updateDiagonalUI(); render();
+    });
+    document.getElementById('btnDiagDiamond').addEventListener('click', () => {
+      state.diagonals = [
+        { p1: { x: 0.5, y: 0 }, p2: { x: 0, y: 0.5 } },
+        { p1: { x: 0.5, y: 0 }, p2: { x: 1, y: 0.5 } },
+        { p1: { x: 0, y: 0.5 }, p2: { x: 0.5, y: 1 } },
+        { p1: { x: 1, y: 0.5 }, p2: { x: 0.5, y: 1 } }
+      ];
+      updateDiagonalUI(); render();
+    });
+    document.getElementById('btnDiagParallel').addEventListener('click', () => {
+      state.diagonals = [
+        { p1: { x: 0, y: 0.35 }, p2: { x: 0.65, y: 1 } },
+        { p1: { x: 0.35, y: 0 }, p2: { x: 1, y: 0.65 } }
+      ];
+      updateDiagonalUI(); render();
+    });
+    document.getElementById('btnDiagStarburst').addEventListener('click', () => {
+      state.diagonals = [
+        { p1: { x: 0, y: 0 }, p2: { x: 1, y: 1 } },
+        { p1: { x: 0, y: 1 }, p2: { x: 1, y: 0 } },
+        { p1: { x: 0.5, y: 0 }, p2: { x: 0.5, y: 1 } }
+      ];
+      updateDiagonalUI(); render();
+    });
+    document.getElementById('btnAddDiagonal').addEventListener('click', () => {
+      // Stagger new diagonals across the image so unlimited cuts are immediately visible and distinct
+      const idx = state.diagonals.length;
+      const offset = ((idx * 0.17) % 0.68) + 0.16;
+      const newCut = (idx % 2 === 1)
+        ? { p1: { x: 0, y: 1 }, p2: { x: 1, y: 0 } }
+        : (idx % 4 === 2)
+          ? { p1: { x: 0, y: offset }, p2: { x: 1 - offset, y: 1 } }
+          : { p1: { x: offset, y: 0 }, p2: { x: 1, y: 1 - offset } };
+      state.diagonals.push(newCut);
+      updateDiagonalUI();
+      render();
+      showToast(`Added Diagonal #${state.diagonals.length}`, '✂️');
+    });
+    document.getElementById('btnDiagAddToggle').addEventListener('click', (e) => {
+      state.diagClickAddMode = !state.diagClickAddMode;
+      e.target.textContent = state.diagClickAddMode ? 'Click Add: On' : 'Click Add: Off';
+      e.target.classList.toggle('bg-zinc-100', state.diagClickAddMode);
+      e.target.classList.toggle('text-zinc-950', state.diagClickAddMode);
+      e.target.classList.toggle('bg-obsidian-800', !state.diagClickAddMode);
+      e.target.classList.toggle('text-zinc-200', !state.diagClickAddMode);
+    });
+    document.getElementById('btnDiagReset').addEventListener('click', () => {
+      state.diagonals = [{ p1: { x: 0, y: 0 }, p2: { x: 1, y: 1 } }];
+      updateDiagonalUI();
+      render();
+      showToast('Diagonal cuts reset', '↺');
+    });
+
+    // Freehand Controls
+    document.getElementById('subFreehandSlice').addEventListener('click', (e) => {
+      state.freehandSubMode = 'slice';
+      e.target.classList.add('bg-zinc-100', 'text-zinc-950');
+      e.target.classList.remove('text-zinc-400');
+      const other = document.getElementById('subFreehandLasso');
+      other.classList.remove('bg-zinc-100', 'text-zinc-950');
+      other.classList.add('text-zinc-400');
+      document.getElementById('freehandHelpText').innerHTML = '<strong class="text-zinc-200">Slice Through:</strong> Draw a line starting near one edge of the image and ending near another edge to split into two pieces.';
+      render();
+    });
+    document.getElementById('subFreehandLasso').addEventListener('click', (e) => {
+      state.freehandSubMode = 'lasso';
+      e.target.classList.add('bg-zinc-100', 'text-zinc-950');
+      e.target.classList.remove('text-zinc-400');
+      const other = document.getElementById('subFreehandSlice');
+      other.classList.remove('bg-zinc-100', 'text-zinc-950');
+      other.classList.add('text-zinc-400');
+      document.getElementById('freehandHelpText').innerHTML = '<strong class="text-zinc-200">Closed Shape:</strong> Draw one or more freehand loops around objects to extract each closed shape as a transparent slice.';
+      render();
+    });
+    document.getElementById('btnUndoFreehand').addEventListener('click', () => {
+      state.freehandPaths.pop();
+      updateFreehandUI(); render();
+    });
+    document.getElementById('btnClearFreehand').addEventListener('click', () => {
+      state.freehandPaths = [];
+      updateFreehandUI(); render();
+    });
+
+    // Style & Appearance Controls
+    document.querySelectorAll('.swatch').forEach(sw => {
+      sw.addEventListener('click', () => {
+        document.querySelectorAll('.swatch').forEach(s => {
+          s.classList.remove('ring-2', 'ring-zinc-300', 'ring-zinc-400', 'scale-110');
+          s.classList.add('opacity-85');
+        });
+        sw.classList.add('ring-2', 'ring-zinc-300', 'scale-110');
+        sw.classList.remove('opacity-85');
+        state.lineColor = sw.dataset.color;
+        updateDiagonalUI();
+        render();
+      });
+    });
+
+    document.getElementById('lineThickness').addEventListener('input', (e) => {
+      state.lineThickness = parseFloat(e.target.value);
+      render();
+    });
+    document.getElementById('showNumbersToggle').addEventListener('change', (e) => {
+      state.showNumbers = e.target.checked;
+      render();
+    });
+    document.getElementById('splitQuality').addEventListener('input', (e) => {
+      document.getElementById('splitQualityLabel').textContent = `${Math.round(parseFloat(e.target.value) * 100)}%`;
+    });
+
+    // Splitter Zoom & Action Buttons
+    document.getElementById('btnZoomIn').addEventListener('click', () => {
+      state.zoom = Math.min(3, state.zoom + 0.15);
+      updateCanvasDimensions();
+    });
+    document.getElementById('btnZoomOut').addEventListener('click', () => {
+      state.zoom = Math.max(0.3, state.zoom - 0.15);
+      updateCanvasDimensions();
+    });
+    document.getElementById('btnZoomFit').addEventListener('click', fitCanvasToViewport);
+    document.getElementById('btnDemoImage').addEventListener('click', loadSampleImage);
+    document.getElementById('btnSplitExport').addEventListener('click', generateSlices);
+    document.getElementById('btnSidebarSplit').addEventListener('click', generateSlices);
+    document.getElementById('btnDownloadZip').addEventListener('click', downloadAllAsZip);
+    document.getElementById('btnCloseResults').addEventListener('click', () => {
+      document.getElementById('resultsSection').classList.add('hidden');
+    });
+    document.getElementById('btnResetAll').addEventListener('click', () => {
+      setEvenGrid(2, 2);
+      state.diagonals = [{ p1: { x: 0, y: 0 }, p2: { x: 1, y: 1 } }];
+      state.freehandPaths = [];
+      updateDiagonalUI();
+      updateFreehandUI();
+      render();
+      showToast('Cut lines reset to default', '↺');
+    });
+
+    // --- Joiner Controls ---
+    function syncJoinLayoutButtons(layout) {
+      document.querySelectorAll('.join-layout-btn').forEach(b => {
+        const active = b.dataset.joinLayout === layout;
+        b.classList.toggle('active', active);
+        b.classList.toggle('bg-zinc-100', active);
+        b.classList.toggle('text-zinc-950', active);
+        b.classList.toggle('shadow', active);
+        b.classList.toggle('text-zinc-400', !active);
+      });
+      document.getElementById('joinGridColsRow').classList.toggle('hidden', layout !== 'grid');
+      document.getElementById('joinColsDisplay').textContent = `${state.joinCols} col${state.joinCols === 1 ? '' : 's'}`;
+    }
+
+    document.querySelectorAll('.join-layout-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.joinLayout = btn.dataset.joinLayout;
+        syncJoinLayoutButtons(state.joinLayout);
+        renderJoinPreview();
+      });
+    });
+
+    document.getElementById('incJoinCols').addEventListener('click', () => {
+      state.joinCols = Math.min(12, state.joinCols + 1);
+      document.getElementById('joinColsDisplay').textContent = `${state.joinCols} cols`;
+      renderJoinPreview();
+    });
+    document.getElementById('decJoinCols').addEventListener('click', () => {
+      state.joinCols = Math.max(1, state.joinCols - 1);
+      document.getElementById('joinColsDisplay').textContent = `${state.joinCols} col${state.joinCols === 1 ? '' : 's'}`;
+      renderJoinPreview();
+    });
+
+    document.getElementById('joinSizingMode').addEventListener('change', (e) => {
+      state.joinSizing = e.target.value;
+      renderJoinPreview();
+    });
+    document.getElementById('joinAlignMode').addEventListener('change', (e) => {
+      state.joinAlign = e.target.value;
+      if (state.joinAlign === 'packed') {
+        state.joinSizing = 'original';
+        document.getElementById('joinSizingMode').value = 'original';
+        state.joinGap = 0;
+        state.joinPad = 0;
+        document.getElementById('joinGapSlider').value = 0;
+        document.getElementById('joinGapVal').textContent = '0 px';
+        document.getElementById('joinPadSlider').value = 0;
+        document.getElementById('joinPadVal').textContent = '0 px';
+        showToast('Switched to Seamless Original size with 0px gap', '🧩');
+      }
+      renderJoinPreview();
+    });
+
+    document.getElementById('joinGapSlider').addEventListener('input', (e) => {
+      state.joinGap = parseInt(e.target.value, 10);
+      document.getElementById('joinGapVal').textContent = `${state.joinGap} px`;
+      renderJoinPreview();
+    });
+    document.getElementById('joinPadSlider').addEventListener('input', (e) => {
+      state.joinPad = parseInt(e.target.value, 10);
+      document.getElementById('joinPadVal').textContent = `${state.joinPad} px`;
+      renderJoinPreview();
+    });
+    document.getElementById('joinRadiusSlider').addEventListener('input', (e) => {
+      state.joinRadius = parseInt(e.target.value, 10);
+      document.getElementById('joinRadiusVal').textContent = `${state.joinRadius} px`;
+      renderJoinPreview();
+    });
+
+    document.querySelectorAll('.join-bg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.join-bg-btn').forEach(b => b.classList.remove('ring-2', 'ring-zinc-400'));
+        btn.classList.add('ring-2', 'ring-zinc-400');
+        state.joinBg = btn.dataset.bg;
+        renderJoinPreview();
+      });
+    });
+    document.getElementById('joinCustomColor').addEventListener('input', (e) => {
+      state.joinBg = e.target.value;
+      renderJoinPreview();
+    });
+
+    document.getElementById('btnJoinReverse').addEventListener('click', () => {
+      state.joinItems.reverse();
+      updateJoinQueueUI();
+      renderJoinPreview();
+    });
+    document.getElementById('btnJoinClearAll').addEventListener('click', () => {
+      state.joinItems = [];
+      updateJoinQueueUI();
+      renderJoinPreview();
+    });
+
+    document.getElementById('btnJoinZoomIn').addEventListener('click', () => {
+      const base = state.joinZoomMode === 'fit' ? 0.5 : state.joinZoomMode;
+      state.joinZoomMode = Math.min(2.5, +(base + 0.15).toFixed(2));
+      applyJoinCanvasZoom();
+    });
+    document.getElementById('btnJoinZoomOut').addEventListener('click', () => {
+      const base = state.joinZoomMode === 'fit' ? 0.5 : state.joinZoomMode;
+      state.joinZoomMode = Math.max(0.15, +(base - 0.15).toFixed(2));
+      applyJoinCanvasZoom();
+    });
+    document.getElementById('btnJoinZoomFit').addEventListener('click', () => {
+      state.joinZoomMode = 'fit';
+      applyJoinCanvasZoom();
+    });
+
+    document.getElementById('btnJoinSampleSet').addEventListener('click', loadJoinSampleSet);
+    document.getElementById('btnEmptyLoadSample').addEventListener('click', loadJoinSampleSet);
+    document.getElementById('btnJoinDownload').addEventListener('click', exportJoinedImage);
+    document.getElementById('btnSidebarJoinExport').addEventListener('click', exportJoinedImage);
+
+    window.addEventListener('resize', () => {
+      if (state.workspace === 'split' && state.img) fitCanvasToViewport();
+      if (state.workspace === 'join' && state.joinItems.length) applyJoinCanvasZoom();
+    });
+
+    // Initialize Application
+    window.onload = () => {
+      updateGridUI();
+      updateDiagonalUI();
+      updateJoinQueueUI();
+      loadSampleImage();
+    };
+  </script>
+</body>
+</html>
