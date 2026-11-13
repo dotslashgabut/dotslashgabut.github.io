@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Image Splitter &amp; Joiner</title>
+<style>
+:root{--bg:#0f1115;--pn:#171a21;--bd:#2a2f3a;--tx:#e6e8ee;--mu:#8b93a5;--ac:#4f8cff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--bd)}
+h1{font-size:15px;margin:0;font-weight:600}
+nav{display:flex;gap:4px;background:var(--pn);padding:3px;border-radius:8px;border:1px solid var(--bd)}
+nav button{border:0}
+button,select,input{font:inherit;color:inherit}
+button{background:var(--pn);border:1px solid var(--bd);border-radius:6px;padding:6px 10px;cursor:pointer}
+button:hover{border-color:#44506a}
+button.on,.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+main{display:grid;grid-template-columns:280px 1fr;gap:16px;padding:16px;align-items:start}
+aside{background:var(--pn);border:1px solid var(--bd);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px}
+h3{margin:6px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--mu);font-weight:600}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.drop{border:1px dashed #3a4256;border-radius:8px;padding:14px;text-align:center;color:var(--mu);cursor:pointer}
+.drop:hover{border-color:var(--ac);color:var(--tx)}
+input[type=number],select{background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:6px 8px}
+.f{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.f input[type=number],.f select{width:120px}
+.hint{color:var(--mu);font-size:12px;margin:0}
+.stage{background:#0b0d11;border:1px solid var(--bd);border-radius:10px;padding:8px;display:flex;flex-direction:column;align-items:center;gap:6px;overflow:auto}
+#cv{max-width:100%;touch-action:none;cursor:crosshair;border-radius:4px}
+#st,#jst{color:var(--mu);font-size:12px}
+.bar{display:flex;gap:8px;margin-top:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px}
+.card{background:var(--pn);border:1px solid var(--bd);border-radius:8px;padding:6px;display:flex;flex-direction:column;gap:6px}
+.card canvas{width:100%;height:110px;object-fit:contain;background:#0b0d11}
+.card button{font-size:12px;padding:4px 6px}
+#jl{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow:auto}
+.it{display:flex;align-items:center;gap:8px}
+.it span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.it button{padding:2px 7px}
+#jc{max-width:100%;height:auto;background:repeating-conic-gradient(#1b1f27 0 25%,#12151b 0 50%) 0 0/16px 16px;border-radius:4px}
+[hidden]{display:none!important}
+@media(max-width:760px){main{grid-template-columns:1fr}}
+</style></head><body>
+<header><h1>Image Splitter &amp; Joiner</h1>
+<nav><button class="on" data-t="split">Split</button><button data-t="join">Join</button></nav></header>
+
+<main id="split">
+<aside>
+ <label class="drop">Drop or click to open an image<input type="file" id="f" accept="image/*" hidden></label>
+ <h3>Cut mode</h3>
+ <div class="seg" id="modes">
+  <button data-m="h">Horizontal</button><button data-m="v">Vertical</button>
+  <button data-m="grid" class="on">Both (grid)</button><button data-m="line">Line / diagonal</button>
+  <button data-m="lasso">Freehand shape</button>
+ </div>
+ <div class="f" id="rw"><span>Rows</span><input type="number" id="rows" min="1" max="50" value="2"></div>
+ <div class="f" id="cl"><span>Columns</span><input type="number" id="cols" min="1" max="50" value="2"></div>
+ <label class="f" id="keep" hidden><span>Keep the rest as a piece</span><input type="checkbox" id="keepRest" checked></label>
+ <p class="hint" id="hint"></p>
+ <div class="seg"><button id="undo">Undo</button><button id="clr">Clear</button></div>
+ <h3>Export</h3>
+ <div class="f"><span>Format</span><select id="fmt"><option value="image/png">PNG</option><option value="image/jpeg">JPG</option><option value="image/webp">WebP</option></select></div>
+ <button class="pri" id="go">Split</button>
+</aside>
+<section>
+ <div class="stage"><canvas id="cv"></canvas><div id="st"></div></div>
+ <div class="bar" id="outbar" hidden><button id="dlall" class="pri">Download all</button><button id="toJoin">Send pieces to Join</button></div>
+ <div class="grid" id="out"></div>
+</section>
+</main>
+
+<main id="join" hidden>
+<aside>
+ <label class="drop">Add images (multiple)<input type="file" id="jf" accept="image/*" multiple hidden></label>
+ <div id="jl"></div>
+ <h3>Layout</h3>
+ <div class="f"><span>Direction</span><select id="jdir"><option value="h">Horizontal</option><option value="v">Vertical</option><option value="g">Grid</option></select></div>
+ <div class="f" id="jc2" hidden><span>Columns</span><input type="number" id="jcols" value="2" min="1"></div>
+ <div class="f"><span>Gap (px)</span><input type="number" id="jgap" value="0" min="0"></div>
+ <div class="f"><span>Padding (px)</span><input type="number" id="jpad" value="0" min="0"></div>
+ <label class="f"><span>Match sizes</span><input type="checkbox" id="jfit" checked></label>
+ <div class="f"><span>Background</span><input type="color" id="jbg" value="#ffffff"></div>
+ <label class="f"><span>Transparent</span><input type="checkbox" id="jtr"></label>
+ <div class="f"><span>Format</span><select id="jfmt"><option value="image/png">PNG</option><option value="image/jpeg">JPG</option><option value="image/webp">WebP</option></select></div>
+ <button class="pri" id="jdl">Download joined image</button>
+</aside>
+<section><div class="stage"><canvas id="jc" width="640" height="240"></canvas><div id="jst">Add two or more images to join them.</div></div></section>
+</main>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+let img,W=0,H=0,S=1,name='image',mode='grid',lines=[],lassos=[],drag=null,draw=null,res=[],items=[];
+const cv=$('#cv'),cx=cv.getContext('2d'),PAL=['#4f8cff','#ff4d6d','#35d49a','#ffb347','#b07cff'];
+const HINT={h:'Click the image to add a horizontal cut. Drag a cut to slide it, double-click to remove.',
+v:'Click the image to add a vertical cut. Drag a cut to slide it, double-click to remove.',
+grid:'Click = vertical cut, Shift+click = horizontal cut. Drag to slide, double-click to remove. Rows/Columns spaces cuts evenly.',
+line:'Drag on the image to draw a cut at any angle (it extends across the whole image). Drag the handles or the line to adjust; double-click removes.',
+lasso:'Draw freehand shapes; each shape becomes its own piece, with transparent surroundings.'};
+
+/* ---------- geometry ---------- */
+const rect=()=>[{x:0,y:0},{x:W,y:0},{x:W,y:H},{x:0,y:H}];
+const def=l=>l.t==='h'?[{x:0,y:l.v},{x:1,y:0}]:l.t==='v'?[{x:l.v,y:0},{x:0,y:1}]:
+ [l.a,(l.a.x===l.b.x&&l.a.y===l.b.y)?null:{x:l.b.x-l.a.x,y:l.b.y-l.a.y}];
+function clip(poly,p,d,s){const f=q=>s*(d.x*(q.y-p.y)-d.y*(q.x-p.x)),o=[];
+ for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length],fa=f(a),fb=f(b);
+  if(fa>=0)o.push(a);
+  if((fa>=0)!==(fb>=0)){const t=fa/(fa-fb);o.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t})}}
+ return o}
+const area=p=>p.reduce((s,a,i)=>{const b=p[(i+1)%p.length];return s+a.x*b.y-b.x*a.y},0)/2;
+function compute(){
+ if(mode==='lasso'){
+  const ps=lassos.map(p=>({polys:[p],eo:0,cx:p.reduce((s,q)=>s+q.x,0)/p.length,cy:p.reduce((s,q)=>s+q.y,0)/p.length}));
+  if($('#keepRest').checked&&lassos.length)ps.push({polys:[rect(),...lassos],eo:1});
+  return ps}
+ let ps=[rect()];
+ for(const l of lines){const[p,d]=def(l);if(!d)continue;const n=[];
+  for(const poly of ps)for(const s of[1,-1]){const c=clip(poly,p,d,s);if(c.length>2&&Math.abs(area(c))>1)n.push(c)}
+  ps=n}
+ ps=ps.map(p=>({polys:[p],eo:0,cx:p.reduce((s,q)=>s+q.x,0)/p.length,cy:p.reduce((s,q)=>s+q.y,0)/p.length}));
+ ps.sort((a,b)=>Math.abs(a.cy-b.cy)>H*.02?a.cy-b.cy:a.cx-b.cx);
+ return ps}
+function bbox(pc){const xs=[],ys=[];pc.polys.forEach(p=>p.forEach(q=>{xs.push(q.x);ys.push(q.y)}));
+ const x0=Math.max(0,Math.floor(Math.min(...xs)+1e-6)),y0=Math.max(0,Math.floor(Math.min(...ys)+1e-6)),
+ x1=Math.min(W,Math.ceil(Math.max(...xs)-1e-6)),y1=Math.min(H,Math.ceil(Math.max(...ys)-1e-6));
+ return{x:x0,y:y0,w:Math.max(1,x1-x0),h:Math.max(1,y1-y0)}}
+function pcv(pc){const b=bbox(pc),c=document.createElement('canvas');c.width=b.w;c.height=b.h;
+ const g=c.getContext('2d');g.beginPath();
+ pc.polys.forEach(p=>{p.forEach((q,i)=>g[i?'lineTo':'moveTo'](q.x-b.x,q.y-b.y));g.closePath()});
+ g.clip(pc.eo?'evenodd':'nonzero');g.drawImage(img,-b.x,-b.y);return c}
+
+/* ---------- split editor ---------- */
+function load(f){if(!f||!/^image/.test(f.type))return;const i=new Image();
+ i.onload=()=>{img=i;W=i.naturalWidth;H=i.naturalHeight;name=f.name.replace(/\.[^.]+$/,'')||'image';setMode(mode)};
+ i.src=URL.createObjectURL(f)}
+function even(ax,n){n=cl(Math.round(n)||1,1,50);lines=lines.filter(l=>l.t!==ax);
+ for(let i=1;i<n;i++)lines.push({t:ax,v:Math.round((ax==='h'?H:W)*i/n)})}
+function sync(){$('#rows').value=lines.filter(l=>l.t==='h').length+1;$('#cols').value=lines.filter(l=>l.t==='v').length+1}
+function setMode(m){mode=m;lines=[];lassos=[];
+ $$('#modes button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));$('#hint').textContent=HINT[m];
+ $('#rw').hidden=!(m==='h'||m==='grid');$('#cl').hidden=!(m==='v'||m==='grid');$('#keep').hidden=m!=='lasso';
+ if(img){if(m==='h'||m==='grid')even('h',+$('#rows').value);if(m==='v'||m==='grid')even('v',+$('#cols').value);
+  if(m==='line')lines.push({t:'l',a:{x:W*.15,y:H*.85},b:{x:W*.85,y:H*.15}});sync()}
+ $('#out').innerHTML='';$('#outbar').hidden=true;render()}
+function ray(p,d){const n=Math.hypot(d.x,d.y),u={x:d.x/n,y:d.y/n},T=1e5;
+ cx.beginPath();cx.moveTo((p.x-u.x*T)*S,(p.y-u.y*T)*S);cx.lineTo((p.x+u.x*T)*S,(p.y+u.y*T)*S);cx.stroke()}
+function path(p,close){cx.beginPath();p.forEach((q,i)=>cx[i?'lineTo':'moveTo'](q.x*S,q.y*S));if(close)cx.closePath()}
+function render(){
+ if(!img){cv.width=640;cv.height=340;cx.fillStyle='#12151b';cx.fillRect(0,0,640,340);cx.fillStyle='#8b93a5';
+  cx.font='15px system-ui';cx.textAlign='center';cx.fillText('Open or drop an image to start',320,170);$('#st').textContent='';return}
+ const av=Math.max(240,cv.parentElement.clientWidth-18);S=Math.min(1,av/W,620/H);
+ cv.width=Math.round(W*S);cv.height=Math.round(H*S);cx.drawImage(img,0,0,cv.width,cv.height);
+ const ps=compute();
+ ps.forEach((pc,i)=>{cx.beginPath();pc.polys.forEach(p=>{p.forEach((q,j)=>cx[j?'lineTo':'moveTo'](q.x*S,q.y*S));cx.closePath()});
+  cx.fillStyle=PAL[i%5]+'30';cx.fill(pc.eo?'evenodd':'nonzero');
+  if(!pc.eo){cx.beginPath();cx.arc(pc.cx*S,pc.cy*S,11,0,7);cx.fillStyle='#000a';cx.fill();cx.fillStyle='#fff';
+   cx.font='12px system-ui';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(i+1,pc.cx*S,pc.cy*S+1)}});
+ cx.lineWidth=2;cx.strokeStyle='#ff4d6d';cx.setLineDash([]);
+ lines.forEach(l=>{const[p,d]=def(l);if(!d)return;ray(p,d);
+  (l.t==='l'?[l.a,l.b]:l.t==='h'?[{x:W/2,y:l.v}]:[{x:l.v,y:H/2}]).forEach(q=>{cx.beginPath();cx.arc(q.x*S,q.y*S,6,0,7);cx.fillStyle='#fff';cx.fill();cx.stroke()})});
+ lassos.forEach(p=>{path(p,1);cx.stroke()});
+ cx.setLineDash([6,4]);
+ if(draw&&draw.pts){path(draw.pts);cx.stroke()}
+ if(draw&&draw.a){const d={x:draw.b.x-draw.a.x,y:draw.b.y-draw.a.y};if(d.x||d.y)ray(draw.a,d)}
+ cx.setLineDash([]);
+ $('#st').textContent=`${W}×${H}px · ${ps.length} piece${ps.length==1?'':'s'}`}
+function pos(e){const r=cv.getBoundingClientRect(),k=cv.width/r.width;
+ return{x:cl((e.clientX-r.left)*k/S,0,W),y:cl((e.clientY-r.top)*k/S,0,H)}}
+function hit(p){const t=9/S;
+ for(let i=lines.length-1;i>=0;i--){const l=lines[i];
+  if(l.t==='h'){if(Math.abs(p.y-l.v)<t)return{i,part:'m'}}
+  else if(l.t==='v'){if(Math.abs(p.x-l.v)<t)return{i,part:'m'}}
+  else{if(Math.hypot(p.x-l.a.x,p.y-l.a.y)<t*1.4)return{i,part:'a'};if(Math.hypot(p.x-l.b.x,p.y-l.b.y)<t*1.4)return{i,part:'b'};
+   const dx=l.b.x-l.a.x,dy=l.b.y-l.a.y,L=Math.hypot(dx,dy)||1;
+   if(Math.abs((p.x-l.a.x)*dy-(p.y-l.a.y)*dx)/L<t)return{i,part:'m'}}}
+ return null}
+cv.onpointerdown=e=>{if(!img)return;e.preventDefault();cv.setPointerCapture(e.pointerId);
+ const p=pos(e),h=hit(p);
+ if(h){drag={...h,s:p,o:JSON.parse(JSON.stringify(lines[h.i]))};return}
+ if(mode==='lasso')draw={pts:[p]};
+ else if(mode==='line')draw={a:p,b:p};
+ else{const t=mode==='grid'?(e.shiftKey?'h':'v'):mode;lines.push({t,v:Math.round(t==='h'?p.y:p.x)});sync();render()}};
+cv.onpointermove=e=>{if(!img)return;const p=pos(e);
+ if(drag){const dx=p.x-drag.s.x,dy=p.y-drag.s.y,l=lines[drag.i],o=drag.o;
+  if(l.t==='h')l.v=Math.round(cl(o.v+dy,0,H));else if(l.t==='v')l.v=Math.round(cl(o.v+dx,0,W));
+  else{if(drag.part!=='b')l.a={x:o.a.x+dx,y:o.a.y+dy};if(drag.part!=='a')l.b={x:o.b.x+dx,y:o.b.y+dy}}
+  render()}
+ else if(draw){if(draw.pts){const q=draw.pts[draw.pts.length-1];if(Math.hypot(p.x-q.x,p.y-q.y)*S>3)draw.pts.push(p)}else draw.b=p;render()}
+ else cv.style.cursor=hit(p)?'grab':'crosshair'};
+cv.onpointerup=()=>{
+ if(draw){if(draw.pts){if(draw.pts.length>2)lassos.push(draw.pts)}
+  else if(Math.hypot(draw.b.x-draw.a.x,draw.b.y-draw.a.y)*S>6)lines.push({t:'l',a:draw.a,b:draw.b});
+  draw=null}
+ drag=null;sync();render()};
+cv.ondblclick=e=>{const h=hit(pos(e));if(h){lines.splice(h.i,1);sync();render()}};
+$('#modes').onclick=e=>{const b=e.target.closest('button');if(b)setMode(b.dataset.m)};
+$('#rows').onchange=()=>{if(img){even('h',+$('#rows').value);sync();render()}};
+$('#cols').onchange=()=>{if(img){even('v',+$('#cols').value);sync();render()}};
+$('#keepRest').onchange=render;
+$('#undo').onclick=()=>{if(mode==='lasso')lassos.pop();else lines.pop();sync();render()};
+$('#clr').onclick=()=>{lines=[];lassos=[];sync();render()};
+$('#f').onchange=e=>load(e.target.files[0]);
+
+/* ---------- export ---------- */
+const EXT={'image/png':'png','image/jpeg':'jpg','image/webp':'webp'};
+function save(c,n,m){let s=c;
+ if(m==='image/jpeg'){s=document.createElement('canvas');s.width=c.width;s.height=c.height;
+  const g=s.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(c,0,0)}
+ s.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n+'.'+EXT[m];a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000)},m,.92)}
+$('#go').onclick=()=>{if(!img)return;const ps=compute(),o=$('#out');o.innerHTML='';
+ res=ps.map((pc,i)=>({c:pcv(pc),n:`${name}_${String(i+1).padStart(2,'0')}`}));
+ res.forEach(r=>{const d=document.createElement('div');d.className='card';d.append(r.c);
+  const b=document.createElement('button');b.textContent=`${r.n} · ${r.c.width}×${r.c.height} ↓`;
+  b.onclick=()=>save(r.c,r.n,$('#fmt').value);d.append(b);o.append(d)});
+ $('#outbar').hidden=!res.length;if(res.length)o.scrollIntoView({behavior:'smooth',block:'nearest'})};
+$('#dlall').onclick=()=>res.forEach((r,i)=>setTimeout(()=>save(r.c,r.n,$('#fmt').value),i*250));
+$('#toJoin').onclick=()=>{res.forEach(r=>items.push({src:r.c,name:r.n,w:r.c.width,h:r.c.height}));tab('join');list();joinRender()};
+
+/* ---------- join ---------- */
+async function addFiles(fs){for(const f of[...fs]){if(!/^image/.test(f.type))continue;
+ await new Promise(r=>{const i=new Image();i.onload=()=>{items.push({src:i,name:f.name,w:i.naturalWidth,h:i.naturalHeight});r()};i.onerror=r;i.src=URL.createObjectURL(f)})}
+ list();joinRender()}
+function list(){const L=$('#jl');L.innerHTML='';
+ items.forEach((it,i)=>{const r=document.createElement('div');r.className='it';
+  const t=document.createElement('canvas');t.width=t.height=40;const g=t.getContext('2d'),k=Math.min(40/it.w,40/it.h);
+  g.drawImage(it.src,(40-it.w*k)/2,(40-it.h*k)/2,it.w*k,it.h*k);
+  const s=document.createElement('span');s.textContent=it.name;r.append(t,s);
+  [['↑',-1],['↓',1],['✕',0]].forEach(([l,d])=>{const b=document.createElement('button');b.textContent=l;
+   b.onclick=()=>{if(!d)items.splice(i,1);else{const j=i+d;if(j<0||j>=items.length)return;[items[i],items[j]]=[items[j],items[i]]}list();joinRender()};r.append(b)});
+  L.append(r)})}
+function joinRender(){const c=$('#jc'),g=c.getContext('2d'),st=$('#jst');
+ if(items.length<1){c.width=640;c.height=240;st.textContent='Add two or more images to join them.';return}
+ const dir=$('#jdir').value,gap=Math.max(0,+$('#jgap').value||0),pad=Math.max(0,+$('#jpad').value||0),
+ fit=$('#jfit').checked,cols=Math.max(1,+$('#jcols').value||1),n=items.length,
+ mw=Math.max(...items.map(i=>i.w)),mh=Math.max(...items.map(i=>i.h));
+ const sz=items.map(it=>{if(!fit)return[it.w,it.h];
+  if(dir==='h'){const k=mh/it.h;return[it.w*k,mh]}
+  if(dir==='v'){const k=mw/it.w;return[mw,it.h*k]}
+  const k=Math.min(mw/it.w,mh/it.h);return[it.w*k,it.h*k]}).map(s=>s.map(Math.round));
+ const ps=[];let TW,TH;
+ if(dir==='h'){const hh=Math.max(...sz.map(s=>s[1]));let x=pad;sz.forEach(s=>{ps.push([x,pad+Math.round((hh-s[1])/2)]);x+=s[0]+gap});TW=x-gap+pad;TH=hh+pad*2}
+ else if(dir==='v'){const ww=Math.max(...sz.map(s=>s[0]));let y=pad;sz.forEach(s=>{ps.push([pad+Math.round((ww-s[0])/2),y]);y+=s[1]+gap});TW=ww+pad*2;TH=y-gap+pad}
+ else{const cw=Math.max(...sz.map(s=>s[0])),ch=Math.max(...sz.map(s=>s[1])),cc=Math.min(cols,n),rr=Math.ceil(n/cc);
+  sz.forEach((s,i)=>ps.push([pad+(i%cc)*(cw+gap)+Math.round((cw-s[0])/2),pad+((i/cc)|0)*(ch+gap)+Math.round((ch-s[1])/2)]));
+  TW=pad*2+cc*cw+(cc-1)*gap;TH=pad*2+rr*ch+(rr-1)*gap}
+ if(TW>16384||TH>16384||TW*TH>1.6e8){st.textContent=`Result ${TW}×${TH}px is too large for the browser. Reduce images, gap or padding.`;return}
+ c.width=TW;c.height=TH;
+ if(!$('#jtr').checked){g.fillStyle=$('#jbg').value;g.fillRect(0,0,TW,TH)}
+ g.imageSmoothingQuality='high';items.forEach((it,i)=>g.drawImage(it.src,ps[i][0],ps[i][1],sz[i][0],sz[i][1]));
+ st.textContent=`${TW}×${TH}px · ${n} image${n==1?'':'s'}`}
+$('#jf').onchange=e=>{addFiles(e.target.files);e.target.value=''};
+$('#join aside').addEventListener('input',()=>{$('#jc2').hidden=$('#jdir').value!=='g';joinRender()});
+$('#jdl').onclick=()=>{if(items.length)save($('#jc'),'joined',$('#jfmt').value)};
+
+/* ---------- tabs / drag-drop ---------- */
+function tab(t){$$('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+ $('#split').hidden=t!=='split';$('#join').hidden=t!=='join';t==='split'?render():joinRender()}
+$$('nav button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
+addEventListener('dragover',e=>e.preventDefault());
+addEventListener('drop',e=>{e.preventDefault();const fs=e.dataTransfer.files;
+ $('#join').hidden?load(fs[0]):addFiles(fs)});
+addEventListener('resize',()=>{if(!$('#split').hidden)render()});
+setMode('grid');
+</script></body></html>
